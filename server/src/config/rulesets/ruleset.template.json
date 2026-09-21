@@ -1,0 +1,68 @@
+{
+  "_readme": "TEMPLATE. Every null must be filled from PRIMARY sources (HDB, CPF Board, IRAS, MAS) and cited. Do not put unverified numbers here. Bump 'version' and set 'effectiveDate' whenever a rule changes. Rules moved in Aug 2024, Oct 2024, Aug 2025 and Aug 2026.",
+  "version": "0.0.0-template",
+  "effectiveDate": null,
+  "verifiedOn": null,
+  "verifiedBy": null,
+
+  "grants": {
+    "ehg": {
+      "appliesTo": ["BTO", "RESALE"],
+      "incomeCeiling": { "family": null, "single": null },
+      "tiers": [],
+      "incomeAveragingMonths": null,
+      "employmentMonthsRequired": null,
+      "leaseMustCoverToAge": null,
+      "minRemainingLeaseYearsResale": null,
+      "sources": []
+    },
+    "familyGrant": {
+      "appliesTo": ["RESALE"],
+      "incomeCeiling": null,
+      "amounts": {},
+      "sources": []
+    },
+    "proximityHousingGrant": {
+      "appliesTo": ["RESALE"],
+      "amounts": { "livingWithParentsOrChild": null, "livingNear": null },
+      "nearDistanceKm": null,
+      "sources": []
+    },
+    "eligibilityCombinations": {
+      "citizenship": { "SC_SC": null, "SC_PR": null, "PR_PR": null },
+      "firstTimerWithSecondTimer": null,
+      "sources": []
+    }
+  },
+
+  "cpf": {
+    "oaInterestRate": null,
+    "accruedInterestCompounding": null,
+    "_compoundingNote": "OPEN DECISION: 'monthly' or 'annual'. Sources conflict. Resolve from CPF Board's own worked example and record it here.",
+    "sources": []
+  },
+
+  "loans": {
+    "msrPercent": null,
+    "tdsrPercent": null,
+    "ltv": {},
+    "hdbConcessionaryRate": null,
+    "maxTenureYears": null,
+    "sources": []
+  },
+
+  "transactionCosts": {
+    "buyerStampDutyTiers": [],
+    "legalFees": null,
+    "agentFees": null,
+    "sources": []
+  },
+
+  "classifications": {
+    "STANDARD": { "mopYears": null, "subsidyRecoveryRate": null, "resaleBuyerIncomeCeiling": null },
+    "PLUS":     { "mopYears": null, "subsidyRecoveryRate": null, "resaleBuyerIncomeCeiling": null },
+    "PRIME":    { "mopYears": null, "subsidyRecoveryRate": null, "resaleBuyerIncomeCeiling": null },
+    "_note": "subsidyRecoveryRate also varies per BTO project: store the per-project value on the project record and use these as class defaults only.",
+    "sources": []
+  }
+}

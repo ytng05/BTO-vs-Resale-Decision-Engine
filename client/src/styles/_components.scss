@@ -1,0 +1,48 @@
+// Small custom styles Bootstrap does not cover. BEM-style class names.
+.stepper {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+  flex-wrap: wrap;
+
+  &__item {
+    flex: 1 1 0;
+    min-width: 5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: $border-radius;
+    background: #fff;
+    border: 1px solid $border-color;
+    font-size: 0.875rem;
+    text-align: center;
+
+    &--active {
+      border-color: $primary;
+      color: $primary;
+      font-weight: 600;
+    }
+    &--done {
+      color: #6e6e73;
+    }
+  }
+}
+
+.heatmap {
+  display: grid;
+  gap: 2px;
+  overflow-x: auto; // wide content scrolls inside its own container, never the page
+
+  &__cell {
+    min-width: 2.5rem;
+    aspect-ratio: 1;
+    border-radius: 4px;
+    &--a { background: $heatmap-a; }
+    &--b { background: $heatmap-b; }
+    &--tie { background: $heatmap-tie; }
+  }
+}
+
+.disclaimer {
+  font-size: 0.8125rem;
+  color: #6e6e73;
+}
