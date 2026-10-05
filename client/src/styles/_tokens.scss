@@ -1,0 +1,191 @@
+// =============================================================================
+// DESIGN TOKENS — generated from docs/UI.md v1.1. Do not hand-edit a value
+// here without updating UI.md in the same PR (and vice versa).
+//
+// Two forms are exported on purpose:
+//   - SCSS variables ($...)   → used by _bootstrap-overrides.scss and anywhere
+//                               Sass needs a compile-time value (e.g. map keys).
+//   - CSS custom properties (--...) → used directly in component <style> blocks
+//                               and available at runtime (e.g. for future
+//                               dark-mode theming, per UI.md §2.8).
+// Keep the two in sync: a token changed in one form must be changed in both.
+// =============================================================================
+
+// ---- Brand palette (UI.md §2.1) --------------------------------------------
+$color-planetary: #334EAC;
+$color-universe:  #7096D1;
+$color-venus:     #BAD6EB;
+$color-sky:       #D0E3FF;
+$color-meteor:    #F7F2EB;
+$color-milkyway:  #FFF9F0;
+$color-galaxy:    #081F5C;
+$color-white:     #FFFFFF;
+
+// ---- Derived: Universe-text (UI.md §2.3) -----------------------------------
+// Plain $color-universe fails AA for text (2.88:1 on Milky Way). This darkened
+// variant passes (4.81:1). Use ONLY for text/icons that must sit in the
+// Universe hue family; use $color-universe itself for large fills/charts.
+$universe-text: #54709C;
+
+// ---- Derived neutral (grey) scale (UI.md §2.4) -----------------------------
+// Blended from Galaxy toward Milky Way so the scale stays in the same
+// desaturated blue family rather than introducing a clashing neutral.
+$text-primary:      $color-galaxy;  // #081F5C — 14.74:1 on Milky Way
+$text-secondary:    #536088;        // 5.19:1 on Milky Way — PASS AA
+$text-tertiary:     #8188A0;        // 2.9:1 — large/decorative text only, never body copy
+$border:             #D3D2D5;
+$border-subtle:       #E6E3E1;
+$surface-disabled:     #F3EEE9;
+
+// ---- Surfaces (UI.md §2.5) --------------------------------------------------
+$bg-page:            $color-milkyway;  // main page background (decided; see UI.md §2.5 changelog 1.1)
+$bg-surface:          $color-meteor;    // cards/panels — REQUIRES border + shadow, see _components.scss
+$bg-surface-raised:    $color-white;     // modals, popovers
+
+// ---- Primary action and tints (UI.md §2.6) ----------------------------------
+$primary:        $color-planetary;
+$primary-hover:  #2A3F8D; // Planetary darkened ~15%
+$accent-fill-1:  $color-universe; // large decorative fills, chart series — NOT text
+$accent-fill-2:  $color-venus;    // selected-row bg, chip fill
+$accent-fill-3:  $color-sky;      // lightest tint, hover bg, info banner fill
+
+// ---- Semantic colours (UI.md §2.7) ------------------------------------------
+$success:      #2E7D5B; // 5.3:1 on Milky Way
+$success-fill: #E3F0E9;
+$warning:      #9A6B1F; // 5.6:1
+$warning-fill: #FBF0DD;
+$danger:       #B3372C; // 5.2:1
+$danger-fill:  #FAE6E3;
+$info:         $primary; // 7.10:1
+$info-fill:    #E8EDFA;
+
+// ---- Typography (UI.md §4) ---------------------------------------------------
+$font-heading: 'Hanken Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+$font-body:    'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+// Type scale — mobile sizes. Desktop (≥lg) overrides are applied via the
+// $type-scale-lg map below and consumed by a mixin in _components.scss.
+$type-scale: (
+  display:     (size: 2rem,      weight: 600, line-height: 1.1,  letter-spacing: -0.01em, font: $font-heading),
+  h1:          (size: 1.5rem,    weight: 600, line-height: 1.2,  letter-spacing: -0.01em, font: $font-heading),
+  h2:          (size: 1.25rem,   weight: 600, line-height: 1.25, letter-spacing: normal,  font: $font-heading),
+  h3:          (size: 1.125rem,  weight: 600, line-height: 1.3,  letter-spacing: normal,  font: $font-heading),
+  h4:          (size: 1rem,      weight: 600, line-height: 1.3,  letter-spacing: normal,  font: $font-heading),
+  body:        (size: 1rem,      weight: 400, line-height: 1.5,  letter-spacing: normal,  font: $font-body),
+  body-small:  (size: 0.875rem,  weight: 400, line-height: 1.5,  letter-spacing: normal,  font: $font-body),
+  caption:     (size: 0.75rem,   weight: 400, line-height: 1.4,  letter-spacing: 0.01em,  font: $font-body),
+  label:       (size: 0.8125rem, weight: 500, line-height: 1.3,  letter-spacing: 0.01em,  font: $font-body),
+);
+
+$type-scale-lg: (
+  display: 2.75rem,
+  h1:      2rem,
+  h2:      1.5rem,
+  h3:      1.25rem,
+  h4:      1.125rem,
+);
+
+$body-max-line-length: 75ch;
+
+// ---- Spacing scale (UI.md §5) -------------------------------------------------
+$space-1:  0.25rem; // 4px
+$space-2:  0.5rem;  // 8px
+$space-3:  0.75rem; // 12px
+$space-4:  1rem;    // 16px
+$space-5:  1.5rem;  // 24px
+$space-6:  2rem;    // 32px
+$space-8:  3rem;    // 48px
+$space-10: 4rem;    // 64px
+
+$container-max-width: 1140px;
+
+// ---- Shape and depth (UI.md §6) ------------------------------------------------
+$radius-sm:   6px;
+$radius-md:   12px;
+$radius-lg:   20px;
+$radius-pill: 999px;
+
+// Shadows use a warm Galaxy tint rather than plain black — plain black shadows
+// look muddy on a warm-white (Milky Way) background.
+$shadow-sm: 0 1px 2px rgba(8, 31, 92, 0.06);
+$shadow-md: 0 4px 12px rgba(8, 31, 92, 0.08);
+$shadow-lg: 0 12px 32px rgba(8, 31, 92, 0.12);
+
+// ---- Motion (UI.md §9) -----------------------------------------------------------
+$duration-micro: 150ms;
+$duration-base:  200ms;
+$ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+$ease-in:  cubic-bezier(0.4, 0, 1, 1);
+
+// =============================================================================
+// CSS custom properties — the runtime-readable mirror of the SCSS tokens above.
+// Component <style> blocks should prefer var(--color-*) over the SCSS $vars
+// where the value is only needed at render time (no Sass math on it).
+// =============================================================================
+:root {
+  --color-planetary: #{$color-planetary};
+  --color-universe: #{$color-universe};
+  --color-venus: #{$color-venus};
+  --color-sky: #{$color-sky};
+  --color-meteor: #{$color-meteor};
+  --color-milkyway: #{$color-milkyway};
+  --color-galaxy: #{$color-galaxy};
+  --universe-text: #{$universe-text};
+
+  --text-primary: #{$text-primary};
+  --text-secondary: #{$text-secondary};
+  --text-tertiary: #{$text-tertiary};
+  --border: #{$border};
+  --border-subtle: #{$border-subtle};
+  --surface-disabled: #{$surface-disabled};
+
+  --bg-page: #{$bg-page};
+  --bg-surface: #{$bg-surface};
+  --bg-surface-raised: #{$bg-surface-raised};
+
+  --primary: #{$primary};
+  --primary-hover: #{$primary-hover};
+  --accent-fill-1: #{$accent-fill-1};
+  --accent-fill-2: #{$accent-fill-2};
+  --accent-fill-3: #{$accent-fill-3};
+
+  --success: #{$success};
+  --success-fill: #{$success-fill};
+  --warning: #{$warning};
+  --warning-fill: #{$warning-fill};
+  --danger: #{$danger};
+  --danger-fill: #{$danger-fill};
+  --info: #{$info};
+  --info-fill: #{$info-fill};
+
+  --font-heading: #{$font-heading};
+  --font-body: #{$font-body};
+
+  --space-1: #{$space-1};
+  --space-2: #{$space-2};
+  --space-3: #{$space-3};
+  --space-4: #{$space-4};
+  --space-5: #{$space-5};
+  --space-6: #{$space-6};
+  --space-8: #{$space-8};
+  --space-10: #{$space-10};
+
+  --radius-sm: #{$radius-sm};
+  --radius-md: #{$radius-md};
+  --radius-lg: #{$radius-lg};
+  --radius-pill: #{$radius-pill};
+
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+
+  --duration-micro: #{$duration-micro};
+  --duration-base: #{$duration-base};
+  --ease-out: #{$ease-out};
+  --ease-in: #{$ease-in};
+}
+
+// Dark mode is NOT implemented (UI.md §2.8 — out of scope, open question #3).
+// This selector is left as a structural placeholder only and currently
+// changes nothing. Do not rely on it until the team decides to build it.
+// :root[data-theme='dark'] { }
