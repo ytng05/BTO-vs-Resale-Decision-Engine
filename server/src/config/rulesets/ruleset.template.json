@@ -40,14 +40,15 @@
     },
     "familyGrant": {
       "appliesTo": ["RESALE"],
-      "incomeCeiling": null,
+      "incomeCeiling": 16000,
       "amounts": {
         "SC_SC": { "2-4 room": 80000, "5-room+": 50000 },
         "SC_PR": { "2-4 room": 70000 }
       },
       "sources": [
         "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Increased-CPF-Housing-Grant-for-resale-flat-buyers",
-        "https://www.togetherforbetter.gov.sg/lifestage/youngadults/"
+        "https://www.togetherforbetter.gov.sg/lifestage/youngadults/",
+        "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/"
       ]
     },
     "proximityHousingGrant": {
@@ -62,7 +63,14 @@
       ]
     },
     "eligibilityCombinations": {
-      "citizenship": { "SC_SC": null, "SC_PR": null, "PR_PR": null },
+      "citizenship": {
+        "SC_SC": null,
+        "SC_PR": null,
+        "PR_PR": {
+          "familyGrantEligible": false,
+          "familyGrantReason": "PR+PR households are not eligible for the Family Grant; an applicant must be SC with at least one other SC/SPR."
+        }
+      },
       "firstTimerWithSecondTimer": {
         "ehgIncomeCeiling": 4500,
         "ehgTiers": [
@@ -86,7 +94,8 @@
       },
       "sources": [
         "https://www.hdb.gov.sg/-/media/buying-a-flat/flat-grant-and-loan-eligibility/couples-and-families/enhanced-cpf-housing-grant/EHG-amount-Families.pdf",
-        "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant"
+        "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant",
+        "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/"
       ]
     }
   },

@@ -26,6 +26,8 @@
  * @property {string} town
  * @property {string} flatType             e.g. '4 ROOM'
  * @property {Classification} [classification]   required when path === 'BTO'
+ * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement]  parents/child living arrangement for PHG; defaults to 'NONE'
+ * @property {number} [remainingLeaseYears]  lease remaining at assessmentDate, for EHG lease-to-95 assessment
  *
  * @typedef {Object} Assumptions
  * @property {number} priceGrowth          annual, as a fraction (0.03 = 3%)

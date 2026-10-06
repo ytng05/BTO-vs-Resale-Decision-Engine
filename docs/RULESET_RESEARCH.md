@@ -25,12 +25,12 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 
 ## Grants: CPF Housing Grant (Family Grant), Resale
 
-☐ `grants.familyGrant.incomeCeiling`: 16,000 for HFE applications from 24 Aug 2026 (reported as previously 14,000). Notes cite the NDR 2026 / MND-HDB joint release dated 23 Aug 2026 but do not provide the official HDB/MND URL. Secondary source: <https://www.herworld.com/independence/national-day-rally-2026-bto-and-ec-income-ceilings-raised-support-more-families>. ⚠️ Find the official release and check whether the extended-family ceiling (reported as 21,000) also changed.
+✅ `grants.familyGrant.incomeCeiling`: 16,000 for HFE applications from 24 Aug 2026. Source: <https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/> (updated 23 Aug 2026). (checked: Claude + Har)
 ✅ `grants.familyGrant.amounts` (SC+SC): 2-4 room: 80,000; 5-room+: 50,000. Source reported: HDB KEO letter, 15 Feb 2023, <https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Increased-CPF-Housing-Grant-for-resale-flat-buyers>. (checked vs official source 2026-10-06: Claude + Har)
 ✅ `grants.familyGrant.amounts` (SC+PR): 2-4 room: 70,000. Source: <https://www.togetherforbetter.gov.sg/lifestage/youngadults/>. (checked vs official source 2026-10-06: Claude + Har)
 ☐ `grants.familyGrant.amounts` (SC+PR): 5-room+: 40,000. ⚠️ Not yet confirmed.
 ☐ `grants.familyGrant.amounts` (first-timer + second-timer): 2-4 room: 40,000; 5-room+: 25,000 ("Half-Housing Grant"). ⚠️ Secondary sources only; confirm on HDB.
-☐ `grants.familyGrant.amounts` (PR+PR): not found. ⚠️ Look up on HDB; do not infer eligibility or amount.
+✅ `grants.familyGrant.amounts` (PR+PR): not eligible for Family Grant; an applicant must be SC with at least one other SC/SPR. Source: <https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/> (checked: Claude + Har)
 
 ## Grants: Proximity Housing Grant (Resale)
 
@@ -43,7 +43,7 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 
 ☐ `grants.eligibilityCombinations.citizenship.SC_SC`: "Full grants" is reported, but the exact eligibility and grant treatment needs confirmation from HDB.
 ☐ `grants.eligibilityCombinations.citizenship.SC_PR`: lower Family Grant is reported (see Family Grant notes); confirm EHG and PHG eligibility with HDB.
-☐ `grants.eligibilityCombinations.citizenship.PR_PR`: not found. ⚠️ Check HDB; do not infer eligibility.
+✅ `grants.eligibilityCombinations.citizenship.PR_PR`: not eligible for Family Grant; an applicant must be SC with at least one other SC/SPR. Source: <https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/> (checked: Claude + Har)
 
 ## CPF
 
