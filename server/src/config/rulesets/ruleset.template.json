@@ -8,54 +8,131 @@
   "grants": {
     "ehg": {
       "appliesTo": ["BTO", "RESALE"],
-      "incomeCeiling": { "family": null, "single": null },
-      "tiers": [],
-      "incomeAveragingMonths": null,
-      "employmentMonthsRequired": null,
-      "leaseMustCoverToAge": null,
+      "incomeCeiling": { "family": 9000, "single": 4500 },
+      "tiers": [
+        { "monthlyHouseholdIncomeBand": "<=1,500", "grantAmount": 120000 },
+        { "monthlyHouseholdIncomeBand": "1,501-2,000", "grantAmount": 110000 },
+        { "monthlyHouseholdIncomeBand": "2,001-2,500", "grantAmount": 105000 },
+        { "monthlyHouseholdIncomeBand": "2,501-3,000", "grantAmount": 95000 },
+        { "monthlyHouseholdIncomeBand": "3,001-3,500", "grantAmount": 90000 },
+        { "monthlyHouseholdIncomeBand": "3,501-4,000", "grantAmount": 80000 },
+        { "monthlyHouseholdIncomeBand": "4,001-4,500", "grantAmount": 70000 },
+        { "monthlyHouseholdIncomeBand": "4,501-5,000", "grantAmount": 65000 },
+        { "monthlyHouseholdIncomeBand": "5,001-5,500", "grantAmount": 55000 },
+        { "monthlyHouseholdIncomeBand": "5,501-6,000", "grantAmount": 50000 },
+        { "monthlyHouseholdIncomeBand": "6,001-6,500", "grantAmount": 40000 },
+        { "monthlyHouseholdIncomeBand": "6,501-7,000", "grantAmount": 30000 },
+        { "monthlyHouseholdIncomeBand": "7,001-7,500", "grantAmount": 25000 },
+        { "monthlyHouseholdIncomeBand": "7,501-8,000", "grantAmount": 20000 },
+        { "monthlyHouseholdIncomeBand": "8,001-8,500", "grantAmount": 10000 },
+        { "monthlyHouseholdIncomeBand": "8,501-9,000", "grantAmount": 5000 },
+        { "monthlyHouseholdIncomeBand": ">9,000", "grantAmount": "not eligible" }
+      ],
+      "incomeAveragingMonths": 12,
+      "employmentMonthsRequired": 12,
+      "leaseMustCoverToAge": 95,
       "minRemainingLeaseYearsResale": null,
-      "sources": []
+      "sources": [
+        "https://www.hdb.gov.sg/-/media/buying-a-flat/flat-grant-and-loan-eligibility/couples-and-families/enhanced-cpf-housing-grant/EHG-amount-Families.pdf",
+        "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant",
+        "https://www.madeforfamilies.gov.sg/support-measures/housing/housing-schemes-and-grants"
+      ]
     },
     "familyGrant": {
       "appliesTo": ["RESALE"],
       "incomeCeiling": null,
-      "amounts": {},
-      "sources": []
+      "amounts": {
+        "SC_SC": { "2-4 room": 80000, "5-room+": 50000 },
+        "SC_PR": { "2-4 room": 70000 }
+      },
+      "sources": [
+        "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Increased-CPF-Housing-Grant-for-resale-flat-buyers",
+        "https://www.togetherforbetter.gov.sg/lifestage/youngadults/"
+      ]
     },
     "proximityHousingGrant": {
       "appliesTo": ["RESALE"],
-      "amounts": { "livingWithParentsOrChild": null, "livingNear": null },
-      "nearDistanceKm": null,
-      "sources": []
+      "amounts": {
+        "livingWithParentsOrChild": { "families": 30000, "singles": 15000 },
+        "livingNear": { "families": 20000, "singles": 10000 }
+      },
+      "nearDistanceKm": 4,
+      "sources": [
+        "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant"
+      ]
     },
     "eligibilityCombinations": {
       "citizenship": { "SC_SC": null, "SC_PR": null, "PR_PR": null },
-      "firstTimerWithSecondTimer": null,
-      "sources": []
+      "firstTimerWithSecondTimer": {
+        "ehgIncomeCeiling": 4500,
+        "ehgTiers": [
+          { "halfHouseholdIncomeBand": "<=750", "grantAmount": 60000 },
+          { "halfHouseholdIncomeBand": "751-1,000", "grantAmount": 55000 },
+          { "halfHouseholdIncomeBand": "1,001-1,250", "grantAmount": 52500 },
+          { "halfHouseholdIncomeBand": "1,251-1,500", "grantAmount": 47500 },
+          { "halfHouseholdIncomeBand": "1,501-1,750", "grantAmount": 45000 },
+          { "halfHouseholdIncomeBand": "1,751-2,000", "grantAmount": 40000 },
+          { "halfHouseholdIncomeBand": "2,001-2,250", "grantAmount": 35000 },
+          { "halfHouseholdIncomeBand": "2,251-2,500", "grantAmount": 32500 },
+          { "halfHouseholdIncomeBand": "2,501-2,750", "grantAmount": 27500 },
+          { "halfHouseholdIncomeBand": "2,751-3,000", "grantAmount": 25000 },
+          { "halfHouseholdIncomeBand": "3,001-3,250", "grantAmount": 20000 },
+          { "halfHouseholdIncomeBand": "3,251-3,500", "grantAmount": 15000 },
+          { "halfHouseholdIncomeBand": "3,501-3,750", "grantAmount": 12500 },
+          { "halfHouseholdIncomeBand": "3,751-4,000", "grantAmount": 10000 },
+          { "halfHouseholdIncomeBand": "4,001-4,250", "grantAmount": 5000 },
+          { "halfHouseholdIncomeBand": "4,251-4,500", "grantAmount": 2500 }
+        ]
+      },
+      "sources": [
+        "https://www.hdb.gov.sg/-/media/buying-a-flat/flat-grant-and-loan-eligibility/couples-and-families/enhanced-cpf-housing-grant/EHG-amount-Families.pdf",
+        "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant"
+      ]
     }
   },
 
   "cpf": {
     "oaInterestRate": null,
-    "accruedInterestCompounding": null,
-    "_compoundingNote": "OPEN DECISION: 'monthly' or 'annual'. Sources conflict. Resolve from CPF Board's own worked example and record it here.",
-    "sources": []
+    "accruedInterestCompounding": "computed monthly at OA rate, compounded yearly",
+    "_compoundingNote": "Verified by CPF Board official answer: computed monthly at OA rate, compounded yearly.",
+    "sources": [
+      "https://ask.gov.sg/cpf/questions/cm0f52kzh01d1pz7aq4i1wz4y"
+    ]
   },
 
   "loans": {
-    "msrPercent": null,
-    "tdsrPercent": null,
-    "ltv": {},
+    "msrPercent": 30,
+    "tdsrPercent": 55,
+    "ltv": {
+      "hdbLoan": 75,
+      "bankLoanHdbFlats": 75,
+      "bankLoanHdbFlatsWithTenureOver25YearsOrAgeOver65": 55
+    },
     "hdbConcessionaryRate": null,
-    "maxTenureYears": null,
-    "sources": []
+    "maxTenureYears": {
+      "hdbLoan": 25,
+      "bankLoanHdbFlats": 30
+    },
+    "sources": [
+      "https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/",
+      "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers"
+    ]
   },
 
   "transactionCosts": {
-    "buyerStampDutyTiers": [],
+    "buyerStampDutyTiers": [
+      { "ratePercent": 1, "portion": 180000 },
+      { "ratePercent": 2, "portion": 180000 },
+      { "ratePercent": 3, "portion": 640000 },
+      { "ratePercent": 4, "portion": 500000 },
+      { "ratePercent": 5, "portion": 1500000 },
+      { "ratePercent": 6, "portion": "remainder" }
+    ],
     "legalFees": null,
     "agentFees": null,
-    "sources": []
+    "sources": [
+      "https://www.mof.gov.sg/news-resources/newsroom/buyer-s-stamp-duty-bsd-rates-to-be-raised-for-higher-value-properties/"
+    ]
   },
 
   "classifications": {
