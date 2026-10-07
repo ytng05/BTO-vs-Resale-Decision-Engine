@@ -108,7 +108,7 @@ const RULESET_KEYS = Object.freeze({
  * rounded to whole cents only when it is credited — at each annual
  * (December) credit, and once at the stub credit on sale. The stub is not an
  * annual credit but it is a credit, so it rounds the same way: once, on the
- * stub total, never month by month.
+ * stub total, never month by month. Round to the NEAREST cent, halves up.
  */
 
 /**
