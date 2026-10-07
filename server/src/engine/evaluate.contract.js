@@ -44,6 +44,7 @@ const RULESET_KEYS = Object.freeze({
   // CPF
   OA_RATE: 'cpf.oaInterestRate',
   ACCRUED_INTEREST_COMPOUNDING: 'cpf.accruedInterestCompounding', // 'ANNUAL' | 'MONTHLY' — see note below
+  PARTIAL_MONTH_TREATMENT: 'cpf.partialMonthTreatment',           // 'EXCLUDE_BOTH' — see stub-period note
 
   // Loans
   HDB_RATE_PREMIUM: 'loans.hdbRatePremium',   // HDB concessionary rate = oaRate + this — see note below
@@ -80,6 +81,23 @@ const RULESET_KEYS = Object.freeze({
  * Source: CPF Board, via seat 2's verification.
  * OPEN: the ruleset currently stores this as prose ("computed monthly at OA
  * rate, compounded yearly"), not as 'ANNUAL' | 'MONTHLY'. Seat 2 to confirm.
+ */
+
+/**
+ * NOTE ON PARTIAL MONTHS AND THE STUB PERIOD — stated assumption, seat 1.
+ * Pending CPF Board confirmation.
+ *
+ * Accrued interest is pro-rated to the sale month, counting full calendar
+ * months only. A month counts if the obligation existed for the whole of it,
+ * so partial months are excluded at both ends: the withdrawal month at entry
+ * and the sale month at exit (cpf.partialMonthTreatment = 'EXCLUDE_BOTH').
+ *
+ * Interest for the stub period (after the last December credit, up to the
+ * sale) is SIMPLE, not compounded: oaRate ÷ 12 per full month, applied to the
+ * balance carried forward from the last December credit.
+ *
+ * Worked example: a sale in month 114 (June 2036) gives a stub of January to
+ * May 2036 — five months. June is excluded as the sale month.
  */
 
 /**
