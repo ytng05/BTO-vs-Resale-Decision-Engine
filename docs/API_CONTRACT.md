@@ -18,7 +18,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | POST | `/api/backtest` | seat 1 + 3 | FEATURE 3 (later): historical range | off (`FEATURE_BACKTEST`) |
 | GET | `/api/data/resale-price?town=&flatType=` | seat 3 | price basis from data.gov.sg (cached) | stub |
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached) | stub |
-| GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects | stub |
+| GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects | working |
 | GET | `/api/data/distance?from=&to=` | seat 3 | OneMap distance for the PHG test | stub |
 
 ## POST /api/compare
@@ -53,3 +53,9 @@ Response: `{ rulesetVersion, range: { min, median, max }, windows: [], caveats: 
 ## Wording rules (guardrails)
 "net financial position after N years" (never "profit"), "historical range" (never "probability"),
 never present the break-even as a prediction, and always show the ruleset version.
+
+## GET /api/data/bto-projects
+Query (all optional): `town`, `classification` (STANDARD|PLUS|PRIME), `flatType` (e.g. `4 ROOM`).
+Response: `{ count, projects: [BtoProject] }`, sorted by town then name.
+Errors: 400 BAD_REQUEST (bad classification), 503 DB_UNAVAILABLE (no database).
+

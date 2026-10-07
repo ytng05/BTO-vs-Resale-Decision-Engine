@@ -28,3 +28,16 @@ export function mockCompare() {
 export function mockRuleset() {
   return { version: '0.0.0-template', status: 'TEMPLATE', effectiveDate: null, verifiedOn: null };
 }
+
+export function mockBtoProjects() {
+  return {
+    mock: true,
+    count: 1,
+    projects: [{
+      _id: 'mock-1', name: 'MOCK Project', town: 'MOCK TOWN', classification: 'STANDARD',
+      mopYears: 0, subsidyRecoveryRate: 0,
+      flats: [{ flatType: '4 ROOM', indicativePriceLow: 0, indicativePriceHigh: 0 }],
+      sourceName: 'MOCK', sourceAccessed: '2026-01-01',
+    }],
+  };
+}

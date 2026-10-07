@@ -30,4 +30,16 @@ describe('API scaffold', () => {
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
+
+  it('GET /api/data/bto-projects rejects an unknown classification', async () => {
+    const res = await request(app).get('/api/data/bto-projects?classification=LUXURY');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('BAD_REQUEST');
+  });
+
+  it('GET /api/data/bto-projects returns 503 when no database is connected', async () => {
+    const res = await request(app).get('/api/data/bto-projects');
+    expect(res.status).toBe(503);
+    expect(res.body.error.code).toBe('DB_UNAVAILABLE');
+  });
 });
