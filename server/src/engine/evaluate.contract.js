@@ -99,6 +99,11 @@ const RULESET_KEYS = Object.freeze({
  * Worked example: a sale in month 114 (June 2036) gives a stub of January to
  * May 2036 — five months. June is excluded as the sale month.
  *
+ * Instalments paid during the stub are not in the December balance. Each one
+ * earns simple interest from the month after it is paid, up to the last full
+ * month before sale. In the example above, an instalment paid in February
+ * 2036 earns March to May (three months); one paid in May earns nothing.
+ *
  * Rounding: interest is carried at full precision within the year and
  * rounded to whole cents only when it is credited — at each annual
  * (December) credit, and once at the stub credit on sale. The stub is not an
