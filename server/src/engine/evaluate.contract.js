@@ -92,14 +92,19 @@ const RULESET_KEYS = Object.freeze({
  * so partial months are excluded at both ends: the withdrawal month at entry
  * and the sale month at exit (cpf.partialMonthTreatment = 'EXCLUDE_BOTH').
  *
- * Interest for the stub period (after the last December credit, up to the
- * sale) is SIMPLE, not compounded: oaRate ÷ 12 per full month, applied to the
- * balance carried forward from the last December credit.
+ * Interest for the stub period (the full months from the last credit, or from
+ * the first withdrawal if there has been no credit yet, up to the sale) is
+ * SIMPLE, not compounded: oaRate ÷ 12 per full month, applied to the
+ * obligation carried into the stub period. In the normal case that is the
+ * balance at the last December credit. In the first-year case (sale before
+ * any December credit) it is the cumulative principal withdrawn before the
+ * stub began, with no interest yet. One rule covers both.
  *
  * Worked example: a sale in month 114 (June 2036) gives a stub of January to
  * May 2036 — five months. June is excluded as the sale month.
  *
- * Instalments paid during the stub are not in the December balance. Each one
+ * Instalments paid during the stub are not in the obligation carried into it.
+ * Each one
  * earns simple interest from the month after it is paid, up to the last full
  * month before sale. In the example above, an instalment paid in February
  * 2036 earns March to May (three months); one paid in May earns nothing.
