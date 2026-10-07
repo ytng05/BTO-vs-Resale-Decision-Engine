@@ -1,5 +1,7 @@
-// Order matters: variables first, then Bootstrap, then our components.
-@import 'variables';
+// Entry point. Import order matters: tokens -> overrides -> Bootstrap's own
+// partials (functions/variables/mixins first) -> components last.
+@import 'tokens';
+@import 'bootstrap-overrides';
 
 @import 'bootstrap/scss/functions';
 @import 'bootstrap/scss/variables';
@@ -21,6 +23,7 @@
 @import 'bootstrap/scss/card';
 @import 'bootstrap/scss/badge';
 @import 'bootstrap/scss/alert';
+@import 'bootstrap/scss/modal';
 @import 'bootstrap/scss/helpers';
 @import 'bootstrap/scss/utilities/api';
 

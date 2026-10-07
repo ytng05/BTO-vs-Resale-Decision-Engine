@@ -1,0 +1,143 @@
+// =============================================================================
+// BOOTSTRAP 5 VARIABLE OVERRIDES — generated from docs/UI.md v1.1.
+// Import THIS file, via functions/variables/mixins, BEFORE Bootstrap's own
+// SCSS partials. See main.scss for the required import order.
+//
+// Rule (UI.md §13): customise through variables here, don't fight the
+// framework with ad-hoc CSS. Anything Bootstrap has no variable for lives in
+// _components.scss instead.
+// =============================================================================
+@import 'tokens';
+
+// ---- Colour ------------------------------------------------------------------
+$primary:   $primary;
+$secondary: $text-secondary;
+$success:   $success;
+$warning:   $warning;
+$danger:    $danger;
+$info:      $info;
+$light:     $bg-surface;
+$dark:      $text-primary;
+
+$body-bg:    $bg-page;
+$body-color: $text-primary;
+
+$border-color: $border;
+
+// ---- Typography ----------------------------------------------------------------
+$font-family-sans-serif: $font-body;
+$headings-font-family: $font-heading;
+$headings-font-weight: 600;
+$headings-color: $text-primary;
+
+$font-size-base: 1rem;      // 16px — matches $type-scale body
+$small-font-size: 0.875rem; // matches $type-scale body-small
+
+$line-height-base: 1.5;
+
+// ---- Spacing ---------------------------------------------------------------------
+// Bootstrap's spacer map drives m-*/p-*/gap-* utilities. Keep it aligned to
+// the $space-* scale in _tokens.scss (UI.md §5) so a developer using either
+// the SCSS variable or the Bootstrap utility class gets the same value.
+$spacer: $space-4; // 1rem — Bootstrap's spacer unit; the map below multiplies it
+$spacers: (
+  0: 0,
+  1: $space-1,  // 4px
+  2: $space-2,  // 8px
+  3: $space-4,  // 16px
+  4: $space-5,  // 24px
+  5: $space-6,  // 32px
+  6: $space-8,  // 48px
+  7: $space-10, // 64px
+);
+
+// ---- Shape -------------------------------------------------------------------------
+$border-radius:     $radius-sm;
+$border-radius-sm:  $radius-sm;
+$border-radius-lg:  $radius-md;
+$border-radius-xl:  $radius-lg;
+$border-radius-pill: $radius-pill;
+
+$enable-rounded: true;
+
+// ---- Shadows -------------------------------------------------------------------------
+$box-shadow-sm: $shadow-sm;
+$box-shadow:    $shadow-md;
+$box-shadow-lg: $shadow-lg;
+
+// ---- Buttons (UI.md §8 Buttons) -------------------------------------------------------
+$btn-border-radius: $radius-sm;
+$btn-font-weight: 500;
+$btn-padding-y: $space-3;
+$btn-padding-x: $space-5;
+$btn-padding-y-sm: $space-2;
+$btn-padding-x-sm: $space-4;
+// 44px minimum touch target (UI.md §8/§11): with $font-size-base 1rem and the
+// padding above, computed button height clears 44px; verify in StyleGuide.vue
+// if $font-size-base or padding is ever changed.
+$btn-focus-box-shadow: 0 0 0 2px $bg-page, 0 0 0 4px $primary; // 2px ring, 2px offset
+$btn-focus-width: 0; // disable Bootstrap's default blurred focus ring; use the box-shadow ring above instead
+$btn-disabled-opacity: 0.5;
+$btn-hover-bg-shade-amount: 10%; // UI.md: hover darkens fill ~10%
+
+$link-color: $primary;
+$link-hover-color: $primary-hover;
+$link-decoration: none;
+$link-hover-decoration: underline;
+
+// ---- Forms (UI.md §8 Inputs) -------------------------------------------------------
+$input-border-radius: $radius-sm;
+$input-border-color: $border;
+$input-bg: $color-white;
+$input-disabled-bg: $surface-disabled;
+$input-placeholder-color: $text-tertiary;
+$input-focus-border-color: $primary;
+$input-focus-box-shadow: 0 0 0 2px $bg-page, 0 0 0 4px $primary;
+$form-label-font-size: 0.8125rem;   // matches $type-scale label
+$form-label-font-weight: 500;
+$form-label-color: $text-primary;
+$form-text-color: $text-secondary;  // helper text
+$form-feedback-invalid-color: $danger;
+$form-feedback-valid-color: $success;
+
+// ---- Cards (UI.md §8 Cards) ----------------------------------------------------------
+$card-bg: $bg-surface;
+$card-border-color: $border-subtle; // required — see UI.md §2.5: colour alone
+                                      // does not separate Meteor from Milky Way
+$card-border-radius: $radius-md;
+$card-box-shadow: $shadow-sm; // "at rest"; components.scss adds the hover step-up
+
+// ---- Navbar (UI.md §8 Navigation) -----------------------------------------------------
+$navbar-light-color: $text-secondary;
+$navbar-light-hover-color: $primary;
+$navbar-light-active-color: $primary;
+$navbar-light-brand-color: $text-primary;
+
+// ---- Modals (UI.md §8 Modals) -------------------------------------------------------
+$modal-content-bg: $bg-surface-raised;
+$modal-content-border-radius: $radius-lg;
+$modal-content-box-shadow-xs: $shadow-lg;
+$modal-backdrop-bg: $text-primary;
+$modal-backdrop-opacity: 0.4;
+
+// ---- Badges (UI.md §8 Badges and chips) -----------------------------------------------
+$badge-border-radius: $radius-pill;
+$badge-font-weight: 500;
+$badge-padding-y: 0.25em;
+$badge-padding-x: 0.65em;
+
+// ---- Alerts (UI.md §8 Alerts) -------------------------------------------------------
+$alert-border-radius: $radius-md;
+$alert-padding-y: $space-4;
+$alert-padding-x: $space-4;
+// Bootstrap derives alert colours from the theme-colors map (success/warning/
+// danger/info above) automatically via color-mix; the *-fill tokens in
+// _tokens.scss are the verified values if a manual override is ever needed.
+
+// ---- Tables (UI.md §8 Tables) -------------------------------------------------------
+$table-border-color: $border;
+$table-striped-bg-factor: 0.03;
+
+// ---- Transitions (UI.md §9 Motion) -----------------------------------------------------
+$transition-base: all $duration-base $ease-out;
+$transition-fade: opacity $duration-base linear;
