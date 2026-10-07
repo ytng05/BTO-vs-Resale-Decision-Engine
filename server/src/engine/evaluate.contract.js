@@ -19,7 +19,9 @@
  *   4. BREAKDOWN, NOT JUST TOTALS. Seat 2's eligibility view and seat 5's
  *      charts both read the components, not the headline figure.
  *   5. MONEY IS INTEGER CENTS. Thirty years of compounding in a loop will
- *      drift if we use floats. Convert at the UI boundary only.
+ *      drift if we use floats. Convert at the UI boundary, and at the one
+ *      call into seat 2's evaluateGrants(), which works in dollars — see
+ *      NOTE ON GRANTS below.
  *   6. NO POLICY VALUES IN CODE. Every rate, ceiling, tier and threshold
  *      is read from the ruleset. If you are about to type a number that
  *      came from HDB, CPF or IRAS, it belongs in the ruleset instead.
@@ -40,25 +42,25 @@
  */
 const RULESET_KEYS = Object.freeze({
   // CPF
-  OA_RATE: 'cpf.oaRate',
-  ACCRUED_INTEREST_COMPOUNDING: 'cpf.accruedInterestCompounding', // 'ANNUAL' | 'MONTHLY'
+  OA_RATE: 'cpf.oaInterestRate',
+  ACCRUED_INTEREST_COMPOUNDING: 'cpf.accruedInterestCompounding', // 'ANNUAL' | 'MONTHLY' — see note below
 
   // Loans
-  HDB_RATE_PREMIUM: 'loans.hdbRatePremium',   // HDB concessionary rate = oaRate + this
-  MSR: 'loans.msr',                           // applies to BOTH loan types
-  TDSR: 'loans.tdsr',                         // applies to BANK loans ONLY
+  HDB_RATE_PREMIUM: 'loans.hdbRatePremium',   // HDB concessionary rate = oaRate + this — see note below
+  MSR: 'loans.msrPercent',                    // percent (30, not 0.30); applies to BOTH loan types
+  TDSR: 'loans.tdsrPercent',                  // percent; applies to BANK loans ONLY
   LTV: 'loans.ltv',                           // conditional — see note below
-  MAX_TENURE_HDB: 'loans.maxTenure.hdb',
-  MAX_TENURE_BANK: 'loans.maxTenure.bank',
+  MAX_TENURE_HDB: 'loans.maxTenureYears.hdbLoan',
+  MAX_TENURE_BANK: 'loans.maxTenureYears.bankLoanHdbFlats',
 
   // Duties and grants
-  BSD_TIERS: 'bsd.tiers',
+  BSD_TIERS: 'transactionCosts.buyerStampDutyTiers',
   GRANT_EHG: 'grants.ehg',
-  GRANT_FAMILY: 'grants.family',
-  GRANT_PHG: 'grants.phg',
+  GRANT_FAMILY: 'grants.familyGrant',
+  GRANT_PHG: 'grants.proximityHousingGrant',
 
   // Provenance
-  VERSION: 'rulesetVersion'
+  VERSION: 'version'
 });
 
 /**
@@ -76,6 +78,26 @@ const RULESET_KEYS = Object.freeze({
  * frequency from RULESET_KEYS.ACCRUED_INTEREST_COMPOUNDING so the two can be
  * compared by flipping one config value.
  * Source: CPF Board, via seat 2's verification.
+ * OPEN: the ruleset currently stores this as prose ("computed monthly at OA
+ * rate, compounded yearly"), not as 'ANNUAL' | 'MONTHLY'. Seat 2 to confirm.
+ */
+
+/**
+ * NOTE ON HDB RATE — open question with seat 2.
+ * The engine wants a premium over the OA rate (loans.hdbRatePremium) so the
+ * HDB rate moves with oaRate in the backtest. The ruleset currently has a
+ * flat loans.hdbConcessionaryRate (null). Until one is filled in, the engine
+ * reports hdbConcessionaryRate: null and warns HDB_RATE_UNRESOLVED.
+ */
+
+/**
+ * NOTE ON GRANTS — agreed with seat 2.
+ * Grants are computed by seat 2's evaluateGrants(profile, choice,
+ * assessmentDate, ruleset) in rules/grants.js, which uses the same per-person
+ * Profile shape as this contract but money in DOLLARS. evaluate() is the only
+ * caller and converts at that boundary: applicant monthlyIncomeCents and
+ * cpfOaBalanceCents → dollars going in, ehg / familyGrant / phg → cents coming
+ * out. Its eligibility[] checks map onto GrantResult.tests.
  */
 
 /** Warning codes surfaced in Outcome.warnings. */
@@ -91,15 +113,21 @@ const WARNINGS = Object.freeze({
 // ---------------------------------------------------------------------------
 
 /**
+ * One applicant. CPF accounts, grants, first-timer status and the CPF refund
+ * on sale are all per person, so the household is a list of these.
+ * @typedef {Object} Applicant
+ * @property {number} age
+ * @property {'SC'|'PR'} citizenship
+ * @property {boolean} firstTimer
+ * @property {number} monthlyIncomeCents      - gross, 12-month average basis
+ * @property {number} cpfOaBalanceCents       - at evaluation start
+ */
+
+/**
  * Who the household is. Fixed across every choice being compared.
+ * Same shape as seat 2's types.js Profile, with money in cents.
  * @typedef {Object} Profile
- * @property {number[]} ages                  - ages of applicants, youngest first
- * @property {'SC_SC'|'SC_PR'|'PR_PR'} citizenshipMix
- * @property {('FIRST'|'SECOND')[]} timerStatus - per applicant, same order as ages
- * @property {number} monthlyIncomeCents      - combined, 12-month average basis
- * @property {number} cpfOaBalanceCents       - combined, at evaluation start
- * @property {boolean} livingWithParents
- * @property {number|null} distanceToParentsM - metres; null if not applicable
+ * @property {Applicant[]} applicants         - 1 or 2 people
  */
 
 /**
@@ -112,6 +140,7 @@ const WARNINGS = Object.freeze({
  * @property {'STANDARD'|'PLUS'|'PRIME'|null} classification - null for resale
  * @property {number} purchasePriceCents      - supplied by the caller, NOT fetched here
  * @property {number} remainingLeaseYears     - 99 for BTO
+ * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - with/near parents, for PHG; defaults to 'NONE'
  */
 
 /**
