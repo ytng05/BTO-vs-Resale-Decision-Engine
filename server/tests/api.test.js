@@ -42,4 +42,16 @@ describe('API scaffold', () => {
     expect(res.status).toBe(503);
     expect(res.body.error.code).toBe('DB_UNAVAILABLE');
   });
+
+    it('GET /api/data/resale-price requires a town', async () => {
+    const res = await request(app).get('/api/data/resale-price?flatType=4%20ROOM');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('BAD_REQUEST');
+  });
+
+  it('GET /api/data/resale-price rejects an unknown flat type', async () => {
+    const res = await request(app).get('/api/data/resale-price?town=TAMPINES&flatType=4RM');
+    expect(res.status).toBe(400);
+  });
+
 });

@@ -7,4 +7,6 @@ Prefer HDB, CPF Board, IRAS, MAS and data.gov.sg over property blogs.
 |---|---|---|---|---|
 | | | | | |
 
-| BTO projects, Feb 2026 launch (6 projects: prices, classification, recovery rate) | see seeds/btoProjects.template.js | HDB press release | 2026-10-07 | <Yuqing> |
+| BTO projects | Feb 2026 launch (6 projects: prices, classification, recovery rate) | see seeds/btoProjects.template.js | HDB press release | 2026-10-07 | Yuqing |
+
+| Resale transactions (price basis: median, p25, p75 over last N months) | dataset d_8b84c4ee58e3cfc0ece0d773c8ca6abc | data.gov.sg "Resale flat prices" (HDB) | 2026-10-07 | Yuqing |

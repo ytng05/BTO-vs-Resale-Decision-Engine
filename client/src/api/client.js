@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { mockCompare, mockRuleset, mockBtoProjects } from './mock/mockData.js';
+import { mockCompare, mockRuleset, mockBtoProjects, mockResalePrice } from './mock/mockData.js';
 
 // VITE_USE_MOCK=true serves clearly-labelled MOCK data so the UI can be built before the backend exists.
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
@@ -20,4 +20,10 @@ export async function getRuleset() {
 export async function getBtoProjects(params = {}) {
   if (USE_MOCK) return mockBtoProjects();
   return (await http.get('/data/bto-projects', { params })).data;
+}
+
+
+export async function getResalePrice(params) {
+  if (USE_MOCK) return mockResalePrice();
+  return (await http.get('/data/resale-price', { params })).data;
 }

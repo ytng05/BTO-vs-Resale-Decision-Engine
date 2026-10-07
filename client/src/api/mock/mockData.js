@@ -41,3 +41,15 @@ export function mockBtoProjects() {
     }],
   };
 }
+
+export function mockResalePrice() {
+  return {
+    mock: true,
+    town: 'MOCK TOWN', flatType: '4 ROOM',
+    window: { from: '2025-11', to: '2026-10', months: 12 },
+    count: 100, median: 500000, p25: 450000, p75: 550000, medianPricePerSqm: 5000, lowSample: false,
+    source: { datasetId: 'MOCK', name: 'MOCK resale data' },
+    cached: false, fetchedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+

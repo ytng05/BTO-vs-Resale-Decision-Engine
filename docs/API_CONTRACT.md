@@ -16,7 +16,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | POST | `/api/timing` | seat 1 | FEATURE 1: optimal timing search | stub |
 | POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | stub |
 | POST | `/api/backtest` | seat 1 + 3 | FEATURE 3 (later): historical range | off (`FEATURE_BACKTEST`) |
-| GET | `/api/data/resale-price?town=&flatType=` | seat 3 | price basis from data.gov.sg (cached) | stub |
+| GET | `/api/data/resale-price?town=&flatType=` | seat 3 | price basis from data.gov.sg (cached) | working |
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached) | stub |
 | GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects | working |
 | GET | `/api/data/distance?from=&to=` | seat 3 | OneMap distance for the PHG test | stub |
@@ -59,3 +59,7 @@ Query (all optional): `town`, `classification` (STANDARD|PLUS|PRIME), `flatType`
 Response: `{ count, projects: [BtoProject] }`, sorted by town then name.
 Errors: 400 BAD_REQUEST (bad classification), 503 DB_UNAVAILABLE (no database).
 
+## GET /api/data/resale-price
+Query: `town` (required, e.g. TAMPINES), `flatType` (required: 1 ROOM … 5 ROOM, EXECUTIVE, MULTI-GENERATION), `months` (1–60, default 12).
+Response: `{ town, flatType, window: { from, to, months }, count, median, p25, p75, medianPricePerSqm, lowSample, source, cached, fetchedAt }`
+Errors: 400 BAD_REQUEST, 404 NO_DATA, 502 UPSTREAM_ERROR, 503 UPSTREAM_RATE_LIMITED.
