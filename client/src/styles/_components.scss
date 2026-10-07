@@ -1,48 +1,226 @@
-// Small custom styles Bootstrap does not cover. BEM-style class names.
+// =============================================================================
+// CUSTOM COMPONENT STYLES — only what Bootstrap 5 + the overrides can't cover.
+// BEM-style class names (UI.md §13). Keep this file small: if something can
+// be done with a Bootstrap utility class in the template instead, do that
+// there and don't duplicate it here.
+// =============================================================================
+@import 'tokens';
+
+// ---- Type scale mixin (UI.md §4) ---------------------------------------------
+// Usage: .my-heading { @include type('h1'); }
+@mixin type($key) {
+  $t: map-get($type-scale, $key);
+  font-family: map-get($t, font);
+  font-size: map-get($t, size);
+  font-weight: map-get($t, weight);
+  line-height: map-get($t, line-height);
+  letter-spacing: map-get($t, letter-spacing);
+
+  @if map-has-key($type-scale-lg, $key) {
+    @include media-breakpoint-up(lg) {
+      font-size: map-get($type-scale-lg, $key);
+    }
+  }
+}
+
+.display { @include type('display'); color: $text-primary; }
+.text-body-small { @include type('body-small'); }
+.text-caption { @include type('caption'); color: $text-secondary; }
+.text-label { @include type('label'); color: $text-primary; }
+.text-numeric { font-variant-numeric: tabular-nums; }
+
+// UI.md §4: Hanken Grotesk is a heading face only — never below body-small size.
+// This class exists so a non-heading element can still opt into the display
+// font at a safe (>= body-small) size without reaching for raw CSS.
+.font-heading { font-family: $font-heading; }
+
+// Body copy max line length (UI.md §4)
+.text-measure { max-width: $body-max-line-length; }
+
+// ---- Safe areas (UI.md §5) -----------------------------------------------------
+:root {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+// ---- Stepper (UI.md §8 Multi-step flow) -----------------------------------------
 .stepper {
   display: flex;
-  gap: 0.5rem;
+  gap: $space-2;
   padding: 0;
+  margin: 0;
   list-style: none;
-  flex-wrap: wrap;
 
   &__item {
     flex: 1 1 0;
     min-width: 5rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: $border-radius;
-    background: #fff;
-    border: 1px solid $border-color;
-    font-size: 0.875rem;
+    padding: $space-2 $space-3;
+    border-radius: $radius-sm;
+    background: $bg-surface-raised;
+    border: 1px solid $border;
+    @include type('label');
+    color: $text-tertiary; // upcoming step (UI.md §8)
     text-align: center;
 
     &--active {
       border-color: $primary;
       color: $primary;
-      font-weight: 600;
     }
     &--done {
-      color: #6e6e73;
+      color: $text-secondary;
     }
   }
 }
 
+// Mobile condensed stepper ("Step 2 of 4" + progress bar), shown below `md`
+.stepper-mobile {
+  display: none;
+
+  &__label {
+    @include type('label');
+    color: $text-secondary;
+    margin-bottom: $space-2;
+  }
+  &__track {
+    height: 4px;
+    border-radius: $radius-pill;
+    background: $border;
+    overflow: hidden;
+  }
+  &__fill {
+    height: 100%;
+    background: $primary;
+    border-radius: $radius-pill;
+    transition: width $duration-base $ease-out;
+  }
+
+  @include media-breakpoint-down(md) {
+    display: block;
+  }
+}
+.stepper {
+  @include media-breakpoint-down(md) {
+    display: none;
+  }
+}
+
+// ---- Cards (UI.md §8 Cards and summary tiles) ------------------------------------
+// Bootstrap's .card already gets $card-bg / $card-border-color / $card-box-shadow
+// from _bootstrap-overrides.scss. This adds the required hover step-up and the
+// "no chrome" hero variant.
+.card {
+  transition: box-shadow $duration-micro $ease-out;
+
+  &:hover,
+  &:focus-within {
+    box-shadow: $shadow-md;
+  }
+}
+
+.hero-statement {
+  @include type('h2');
+  color: $text-primary;
+  margin-bottom: $space-5;
+  // Deliberately no card chrome (UI.md §8): the single most important
+  // sentence on a results page sits directly on the page background.
+}
+
+// ---- Heatmap / grid visual (UI.md §3, §8, §14) -----------------------------------
+// DOM-rendered (not canvas) so Cypress can assert on individual cells and
+// screen readers get real content. Diverging scale: primary at one end,
+// warning at the other, neutral border colour as the "tie" midpoint.
 .heatmap {
   display: grid;
   gap: 2px;
-  overflow-x: auto; // wide content scrolls inside its own container, never the page
+  overflow-x: auto; // wide content scrolls in its own container, never the page
+  padding-bottom: $space-2; // room for the scrollbar
 
   &__cell {
-    min-width: 2.5rem;
+    min-width: 2.25rem;
     aspect-ratio: 1;
     border-radius: 4px;
-    &--a { background: $heatmap-a; }
-    &--b { background: $heatmap-b; }
-    &--tie { background: $heatmap-tie; }
+    cursor: default;
+
+    &--a { background: $primary; }       // one side of the comparison
+    &--b { background: $warning; }       // other side — blue/amber reads under common colour-blindness
+    &--tie { background: $border; }      // neutral midpoint
+  }
+
+  &__legend {
+    display: flex;
+    align-items: center;
+    gap: $space-4;
+    margin-top: $space-3;
+    @include type('caption');
+    color: $text-secondary;
+  }
+  &__legend-swatch {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 2px;
+    margin-right: $space-1;
   }
 }
 
+// ---- Badges (UI.md §8 Badges and chips) --------------------------------------------
+// Version/freshness badge: Venus fill + Galaxy text (verified 10.22:1, UI.md §2.2)
+.badge-version {
+  background: $accent-fill-2;
+  color: $text-primary;
+  @include type('caption');
+  border-radius: $radius-pill;
+  padding: 0.25em 0.65em;
+}
+
+// ---- Disclaimer / persistent banner (UI.md §8 Alerts, banners) -------------------------
 .disclaimer {
-  font-size: 0.8125rem;
-  color: #6e6e73;
+  @include type('caption');
+  color: $text-secondary;
+  margin: 0;
+  // Deliberately no background fill (UI.md §8): should read as ambient, not alarming.
+}
+
+// ---- Loading skeletons (UI.md §8 Loading states) ------------------------------------
+@keyframes skeleton-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton {
+  background-color: $surface-disabled;
+  background-image: linear-gradient(
+    90deg,
+    rgba($color-white, 0) 0,
+    rgba($color-white, 0.5) 50%,
+    rgba($color-white, 0) 100%
+  );
+  background-size: 200px 100%;
+  background-repeat: no-repeat;
+  border-radius: $radius-sm;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+// ---- Motion: respect prefers-reduced-motion globally (UI.md §9) --------------------
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// ---- Focus ring fallback for non-Bootstrap interactive elements (UI.md §11) ---------
+// Bootstrap form/button focus is handled by $btn-focus-box-shadow /
+// $input-focus-box-shadow in the overrides file; this covers anything else
+// that's natively focusable (links, custom controls).
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid $primary;
+  outline-offset: 2px;
 }
