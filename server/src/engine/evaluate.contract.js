@@ -95,10 +95,13 @@ const RULESET_KEYS = Object.freeze({
  * Interest for the stub period (the full months from the last credit, or from
  * the first withdrawal if there has been no credit yet, up to the sale) is
  * SIMPLE, not compounded: oaRate ÷ 12 per full month, applied to the
- * obligation carried into the stub period. In the normal case that is the
- * balance at the last December credit. In the first-year case (sale before
- * any December credit) it is the cumulative principal withdrawn before the
- * stub began, with no interest yet. One rule covers both.
+ * obligation carried into the stub period: the obligation as at the last
+ * December credit where one exists, otherwise the principal withdrawn before
+ * the stub began.
+ *   - After a December credit, the base is principal PLUS all interest
+ *     credited to date. Do not reduce it to principal only.
+ *   - Before any December credit (first-year sale), no interest exists yet,
+ *     so the base is principal only.
  *
  * Worked example: a sale in month 114 (June 2036) gives a stub of January to
  * May 2036 — five months. June is excluded as the sale month.
