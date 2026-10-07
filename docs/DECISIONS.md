@@ -13,6 +13,6 @@
 | D9 | Which policy rules stay "held constant" in projections | State the assumption in the UI | seat 2 | |
 | D10 | data.gov.sg: API key registered? base URL and header confirmed? | Rate limits now apply | seat 3 | |
 | D11 | Heatmap: DOM/SVG (chosen) vs canvas | Cypress cannot assert on canvas | seats 4 + 5 | DOM grid (scaffold) |
-| D12 | CPF accrued interest: partial months and the stub period before sale | Sets the interest owed on sale | seat 1 | Full calendar months only; the withdrawal month and the sale month are both excluded (`EXCLUDE_BOTH`). Stub after the last December credit is simple interest at oaRate ÷ 12 per full month on the balance carried forward. A sale in June 2036 gives a 5-month stub (Jan–May). Stated assumption, pending CPF Board confirmation |
+| D12 | CPF accrued interest: partial months and the stub period before sale | Sets the interest owed on sale | seat 1 | Full calendar months only; the withdrawal month and the sale month are both excluded (`EXCLUDE_BOTH`). Stub after the last December credit is simple interest at oaRate ÷ 12 per full month on the balance carried forward. A sale in June 2036 gives a 5-month stub (Jan–May). Rounding: full precision within the year, rounded to whole cents only at each credit, meaning each annual December credit and once on the stub total at sale, never monthly. Stated assumption, pending CPF Board confirmation |
 
 Out of scope by decision: Executive Condominiums.
