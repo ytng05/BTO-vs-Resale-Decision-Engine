@@ -8,7 +8,7 @@
 // Each validator returns an object of { fieldKey: 'message' }. Empty object = valid.
 // Pure functions, so they can be unit-tested without mounting any component.
 
-import { TOWNS, FLAT_TYPES, BTO_FLAT_TYPES, CLASSIFICATIONS, CITIZENSHIPS, MAX_APPLICANTS } from '../constants/planOptions.js';
+import { TOWNS, FLAT_TYPES, BTO_FLAT_TYPES, CLASSIFICATIONS, CITIZENSHIPS, LIVING_ARRANGEMENTS, MAX_APPLICANTS } from '../constants/planOptions.js';
 
 const isBlank = (v) => v === null || v === undefined || v === '';
 const isNumber = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -65,14 +65,15 @@ export function validateSituation(profile, assumptions) {
       max: 100000,
       hint: 'That looks like a yearly figure. Enter monthly income.',
     });
-    checkNumber(errors, `${p}.cpfOA`, a.cpfOA, { label: 'CPF OA balance', min: 0, max: 2000000 });
+    checkNumber(errors, `${p}.cpfOaBalance`, a.cpfOaBalance, { label: 'CPF OA balance', min: 0, max: 2000000 });
   });
 
   checkNumber(errors, 'cashSavings', profile?.cashSavings, { label: 'cash savings', min: 0 });
   checkNumber(errors, 'monthlySavings', profile?.monthlySavings, { label: 'monthly savings', min: 0 });
 
   // Parents' postal code is optional: blank means no parent to live with or near.
-  const postal = profile?.parentsAddress;
+  // Stored as { postal: '123456' } to match Profile.parentsAddress in engine/types.js.
+  const postal = profile?.parentsAddress?.postal;
   if (!isBlank(postal) && !/^\d{6}$/.test(String(postal).trim())) {
     errors.parentsAddress = 'Enter a 6-digit Singapore postal code, or leave it blank.';
   }
@@ -85,7 +86,9 @@ export function validateSituation(profile, assumptions) {
   return errors;
 }
 
-export function validateChoice(choice, { currentYear = new Date().getFullYear() } = {}) {
+// `profile` is only needed for one cross-step check: living with or near parents
+// needs their postal code from the Situation step.
+export function validateChoice(choice, { currentYear = new Date().getFullYear(), profile } = {}) {
   const errors = {};
   const isBto = choice?.path === 'BTO';
 
@@ -99,14 +102,22 @@ export function validateChoice(choice, { currentYear = new Date().getFullYear() 
   checkOption(errors, 'flatType', choice?.flatType, isBto ? BTO_FLAT_TYPES : FLAT_TYPES, 'flat type');
   if (isBto) checkOption(errors, 'classification', choice?.classification, CLASSIFICATIONS, 'classification');
 
+  if (!isBto) {
+    checkOption(errors, 'livingArrangement', choice?.livingArrangement, LIVING_ARRANGEMENTS, 'living arrangement');
+    const needsParents = choice?.livingArrangement === 'WITH' || choice?.livingArrangement === 'NEAR';
+    if (needsParents && profile && isBlank(profile.parentsAddress?.postal)) {
+      errors.livingArrangement = "Add your parents' postal code on the Situation step first.";
+    }
+  }
+
   return errors;
 }
 
 // Errors for whichever step the stepper is on. Step 3 (Results) has no inputs.
 export function validateStep(step, store, options) {
   if (step === 0) return validateSituation(store.profile, store.assumptions);
-  if (step === 1) return validateChoice(store.choiceA, options);
-  if (step === 2) return validateChoice(store.choiceB, options);
+  if (step === 1) return validateChoice(store.choiceA, { ...options, profile: store.profile });
+  if (step === 2) return validateChoice(store.choiceB, { ...options, profile: store.profile });
   return {};
 }
 

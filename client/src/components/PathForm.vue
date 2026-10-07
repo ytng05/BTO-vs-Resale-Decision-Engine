@@ -5,7 +5,7 @@
 // The path itself ('BTO' / 'RESALE') is fixed in the store, so there is no input for it.
 import { computed } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
-import { TOWNS, FLAT_TYPES, BTO_FLAT_TYPES, CLASSIFICATIONS } from '../constants/planOptions.js';
+import { TOWNS, FLAT_TYPES, BTO_FLAT_TYPES, CLASSIFICATIONS, LIVING_ARRANGEMENTS } from '../constants/planOptions.js';
 
 const props = defineProps({
   choiceKey: { type: String, required: true, validator: (v) => v === 'choiceA' || v === 'choiceB' },
@@ -15,6 +15,11 @@ const props = defineProps({
 const store = useScenarioStore();
 const choice = computed(() => store[props.choiceKey]);
 const isBto = computed(() => choice.value.path === 'BTO');
+// Resale only: engine/types.js defaults livingArrangement to 'NONE', so start the dropdown there.
+if (!isBto.value && choice.value.livingArrangement === undefined) {
+  choice.value.livingArrangement = 'NONE';
+}
+
 const flatTypes = computed(() => (isBto.value ? BTO_FLAT_TYPES : FLAT_TYPES));
 
 // 'patha' / 'pathb', used for element ids and data-cy selectors.
@@ -97,6 +102,24 @@ const err = (key) => props.errors[key];
           Plus and Prime flats have a longer minimum occupation period and a subsidy clawback when sold.
         </div>
         <div class="invalid-feedback">{{ err('classification') }}</div>
+      </div>
+
+      <div v-if="!isBto" class="col-12 col-md-6">
+        <label :for="`${prefix}-living`" class="form-label">Living with or near your parents?</label>
+        <select
+          :id="`${prefix}-living`"
+          v-model="choice.livingArrangement"
+          class="form-select"
+          :class="{ 'is-invalid': err('livingArrangement') }"
+          :aria-describedby="`${prefix}-living-help`"
+          :data-cy="`${prefix}-living-select`"
+        >
+          <option v-for="l in LIVING_ARRANGEMENTS" :key="l.value" :value="l.value">{{ l.label }}</option>
+        </select>
+        <div :id="`${prefix}-living-help`" class="form-text">
+          Decides whether this resale flat qualifies for the Proximity Housing Grant.
+        </div>
+        <div class="invalid-feedback">{{ err('livingArrangement') }}</div>
       </div>
     </div>
   </div>

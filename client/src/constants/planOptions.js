@@ -58,15 +58,22 @@ export const CITIZENSHIPS = [
 
 export const MAX_APPLICANTS = 2;
 
-// Shape of one buyer in store.profile.applicants.
-// TODO: confirm these field names against server/src/engine/types.js.
+// Where the buyers will live relative to their parents (Choice.livingArrangement in
+// server/src/engine/types.js). Used for the Proximity Housing Grant on resale.
+export const LIVING_ARRANGEMENTS = [
+  { value: 'NONE', label: 'Neither' },
+  { value: 'WITH', label: 'Live with my parents' },
+  { value: 'NEAR', label: 'Live near my parents' },
+];
+
+// Shape of one buyer in store.profile.applicants. Matches Person in server/src/engine/types.js.
 export function blankApplicant() {
   return {
     age: null,
     citizenship: 'SC',
     firstTimer: true,
     monthlyIncome: null,
-    cpfOA: null,
+    cpfOaBalance: null,
   };
 }
 

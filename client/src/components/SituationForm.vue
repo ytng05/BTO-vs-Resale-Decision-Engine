@@ -39,6 +39,17 @@ function percentOf(key) {
   });
 }
 
+// The engine expects parentsAddress as { postal: '123456' } (engine/types.js), or null if blank.
+const parentsPostal = computed({
+  get() {
+    return store.profile.parentsAddress?.postal ?? '';
+  },
+  set(value) {
+    const postal = String(value ?? '').trim();
+    store.profile.parentsAddress = postal ? { postal } : null;
+  },
+});
+
 const priceGrowthPct = percentOf('priceGrowth');
 const incomeGrowthPct = percentOf('incomeGrowth');
 
@@ -121,16 +132,16 @@ const err = (key) => props.errors[key];
           <label :for="`buyer-${i}-cpf`" class="form-label">CPF OA balance ($)</label>
           <input
             :id="`buyer-${i}-cpf`"
-            v-model.number="a.cpfOA"
+            v-model.number="a.cpfOaBalance"
             type="number"
             min="0"
             step="100"
             inputmode="numeric"
             class="form-control"
-            :class="{ 'is-invalid': err(`applicants.${i}.cpfOA`) }"
+            :class="{ 'is-invalid': err(`applicants.${i}.cpfOaBalance`) }"
             :data-cy="`situation-buyer-${i + 1}-cpf-input`"
           />
-          <div class="invalid-feedback">{{ err(`applicants.${i}.cpfOA`) }}</div>
+          <div class="invalid-feedback">{{ err(`applicants.${i}.cpfOaBalance`) }}</div>
         </div>
 
         <div class="col-12">
@@ -203,7 +214,7 @@ const err = (key) => props.errors[key];
         <label for="parents-postal" class="form-label">Parents' postal code (optional)</label>
         <input
           id="parents-postal"
-          v-model.trim="store.profile.parentsAddress"
+          v-model="parentsPostal"
           type="text"
           inputmode="numeric"
           maxlength="6"

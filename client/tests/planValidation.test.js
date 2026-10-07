@@ -2,8 +2,8 @@
 import { describe, it, expect } from 'vitest';
 import { validateSituation, validateChoice, validateStep } from '../src/validation/planValidation.js';
 
-const goodApplicant = () => ({ age: 30, citizenship: 'SC', firstTimer: true, monthlyIncome: 5000, cpfOA: 40000 });
-const goodProfile = () => ({ applicants: [goodApplicant()], cashSavings: 20000, monthlySavings: 1000, parentsAddress: '' });
+const goodApplicant = () => ({ age: 30, citizenship: 'SC', firstTimer: true, monthlyIncome: 5000, cpfOaBalance: 40000 });
+const goodProfile = () => ({ applicants: [goodApplicant()], cashSavings: 20000, monthlySavings: 1000, parentsAddress: null });
 const goodAssumptions = () => ({ priceGrowth: 0.03, incomeGrowth: 0.02, horizonYears: 10 });
 
 describe('validateSituation', () => {
@@ -25,10 +25,10 @@ describe('validateSituation', () => {
   it('flags blank and negative numbers per buyer', () => {
     const profile = goodProfile();
     profile.applicants[0].age = '';
-    profile.applicants[0].cpfOA = -1;
+    profile.applicants[0].cpfOaBalance = -1;
     const errors = validateSituation(profile, goodAssumptions());
     expect(errors).toHaveProperty(['applicants.0.age']);
-    expect(errors).toHaveProperty(['applicants.0.cpfOA']);
+    expect(errors).toHaveProperty(['applicants.0.cpfOaBalance']);
   });
 
   it('catches a yearly income typed as monthly', () => {
@@ -39,9 +39,9 @@ describe('validateSituation', () => {
 
   it('allows a blank parents postal code but rejects a malformed one', () => {
     const profile = goodProfile();
-    profile.parentsAddress = '123456';
+    profile.parentsAddress = { postal: '123456' };
     expect(validateSituation(profile, goodAssumptions())).toEqual({});
-    profile.parentsAddress = '1234';
+    profile.parentsAddress = { postal: '1234' };
     expect(validateSituation(profile, goodAssumptions())).toHaveProperty('parentsAddress');
   });
 
@@ -54,7 +54,7 @@ describe('validateSituation', () => {
 describe('validateChoice', () => {
   const opts = { currentYear: 2026 };
   const bto = () => ({ path: 'BTO', purchaseYear: 2027, town: 'TAMPINES', flatType: '4 ROOM', classification: 'STANDARD' });
-  const resale = () => ({ path: 'RESALE', purchaseYear: 2028, town: 'BEDOK', flatType: 'EXECUTIVE' });
+  const resale = () => ({ path: 'RESALE', purchaseYear: 2028, town: 'BEDOK', flatType: 'EXECUTIVE', livingArrangement: 'NONE' });
 
   it('accepts complete BTO and resale choices', () => {
     expect(validateChoice(bto(), opts)).toEqual({});
@@ -73,6 +73,16 @@ describe('validateChoice', () => {
   it('rejects an Executive flat for BTO but not for resale', () => {
     expect(validateChoice({ ...bto(), flatType: 'EXECUTIVE' }, opts)).toHaveProperty('flatType');
     expect(validateChoice(resale(), opts)).not.toHaveProperty('flatType');
+  });
+
+  it('needs the parents postal code when living with or near them', () => {
+    const near = { ...resale(), livingArrangement: 'NEAR' };
+    expect(validateChoice(near, { ...opts, profile: { parentsAddress: null } })).toHaveProperty('livingArrangement');
+    expect(validateChoice(near, { ...opts, profile: { parentsAddress: { postal: '123456' } } })).toEqual({});
+  });
+
+  it('does not ask BTO buyers about living arrangement', () => {
+    expect(validateChoice(bto(), opts)).not.toHaveProperty('livingArrangement');
   });
 
   it('rejects a town not in the list', () => {
