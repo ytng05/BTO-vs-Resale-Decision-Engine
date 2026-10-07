@@ -103,9 +103,12 @@
   "cpf": {
     "oaInterestRate": null,
     "accruedInterestCompounding": "computed monthly at OA rate, compounded yearly",
+    "partialMonthTreatment": "EXCLUDE_BOTH",
+    "_partialMonthTreatmentNote": "Allowed values: \"EXCLUDE_BOTH\" | \"INCLUDE_BOTH\" | \"INCLUDE_START_ONLY\" | \"INCLUDE_END_ONLY\". Current value is an assumption pending Seat 1's CPF query.",
     "_compoundingNote": "Verified by CPF Board official answer: computed monthly at OA rate, compounded yearly.",
     "sources": [
-      "https://ask.gov.sg/cpf/questions/cm0f52kzh01d1pz7aq4i1wz4y"
+      "https://ask.gov.sg/cpf/questions/cm0f52kzh01d1pz7aq4i1wz4y",
+      "https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts"
     ]
   },
 

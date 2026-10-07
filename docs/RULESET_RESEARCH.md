@@ -49,6 +49,7 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 
 ☐ `cpf.oaInterestRate`: 0.025. Notes say a secondary source reported 2.5% through Q3 2026. ⚠️ Confirm on CPF Board's interest-rate page.
 ✅ `cpf.accruedInterestCompounding`: "computed monthly at OA rate, compounded yearly". Source: CPF Board official answer <https://ask.gov.sg/cpf/questions/cm0f52kzh01d1pz7aq4i1wz4y>. NOTE: team prompt assumed monthly compounding, which is WRONG. Seat 1 must update engine/cpf.
+☐ `cpf.partialMonthTreatment`: `EXCLUDE_BOTH`. ASSUMPTION (seat 1, pending CPF query). Note: CPF's general interest rule (withdrawals stop earning from the month they occur; refunds earn from the next month, source <https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts>) suggests `INCLUDE_BOTH` may be correct under the "would have earned" definition.
 
 ## Loans (Confirm with Seat 1)
 
