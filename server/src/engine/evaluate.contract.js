@@ -146,6 +146,12 @@ const RULESET_KEYS = Object.freeze({
  * does not age anyone from that date: it treats the ages it is given as ages
  * at assessmentDate. So evaluate() passes each applicant's age projected to
  * the purchase year, age + (purchaseYear - evaluationStartYear).
+ * Income is treated the same way: evaluateGrants() reads monthlyIncome as
+ * the 12-month average AT assessmentDate, so evaluate() passes each
+ * applicant's monthlyIncomeCents projected to the purchase year,
+ * monthlyIncome × (1 + annualIncomeGrowth) ^ (purchaseYear - evaluationStartYear),
+ * converted to dollars. The input is already a 12-month average, so growing
+ * it by the same factor keeps it one.
  * choice.remainingLeaseYears is already the lease at purchase.
  */
 
