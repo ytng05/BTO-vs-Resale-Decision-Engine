@@ -13,4 +13,17 @@ describe('Sources view rule value formatting', () => {
   it('formats annual compounding as computed monthly', () => {
     expect(formatRuleValue('cpf.accruedInterestCompounding', 'ANNUAL')).toBe('Annual (computed monthly)');
   });
+
+  it('formats the reduced bank LTV tenure threshold in years', () => {
+    expect(formatRuleValue('loans.ltv.bankLoan.reducedIfTenureYearsOver', 25)).toBe('25 years');
+  });
+
+  it('formats the reduced bank LTV loan-end threshold as an age', () => {
+    expect(formatRuleValue('loans.ltv.bankLoan.reducedIfLoanEndsAfterAge', 65)).toBe('age 65');
+  });
+
+  it('formats HDB and bank maximum loan tenures in years', () => {
+    expect(formatRuleValue('loans.maxTenureYears.hdbLoan', 25)).toBe('25 years');
+    expect(formatRuleValue('loans.maxTenureYears.bankLoanHdbFlats', 30)).toBe('30 years');
+  });
 });

@@ -50,7 +50,7 @@ export function formatRuleValue(path, value) {
     if (fractionRateFields.has(path) || path.endsWith('.subsidyRecoveryRate')) {
       return formatPercent(value * 100);
     }
-    if (path.endsWith('Percent') || path.endsWith('ratePercent') || path.includes('.ltv.')) {
+    if (path.endsWith('Percent') || path.endsWith('ratePercent')) {
       return formatPercent(value);
     }
     if (/(incomeCeiling|grantAmount|amounts\.|buyerStampDutyTiers.*\.portion|legalFees|agentFees)/i.test(path)) {
@@ -58,7 +58,7 @@ export function formatRuleValue(path, value) {
     }
 
     const field = path.split('.').at(-1);
-    const unit = unitByField[field];
+    const unit = unitByField[field] ?? (path.includes('.maxTenureYears.') ? unitByField.maxTenureYears : undefined);
     if (unit === 'age') return `age ${value}`;
     if (unit) return `${value} ${unit}`;
   }
