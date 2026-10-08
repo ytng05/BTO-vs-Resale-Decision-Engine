@@ -73,7 +73,8 @@ const RULESET_KEYS = Object.freeze({
  * For a bank loan, reducedMaxPercent applies if the tenure exceeds
  * reducedIfTenureYearsOver OR the loan ends after the borrower reaches
  * reducedIfLoanEndsAfterAge; otherwise maxPercent. All values are percents
- * (75, not 0.75). The figure used is reported in resolvedRates.ltvApplied.
+ * (whole numbers, not decimals). The figures themselves live only in the
+ * ruleset. The figure used is reported in resolvedRates.ltvApplied.
  */
 
 /**
@@ -187,8 +188,11 @@ const WARNINGS = Object.freeze({
  * @property {string} flatType                - e.g. '4 ROOM'
  * @property {'STANDARD'|'PLUS'|'PRIME'|null} classification - null for resale
  * @property {number} purchasePriceCents      - supplied by the caller, NOT fetched here
- * @property {number} remainingLeaseYears     - 99 for BTO
- * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - with/near parents, for PHG; defaults to 'NONE'
+ * @property {number} remainingLeaseYears     - 99 for BTO; resale: lower bound of the user's lease band (D16)
+ * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - with/near parents, for PHG; declared by the user,
+ *                                              not measured (D15); defaults to 'NONE'
+ * @property {number} [btoWaitYears]          - BTO only: years from application to key collection (D7).
+ *                                              Supplied by the caller (seeded project data or user override)
  */
 
 /**

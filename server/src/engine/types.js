@@ -1,48 +1,26 @@
-// PROPOSED shapes for the evaluate() primitive. Seats 1 and 2 must agree and finalise these in week 1.
-// Everything else (timing optimiser, strategy search, break-even solver, backtest) wraps evaluate().
-// Engine functions are PURE: no I/O, no Date.now(), no randomness. Pass the "as-of" date in.
+// Engine types live in evaluate.contract.js (the agreed contract). This file re-exports them so
+// existing JSDoc imports of './types.js' keep working, plus the one internal shape below.
 
 /**
- * @typedef {'BTO'|'RESALE'} Path
- * @typedef {'STANDARD'|'PLUS'|'PRIME'} Classification   BTO only. Resale flats have no class in this model.
- * @typedef {'SC'|'PR'} Citizenship
+ * @typedef {import('./evaluate.contract.js').Profile} Profile        money in cents
+ * @typedef {import('./evaluate.contract.js').Choice} Choice
+ * @typedef {import('./evaluate.contract.js').Assumptions} Assumptions
+ * @typedef {import('./evaluate.contract.js').Outcome} Outcome
+ */
+
+/**
+ * Input to rules/grants.js evaluateGrants(). Same shape as Profile but money in DOLLARS:
+ * evaluate() converts at this one boundary (see NOTE ON GRANTS in evaluate.contract.js).
+ * Not part of the API; nothing outside evaluate() should build one.
  *
- * @typedef {Object} Person
- * @property {number} age
- * @property {Citizenship} citizenship
- * @property {boolean} firstTimer          per person, not per household
- * @property {number} monthlyIncome        current gross monthly income
- * @property {number} cpfOaBalance
+ * @typedef {Object} GrantsApplicant
+ * @property {number} age                  projected to the purchase year (D13)
+ * @property {'SC'|'PR'} citizenship
+ * @property {boolean} firstTimer
+ * @property {number} monthlyIncome        dollars
+ * @property {number} cpfOaBalance         dollars
  *
- * @typedef {Object} Profile
- * @property {Person[]} applicants         1 or 2 people
- * @property {number} cashSavings
- * @property {number} monthlySavings
- * @property {{ postal?: string, lat?: number, lng?: number }} [parentsAddress]  for the PHG distance test
- *
- * @typedef {Object} Choice
- * @property {Path} path
- * @property {number} purchaseYear         calendar year
- * @property {string} town
- * @property {string} flatType             e.g. '4 ROOM'
- * @property {Classification} [classification]   required when path === 'BTO'
- * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement]  parents/child living arrangement for PHG; defaults to 'NONE'
- * @property {number} [remainingLeaseYears]  lease remaining at assessmentDate, for EHG lease-to-95 assessment
- *
- * @typedef {Object} Assumptions
- * @property {number} priceGrowth          annual, as a fraction (0.03 = 3%)
- * @property {number} incomeGrowth         annual, as a fraction
- * @property {number} horizonYears         the common horizon both paths are compared at
- * @property {string} asOfDate             ISO date; the "today" the engine works from
- * // TODO (seats 1+2): add rent-while-waiting, BTO waiting years, loan rate, renovation, etc.
- *
- * @typedef {Object} Outcome
- * @property {number} netFinancialPosition  say "net financial position after N years", never "profit"
- * @property {{ principal: number, accruedInterest: number, total: number }} cpfRefund
- * @property {{ ehg: number, familyGrant: number, phg: number, total: number }} grants
- * @property {Array<{ grant: string, passed: boolean, reason: string }>} eligibility  one entry per test, each with its own reason
- * @property {number} subsidyClawback       0 for Standard and resale
- * @property {string} rulesetVersion        every result records which ruleset produced it
- * // TODO (seats 1+2): cash timeline, monthly ledger, loan balance, sale proceeds breakdown
+ * @typedef {Object} GrantsProfile
+ * @property {GrantsApplicant[]} applicants
  */
 export {};
