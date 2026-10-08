@@ -6,15 +6,18 @@ import HeatmapGrid from '../components/HeatmapGrid.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
+import { validateStep } from '../validation/planValidation.js';
 
 const store = useScenarioStore();
 const result = ref(null);
 const error = ref(null);
 const loading = ref(false);
 
-// Someone who opens /results directly (or reloads) has no inputs yet: show an empty state instead
-// of asking the server to compare nothing.
-const hasInputs = computed(() => store.profile.applicants.length > 0);
+// Someone who opens /results directly (or reloads) has no real inputs yet: show an empty state instead
+// of asking the server to compare nothing. "Has inputs" = all three plan steps pass the same validation
+// the stepper enforces before it lets anyone reach /results. (Checking applicants.length is not enough:
+// the store's blank state already seeds one empty buyer.)
+const hasInputs = computed(() => [0, 1, 2].every((step) => Object.keys(validateStep(step, store)).length === 0));
 
 const horizonYears = computed(() => result.value?.horizonYears ?? store.assumptions.horizonYears ?? null);
 
