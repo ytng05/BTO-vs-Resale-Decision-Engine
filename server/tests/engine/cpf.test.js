@@ -56,7 +56,11 @@ describe('computeAccruedInterest: hand-worked fixture cases', () => {
   });
 });
 
-describe('computeAccruedInterest: not yet covered by a fixture', () => {
-  it.todo('compounding convention switch: MONTHLY gives a different result from ANNUAL');
-  it.todo('refund is capped when sale proceeds cannot cover loan plus refund');
+describe('computeAccruedInterest: compounding convention', () => {
+  // D2: CPF compounds annually. MONTHLY is not modelled, so it must fail loudly, not silently.
+  it('rejects any compounding mode other than ANNUAL', () => {
+    const ruleset = { cpf: { oaInterestRate: 0.025, accruedInterestCompounding: 'MONTHLY' } };
+    const ledger = [{ date: '2027-01-01', amountCents: 8000000, kind: 'LUMP_SUM' }];
+    expect(() => computeAccruedInterest(ledger, '2028-01-01', ruleset)).toThrow(/MONTHLY/);
+  });
 });
