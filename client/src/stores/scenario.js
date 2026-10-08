@@ -1,37 +1,22 @@
 import { defineStore } from 'pinia';
+import { blankApplicant } from '../constants/planOptions.js';
 
 // Holds the whole scenario so users can move backwards in the stepper without losing input.
 // Field names follow server/src/engine/types.js (Profile / Choice / Assumptions) — this is the
-// CONTRACT kaash's forms bind to. If a form needs a field not listed here, add it here first,
+// CONTRACT the plan forms bind to. If a form needs a field not listed here, add it here first,
 // in a PR, so the shape stays the single source of truth (see docs/API_CONTRACT.md).
 export const STEPS = ['Situation', 'Path A', 'Path B', 'Results'];
-
-let nextApplicantId = 1;
-
-// Stable id per applicant (PR #6 review note: "give each applicant a stable id instead of an
-// index key") — removing Buyer 1 then re-keys Buyer 2 by id, not by array position.
-function blankApplicant() {
-  return {
-    id: `applicant-${nextApplicantId++}`,
-    age: null,
-    citizenship: null,       // 'SC' | 'PR'
-    firstTimer: null,        // boolean
-    monthlyIncome: null,
-    cpfOaBalance: null,
-  };
-}
 
 const blank = () => ({
   step: 0,
 
   profile: {
-    applicants: [blankApplicant()],   // starts with 1 buyer; form adds a 2nd
+    // One buyer to start; the form can add a second. blankApplicant() lives in
+    // constants/planOptions.js so every buyer gets the same defaults and a stable id.
+    applicants: [blankApplicant()],
     cashSavings: null,
     monthlySavings: null,
-    // Moved here from component setup (PR #6 review note) so the default is defined once,
-    // not re-created every time SituationForm.vue mounts.
-    livingArrangement: 'NONE',        // 'WITH' | 'NEAR' | 'NONE' — matches engine/types.js
-    parentsAddress: { postal: null }, // engine/types.js: { postal?, lat?, lng? }
+    parentsAddress: null, // engine/types.js: optional { postal?, lat?, lng? }; null when blank
   },
 
   choiceA: {
@@ -41,7 +26,8 @@ const blank = () => ({
                               // not the resale TOWNS list — Tengah etc. currently unselectable
     flatType: null,
     classification: 'STANDARD', // 'STANDARD' | 'PLUS' | 'PRIME' — Standard is the default
-    remainingLeaseYears: 99,    // BTO: fixed assumption per open question in PR #6 handoff
+    livingArrangement: 'NONE',  // 'WITH' | 'NEAR' | 'NONE' — a Choice field in engine/types.js (PHG)
+    remainingLeaseYears: 99,    // BTO: new 99-year lease
   },
 
   choiceB: {
@@ -49,21 +35,18 @@ const blank = () => ({
     purchaseYear: null,
     town: null,
     flatType: null,
-    // Executive flat type is resale-only (per PR #6 manual test) — enforce in PathForm.vue's
-    // flatType options for this path, not here.
-    remainingLeaseYears: null,  // TODO (seat 3): derive from the resale dataset's remaining_lease
-                                  // field once available; null until then — ask seat 2 what the
-                                  // engine assumes when it's missing (open question, PR #6 handoff)
+    livingArrangement: 'NONE',  // 'WITH' | 'NEAR' | 'NONE' — a Choice field in engine/types.js (PHG)
+    remainingLeaseYears: null,  // TODO (seat 3): derive from the resale dataset's remaining_lease;
+                                // ask seat 2 what the engine assumes while it is missing
   },
 
   assumptions: {
-    // Stored as FRACTIONS per engine/types.js (0.03 = 3%), matching the engine contract.
-    // The form displays "3" with a % suffix and converts to/from 0.03 — that conversion is the
-    // form's job (PR #6 fix #2), not the store's. Do not store "3" here.
+    // Stored as FRACTIONS per engine/types.js (0.03 = 3%). The form shows "3" with a % add-on
+    // and converts to/from 0.03 — that conversion is the form's job, not the store's.
     priceGrowth: null,
     incomeGrowth: null,
-    horizonYears: null,   // label in the form is "Compare after (years)" (PR #6 fix #3)
-    asOfDate: null,       // ISO date; set when the scenario is created, not on every read
+    horizonYears: null,   // shown in the form as "Compare after … years"
+    asOfDate: null,       // TODO (seats 3+4): agree where this is set — here on creation, or in the API route
   },
 });
 
