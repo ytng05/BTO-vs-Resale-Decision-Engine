@@ -52,6 +52,22 @@ const ruleLabels = {
 
 const tierArrayKeys = new Set(['tiers', 'ehgTiers', 'buyerStampDutyTiers']);
 const omittedRuleKeys = new Set(['appliesTo', 'sources', 'partialMonthTreatment', 'legalFees', 'agentFees']);
+const expandedSectionIds = ref(new Set(['ehg']));
+const expandedTierKeys = ref(new Set());
+
+const navigationItems = [
+  { id: 'ehg', label: 'EHG' },
+  { id: 'family-grant', label: 'Family Grant' },
+  { id: 'phg', label: 'PHG' },
+  { id: 'eligibility', label: 'Eligibility' },
+  { id: 'cpf', label: 'CPF' },
+  { id: 'loans', label: 'Loans' },
+  { id: 'costs', label: 'Costs' },
+  { id: 'flat-types', label: 'Flat types' },
+  { id: 'assumptions', label: 'Assumptions' },
+  { id: 'data', label: 'Data' },
+];
+
 function fallbackLabel(path) {
   return path
     .split('.')
@@ -88,6 +104,76 @@ function makeTierTable(path, tiers) {
       ? [formatRuleValue(`${path}.portion`, tier.portion), formatRuleValue(`${path}.ratePercent`, tier.ratePercent)]
       : [formatIncomeBand(tier[bandKey] ?? 'Not yet verified'), formatRuleValue(`${path}.grantAmount`, tier.grantAmount)]),
   };
+}
+
+function amountsIn(value) {
+  if (typeof value === 'number') return [value];
+  if (Array.isArray(value)) return value.flatMap(amountsIn);
+  if (value && typeof value === 'object') return Object.values(value).flatMap(amountsIn);
+  return [];
+}
+
+function maximumAmount(value) {
+  const amounts = amountsIn(value);
+  return amounts.length ? Math.max(...amounts) : null;
+}
+
+function sectionKeyFact(id, rules, activeRules) {
+  const money = (value) => formatRuleValue('grants.ehg.tiers.grantAmount', value);
+  const appliesTo = rules?.appliesTo?.map((path) => path === 'BTO' ? 'BTO' : 'resale').join(' and ');
+
+  if (id === 'ehg') {
+    const ceilingAmount = maximumAmount(rules?.tiers?.map((tier) => tier.grantAmount));
+    return ceilingAmount === null ? 'Grant tiers not yet verified' : `Up to ${money(ceilingAmount)} · ${appliesTo ?? 'availability per ruleset'}`;
+  }
+  if (id === 'family-grant') {
+    const ceilingAmount = maximumAmount(rules?.amounts);
+    return ceilingAmount === null ? 'Grant amounts not yet verified' : `Up to ${money(ceilingAmount)} · ${appliesTo ?? 'availability per ruleset'}`;
+  }
+  if (id === 'phg') {
+    const withFamily = rules?.amounts?.livingWithParentsOrChild?.families;
+    const nearFamily = rules?.amounts?.livingNear?.families;
+    return typeof withFamily === 'number' && typeof nearFamily === 'number'
+      ? `${money(withFamily)} living with · ${money(nearFamily)} near`
+      : 'Proximity grant amounts not yet verified';
+  }
+  if (id === 'eligibility') {
+    const prPrEligible = rules?.citizenship?.PR_PR?.familyGrantEligible;
+    const firstTimerRule = rules?.firstTimerWithSecondTimer;
+    const ceiling = firstTimerRule?.ehgIncomeCeiling;
+    const maximumEHG = maximumAmount(firstTimerRule?.ehgTiers?.map((tier) => tier.grantAmount));
+    const householdFact = typeof prPrEligible === 'boolean'
+      ? `PR+PR ${prPrEligible ? 'eligible' : 'not eligible'} for Family Grant`
+      : 'Citizenship eligibility per ruleset';
+    const secondTimerFact = typeof ceiling === 'number' && maximumEHG !== null
+      ? `First + second-timer EHG ceiling ${formatRuleValue('grants.ehg.incomeCeiling.single', ceiling)}; up to ${money(maximumEHG)}`
+      : '';
+    return [householdFact, secondTimerFact].filter(Boolean).join(' · ');
+  }
+  if (id === 'cpf') {
+    const rate = rules?.oaInterestRate;
+    const compounding = rules?.accruedInterestCompounding;
+    return typeof rate === 'number'
+      ? `OA rate ${formatRuleValue('cpf.oaInterestRate', rate)} · ${compounding === 'ANNUAL' ? 'compounded annually' : 'compounding per ruleset'}`
+      : 'CPF rules not yet verified';
+  }
+  if (id === 'loans') {
+    const ltv = rules?.ltv?.hdbLoan?.maxPercent;
+    return typeof ltv === 'number' ? `LTV up to ${formatRuleValue('loans.ltv.hdbLoan.maxPercent', ltv)}` : 'Loan rules not yet verified';
+  }
+  if (id === 'costs') {
+    const rates = rules?.buyerStampDutyTiers?.map((tier) => tier.ratePercent).filter(Number.isFinite) ?? [];
+    return rates.length ? `BSD marginal rates ${Math.min(...rates)}%–${Math.max(...rates)}%` : 'Cost rules not yet verified';
+  }
+  if (id === 'flat-types') {
+    const standard = activeRules?.classifications?.STANDARD?.mopYears;
+    const plus = activeRules?.classifications?.PLUS?.mopYears;
+    const prime = activeRules?.classifications?.PRIME?.mopYears;
+    return [standard, plus, prime].every((value) => typeof value === 'number')
+      ? `MOP ${standard} / ${plus} / ${prime} years (Standard / Plus / Prime)`
+      : 'Classification rules not yet verified';
+  }
+  return '';
 }
 
 function collectRules(value, path, rows, tierTables, activeRules) {
@@ -146,14 +232,16 @@ function sectionTitle(title, appliesTo) {
   return `${title} (${paths}${appliesTo.length === 1 ? ' only' : ''})`;
 }
 
-function makeSection(title, path, rules, activeRules) {
+function makeSection(id, title, path, rules, activeRules) {
   if (!rules) return null;
 
   const rows = [];
   const tierTables = [];
   Object.entries(rules).forEach(([key, value]) => collectRules(value, `${path}.${key}`, rows, tierTables, activeRules));
   return {
+    id,
     title: sectionTitle(title, rules.appliesTo),
+    keyFact: sectionKeyFact(id, rules, activeRules),
     sources: [...new Set(rules.sources ?? [])],
     rows,
     tierTables,
@@ -166,16 +254,49 @@ const ruleGroups = computed(() => {
 
   const grants = rules.grants ?? {};
   return [
-    makeSection('EHG', 'grants.ehg', grants.ehg, rules),
-    makeSection('Family Grant', 'grants.familyGrant', grants.familyGrant, rules),
-    makeSection('PHG', 'grants.proximityHousingGrant', grants.proximityHousingGrant, rules),
-    makeSection('Grant eligibility combinations', 'grants.eligibilityCombinations', grants.eligibilityCombinations, rules),
-    makeSection('CPF', 'cpf', rules.cpf, rules),
-    makeSection('Loans', 'loans', rules.loans, rules),
-    makeSection('Transaction costs', 'transactionCosts', rules.transactionCosts, rules),
-    makeSection('Classifications', 'classifications', rules.classifications, rules),
+    makeSection('ehg', 'EHG', 'grants.ehg', grants.ehg, rules),
+    makeSection('family-grant', 'Family Grant', 'grants.familyGrant', grants.familyGrant, rules),
+    makeSection('phg', 'PHG', 'grants.proximityHousingGrant', grants.proximityHousingGrant, rules),
+    makeSection('eligibility', 'Grant eligibility', 'grants.eligibilityCombinations', grants.eligibilityCombinations, rules),
+    makeSection('cpf', 'CPF', 'cpf', rules.cpf, rules),
+    makeSection('loans', 'Loans', 'loans', rules.loans, rules),
+    makeSection('costs', 'Transaction costs', 'transactionCosts', rules.transactionCosts, rules),
+    makeSection('flat-types', 'Flat types', 'classifications', rules.classifications, rules),
   ].filter(Boolean);
 });
+
+const allSectionsExpanded = computed(() => ruleGroups.value.length > 0
+  && ruleGroups.value.every((section) => expandedSectionIds.value.has(section.id)));
+
+function toggleAllSections() {
+  expandedSectionIds.value = allSectionsExpanded.value
+    ? new Set()
+    : new Set(ruleGroups.value.map((section) => section.id));
+}
+
+function syncSectionOpen(id, event) {
+  const isOpen = event.currentTarget.open;
+  if (expandedSectionIds.value.has(id) === isOpen) return;
+  const next = new Set(expandedSectionIds.value);
+  if (isOpen) next.add(id);
+  else next.delete(id);
+  expandedSectionIds.value = next;
+}
+
+function visibleTierRows(table) {
+  return expandedTierKeys.value.has(table.key) ? table.rows : table.rows.slice(0, 5);
+}
+
+function isTierExpanded(table) {
+  return expandedTierKeys.value.has(table.key);
+}
+
+function toggleTierRows(table) {
+  const next = new Set(expandedTierKeys.value);
+  if (next.has(table.key)) next.delete(table.key);
+  else next.add(table.key);
+  expandedTierKeys.value = next;
+}
 
 const assumptions = computed(() => [
   { title: 'CPF partial months', description: 'Months when CPF is withdrawn and when the flat is sold are excluded (pending CPF Board confirmation).' },
@@ -222,11 +343,14 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-      <section class="sources-section" aria-labelledby="ruleset-info-title">
+      <section class="sources-section sources-ruleset-card" aria-labelledby="ruleset-info-title">
         <div class="sources-section__heading">
           <h2 class="h4 mb-0" id="ruleset-info-title">Ruleset information</h2>
           <span v-if="response.status === 'TEMPLATE'" class="badge text-bg-warning" data-cy="sources-template-badge">
             Template / not fully verified
+          </span>
+          <span v-else class="badge sources-verified-badge">
+            <span aria-hidden="true">✓</span> Verified
           </span>
         </div>
         <dl class="sources-metadata" data-cy="sources-ruleset-version">
@@ -237,48 +361,102 @@ onMounted(async () => {
         </dl>
       </section>
 
+      <nav class="sources-quick-nav" aria-label="Jump to Sources sections">
+        <a v-for="item in navigationItems" :key="item.id" :href="`#sources-section-${item.id}`">{{ item.label }}</a>
+      </nav>
+
       <section class="sources-section" aria-labelledby="rules-title">
         <div class="sources-section__heading">
           <h2 class="h4 mb-0" id="rules-title">Rules and sources</h2>
+          <button
+            class="btn btn-outline-primary btn-sm"
+            type="button"
+            data-cy="sources-expand-all"
+            :aria-expanded="allSectionsExpanded"
+            @click="toggleAllSections"
+          >
+            {{ allSectionsExpanded ? 'Collapse all' : 'Expand all' }}
+          </button>
         </div>
-        <div data-cy="sources-rules-table">
-          <section v-for="section in ruleGroups" :key="section.title" class="sources-rule-section" :aria-label="section.title">
-            <h3 class="h5 sources-rule-section__title">{{ section.title }}</h3>
-            <nav v-if="section.sources.length" class="sources-section-sources" :aria-label="`${section.title} sources`">
-              <a v-for="source in section.sources" :key="source" :href="source" target="_blank" rel="noopener noreferrer">
-                {{ sourceTitle(source) }}
-              </a>
-            </nav>
-            <div class="table-responsive sources-table-wrap">
-              <table v-if="section.rows.length" class="table table-hover align-middle sources-table w-100">
-                <colgroup><col class="sources-table__rule-column"><col class="sources-table__value-column"></colgroup>
-                <thead><tr><th scope="col">Rule</th><th scope="col">Value</th></tr></thead>
-                <tbody>
-                  <tr v-for="row in section.rows" :key="row.rule">
-                    <th scope="row" class="sources-table__rule">{{ row.rule }}</th>
-                    <td class="sources-table__value">
-                      {{ row.value }}
-                      <small v-if="row.note" class="d-block text-secondary">{{ row.note }}</small>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <table v-for="tierTable in section.tierTables" :key="tierTable.key" class="table table-hover align-middle sources-table sources-table--tiers w-100">
-                <caption class="sources-table__caption">{{ tierTable.title }}</caption>
-                <colgroup><col class="sources-table__rule-column"><col class="sources-table__value-column"></colgroup>
-                <thead><tr><th v-for="header in tierTable.headers" :key="header" scope="col">{{ header }}</th></tr></thead>
-                <tbody>
-                  <tr v-for="(tierRow, index) in tierTable.rows" :key="`${tierTable.key}-${index}`">
-                    <td v-for="(cell, cellIndex) in tierRow" :key="cellIndex" :class="{ 'sources-table__numeric': cellIndex === 1 }">{{ cell }}</td>
-                  </tr>
-                </tbody>
-              </table>
+        <div data-cy="sources-rules-table" class="sources-rule-cards">
+          <details
+            v-for="section in ruleGroups"
+            :id="`sources-section-${section.id}`"
+            :key="section.id"
+            class="sources-rule-card"
+            :open="expandedSectionIds.has(section.id)"
+            @toggle="syncSectionOpen(section.id, $event)"
+          >
+            <summary class="sources-rule-card__summary">
+              <span class="sources-rule-card__heading">
+                <span class="sources-rule-card__title">{{ section.title }}</span>
+                <span class="sources-rule-card__fact">{{ section.keyFact }}</span>
+              </span>
+              <svg class="sources-rule-card__chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" />
+              </svg>
+            </summary>
+            <div class="sources-rule-card__body">
+              <div class="table-responsive sources-table-wrap">
+                <table v-if="section.rows.length" class="table table-hover align-middle sources-table w-100">
+                  <colgroup><col class="sources-table__rule-column"><col class="sources-table__value-column"></colgroup>
+                  <thead><tr><th scope="col">Rule</th><th scope="col">Value</th></tr></thead>
+                  <tbody>
+                    <tr v-for="row in section.rows" :key="row.rule">
+                      <th scope="row" class="sources-table__rule">{{ row.rule }}</th>
+                      <td class="sources-table__value">
+                        {{ row.value }}
+                        <small v-if="row.note" class="d-block text-secondary">{{ row.note }}</small>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <template v-for="tierTable in section.tierTables" :key="tierTable.key">
+                  <table class="table table-hover align-middle sources-table sources-table--tiers w-100">
+                    <caption class="sources-table__caption">{{ tierTable.title }}</caption>
+                    <colgroup><col class="sources-table__rule-column"><col class="sources-table__value-column"></colgroup>
+                    <thead><tr><th v-for="header in tierTable.headers" :key="header" scope="col">{{ header }}</th></tr></thead>
+                    <tbody>
+                      <tr v-for="(tierRow, index) in visibleTierRows(tierTable)" :key="`${tierTable.key}-${index}`">
+                        <td v-for="(cell, cellIndex) in tierRow" :key="cellIndex" :class="{ 'sources-table__numeric': cellIndex === 1 }">{{ cell }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <button
+                    v-if="tierTable.rows.length > 5"
+                    class="btn btn-link btn-sm sources-tier-toggle"
+                    type="button"
+                    :aria-expanded="isTierExpanded(tierTable)"
+                    @click="toggleTierRows(tierTable)"
+                  >
+                    {{ isTierExpanded(tierTable) ? 'Show first 5 bands' : `Show all ${tierTable.rows.length} bands` }}
+                  </button>
+                </template>
+              </div>
+              <div v-if="section.sources.length" class="sources-rule-card__sources">
+                <h4 class="sources-rule-card__sources-title">Sources</h4>
+                <a
+                  v-for="source in section.sources"
+                  :key="source"
+                  class="sources-source-chip"
+                  :href="source"
+                  :aria-label="`Open source: ${sourceTitle(source)} (new tab)`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-cy="sources-source-link"
+                >
+                  <span>{{ sourceTitle(source) }}</span>
+                  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <path d="M9 2h5v5M14 2 7 9M12 9v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+                  </svg>
+                </a>
+              </div>
             </div>
-          </section>
+          </details>
         </div>
       </section>
 
-      <section class="sources-section" aria-labelledby="assumptions-title">
+      <section id="sources-section-assumptions" class="sources-section" aria-labelledby="assumptions-title">
         <h2 class="h4 mb-3" id="assumptions-title">Assumptions</h2>
         <div class="sources-assumptions" data-cy="sources-assumptions">
           <article v-for="assumption in assumptions" :key="assumption.title" class="sources-assumption-card">
@@ -289,7 +467,7 @@ onMounted(async () => {
         </div>
       </section>
 
-      <section class="sources-section" aria-labelledby="datasets-title" data-cy="sources-datasets">
+      <section id="sources-section-data" class="sources-section" aria-labelledby="datasets-title" data-cy="sources-datasets">
         <h2 class="h4 mb-3" id="datasets-title">Datasets and services</h2>
         <div class="table-responsive sources-table-wrap">
           <table class="table align-middle sources-table">
@@ -321,34 +499,166 @@ onMounted(async () => {
 .sources-section {
   padding-block: var(--space-5);
   border-top: 1px solid var(--border);
+  scroll-margin-top: var(--space-6);
 }
 
-.sources-rule-section + .sources-rule-section {
-  margin-top: var(--space-5);
+.sources-ruleset-card {
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
 }
 
-.sources-rule-section__title {
-  margin-bottom: var(--space-2);
+.sources-verified-badge {
+  background: var(--success-fill);
+  color: var(--success);
 }
 
-.sources-section-sources {
+.sources-quick-nav {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-  margin-bottom: var(--space-3);
-  overflow-wrap: anywhere;
+  gap: var(--space-2);
+  margin-inline: calc(-1 * var(--space-3));
+  padding: var(--space-2) var(--space-3);
+  overflow-x: auto;
+  border-block: 1px solid var(--border-subtle);
+  background: var(--bg-surface-raised);
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
-.sources-section__heading {
+.sources-quick-nav a {
+  flex: 0 0 auto;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sources-quick-nav a:hover {
+  background: var(--accent-fill-3);
+}
+
+.sources-quick-nav a:focus-visible,
+.sources-source-chip:focus-visible,
+.sources-rule-card__summary:focus-visible,
+.sources-tier-toggle:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.sources-rule-cards {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+}
+
+.sources-rule-card {
+  min-width: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-raised);
+  box-shadow: var(--shadow-sm);
+  scroll-margin-top: 5rem;
+}
+
+.sources-rule-card__summary {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  min-height: 4.25rem;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  list-style: none;
 }
 
-.sources-metadata {
+.sources-rule-card__summary::-webkit-details-marker {
+  display: none;
+}
+
+.sources-rule-card__heading {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.sources-rule-card__title {
+  font-weight: 700;
+}
+
+.sources-rule-card__fact {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sources-rule-card__chevron {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.sources-rule-card[open] .sources-rule-card__chevron {
+  transform: rotate(180deg);
+}
+
+.sources-rule-card__body {
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.sources-rule-card__sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+}
+
+.sources-rule-card__sources-title {
+  flex: 0 0 100%;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.sources-source-chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+  transition: background-color var(--duration-base) var(--ease-out);
+}
+
+.sources-source-chip:hover {
+  background: var(--accent-fill-3);
+}
+
+.sources-source-chip svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: 0 0 auto;
+}
+
+.sources-tier-toggle {
+  min-height: 2.75rem;
+  padding-inline: var(--space-2);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: var(--space-4) var(--space-5);
@@ -421,10 +731,34 @@ onMounted(async () => {
   color: var(--text-secondary);
 }
 
+@media (max-width: 359.98px) {
+  .sources-ruleset-card {
+    padding: var(--space-3);
+  }
+
+  .sources-rule-card__summary {
+    padding-inline: var(--space-3);
+  }
+
+  .sources-rule-card__body {
+    padding-inline: var(--space-3);
+  }
+}
+
+:global(html) {
+  scroll-behavior: smooth;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  :global(html) {
+    scroll-behavior: auto;
+  }
+
   .sources-assumption-card,
   .sources-assumption-card:hover,
-  .sources-assumption-card:focus-within {
+  .sources-assumption-card:focus-within,
+  .sources-rule-card__chevron,
+  .sources-source-chip {
     transform: none;
     transition: none;
   }
