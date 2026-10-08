@@ -26,4 +26,8 @@ describe('Sources view rule value formatting', () => {
     expect(formatRuleValue('loans.maxTenureYears.hdbLoan', 25)).toBe('25 years');
     expect(formatRuleValue('loans.maxTenureYears.bankLoanHdbFlats', 30)).toBe('30 years');
   });
+
+  it('formats the EHG minimum resale lease in years', () => {
+    expect(formatRuleValue('grants.ehg.minRemainingLeaseYearsResale', 20)).toBe('20 years');
+  });
 });

@@ -20,7 +20,7 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 ✅ `grants.ehg.employmentMonthsRequired`: 12 months continuous employment, and still employed at flat application; buyer or spouse. Same CPF Board guide. (checked vs official source 2026-10-06: Claude + Har)
 ✅ `grants.ehg.incomeAveragingMonths`: 12. Source: <https://www.madeforfamilies.gov.sg/support-measures/housing/housing-schemes-and-grants>. (checked vs official source 2026-10-06: Claude + Har)
 ✅ `grants.ehg.leaseMustCoverToAge`: 95 (youngest core applicant/occupier; otherwise grant pro-rated). Source: CPF Board guide above. ⚠️ Find and confirm HDB's pro-rating formula. (checked vs official source 2026-10-06: Claude + Har)
-☐ `grants.ehg.minRemainingLeaseYearsResale`: 20. Source reported: MND EHG Annex A (2019), <https://www.mnd.gov.sg/api/media/02e7adfd-b11e-45b2-a290-4b130a0f45e9>. ⚠️ Reconfirm on current HDB page.
+✅ `grants.ehg.minRemainingLeaseYearsResale`: 20. HDB: resale flat needs a remaining lease of at least 20 years (inclusive). Source: <https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/> (checked vs official source 2026-10-08: Claude + Har)
 ☐ Confirm with HDB whether NDR 2026 changed EHG tiers; notes report secondary sources saying no.
 
 ## Grants: CPF Housing Grant (Family Grant), Resale

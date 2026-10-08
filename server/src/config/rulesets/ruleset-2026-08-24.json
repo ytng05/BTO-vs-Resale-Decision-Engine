@@ -31,11 +31,12 @@
       "incomeAveragingMonths": 12,
       "employmentMonthsRequired": 12,
       "leaseMustCoverToAge": 95,
-      "minRemainingLeaseYearsResale": null,
+      "minRemainingLeaseYearsResale": 20,
       "sources": [
         "https://www.hdb.gov.sg/-/media/buying-a-flat/flat-grant-and-loan-eligibility/couples-and-families/enhanced-cpf-housing-grant/EHG-amount-Families.pdf",
         "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant",
-        "https://www.madeforfamilies.gov.sg/support-measures/housing/housing-schemes-and-grants"
+        "https://www.madeforfamilies.gov.sg/support-measures/housing/housing-schemes-and-grants",
+        "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/"
       ]
     },
     "familyGrant": {

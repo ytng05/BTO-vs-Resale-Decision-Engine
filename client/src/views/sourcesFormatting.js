@@ -13,6 +13,7 @@ const unitByField = {
   incomeAveragingMonths: 'months',
   employmentMonthsRequired: 'months',
   leaseMustCoverToAge: 'age',
+  minRemainingLeaseYearsResale: 'years',
   nearDistanceKm: 'km',
   maxTenureYears: 'years',
   mopYears: 'years',

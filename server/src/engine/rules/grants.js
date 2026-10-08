@@ -257,6 +257,20 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
       : 'This requirement applies only when your household buys a resale flat.'
     : 'Your household must qualify for the Family Grant before it can receive EHG on a resale flat.'));
 
+  // HDB's resale EHG minimum remaining lease is a separate eligibility requirement from lease-to-95 pro-rating.
+  const resaleLeaseMinimum = grantRules.minRemainingLeaseYearsResale;
+  let minimumLeasePassed = true;
+  if (choice.path === 'RESALE' && typeof resaleLeaseMinimum === 'number') {
+    minimumLeasePassed = typeof choice.remainingLeaseYears === 'number'
+      && choice.remainingLeaseYears >= resaleLeaseMinimum;
+    const minimumLeaseReason = typeof choice.remainingLeaseYears !== 'number'
+      ? `Please provide your flat's remaining lease to check the ${resaleLeaseMinimum}-year minimum for the EHG.`
+      : minimumLeasePassed
+        ? `Your flat's remaining lease (${choice.remainingLeaseYears} years) meets the ${resaleLeaseMinimum}-year minimum for the EHG.`
+        : `Your flat's remaining lease (${choice.remainingLeaseYears} years) is below the ${resaleLeaseMinimum}-year minimum for the EHG.`;
+    checks.push(eligibility('EHG', 'EHG: resale minimum lease', 'EHG_MIN_LEASE', minimumLeasePassed, minimumLeaseReason));
+  }
+
   // EHG lease coverage is assessed to the configured age; profile age is treated as age at assessmentDate.
   const leaseTargetAge = grantRules.leaseMustCoverToAge;
   let leasePassed = false;
@@ -280,7 +294,7 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
   // TODO: Apply the verified HDB lease-to-95 pro-rating formula; until then retain the full tier amount.
   const eligible = checks.every((check) => check.passed
     || (leaseShortfall && check.id === 'EHG_LEASE_TO_95'));
-  return { amount: eligible ? tierAmount : 0, checks };
+  return { amount: eligible && minimumLeasePassed ? tierAmount : 0, checks };
 }
 
 function evaluatePHG(profile, choice, ruleset) {

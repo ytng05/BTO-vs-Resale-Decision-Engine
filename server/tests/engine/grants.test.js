@@ -3,6 +3,15 @@ import { evaluateGrants } from '../../src/engine/rules/grants.js';
 import { loadRuleset } from '../../src/engine/rules/loadRuleset.js';
 
 describe('evaluateGrants', () => {
+  const scFirstTimerProfile = {
+    applicants: [
+      { age: 35, citizenship: 'SC', firstTimer: true, monthlyIncome: 3500, cpfOaBalance: 0 },
+      { age: 34, citizenship: 'SC', firstTimer: true, monthlyIncome: 3500, cpfOaBalance: 0 },
+    ],
+    cashSavings: 0,
+    monthlySavings: 0,
+  };
+
   it('SC+SC first-timers: $7,000 resale 4-room, living near parents', () => {
     const profile = {
       applicants: [
@@ -75,6 +84,48 @@ describe('evaluateGrants', () => {
 
     // Family Grant: checked SC+PR 2-4 room amount is 70,000; EHG 6,501-7,000 tier is 30,000; NONE gives PHG 0.
     expect(result).toMatchObject({ familyGrant: 70000, ehg: 30000, phg: 0, total: 100000 });
+  });
+
+  it('resale lease of 19 years fails the EHG minimum remaining lease check', () => {
+    const choice = {
+      path: 'RESALE',
+      purchaseYear: 2026,
+      town: 'TODO',
+      flatType: '4 ROOM',
+      livingArrangement: 'NONE',
+      remainingLeaseYears: 19,
+    };
+    const { ruleset } = loadRuleset();
+    const result = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset);
+
+    expect(result.ehg).toBe(0);
+    expect(result.eligibility).toContainEqual(expect.objectContaining({
+      grantGroup: 'EHG',
+      id: 'EHG_MIN_LEASE',
+      passed: false,
+      reason: "Your flat's remaining lease (19 years) is below the 20-year minimum for the EHG.",
+    }));
+  });
+
+  it('resale lease of exactly 20 years passes the EHG minimum remaining lease check', () => {
+    const choice = {
+      path: 'RESALE',
+      purchaseYear: 2026,
+      town: 'TODO',
+      flatType: '4 ROOM',
+      livingArrangement: 'NONE',
+      remainingLeaseYears: 20,
+    };
+    const { ruleset } = loadRuleset();
+    const result = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset);
+
+    expect(result.ehg).toBe(30000);
+    expect(result.eligibility).toContainEqual(expect.objectContaining({
+      grantGroup: 'EHG',
+      id: 'EHG_MIN_LEASE',
+      passed: true,
+      reason: "Your flat's remaining lease (20 years) meets the 20-year minimum for the EHG.",
+    }));
   });
 
   it('SC+SC first-timers: $7,000 resale 4-room, living with parents', () => {
