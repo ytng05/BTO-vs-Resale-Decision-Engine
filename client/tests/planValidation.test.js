@@ -45,6 +45,22 @@ describe('validateSituation', () => {
     expect(validateSituation(profile, goodAssumptions())).toHaveProperty('parentsAddress');
   });
 
+  it('shows growth range errors in percent at both bounds', () => {
+    const tooLow = validateSituation(goodProfile(), { ...goodAssumptions(), priceGrowth: -0.25, incomeGrowth: -0.25 });
+    expect(tooLow.priceGrowth).toBe('Flat price growth must be between -20% and 20% a year.');
+    expect(tooLow.incomeGrowth).toBe('Income growth must be between -20% and 30% a year.');
+    const tooHigh = validateSituation(goodProfile(), { ...goodAssumptions(), priceGrowth: 0.25, incomeGrowth: 0.35 });
+    expect(tooHigh.priceGrowth).toBe(tooLow.priceGrowth);
+    expect(tooHigh.incomeGrowth).toBe(tooLow.incomeGrowth);
+    for (const msg of [tooLow.priceGrowth, tooLow.incomeGrowth]) expect(msg).not.toMatch(/0\.\d/);
+  });
+
+  it('words required-field errors to match the labels', () => {
+    const errors = validateSituation(goodProfile(), { priceGrowth: null, incomeGrowth: null, horizonYears: null });
+    expect(errors.horizonYears).toBe('Enter how many years to compare after.');
+    expect(errors.priceGrowth).toBe('Enter flat price growth (% a year).');
+  });
+
   it('accepts zero and negative growth but rejects absurd rates', () => {
     expect(validateSituation(goodProfile(), { ...goodAssumptions(), priceGrowth: 0, incomeGrowth: -0.05 })).toEqual({});
     expect(validateSituation(goodProfile(), { ...goodAssumptions(), priceGrowth: 3 })).toHaveProperty('priceGrowth');
@@ -64,6 +80,9 @@ describe('validateChoice', () => {
   it('requires every field', () => {
     const errors = validateChoice({ path: 'BTO', purchaseYear: null, town: null, flatType: null, classification: null }, opts);
     expect(Object.keys(errors).sort()).toEqual(['classification', 'flatType', 'purchaseYear', 'town']);
+    expect(errors.flatType).toBe('Choose a flat type.');
+    expect(errors.town).toBe('Choose a town.');
+    expect(errors.classification).toBe('Choose a classification.');
   });
 
   it('rejects a purchase year in the past', () => {

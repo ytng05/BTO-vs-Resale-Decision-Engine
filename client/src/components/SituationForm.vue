@@ -91,6 +91,8 @@ const err = (key) => props.errors[key];
             min="18"
             step="1"
             inputmode="numeric"
+            placeholder="e.g. 30"
+            :aria-invalid="err(`applicants.${i}.age`) ? 'true' : null"
             class="form-control"
             :class="{ 'is-invalid': err(`applicants.${i}.age`) }"
             :data-cy="`situation-buyer-${i + 1}-age-input`"
@@ -105,6 +107,7 @@ const err = (key) => props.errors[key];
             v-model="a.citizenship"
             class="form-select"
             :class="{ 'is-invalid': err(`applicants.${i}.citizenship`) }"
+            :aria-invalid="err(`applicants.${i}.citizenship`) ? 'true' : null"
             :data-cy="`situation-buyer-${i + 1}-citizenship-select`"
           >
             <option v-for="c in CITIZENSHIPS" :key="c.value" :value="c.value">{{ c.label }}</option>
@@ -113,35 +116,45 @@ const err = (key) => props.errors[key];
         </div>
 
         <div class="col-12 col-sm-6 col-lg-3">
-          <label :for="`buyer-${i}-income`" class="form-label">Monthly income ($)</label>
-          <input
-            :id="`buyer-${i}-income`"
-            v-model.number="a.monthlyIncome"
-            type="number"
-            min="0"
-            step="100"
-            inputmode="numeric"
-            class="form-control"
-            :class="{ 'is-invalid': err(`applicants.${i}.monthlyIncome`) }"
-            :data-cy="`situation-buyer-${i + 1}-income-input`"
-          />
-          <div class="invalid-feedback">{{ err(`applicants.${i}.monthlyIncome`) }}</div>
+          <label :for="`buyer-${i}-income`" class="form-label">Monthly income</label>
+          <div class="input-group has-validation">
+            <span class="input-group-text">$</span>
+            <input
+              :id="`buyer-${i}-income`"
+              v-model.number="a.monthlyIncome"
+              type="number"
+              min="0"
+              step="100"
+              inputmode="numeric"
+              placeholder="e.g. 5000"
+              :aria-invalid="err(`applicants.${i}.monthlyIncome`) ? 'true' : null"
+              class="form-control"
+              :class="{ 'is-invalid': err(`applicants.${i}.monthlyIncome`) }"
+              :data-cy="`situation-buyer-${i + 1}-income-input`"
+            />
+            <div class="invalid-feedback">{{ err(`applicants.${i}.monthlyIncome`) }}</div>
+          </div>
         </div>
 
         <div class="col-12 col-sm-6 col-lg-3">
-          <label :for="`buyer-${i}-cpf`" class="form-label">CPF OA balance ($)</label>
-          <input
-            :id="`buyer-${i}-cpf`"
-            v-model.number="a.cpfOaBalance"
-            type="number"
-            min="0"
-            step="100"
-            inputmode="numeric"
-            class="form-control"
-            :class="{ 'is-invalid': err(`applicants.${i}.cpfOaBalance`) }"
-            :data-cy="`situation-buyer-${i + 1}-cpf-input`"
-          />
-          <div class="invalid-feedback">{{ err(`applicants.${i}.cpfOaBalance`) }}</div>
+          <label :for="`buyer-${i}-cpf`" class="form-label">CPF OA balance</label>
+          <div class="input-group has-validation">
+            <span class="input-group-text">$</span>
+            <input
+              :id="`buyer-${i}-cpf`"
+              v-model.number="a.cpfOaBalance"
+              type="number"
+              min="0"
+              step="100"
+              inputmode="numeric"
+              placeholder="e.g. 40000"
+              :aria-invalid="err(`applicants.${i}.cpfOaBalance`) ? 'true' : null"
+              class="form-control"
+              :class="{ 'is-invalid': err(`applicants.${i}.cpfOaBalance`) }"
+              :data-cy="`situation-buyer-${i + 1}-cpf-input`"
+            />
+            <div class="invalid-feedback">{{ err(`applicants.${i}.cpfOaBalance`) }}</div>
+          </div>
         </div>
 
         <div class="col-12">
@@ -176,34 +189,44 @@ const err = (key) => props.errors[key];
     <h3 class="h6">Savings</h3>
     <div class="row g-3 mb-4">
       <div class="col-12 col-md-6">
-        <label for="cash-savings" class="form-label">Cash savings now ($)</label>
-        <input
-          id="cash-savings"
-          v-model.number="store.profile.cashSavings"
-          type="number"
-          min="0"
-          step="1000"
-          inputmode="numeric"
-          class="form-control"
-          :class="{ 'is-invalid': err('cashSavings') }"
-          data-cy="situation-cash-savings-input"
-        />
-        <div class="invalid-feedback">{{ err('cashSavings') }}</div>
+        <label for="cash-savings" class="form-label">Cash savings now</label>
+        <div class="input-group has-validation">
+          <span class="input-group-text">$</span>
+          <input
+            id="cash-savings"
+            v-model.number="store.profile.cashSavings"
+            type="number"
+            min="0"
+            step="1000"
+            inputmode="numeric"
+            placeholder="e.g. 20000"
+            :aria-invalid="err('cashSavings') ? 'true' : null"
+            class="form-control"
+            :class="{ 'is-invalid': err('cashSavings') }"
+            data-cy="situation-cash-savings-input"
+          />
+          <div class="invalid-feedback">{{ err('cashSavings') }}</div>
+        </div>
       </div>
       <div class="col-12 col-md-6">
-        <label for="monthly-savings" class="form-label">Cash saved each month ($)</label>
-        <input
-          id="monthly-savings"
-          v-model.number="store.profile.monthlySavings"
-          type="number"
-          min="0"
-          step="100"
-          inputmode="numeric"
-          class="form-control"
-          :class="{ 'is-invalid': err('monthlySavings') }"
-          data-cy="situation-monthly-savings-input"
-        />
-        <div class="invalid-feedback">{{ err('monthlySavings') }}</div>
+        <label for="monthly-savings" class="form-label">Cash saved each month</label>
+        <div class="input-group has-validation">
+          <span class="input-group-text">$</span>
+          <input
+            id="monthly-savings"
+            v-model.number="store.profile.monthlySavings"
+            type="number"
+            min="0"
+            step="100"
+            inputmode="numeric"
+            placeholder="e.g. 1000"
+            :aria-invalid="err('monthlySavings') ? 'true' : null"
+            class="form-control"
+            :class="{ 'is-invalid': err('monthlySavings') }"
+            data-cy="situation-monthly-savings-input"
+          />
+          <div class="invalid-feedback">{{ err('monthlySavings') }}</div>
+        </div>
       </div>
     </div>
 
@@ -220,6 +243,8 @@ const err = (key) => props.errors[key];
           maxlength="6"
           class="form-control"
           :class="{ 'is-invalid': err('parentsAddress') }"
+          :aria-invalid="err('parentsAddress') ? 'true' : null"
+          placeholder="e.g. 560123"
           aria-describedby="parents-postal-help"
           data-cy="situation-parents-postal-input"
         />
@@ -237,45 +262,60 @@ const err = (key) => props.errors[key];
     </p>
     <div class="row g-3">
       <div class="col-12 col-md-4">
-        <label for="price-growth" class="form-label">Flat price growth (% a year)</label>
-        <input
-          id="price-growth"
-          v-model.number="priceGrowthPct"
-          type="number"
-          step="0.5"
-          class="form-control"
-          :class="{ 'is-invalid': err('priceGrowth') }"
-          data-cy="situation-price-growth-input"
-        />
-        <div class="invalid-feedback">{{ err('priceGrowth') }}</div>
+        <label for="price-growth" class="form-label">Flat price growth per year</label>
+        <div class="input-group has-validation">
+          <input
+            id="price-growth"
+            v-model.number="priceGrowthPct"
+            type="number"
+            step="0.5"
+            placeholder="e.g. 3"
+            :aria-invalid="err('priceGrowth') ? 'true' : null"
+            class="form-control"
+            :class="{ 'is-invalid': err('priceGrowth') }"
+            data-cy="situation-price-growth-input"
+          />
+          <span class="input-group-text">%</span>
+          <div class="invalid-feedback">{{ err('priceGrowth') }}</div>
+        </div>
       </div>
       <div class="col-12 col-md-4">
-        <label for="income-growth" class="form-label">Income growth (% a year)</label>
-        <input
-          id="income-growth"
-          v-model.number="incomeGrowthPct"
-          type="number"
-          step="0.5"
-          class="form-control"
-          :class="{ 'is-invalid': err('incomeGrowth') }"
-          data-cy="situation-income-growth-input"
-        />
-        <div class="invalid-feedback">{{ err('incomeGrowth') }}</div>
+        <label for="income-growth" class="form-label">Income growth per year</label>
+        <div class="input-group has-validation">
+          <input
+            id="income-growth"
+            v-model.number="incomeGrowthPct"
+            type="number"
+            step="0.5"
+            placeholder="e.g. 2"
+            :aria-invalid="err('incomeGrowth') ? 'true' : null"
+            class="form-control"
+            :class="{ 'is-invalid': err('incomeGrowth') }"
+            data-cy="situation-income-growth-input"
+          />
+          <span class="input-group-text">%</span>
+          <div class="invalid-feedback">{{ err('incomeGrowth') }}</div>
+        </div>
       </div>
       <div class="col-12 col-md-4">
-        <label for="horizon" class="form-label">Compare after (years)</label>
-        <input
-          id="horizon"
-          v-model.number="store.assumptions.horizonYears"
-          type="number"
-          min="1"
-          step="1"
-          inputmode="numeric"
-          class="form-control"
-          :class="{ 'is-invalid': err('horizonYears') }"
-          data-cy="situation-horizon-input"
-        />
-        <div class="invalid-feedback">{{ err('horizonYears') }}</div>
+        <label for="horizon" class="form-label">Compare after</label>
+        <div class="input-group has-validation">
+          <input
+            id="horizon"
+            v-model.number="store.assumptions.horizonYears"
+            type="number"
+            min="1"
+            step="1"
+            inputmode="numeric"
+            placeholder="e.g. 10"
+            :aria-invalid="err('horizonYears') ? 'true' : null"
+            class="form-control"
+            :class="{ 'is-invalid': err('horizonYears') }"
+            data-cy="situation-horizon-input"
+          />
+          <span class="input-group-text">years</span>
+          <div class="invalid-feedback">{{ err('horizonYears') }}</div>
+        </div>
       </div>
     </div>
   </div>

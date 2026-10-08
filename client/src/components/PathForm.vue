@@ -48,9 +48,10 @@ const err = (key) => props.errors[key];
           :min="currentYear"
           step="1"
           inputmode="numeric"
-          :placeholder="String(currentYear)"
+          :placeholder="`e.g. ${currentYear}`"
           class="form-control"
           :class="{ 'is-invalid': err('purchaseYear') }"
+          :aria-invalid="err('purchaseYear') ? 'true' : null"
           :data-cy="`${prefix}-year-input`"
         />
         <div class="invalid-feedback">{{ err('purchaseYear') }}</div>
@@ -63,6 +64,7 @@ const err = (key) => props.errors[key];
           v-model="choice.town"
           class="form-select"
           :class="{ 'is-invalid': err('town') }"
+          :aria-invalid="err('town') ? 'true' : null"
           :data-cy="`${prefix}-town-select`"
         >
           <option :value="null" disabled>Choose a town</option>
@@ -78,6 +80,7 @@ const err = (key) => props.errors[key];
           v-model="choice.flatType"
           class="form-select"
           :class="{ 'is-invalid': err('flatType') }"
+          :aria-invalid="err('flatType') ? 'true' : null"
           :data-cy="`${prefix}-flat-type-select`"
         >
           <option :value="null" disabled>Choose a flat type</option>
@@ -93,6 +96,7 @@ const err = (key) => props.errors[key];
           v-model="choice.classification"
           class="form-select"
           :class="{ 'is-invalid': err('classification') }"
+          :aria-invalid="err('classification') ? 'true' : null"
           :aria-describedby="`${prefix}-classification-help`"
           :data-cy="`${prefix}-classification-select`"
         >
@@ -111,6 +115,7 @@ const err = (key) => props.errors[key];
           v-model="choice.livingArrangement"
           class="form-select"
           :class="{ 'is-invalid': err('livingArrangement') }"
+          :aria-invalid="err('livingArrangement') ? 'true' : null"
           :aria-describedby="`${prefix}-living-help`"
           :data-cy="`${prefix}-living-select`"
         >
