@@ -204,6 +204,10 @@ const WARNINGS = Object.freeze({
  *                                              not measured (D15); defaults to 'NONE'
  * @property {number} [btoWaitYears]          - BTO only: years from application to key collection (D7).
  *                                              Supplied by the caller (seeded project data or user override)
+ * @property {number} [subsidyRecoveryRate]   - BTO Plus/Prime only: decimal, e.g. 0.06. Per project, from
+ *                                              seat 3's BTO seed record, not the ruleset (D18). 0 / omitted for
+ *                                              Standard and resale. Missing for Plus/Prime → warn
+ *                                              CLASSIFICATION_CLAWBACK_ESTIMATED
  */
 
 /**
@@ -215,6 +219,8 @@ const WARNINGS = Object.freeze({
  * @property {number} loanTenureYears
  * @property {'HDB'|'BANK'} loanType          - TDSR is checked for 'BANK' only
  * @property {number} evaluationStartYear
+ * @property {number} legalFeesCents          - estimate, not policy (D17); server default if not supplied
+ * @property {number} agentFeesCents          - estimate, not policy (D17); server default if not supplied
  */
 
 // ---------------------------------------------------------------------------
@@ -246,6 +252,8 @@ const WARNINGS = Object.freeze({
  * @property {number} holdingPeriodYears
  * @property {number} [loanTenureYears]       - server default if omitted
  * @property {'HDB'|'BANK'} [loanType]        - server default if omitted
+ * @property {number} [legalFeesCents]        - server default if omitted (D17)
+ * @property {number} [agentFeesCents]        - server default if omitted (D17)
  */
 
 /**

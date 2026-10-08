@@ -18,5 +18,7 @@
 | D14 | Where dollars become cents | One unit across the API and engine | seat 1 | The client converts when it sends the request. The API and engine are integer cents end to end; the form store may keep dollars for display |
 | D15 | PHG "near parents": measure or declare? | Resale is chosen by town, not address, so there is nothing to measure from | seat 1 + 2 | Declared: `livingArrangement` ('WITH' / 'NEAR' / 'NONE') as answered by the user. No parents' postal code, no OneMap distance call. The UI explains what "near" means |
 | D16 | Resale remaining lease | EHG lease-to-95 check and price lookup | seat 1 + 3 | The user picks a lease band (e.g. 80-89). The route filters the price lookup by that band and passes the band's lower bound to the engine as `remainingLeaseYears`. BTO is always 99 |
+| D17 | Legal and agent fees: where do the estimates live? | Feed `transactionCostsCents` | seat 1 | `Assumptions.legalFeesCents` / `agentFeesCents`. Estimates, not policy, so not in the ruleset. Optional in the request; server defaults owned by seat 1, echoed in the response; the user can override |
+| D18 | Plus/Prime clawback rate | Sets `clawbackCents` | seat 1 + 3 | Per project, not in the ruleset. Optional `choice.subsidyRecoveryRate` (decimal), filled by the route from seat 3's BTO seed record. 0 for Standard and resale. Missing for Plus/Prime: engine warns `CLASSIFICATION_CLAWBACK_ESTIMATED` |
 
 Out of scope by decision: Executive Condominiums.

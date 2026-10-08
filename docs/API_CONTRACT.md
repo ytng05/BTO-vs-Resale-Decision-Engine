@@ -41,6 +41,8 @@ All money is integer cents. The client converts dollars to cents when it sends t
 | `choice.purchasePriceCents` | Server lookup | Median from cached data.gov.sg transactions for town, flat type and lease band; seeded launch price for BTO. Never sent by the client |
 | `assumptions.annualPriceGrowth`, `annualIncomeGrowth`, `holdingPeriodYears` | Form | Growth as decimals (0.03) |
 | `assumptions.loanTenureYears`, `loanType` | Default | Optional in the request; the server fills defaults and echoes them |
+| `assumptions.legalFeesCents`, `agentFeesCents` | Default, form override | Estimates, not policy. Server defaults owned by seat 1 (D17) |
+| `choice.subsidyRecoveryRate` | Server lookup | BTO Plus/Prime only, from the BTO seed record (D18). Never sent by the client |
 | `assumptions.evaluationStartYear` | Server | Never sent by the client |
 | `cashSavings`, `monthlySavings` | Form | Not read by `evaluate()` yet. Open: use for an affordability check, or drop |
 
