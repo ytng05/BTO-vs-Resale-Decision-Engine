@@ -67,9 +67,14 @@ export const LIVING_ARRANGEMENTS = [
 ];
 
 // Shape of one buyer in store.profile.applicants. Matches Person in server/src/engine/types.js.
+let nextApplicantId = 1;
+
 export function blankApplicant() {
   return {
+    id: `applicant-${nextApplicantId++}`,
     age: null,
+    // Defaults to the most common case (Singapore Citizen, first-timer) so a typical buyer
+    // only has to fill in numbers, not toggle every field. Still fully editable per buyer.
     citizenship: 'SC',
     firstTimer: true,
     monthlyIncome: null,
