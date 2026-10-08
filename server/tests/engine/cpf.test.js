@@ -58,6 +58,5 @@ describe('computeAccruedInterest: hand-worked fixture cases', () => {
 
 describe('computeAccruedInterest: not yet covered by a fixture', () => {
   it.todo('compounding convention switch: MONTHLY gives a different result from ANNUAL');
-  it.todo('sale before the first December credit: stub base is principal only (D12)');
   it.todo('refund is capped when sale proceeds cannot cover loan plus refund');
 });

@@ -3,7 +3,6 @@
   "_workedBy": "seat 1",
   "_verifiedBy": "TODO: seat 2 to work Case 2 independently",
   "_dateWorked": "2026-10-08",
-
   "_conventions": {
     "decision": "D12 in docs/DECISIONS.md (stated assumption, pending CPF Board confirmation)",
     "compounding": "ANNUAL: interest computed monthly at the OA rate, credited each December (D2, CPF Board)",
@@ -12,9 +11,7 @@
     "stubBasis": "After the last December credit, simple interest at oaRate / 12 per full month on the obligation carried into the stub (principal plus credited interest; principal only if no December credit yet)",
     "rounding": "Full precision within the year; round to the nearest cent, halves up, at each annual credit and once on the stub credit. Never monthly."
   },
-
   "_units": "All money in integer cents. Months are numbered from 1 = the purchase month.",
-
   "cases": [
     {
       "id": "lump-sum-only",
@@ -80,6 +77,28 @@
         "totalRefundCents": 31113626,
         "stubMonths": 5,
         "stubCreditCents": 315811
+      }
+    },
+    {
+      "id": "sale-before-first-december",
+      "description": "Purchase June 2027, sale October 2027: no December credit, so the whole period is one stub on principal only (D12). Instalments accrue from the month after payment; the sale-month instalment earns nothing.",
+      "inputs": {
+        "oaRate": 0.025,
+        "compounding": "ANNUAL",
+        "startYear": 2027,
+        "startMonth": 6,
+        "lumpSumCents": 8000000,
+        "monthlyInstalmentCents": 120000,
+        "grantCents": 0,
+        "grantMonth": 0,
+        "saleMonth": 5
+      },
+      "expected": {
+        "principalCents": 8600000,
+        "accruedInterestCents": 51500,
+        "totalRefundCents": 8651500,
+        "stubMonths": 3,
+        "stubCreditCents": 51500
       }
     }
   ]
