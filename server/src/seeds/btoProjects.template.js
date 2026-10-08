@@ -26,6 +26,7 @@ export const btoProjects = [
     mopYears: 5,
     subsidyRecoveryRate: 0,
     launchDate: '2026-02-04',
+    estimatedWaitMonths: 44,
     // estimated waiting time: 44 months
     flats: [
       { flatType: '2 ROOM', indicativePriceLow: 150000, indicativePriceHigh: 228000 },
@@ -41,6 +42,7 @@ export const btoProjects = [
     mopYears: 5,
     subsidyRecoveryRate: 0,
     launchDate: '2026-02-04',
+    estimatedWaitMonths: 33,
     // estimated waiting time: 33 months. Prices include floor finishes, internal doors, sanitary fittings.
     flats: [
       { flatType: '2 ROOM', indicativePriceLow: 158000, indicativePriceHigh: 237000 },
@@ -57,6 +59,7 @@ export const btoProjects = [
     mopYears: 5,
     subsidyRecoveryRate: 0,
     launchDate: '2026-02-04',
+    estimatedWaitMonths: 23,
     // estimated waiting time: 23 months. Prices include floor finishes, internal doors, sanitary fittings.
     flats: [
       { flatType: '3 ROOM', indicativePriceLow: 363000, indicativePriceHigh: 444000 },
@@ -73,6 +76,7 @@ export const btoProjects = [
     mopYears: 10,
     subsidyRecoveryRate: 0.06,
     launchDate: '2026-02-04',
+    estimatedWaitMonths: 32,
     // estimated waiting time: 32 months. Prices include floor finishes, internal doors, sanitary fittings.
     flats: [
       { flatType: '2 ROOM', indicativePriceLow: 197000, indicativePriceHigh: 292000 },
@@ -87,6 +91,7 @@ export const btoProjects = [
     mopYears: 10,
     subsidyRecoveryRate: 0.06,
     launchDate: '2026-02-04',
+    estimatedWaitMonths: 37,
     // estimated waiting time: 37 months
     flats: [
       { flatType: '2 ROOM', indicativePriceLow: 203000, indicativePriceHigh: 304000 },
@@ -104,6 +109,7 @@ export const btoProjects = [
     mopYears: 10,
     subsidyRecoveryRate: 0.12,
     launchDate: '2026-02-04',
+    estimatedWaitMonths: 55,
     // estimated waiting time: 55 months. This is the 2nd parcel (1,052 units); the 1st was launched Oct 2025.
     flats: [
       { flatType: '2 ROOM', indicativePriceLow: 215000, indicativePriceHigh: 373000 },

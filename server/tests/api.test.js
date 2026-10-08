@@ -54,4 +54,15 @@ describe('API scaffold', () => {
     expect(res.status).toBe(400);
   });
 
+    it('GET /api/data/rpi rejects a malformed quarter', async () => {
+    const res = await request(app).get('/api/data/rpi?from=2024-Q5');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('BAD_REQUEST');
+  });
+
+  it('GET /api/data/rpi rejects from after to', async () => {
+    const res = await request(app).get('/api/data/rpi?from=2025-Q1&to=2024-Q1');
+    expect(res.status).toBe(400);
+  });
+
 });

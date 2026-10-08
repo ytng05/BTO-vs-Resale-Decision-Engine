@@ -9,6 +9,7 @@ const btoProjectSchema = new mongoose.Schema({
   subsidyRecoveryRate: { type: Number, default: 0, min: 0, max: 1 },  // mix/max rejects typos
   launchDate: { type: Date },
   estimatedCompletion: { type: Date },
+  estimatedWaitMonths: { type: Number, min: 0 }, // from launch data; seat 1 uses it for when CPF interest starts accruing
   flats: [
     {
       flatType: {type: String, required: true, uppercase: true, trim: true},

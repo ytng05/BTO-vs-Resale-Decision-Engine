@@ -11,7 +11,7 @@
 | D7 | BTO wait time and ballot success as inputs | Not guaranteed | seat 1 | |
 | D8 | Comparable flats: how the user picks BTO vs resale of like-for-like | Avoid comparing different estates unfairly | seats 1 + 4 | |
 | D9 | Which policy rules stay "held constant" in projections | State the assumption in the UI | seat 2 | |
-| D10 | data.gov.sg: API key registered? Yes; base https://data.gov.sg/api/action; 4req/10s keyless, 8dev, 20 prod | Rate limits now apply | seat 3 | |
+| D10 | data.gov.sg: API key registered? base URL and header confirmed? | Rate limits now apply | seat 3 | Yes. `x-api-key` header; base https://data.gov.sg/api/action; 4 req/10s keyless, 8 dev, 20 prod (guide.data.gov.sg, 2026-10-07) |
 | D11 | Heatmap: DOM/SVG (chosen) vs canvas | Cypress cannot assert on canvas | seats 4 + 5 | DOM grid (scaffold) |
 
 Out of scope by decision: Executive Condominiums.

@@ -1,7 +1,9 @@
 // SEAT 3. External data, server-side only. Cache in Mongo. See services/datagov and services/onemap.
 import { Router } from 'express';
 import { notImplemented } from '../middleware/notImplemented.js';
-import { FLAT_TYPES, getResalePriceBasis } from '../services/datagov/resalePrice.js';
+import { FLAT_TYPES, TOWNS, getResalePriceBasis } from '../services/datagov/resalePrice.js';
+import { QUARTER_RE, getRpiSeries } from '../services/datagov/rpi.js';
+
 
 
 import mongoose from 'mongoose';
@@ -18,6 +20,8 @@ router.get('/resale-price', async (req, res, next) => {
     const months = req.query.months === undefined ? 12 : Number(req.query.months);
 
     if (!town) return badRequest(res, 'town is required, e.g. TAMPINES');
+    if (!TOWNS.includes(town)) return badRequest(res, `town "${town}" is not an HDB town. Use one of ${TOWNS.join(', ')}`);
+    // ^ catches typos for town names
     if (!FLAT_TYPES.includes(flatType)) return badRequest(res, `flatType must be one of ${FLAT_TYPES.join(', ')}`);
     if (!Number.isInteger(months) || months < 1 || months > 60) {
       return badRequest(res, 'months must be a whole number from 1 to 60');
@@ -43,7 +47,25 @@ function badRequest(res, message) {
 }
 
 
-router.get('/rpi', notImplemented('seat 3', 'Resale Price Index series (data.gov.sg)'));
+// GET /api/data/rpi?from=2015-Q1&to=2026-Q2   (both optional, inclusive)
+router.get('/rpi', async (req, res, next) => {
+  try {
+    const from = req.query.from === undefined ? undefined : String(req.query.from).trim().toUpperCase();
+    const to = req.query.to === undefined ? undefined : String(req.query.to).trim().toUpperCase();
+
+    for (const [name, value] of [['from', from], ['to', to]]) {
+      if (value !== undefined && !QUARTER_RE.test(value)) {
+        return badRequest(res, `${name} "${value}" is not valid. Use YYYY-Qn, e.g. 2015-Q1`);
+      }
+    }
+    if (from && to && from > to) return badRequest(res, `from (${from}) must not be after to (${to})`);
+
+    res.json(await getRpiSeries({ from, to }));
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/distance', notImplemented('seat 3', 'Distance to parents (OneMap)'));
 router.get('/bto-projects', async (req, res, next) => {
   try {

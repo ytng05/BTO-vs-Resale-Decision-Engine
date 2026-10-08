@@ -53,3 +53,19 @@ export function mockResalePrice() {
   };
 }
 
+export function mockRpi() {
+  return {
+    mock: true,
+    base: '2009-Q1 = 100',
+    latest: { quarter: '2026-Q2', index: 100 },
+    historicalAnnualGrowth: { '5y': 0.03, '10y': 0.03, '20y': 0.03 },
+    count: 4,
+    series: [
+      { quarter: '2025-Q3', index: 97 }, { quarter: '2025-Q4', index: 98 },
+      { quarter: '2026-Q1', index: 99 }, { quarter: '2026-Q2', index: 100 },
+    ],
+    source: { datasetId: 'MOCK', name: 'MOCK Resale Price Index' },
+    cached: false, fetchedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+

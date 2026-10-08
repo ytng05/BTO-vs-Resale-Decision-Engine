@@ -69,6 +69,7 @@ TODO: list demo credentials here once auth is implemented.
 
 ## Deployment
 TODO (seat 3): hosting choice, environment variables, cache pre-warm on deploy, URL of the first page.
+After deploy: npm run warm -w server (need MONGODB_URI and DATAGOV_API_KEY)
 
 ## Rulesets and rule volatility
 All policy rules live in `server/src/config/rulesets/`, versioned and date-stamped. Rules moved in Aug 2024, Oct 2024,

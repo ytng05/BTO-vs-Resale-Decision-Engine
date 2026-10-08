@@ -8,7 +8,9 @@
     "start": "node src/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed": "node src/seeds/seedBtoProjects.js"
+    "seed": "node src/seeds/seedBtoProjects.js",
+    "warm": "node src/seeds/warmCache.js"
+
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
