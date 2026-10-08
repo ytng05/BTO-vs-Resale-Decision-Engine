@@ -6,6 +6,8 @@ const nextYear = new Date().getFullYear() + 1;
 // Fills each plan step with valid input so validation lets the stepper move on.
 function fillSituation() {
   cy.get('[data-cy=situation-buyer-1-age-input]').type('30');
+  cy.get('[data-cy=situation-buyer-1-citizenship-select]').select('SC');
+  cy.get('[data-cy=situation-buyer-1-first-timer-switch]').check();
   cy.get('[data-cy=situation-buyer-1-income-input]').type('5000');
   cy.get('[data-cy=situation-buyer-1-cpf-input]').type('40000');
   cy.get('[data-cy=situation-cash-savings-input]').type('20000');
