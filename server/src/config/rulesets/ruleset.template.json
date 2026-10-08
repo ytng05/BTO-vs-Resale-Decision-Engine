@@ -101,14 +101,15 @@
   },
 
   "cpf": {
-    "oaInterestRate": null,
+    "oaInterestRate": 0.025,
     "accruedInterestCompounding": "computed monthly at OA rate, compounded yearly",
     "partialMonthTreatment": "EXCLUDE_BOTH",
     "_partialMonthTreatmentNote": "Allowed values: \"EXCLUDE_BOTH\" | \"INCLUDE_BOTH\" | \"INCLUDE_START_ONLY\" | \"INCLUDE_END_ONLY\". Current value is an assumption pending Seat 1's CPF query.",
     "_compoundingNote": "Verified by CPF Board official answer: computed monthly at OA rate, compounded yearly.",
     "sources": [
       "https://ask.gov.sg/cpf/questions/cm0f52kzh01d1pz7aq4i1wz4y",
-      "https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts"
+      "https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts",
+      "https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027"
     ]
   },
 
@@ -120,14 +121,15 @@
       "bankLoanHdbFlats": 75,
       "bankLoanHdbFlatsWithTenureOver25YearsOrAgeOver65": 55
     },
-    "hdbConcessionaryRate": null,
+    "hdbConcessionaryRate": 0.026,
     "maxTenureYears": {
       "hdbLoan": 25,
       "bankLoanHdbFlats": 30
     },
     "sources": [
       "https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/",
-      "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers"
+      "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers",
+      "https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027"
     ]
   },
 
@@ -148,10 +150,14 @@
   },
 
   "classifications": {
-    "STANDARD": { "mopYears": null, "subsidyRecoveryRate": null, "resaleBuyerIncomeCeiling": null },
-    "PLUS":     { "mopYears": null, "subsidyRecoveryRate": null, "resaleBuyerIncomeCeiling": null },
-    "PRIME":    { "mopYears": null, "subsidyRecoveryRate": null, "resaleBuyerIncomeCeiling": null },
+    "STANDARD": { "mopYears": 5, "subsidyRecoveryRate": 0, "resaleBuyerIncomeCeiling": null },
+    "PLUS":     { "mopYears": 10, "subsidyRecoveryRate": null, "resaleBuyerIncomeCeiling": null },
+    "PRIME":    { "mopYears": 10, "subsidyRecoveryRate": null, "resaleBuyerIncomeCeiling": null },
     "_note": "subsidyRecoveryRate also varies per BTO project: store the per-project value on the project record and use these as class defaults only.",
-    "sources": []
+    "_subsidyRecoveryNote": "PLUS/PRIME recovery rates are set per project on the BTO seed record (e.g. Feb 2026: Tampines Nova (Plus) 6%, Redhill Peaks (Prime) 12%); not applicable to resale Plus/Prime flats.",
+    "sources": [
+      "https://www.hdb.gov.sg/residential/buying-a-flat/conditions-after-buying",
+      "https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises"
+    ]
   }
 }

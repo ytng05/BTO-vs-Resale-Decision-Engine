@@ -47,7 +47,7 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 
 ## CPF
 
-☐ `cpf.oaInterestRate`: 0.025. Notes say a secondary source reported 2.5% through Q3 2026. ⚠️ Confirm on CPF Board's interest-rate page.
+✅ `cpf.oaInterestRate`: 0.025 for 1 Oct–31 Dec 2026; reviewed quarterly. Source: <https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027> (checked vs official source 2026-10-07: Claude + Har)
 ✅ `cpf.accruedInterestCompounding`: "computed monthly at OA rate, compounded yearly". Source: CPF Board official answer <https://ask.gov.sg/cpf/questions/cm0f52kzh01d1pz7aq4i1wz4y>. NOTE: team prompt assumed monthly compounding, which is WRONG. Seat 1 must update engine/cpf.
 ☐ `cpf.partialMonthTreatment`: `EXCLUDE_BOTH`. ASSUMPTION (seat 1, pending CPF query). Note: CPF's general interest rule (withdrawals stop earning from the month they occur; refunds earn from the next month, source <https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts>) suggests `INCLUDE_BOTH` may be correct under the "would have earned" definition.
 
@@ -56,7 +56,7 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 ✅ `loans.ltv`: HDB loan 75%; bank loan 75%; bank LTV drops to 55% if tenure exceeds 25 years for HDB flats or extends past borrower age 65. Sources: <https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/>; HDB KEO Aug 2024 (HDB loan 75%): <https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers>. (checked vs official source 2026-10-06: Claude + Har)
 ✅ `loans.msrPercent`: 30. Source: <https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/>. (checked vs official source 2026-10-06: Claude + Har)
 ✅ `loans.tdsrPercent`: 55. Applies to bank loans only; N.A. for HDB loans (MoneySense comparison table). Seat 1: apply TDSR only when loan type is bank. Source: <https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/>. (checked vs official source 2026-10-06: Claude + Har)
-☐ `loans.hdbConcessionaryRate`: 0.026, reported as OA rate + 0.1%. Source reported: CPF release, 2022, <https://www.cpf.gov.sg/member/infohub/news/news-releases/cpf-interest-rates-from-1-july-2022-to-30-september-2022>. ⚠️ Confirm current rate.
+✅ `loans.hdbConcessionaryRate`: 0.026 (OA rate + 0.1%, for 1 Oct–31 Dec 2026). Source: <https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027> (checked vs official source 2026-10-07: Claude + Har)
 ✅ `loans.maxTenureYears`: HDB loan 25; bank loan 30 (HDB flats). Source: <https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/>. (checked vs official source 2026-10-06: Claude + Har)
 
 ## Transaction Costs
@@ -67,8 +67,11 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 
 ## Flat Classifications (BTOs Launched from Oct 2024)
 
-☐ `classifications.STANDARD.mopYears`, `classifications.PLUS.mopYears`, `classifications.PRIME.mopYears`: 5, 10, and 10 respectively. Source reported: HDB Feb 2026 BTO press release, <https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises>.
-☐ `classifications.STANDARD.subsidyRecoveryRate`, `classifications.PLUS.subsidyRecoveryRate`, `classifications.PRIME.subsidyRecoveryRate`: reported as none for Standard and per-project for Plus and Prime, with Prime higher than Plus. ⚠️ Per-project rates should be verified in each BTO press release / HDB Flat Portal and stored on each project seed record, not treated as confirmed class defaults.
+✅ `classifications.STANDARD.mopYears`: 5. Source: <https://www.hdb.gov.sg/residential/buying-a-flat/conditions-after-buying> (checked vs official source 2026-10-07: Claude + Har)
+✅ `classifications.PLUS.mopYears`: 10. Same HDB conditions-after-buying source (checked vs official source 2026-10-07: Claude + Har)
+✅ `classifications.PRIME.mopYears`: 10. Same HDB conditions-after-buying source (checked vs official source 2026-10-07: Claude + Har)
+✅ `classifications.STANDARD.subsidyRecoveryRate`: 0 (not applicable). Source: <https://www.hdb.gov.sg/residential/buying-a-flat/conditions-after-buying> (checked vs official source 2026-10-07: Claude + Har)
+☐ `classifications.PLUS.subsidyRecoveryRate` and `classifications.PRIME.subsidyRecoveryRate`: keep null in the ruleset. Set per project on BTO seed record, e.g. Feb 2026: Tampines Nova (Plus) 6%, Redhill Peaks (Prime) 12%. Not applicable to resale Plus/Prime flats. Source: <https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises>.
 ☐ `classifications.STANDARD.resaleBuyerIncomeCeiling`, `classifications.PLUS.resaleBuyerIncomeCeiling`, `classifications.PRIME.resaleBuyerIncomeCeiling`: reported as none for Standard and previously 14,000 for Plus and Prime. ⚠️ Possible change to 16,000 after 24 Aug 2026; confirm with HDB.
 
 ## Slide / Narrative Check

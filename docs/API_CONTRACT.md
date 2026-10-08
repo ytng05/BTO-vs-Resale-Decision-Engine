@@ -8,6 +8,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 |---|---|---|---|---|
 | GET | `/api/health` | seat 3 | liveness and feature flags | working |
 | GET | `/api/ruleset` | seat 2 | ruleset version, status, effective date | working (template) |
+| POST | `/api/grants` | seat 2 | evaluate EHG, Family Grant, PHG, and eligibility explanations | working |
 | POST | `/api/auth/register` | seat 3 | create user (bcryptjs hash) | stub |
 | POST | `/api/auth/login` | seat 3 | returns JWT | stub |
 | GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | stub |
@@ -20,6 +21,50 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached) | stub |
 | GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects | stub |
 | GET | `/api/data/distance?from=&to=` | seat 3 | OneMap distance for the PHG test | stub |
+
+### GET /api/ruleset
+
+Response: `{ version, status, effectiveDate, verifiedOn, verifiedBy, rules }`. `rules` is the active versioned ruleset object; fields not yet verified remain null or empty and must be presented as unverified.
+
+## POST /api/grants
+
+Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/types.js`. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to today's ISO date.
+
+Example request:
+```json
+{
+  "profile": {
+    "applicants": [
+      { "age": 35, "citizenship": "SC", "firstTimer": true, "monthlyIncome": 3500, "cpfOaBalance": 0 },
+      { "age": 34, "citizenship": "SC", "firstTimer": true, "monthlyIncome": 3500, "cpfOaBalance": 0 }
+    ],
+    "cashSavings": 0,
+    "monthlySavings": 0
+  },
+  "choice": {
+    "path": "RESALE",
+    "purchaseYear": 2026,
+    "town": "TODO",
+    "flatType": "4 ROOM",
+    "livingArrangement": "NEAR",
+    "remainingLeaseYears": 80
+  }
+}
+```
+
+Response:
+```json
+{
+  "ehg": 30000,
+  "familyGrant": 80000,
+  "phg": 20000,
+  "total": 130000,
+  "eligibility": [{ "grant": "EHG income tier", "passed": true, "reason": "..." }],
+  "rulesetVersion": "string",
+  "rulesetStatus": "TEMPLATE|VERIFIED",
+  "assessmentDate": "2026-10-08"
+}
+```
 
 ## POST /api/compare
 

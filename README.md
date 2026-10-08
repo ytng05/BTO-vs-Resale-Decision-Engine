@@ -79,9 +79,10 @@ The shipped ruleset is a TEMPLATE with empty values to be filled from primary so
 Required by the module. Keep `docs/AI_USAGE_LOG.md` up to date and summarise it here before submission.
 - The initial repository scaffold (folder structure, Express and Vue boilerplate, configuration, function stubs with
   contracts, mock data, test skeletons, documentation templates) was generated with Claude (Anthropic).
-- With TA approval, GitHub Copilot assisted with `evaluateGrants` business logic and grant tests. Policy values were read
+- With TA approval, GitHub Copilot generated the grants eligibility logic and grant tests. The team reviewed the
+  generated logic; policy values are read
   from the checked-in ruleset; use is recorded in `docs/AI_USAGE_LOG.md`.
-- The calculation engine, solvers and endpoints are implemented by the team. Other AI-assisted work is listed in
+- The remaining calculation engine, solvers and endpoints are implemented by the team. Other AI-assisted work is listed in
   `docs/AI_USAGE_LOG.md`.
 
 ## Libraries and credits

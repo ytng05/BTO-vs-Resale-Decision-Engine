@@ -26,6 +26,7 @@ describe('evaluateGrants', () => {
 
     // Family Grant: SC+SC 2-4 room amount is 80,000 and 7,000 is within the 16,000 ceiling; EHG 6,501-7,000 tier is 30,000; PHG near-family amount is 20,000.
     expect(result).toMatchObject({ ehg: 30000, familyGrant: 80000, phg: 20000, total: 130000 });
+    expect(result.eligibility.every((item) => ['EHG', 'Family Grant', 'PHG'].includes(item.grantGroup))).toBe(true);
   });
 
   it('SC+SC first-timers: $7,000 resale 5-room, no parents arrangement', () => {
@@ -148,9 +149,10 @@ describe('evaluateGrants', () => {
     // PR+PR has a configured Family Grant ineligibility; the failed resale prerequisite blocks EHG and NONE claims no PHG.
     expect(result).toMatchObject({ ehg: 0, familyGrant: 0, phg: 0, total: 0 });
     expect(result.eligibility).toContainEqual(expect.objectContaining({
-      grant: 'Family Grant household category',
+      grantGroup: 'Family Grant',
+      grant: 'Family Grant: household type',
       passed: false,
-      reason: 'PR+PR households are not eligible for the Family Grant; an applicant must be SC with at least one other SC/SPR.',
+      reason: 'This household is not eligible for the Family Grant. An applicant must be a Singapore Citizen with at least one other Singapore Citizen or Permanent Resident.',
     }));
   });
 
@@ -174,7 +176,7 @@ describe('evaluateGrants', () => {
     const { ruleset } = loadRuleset();
     const result = evaluateGrants(profile, choice, '2026-10-06', ruleset);
 
-    // EHG: 7,000 falls in the configured 6,501-7,000 family tier (30,000); Family Grant and PHG do not apply to BTO.
+    // EHG: 7,000 falls in the configured 6,501-7,000 family tier (30,000); HDB's Feb 2026 BTO press release, para 7, gives the same worked example. Family Grant and PHG do not apply to BTO.
     expect(result).toMatchObject({ ehg: 30000, familyGrant: 0, phg: 0, total: 30000 });
   });
 
@@ -201,9 +203,10 @@ describe('evaluateGrants', () => {
     // EHG: 7,000 matches the 6,501-7,000 family tier (30,000); short lease reports possible pro-rating but retains that full tier pending the verified formula.
     expect(result).toMatchObject({ ehg: 30000, familyGrant: 0, phg: 0, total: 30000 });
     expect(result.eligibility).toContainEqual(expect.objectContaining({
-      grant: 'EHG lease-to-age pro-rating',
+      grantGroup: 'EHG',
+      grant: 'EHG: lease covers age 95',
       passed: false,
-      reason: 'Lease does not cover youngest buyer to age 95; HDB pro-rating not yet applied, actual EHG may be lower',
+      reason: 'Your remaining lease does not cover the youngest applicant to age 95. HDB pro-rating is not yet applied, so your actual EHG may be lower.',
     }));
   });
 
@@ -253,8 +256,32 @@ describe('evaluateGrants', () => {
     const { ruleset } = loadRuleset();
     const result = evaluateGrants(profile, choice, '2026-10-06', ruleset);
 
-    // EHG: 9,000 is inclusive and matches the 8,501-9,000 family tier (5,000).
+    // EHG: 9,000 is inclusive and matches the 8,501-9,000 family tier (5,000); HDB's Feb 2026 BTO press release, para 7, gives this worked example.
     expect(result).toMatchObject({ ehg: 5000, familyGrant: 0, phg: 0, total: 5000 });
+  });
+
+  it('SC+SC first-timers with $4,000 household income buying BTO', () => {
+    const profile = {
+      applicants: [
+        { age: 35, citizenship: 'SC', firstTimer: true, monthlyIncome: 2000, cpfOaBalance: 0 },
+        { age: 34, citizenship: 'SC', firstTimer: true, monthlyIncome: 2000, cpfOaBalance: 0 },
+      ],
+      cashSavings: 0,
+      monthlySavings: 0,
+    };
+    const choice = {
+      path: 'BTO',
+      purchaseYear: 2026,
+      town: 'TODO',
+      flatType: '4 ROOM',
+      classification: 'STANDARD',
+      remainingLeaseYears: 80,
+    };
+    const { ruleset } = loadRuleset();
+    const result = evaluateGrants(profile, choice, '2026-10-07', ruleset);
+
+    // EHG: $4,000 matches the configured 3,501-4,000 family tier (80,000); HDB's Feb 2026 BTO press release, para 7, provides the 7,000 and 9,000 worked examples and cites the same schedule.
+    expect(result).toMatchObject({ ehg: 80000, familyGrant: 0, phg: 0, total: 80000 });
   });
 
   it('income $1,500 vs $1,501 boundary', () => {
