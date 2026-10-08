@@ -1,7 +1,7 @@
 # API contract (DRAFT 1: agree in week 1, then change only by PR)
 
 All routes are under `/api`. Errors always use `{ "error": { "code": "...", "message": "..." } }`.
-Field names match `server/src/engine/evaluate.contract.js`; `client/src/stores/scenario.js` must use the same names. All money is integer cents.
+Field names match `server/src/engine/evaluate.contract.js`. The request shape is `CompareRequest` in that file. All money in the API is integer cents. `client/src/stores/scenario.js` uses the request names, except money: the store keeps dollars (`monthlyIncome`, `cpfOaBalance`) and converts to `monthlyIncomeCents` / `cpfOaBalanceCents` when sending (D14).
 Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 
 | Method | Path | Owner | Purpose | Status |
@@ -23,7 +23,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 
 ## POST /api/compare
 
-Request: `{ profile, choiceA, choiceB, assumptions }` (`Profile`, `Choice` and `Assumptions` in `engine/evaluate.contract.js`). The client does not send an as-of date; the server sets `evaluationStartYear`.
+Request: `CompareRequest` = `{ profile, choiceA, choiceB, assumptions }` (typedefs in `engine/evaluate.contract.js`; the choices are `RequestChoice`, not the engine `Choice`). The client does not send an as-of date; the server sets `evaluationStartYear`.
 Choice (request): `{ path: "BTO"|"RESALE", purchaseYear, town, flatType, classification?, livingArrangement?, leaseBand?, btoWaitYears? }`. `leaseBand` is resale only (e.g. `"80-89"`); `btoWaitYears` is an optional override.
 
 ### Where each input comes from
@@ -50,8 +50,8 @@ Response (one call returns the WHOLE grid, never one request per cell):
   "rulesetVersion": "string",
   "holdingPeriodYears": 10,
   "breakEvenSentence": "string",
-  "grid": [[{ "priceGrowth": 0.03, "incomeGrowth": 0.02, "winner": "A|B|TIE", "marginCents": 0 }]],
-  "frontier": [{ "priceGrowth": 0.03, "incomeGrowth": 0.02 }],
+  "grid": [[{ "annualPriceGrowth": 0.03, "annualIncomeGrowth": 0.02, "winner": "A|B|TIE", "marginCents": 0 }]],
+  "frontier": [{ "annualPriceGrowth": 0.03, "annualIncomeGrowth": 0.02 }],
   "outcomeA": {}, "outcomeB": {}
 }
 ```

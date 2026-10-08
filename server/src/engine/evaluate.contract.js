@@ -214,6 +214,47 @@ const WARNINGS = Object.freeze({
  */
 
 // ---------------------------------------------------------------------------
+// API REQUEST — what the client sends to POST /api/compare
+// ---------------------------------------------------------------------------
+// Not the engine's input. The route turns a CompareRequest into Profile /
+// Choice / Assumptions: it looks up purchasePriceCents, sets
+// remainingLeaseYears from leaseBand (D16), fills btoWaitYears and loan
+// defaults, and sets evaluationStartYear. The client store mirrors this
+// shape, except money, which the store keeps in dollars (monthlyIncome,
+// cpfOaBalance) and converts to …Cents when sending (D14).
+
+/**
+ * @typedef {Object} RequestChoice
+ * @property {'BTO'|'RESALE'} path
+ * @property {number} purchaseYear
+ * @property {string} town                    - HDB town name, uppercase
+ * @property {string} flatType                - e.g. '4 ROOM'
+ * @property {'STANDARD'|'PLUS'|'PRIME'|null} classification - null for resale
+ * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - resale only (D15)
+ * @property {string} [leaseBand]             - resale only, e.g. '80-89' (D16)
+ * @property {number} [btoWaitYears]          - BTO only, optional override (D7)
+ */
+
+/**
+ * @typedef {Object} RequestAssumptions
+ * @property {number} annualPriceGrowth       - decimal
+ * @property {number} annualIncomeGrowth      - decimal
+ * @property {number} holdingPeriodYears
+ * @property {number} [loanTenureYears]       - server default if omitted
+ * @property {'HDB'|'BANK'} [loanType]        - server default if omitted
+ */
+
+/**
+ * No purchasePriceCents, remainingLeaseYears or evaluationStartYear: the
+ * server sets those. Profile is the engine Profile (money in cents).
+ * @typedef {Object} CompareRequest
+ * @property {Profile} profile
+ * @property {RequestChoice} choiceA
+ * @property {RequestChoice} choiceB
+ * @property {RequestAssumptions} assumptions
+ */
+
+// ---------------------------------------------------------------------------
 // OUTPUT
 // ---------------------------------------------------------------------------
 
@@ -239,9 +280,9 @@ const WARNINGS = Object.freeze({
  * stores some figures as whole-number percents in `…Percent` fields; the
  * engine converts them once, on resolution.
  * @typedef {Object} ResolvedRates
- * @property {number} oaRate
- * @property {number|null} hdbConcessionaryRate - oaRate + hdbRatePremium; null if unresolved
- * @property {'ANNUAL'|'MONTHLY'} accruedInterestCompounding
+ * @property {number} oaRate                  - decimal, e.g. 0.025
+ * @property {number|null} hdbConcessionaryRate - decimal, oaRate + hdbRatePremium; null if unresolved
+ * @property {'ANNUAL'|'MONTHLY'} accruedInterestCompounding - enum, not a rate
  * @property {number} ltvApplied              - decimal, e.g. 0.75 (ruleset stores 75)
  */
 
