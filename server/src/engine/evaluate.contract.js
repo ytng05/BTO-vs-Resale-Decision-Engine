@@ -140,6 +140,12 @@ const RULESET_KEYS = Object.freeze({
  * caller and converts at that boundary: applicant monthlyIncomeCents and
  * cpfOaBalanceCents → dollars going in, ehg / familyGrant / phg → cents coming
  * out. Its eligibility[] checks map onto GrantResult.tests.
+ *
+ * assessmentDate is `${choice.purchaseYear}-01-01` (D13). evaluateGrants()
+ * does not age anyone from that date: it treats the ages it is given as ages
+ * at assessmentDate. So evaluate() passes each applicant's age projected to
+ * the purchase year, age + (purchaseYear - evaluationStartYear).
+ * choice.remainingLeaseYears is already the lease at purchase.
  */
 
 /** Warning codes surfaced in Outcome.warnings. */
