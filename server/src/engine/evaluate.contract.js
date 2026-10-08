@@ -141,7 +141,11 @@ const RULESET_KEYS = Object.freeze({
  * Profile shape as this contract but money in DOLLARS. evaluate() is the only
  * caller and converts at that boundary: applicant monthlyIncomeCents and
  * cpfOaBalanceCents → dollars going in, ehg / familyGrant / phg → cents coming
- * out. Its eligibility[] checks map onto GrantResult.tests.
+ * out. Each eligibility[] entry is { id, grant, grantGroup, passed, reason }:
+ * grantGroup → GrantResult.id ('EHG' → 'EHG', 'Family Grant' → 'FAMILY',
+ * 'PHG' → 'PHG'), and the entry's id → tests[].id unchanged. Test ids are
+ * owned by seat 2 (e.g. EHG_INCOME_CEILING, EHG_MIN_LEASE, FAMILY_RESALE_ONLY,
+ * PHG_LIVING_ARRANGEMENT); the full list is in rules/grants.js.
  *
  * assessmentDate is `${choice.purchaseYear}-01-01` (D13). evaluateGrants()
  * does not age anyone from that date: it treats the ages it is given as ages
@@ -353,7 +357,7 @@ function stubEvaluate(profile, choice, assumptions) {
       {
         id: 'PHG',
         amountCents: 0,
-        tests: [{ id: 'PHG_PROXIMITY', passed: false, reason: 'STUB — not computed' }]
+        tests: [{ id: 'PHG_LIVING_ARRANGEMENT', passed: false, reason: 'STUB — not computed' }]
       }
     ],
     cashRequiredAtPurchaseCents: 4_500_000,
