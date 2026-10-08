@@ -74,7 +74,8 @@ const RULESET_KEYS = Object.freeze({
  * reducedIfTenureYearsOver OR the loan ends after the borrower reaches
  * reducedIfLoanEndsAfterAge; otherwise maxPercent. All values are percents
  * (whole numbers, not decimals). The figures themselves live only in the
- * ruleset. The figure used is reported in resolvedRates.ltvApplied.
+ * ruleset. The figure used is reported in resolvedRates.ltvApplied as a
+ * DECIMAL (75 in the ruleset → 0.75).
  */
 
 /**
@@ -234,11 +235,14 @@ const WARNINGS = Object.freeze({
  * Rates actually used, after resolution from the ruleset.
  * Exposed so the annual-vs-monthly comparison is a diff of two outcomes,
  * and so a wrong figure is visible rather than buried in the maths.
+ * ALL values here are decimals (0.025, 0.75), never percents. The ruleset
+ * stores some figures as whole-number percents in `…Percent` fields; the
+ * engine converts them once, on resolution.
  * @typedef {Object} ResolvedRates
  * @property {number} oaRate
  * @property {number|null} hdbConcessionaryRate - oaRate + hdbRatePremium; null if unresolved
  * @property {'ANNUAL'|'MONTHLY'} accruedInterestCompounding
- * @property {number} ltvApplied
+ * @property {number} ltvApplied              - decimal, e.g. 0.75 (ruleset stores 75)
  */
 
 /**
