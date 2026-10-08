@@ -102,10 +102,10 @@
 
   "cpf": {
     "oaInterestRate": 0.025,
-    "accruedInterestCompounding": "computed monthly at OA rate, compounded yearly",
+    "accruedInterestCompounding": "ANNUAL",
     "partialMonthTreatment": "EXCLUDE_BOTH",
     "_partialMonthTreatmentNote": "Allowed values: \"EXCLUDE_BOTH\" | \"INCLUDE_BOTH\" | \"INCLUDE_START_ONLY\" | \"INCLUDE_END_ONLY\". Current value is an assumption pending Seat 1's CPF query.",
-    "_compoundingNote": "Verified by CPF Board official answer: computed monthly at OA rate, compounded yearly.",
+    "_compoundingNote": "Computed monthly at the OA rate, compounded yearly (CPF Board)",
     "sources": [
       "https://ask.gov.sg/cpf/questions/cm0f52kzh01d1pz7aq4i1wz4y",
       "https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts",
@@ -117,11 +117,16 @@
     "msrPercent": 30,
     "tdsrPercent": 55,
     "ltv": {
-      "hdbLoan": 75,
-      "bankLoanHdbFlats": 75,
-      "bankLoanHdbFlatsWithTenureOver25YearsOrAgeOver65": 55
+      "hdbLoan": { "maxPercent": 75 },
+      "bankLoan": {
+        "maxPercent": 75,
+        "reducedMaxPercent": 55,
+        "reducedIfTenureYearsOver": 25,
+        "reducedIfLoanEndsAfterAge": 65
+      }
     },
-    "hdbConcessionaryRate": 0.026,
+    "hdbRatePremium": 0.001,
+    "_hdbRatePremiumNote": "HDB concessionary rate is pegged at 0.1% above the CPF OA rate (CPF Board, 22 Sep 2026 release)",
     "maxTenureYears": {
       "hdbLoan": 25,
       "bankLoanHdbFlats": 30

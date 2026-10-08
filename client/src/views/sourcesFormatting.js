@@ -6,7 +6,7 @@ const currencyFormatter = new Intl.NumberFormat('en-SG', {
 
 const fractionRateFields = new Set([
   'cpf.oaInterestRate',
-  'loans.hdbConcessionaryRate',
+  'loans.hdbRatePremium',
 ]);
 
 const unitByField = {
@@ -16,6 +16,8 @@ const unitByField = {
   nearDistanceKm: 'km',
   maxTenureYears: 'years',
   mopYears: 'years',
+  reducedIfTenureYearsOver: 'years',
+  reducedIfLoanEndsAfterAge: 'age',
 };
 
 const sourceTitles = new Map([
@@ -41,6 +43,7 @@ function formatPercent(value) {
 
 export function formatRuleValue(path, value) {
   if (value === null || value === undefined) return 'Not yet verified';
+  if (path === 'cpf.accruedInterestCompounding' && value === 'ANNUAL') return 'Annual (computed monthly)';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
 
   if (typeof value === 'number') {

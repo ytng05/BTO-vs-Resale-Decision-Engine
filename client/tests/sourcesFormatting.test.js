@@ -9,4 +9,8 @@ describe('Sources view rule value formatting', () => {
   it('formats fractional CPF interest rates as percentage points', () => {
     expect(formatRuleValue('cpf.oaInterestRate', 0.025)).toBe('2.5%');
   });
+
+  it('formats annual compounding as computed monthly', () => {
+    expect(formatRuleValue('cpf.accruedInterestCompounding', 'ANNUAL')).toBe('Annual (computed monthly)');
+  });
 });

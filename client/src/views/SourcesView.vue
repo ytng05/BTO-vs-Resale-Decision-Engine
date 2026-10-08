@@ -30,10 +30,12 @@ const ruleLabels = {
   'cpf.accruedInterestCompounding': 'Accrued interest method',
   'loans.msrPercent': 'Mortgage Servicing Ratio (MSR)',
   'loans.tdsrPercent': 'Total Debt Servicing Ratio (TDSR)',
-  'loans.ltv.hdbLoan': 'LTV: HDB loan',
-  'loans.ltv.bankLoanHdbFlats': 'LTV: bank loan for HDB flats',
-  'loans.ltv.bankLoanHdbFlatsWithTenureOver25YearsOrAgeOver65': 'LTV: bank loan, tenure >25 yrs or past age 65',
-  'loans.hdbConcessionaryRate': 'HDB concessionary loan rate',
+  'loans.ltv.hdbLoan.maxPercent': 'LTV: HDB loan maximum',
+  'loans.ltv.bankLoan.maxPercent': 'LTV: bank loan maximum',
+  'loans.ltv.bankLoan.reducedMaxPercent': 'LTV: reduced bank loan maximum',
+  'loans.ltv.bankLoan.reducedIfTenureYearsOver': 'Reduced bank LTV: tenure threshold',
+  'loans.ltv.bankLoan.reducedIfLoanEndsAfterAge': 'Reduced bank LTV: loan-end age threshold',
+  'loans.hdbRatePremium': 'HDB concessionary loan rate',
   'loans.maxTenureYears.hdbLoan': 'Maximum tenure: HDB loan',
   'loans.maxTenureYears.bankLoanHdbFlats': 'Maximum tenure: bank loan for HDB flats',
   'classifications.STANDARD.mopYears': 'MOP: Standard BTO',
@@ -88,7 +90,7 @@ function makeTierTable(path, tiers) {
   };
 }
 
-function collectRules(value, path, rows, tierTables) {
+function collectRules(value, path, rows, tierTables, activeRules) {
   if (omittedRuleKeys.has(path.split('.').at(-1)) || path.split('.').some((part) => part.startsWith('_'))) return;
   if (value === null && /^grants\.eligibilityCombinations\.citizenship\.(SC_SC|SC_PR)$/.test(path)) return;
 
@@ -107,7 +109,7 @@ function collectRules(value, path, rows, tierTables) {
       else rows.push({ rule: ruleLabels[path] ?? fallbackLabel(path), value: 'Not yet verified' });
       return;
     }
-    value.forEach((item, index) => collectRules(item, `${path}.${index + 1}`, rows, tierTables));
+    value.forEach((item, index) => collectRules(item, `${path}.${index + 1}`, rows, tierTables, activeRules));
     return;
   }
 
@@ -117,7 +119,16 @@ function collectRules(value, path, rows, tierTables) {
       rows.push({ rule: ruleLabels[path] ?? fallbackLabel(path), value: 'Not yet verified' });
       return;
     }
-    entries.forEach(([key, nestedValue]) => collectRules(nestedValue, `${path}.${key}`, rows, tierTables));
+    entries.forEach(([key, nestedValue]) => collectRules(nestedValue, `${path}.${key}`, rows, tierTables, activeRules));
+    return;
+  }
+
+  if (path === 'loans.hdbRatePremium') {
+    const oaRate = activeRules?.cpf?.oaInterestRate;
+    const combinedRate = typeof oaRate === 'number' && typeof value === 'number'
+      ? formatRuleValue('cpf.oaInterestRate', oaRate + value)
+      : 'Not yet verified';
+    rows.push({ rule: ruleLabels[path] ?? fallbackLabel(path), value: combinedRate });
     return;
   }
 
@@ -135,12 +146,12 @@ function sectionTitle(title, appliesTo) {
   return `${title} (${paths}${appliesTo.length === 1 ? ' only' : ''})`;
 }
 
-function makeSection(title, path, rules) {
+function makeSection(title, path, rules, activeRules) {
   if (!rules) return null;
 
   const rows = [];
   const tierTables = [];
-  Object.entries(rules).forEach(([key, value]) => collectRules(value, `${path}.${key}`, rows, tierTables));
+  Object.entries(rules).forEach(([key, value]) => collectRules(value, `${path}.${key}`, rows, tierTables, activeRules));
   return {
     title: sectionTitle(title, rules.appliesTo),
     sources: [...new Set(rules.sources ?? [])],
@@ -155,14 +166,14 @@ const ruleGroups = computed(() => {
 
   const grants = rules.grants ?? {};
   return [
-    makeSection('EHG', 'grants.ehg', grants.ehg),
-    makeSection('Family Grant', 'grants.familyGrant', grants.familyGrant),
-    makeSection('PHG', 'grants.proximityHousingGrant', grants.proximityHousingGrant),
-    makeSection('Grant eligibility combinations', 'grants.eligibilityCombinations', grants.eligibilityCombinations),
-    makeSection('CPF', 'cpf', rules.cpf),
-    makeSection('Loans', 'loans', rules.loans),
-    makeSection('Transaction costs', 'transactionCosts', rules.transactionCosts),
-    makeSection('Classifications', 'classifications', rules.classifications),
+    makeSection('EHG', 'grants.ehg', grants.ehg, rules),
+    makeSection('Family Grant', 'grants.familyGrant', grants.familyGrant, rules),
+    makeSection('PHG', 'grants.proximityHousingGrant', grants.proximityHousingGrant, rules),
+    makeSection('Grant eligibility combinations', 'grants.eligibilityCombinations', grants.eligibilityCombinations, rules),
+    makeSection('CPF', 'cpf', rules.cpf, rules),
+    makeSection('Loans', 'loans', rules.loans, rules),
+    makeSection('Transaction costs', 'transactionCosts', rules.transactionCosts, rules),
+    makeSection('Classifications', 'classifications', rules.classifications, rules),
   ].filter(Boolean);
 });
 
