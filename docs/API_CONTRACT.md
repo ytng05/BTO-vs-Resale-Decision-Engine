@@ -1,7 +1,7 @@
 # API contract (DRAFT 1: agree in week 1, then change only by PR)
 
 All routes are under `/api`. Errors always use `{ "error": { "code": "...", "message": "..." } }`.
-Field names match `server/src/engine/types.js` and `client/src/stores/scenario.js`.
+Field names match `server/src/engine/evaluate.contract.js`; `client/src/stores/scenario.js` must use the same names. All money is integer cents.
 Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 
 | Method | Path | Owner | Purpose | Status |
@@ -23,20 +23,21 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 
 ## POST /api/compare
 
-Request: `{ profile, choiceA, choiceB, assumptions }` (types in `engine/types.js`).
+Request: `{ profile, choiceA, choiceB, assumptions }` (`Profile`, `Choice` and `Assumptions` in `engine/evaluate.contract.js`). The client does not send an as-of date; the server sets `evaluationStartYear`.
 Choice: `{ path: "BTO"|"RESALE", purchaseYear, town, flatType, classification?: "STANDARD"|"PLUS"|"PRIME" }`.
 
 Response (one call returns the WHOLE grid, never one request per cell):
 ```json
 {
   "rulesetVersion": "string",
+  "holdingPeriodYears": 10,
   "breakEvenSentence": "string",
-  "grid": [[{ "priceGrowth": 0.03, "incomeGrowth": 0.02, "winner": "A|B|TIE", "margin": 0 }]],
+  "grid": [[{ "priceGrowth": 0.03, "incomeGrowth": 0.02, "winner": "A|B|TIE", "marginCents": 0 }]],
   "frontier": [{ "priceGrowth": 0.03, "incomeGrowth": 0.02 }],
   "outcomeA": {}, "outcomeB": {}
 }
 ```
-`outcomeA/B` are `Outcome` objects (see types.js). `margin` is the difference in net financial position at the common horizon.
+`outcomeA/B` are `Outcome` objects (see `evaluate.contract.js`). `marginCents` is the difference in net financial position after `holdingPeriodYears`, in cents. `holdingPeriodYears` echoes the horizon used, so the page can say "after N years".
 
 ## POST /api/timing
 Request: `{ profile, choiceBase, candidateYears, assumptions }`
