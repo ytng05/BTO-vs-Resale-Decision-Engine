@@ -65,11 +65,15 @@ const RULESET_KEYS = Object.freeze({
 });
 
 /**
- * NOTE ON LTV — open question with seat 2.
- * LTV is not a scalar. It is 75%, dropping to 55% when loan tenure exceeds
- * the threshold or the loan extends past the age limit. The ruleset needs to
- * express that as a rule, not a number, or this engine will be wrong for
- * long-tenure and older-borrower cases. Shape TBC.
+ * NOTE ON LTV — agreed with seat 2, 2026-10-08.
+ * LTV is a rule, not a scalar. The ruleset expresses it as:
+ *   loans.ltv.hdbLoan  = { maxPercent }
+ *   loans.ltv.bankLoan = { maxPercent, reducedMaxPercent,
+ *                          reducedIfTenureYearsOver, reducedIfLoanEndsAfterAge }
+ * For a bank loan, reducedMaxPercent applies if the tenure exceeds
+ * reducedIfTenureYearsOver OR the loan ends after the borrower reaches
+ * reducedIfLoanEndsAfterAge; otherwise maxPercent. All values are percents
+ * (75, not 0.75). The figure used is reported in resolvedRates.ltvApplied.
  */
 
 /**
@@ -79,8 +83,8 @@ const RULESET_KEYS = Object.freeze({
  * frequency from RULESET_KEYS.ACCRUED_INTEREST_COMPOUNDING so the two can be
  * compared by flipping one config value.
  * Source: CPF Board, via seat 2's verification.
- * OPEN: the ruleset currently stores this as prose ("computed monthly at OA
- * rate, compounded yearly"), not as 'ANNUAL' | 'MONTHLY'. Seat 2 to confirm.
+ * The ruleset stores the value as 'ANNUAL' with the description in a note
+ * (agreed with seat 2, 2026-10-08).
  */
 
 /**
@@ -120,11 +124,12 @@ const RULESET_KEYS = Object.freeze({
  */
 
 /**
- * NOTE ON HDB RATE — open question with seat 2.
- * The engine wants a premium over the OA rate (loans.hdbRatePremium) so the
- * HDB rate moves with oaRate in the backtest. The ruleset currently has a
- * flat loans.hdbConcessionaryRate (null). Until one is filled in, the engine
- * reports hdbConcessionaryRate: null and warns HDB_RATE_UNRESOLVED.
+ * NOTE ON HDB RATE — agreed with seat 2, 2026-10-08.
+ * The HDB concessionary rate is pegged to the OA rate (CPF Board), so the
+ * ruleset stores the peg, loans.hdbRatePremium, and the engine computes
+ * hdbConcessionaryRate = oaRate + hdbRatePremium. It then moves with oaRate
+ * in the backtest. If either value is missing, the engine reports
+ * hdbConcessionaryRate: null and warns HDB_RATE_UNRESOLVED.
  */
 
 /**
