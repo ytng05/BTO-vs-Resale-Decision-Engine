@@ -4,7 +4,7 @@
  * Grant eligibility. Return the amounts AND one explanation per test, so the UI can render
  * each failed test with its own reason (not a generic message).
  *
- * @param {import('../types.js').Profile} profile
+ * @param {import('../types.js').GrantsProfile} profile
  * @param {import('../types.js').Choice} choice
  * @param {string} assessmentDate  ISO date the household is assessed on (projected for future purchases)
  * @param {object} ruleset
@@ -24,8 +24,8 @@
  *  - Family Grant and PHG apply to resale only. PHG amount depends on living with vs near parents
  *  - each rule has an effective date; projections need a stated assumption (e.g. current rules held constant)
  */
-function eligibility(grantGroup, grant, passed, reason) {
-  return { grantGroup, grant, passed, reason: reason.charAt(0).toUpperCase() + reason.slice(1) };
+function eligibility(grantGroup, grant, id, passed, reason) {
+  return { grantGroup, grant, id, passed, reason: reason.charAt(0).toUpperCase() + reason.slice(1) };
 }
 
 function householdIncome(profile) {
@@ -136,7 +136,7 @@ function evaluateFamilyGrant(profile, choice, ruleset) {
 
   // Family Grant purchase-path eligibility comes from the active ruleset.
   const applies = grantRules.appliesTo?.includes(choice.path) === true;
-  checks.push(eligibility('Family Grant', 'Family Grant: resale only', applies, applies
+  checks.push(eligibility('Family Grant', 'Family Grant: resale only', 'FAMILY_RESALE_ONLY', applies, applies
     ? 'Your household can receive the Family Grant when buying a resale flat.'
     : 'Your household can receive the Family Grant only when buying a resale flat.'));
   if (!applies) return { amount: 0, eligible: false, checks };
@@ -150,7 +150,7 @@ function evaluateFamilyGrant(profile, choice, ruleset) {
     : null;
   const explicitlyIneligible = citizenshipRule?.familyGrantEligible === false;
   const amountSchedule = combination && !explicitlyIneligible ? grantRules.amounts?.[combination] : null;
-  checks.push(eligibility('Family Grant', 'Family Grant: household type', amountSchedule !== null && amountSchedule !== undefined,
+  checks.push(eligibility('Family Grant', 'Family Grant: household type', 'FAMILY_HOUSEHOLD_TYPE', amountSchedule !== null && amountSchedule !== undefined,
     explicitlyIneligible
       ? 'This household is not eligible for the Family Grant. An applicant must be a Singapore Citizen with at least one other Singapore Citizen or Permanent Resident.'
       : amountSchedule !== null && amountSchedule !== undefined
@@ -161,7 +161,7 @@ function evaluateFamilyGrant(profile, choice, ruleset) {
   const incomeCeiling = grantRules.incomeCeiling;
   const income = householdIncome(profile);
   const incomePassed = typeof incomeCeiling === 'number' && income <= incomeCeiling;
-  checks.push(eligibility('Family Grant', 'Family Grant: income limit', incomePassed,
+  checks.push(eligibility('Family Grant', 'Family Grant: income limit', 'FAMILY_INCOME_LIMIT', incomePassed,
     typeof incomeCeiling !== 'number'
       ? 'The Family Grant income limit for your household has not yet been confirmed.'
       : incomePassed
@@ -170,7 +170,7 @@ function evaluateFamilyGrant(profile, choice, ruleset) {
 
   // The verified Family Grant schedule differentiates resale flat size; use its configured band labels.
   const amount = findFlatAmount(amountSchedule, choice.flatType);
-  checks.push(eligibility('Family Grant', 'Family Grant: amount', amount !== null,
+  checks.push(eligibility('Family Grant', 'Family Grant: amount', 'FAMILY_AMOUNT', amount !== null,
     amount !== null
       ? `${describeCitizenship(applicants)} You get ${formatMoney(amount)} for a ${formatFlatType(choice.flatType)} flat as ${applicants.length === 2 && applicants.every((applicant) => applicant.citizenship === 'SC') ? 'two Singapore Citizens' : 'your household'}.`
       : `A Family Grant amount for your ${formatFlatType(choice.flatType)} flat and household type has not yet been confirmed.`));
@@ -185,16 +185,10 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
   const applicants = profile.applicants ?? [];
   const checks = [];
 
-  // EHG purchase eligibility is read from the active ruleset.
-  const pathPassed = grantRules.appliesTo?.includes(choice.path) === true;
-  checks.push(eligibility('EHG', 'EHG: purchase eligibility', pathPassed, pathPassed
-    ? 'Your household can apply for the Enhanced CPF Housing Grant when buying this type of flat.'
-    : 'EHG eligibility for this type of flat has not yet been confirmed.'));
-
   // Research notes state that EHG covers Singapore Citizen and Singapore PR first-timers.
   const citizenshipPassed = applicants.length > 0
     && applicants.every((applicant) => applicant.citizenship === 'SC' || applicant.citizenship === 'PR');
-  checks.push(eligibility('EHG', 'EHG: citizenship', citizenshipPassed, citizenshipPassed
+  checks.push(eligibility('EHG', 'EHG: citizenship', 'EHG_CITIZENSHIP', citizenshipPassed, citizenshipPassed
     ? `${describeCitizenship(applicants)} Your household meets the citizenship requirement for EHG.`
     : 'Your household’s citizenship combination does not meet the EHG requirements.'));
 
@@ -202,7 +196,7 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
   const firstTimerCount = applicants.filter((applicant) => applicant.firstTimer).length;
   const firstTimerPassed = firstTimerCount > 0 && applicants.length <= 2;
   const firstTimerSecondTimer = applicants.length === 2 && firstTimerCount === 1;
-  checks.push(eligibility('EHG', 'EHG: first-timer', firstTimerPassed, firstTimerPassed
+  checks.push(eligibility('EHG', 'EHG: first-timer', 'EHG_FIRST_TIMER', firstTimerPassed, firstTimerPassed
     ? 'At least one person in your household is applying as a first-timer.'
     : 'Your household needs at least one first-timer to qualify for EHG.'));
 
@@ -215,7 +209,7 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
       ? grantRules.incomeCeiling?.single
       : grantRules.incomeCeiling?.family;
   const ceilingPassed = typeof incomeCeiling === 'number' && assessedIncome <= incomeCeiling;
-  checks.push(eligibility('EHG', 'EHG: income limit', ceilingPassed,
+  checks.push(eligibility('EHG', 'EHG: income limit', 'EHG_INCOME_CEILING', ceilingPassed,
     typeof incomeCeiling !== 'number'
       ? 'The EHG income limit for your household has not yet been confirmed.'
       : ceilingPassed
@@ -241,7 +235,7 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
   const tierIncomeDescription = firstTimerSecondTimer
     ? `half of your household income (${formatMoney(assessedIncome)})`
     : `your household income (${formatMoney(assessedIncome)})`;
-  checks.push(eligibility('EHG', 'EHG: income band', tierPassed,
+  checks.push(eligibility('EHG', 'EHG: income band', 'EHG_INCOME_BAND', tierPassed,
     tierPassed
       ? `${tierIncomeDescription} falls in the EHG band ${formatIncomeBand(tierBand)}; the grant amount is ${formatMoney(tierAmount)}.`
       : tier
@@ -251,13 +245,13 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
   // Employment is assumed to meet the configured continuous-employment period, as directed for this model.
   const employmentMonths = grantRules.employmentMonthsRequired;
   const employmentPassed = typeof employmentMonths === 'number';
-  checks.push(eligibility('EHG', 'EHG: employment (assumed)', employmentPassed, employmentPassed
+  checks.push(eligibility('EHG', 'EHG: employment (assumed)', 'EHG_EMPLOYMENT_ASSUMED', employmentPassed, employmentPassed
     ? `We assume you meet the ${employmentMonths}-month continuous employment requirement.`
     : 'The continuous employment requirement has not yet been confirmed.'));
 
   // Research state-machine notes require Family Grant qualification before resale EHG can apply.
   const resalePrerequisitePassed = choice.path !== 'RESALE' || familyGrant.eligible;
-  checks.push(eligibility('EHG', 'EHG: Family Grant needed first (resale)', resalePrerequisitePassed, resalePrerequisitePassed
+  checks.push(eligibility('EHG', 'EHG: Family Grant needed first (resale)', 'EHG_FAMILY_GRANT_PREREQUISITE', resalePrerequisitePassed, resalePrerequisitePassed
     ? choice.path === 'RESALE'
       ? 'Your household meets the Family Grant eligibility requirements needed before EHG can be considered for resale.'
       : 'This requirement applies only when your household buys a resale flat.'
@@ -281,11 +275,11 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
         : `Your remaining lease does not cover the youngest applicant to age ${leaseTargetAge}. HDB pro-rating is not yet applied, so your actual EHG may be lower.`;
     }
   }
-  checks.push(eligibility('EHG', 'EHG: lease covers age 95', leasePassed, leaseReason));
+  checks.push(eligibility('EHG', 'EHG: lease covers age 95', 'EHG_LEASE_TO_95', leasePassed, leaseReason));
 
   // TODO: Apply the verified HDB lease-to-95 pro-rating formula; until then retain the full tier amount.
   const eligible = checks.every((check) => check.passed
-    || (leaseShortfall && check.grant === 'EHG: lease covers age 95'));
+    || (leaseShortfall && check.id === 'EHG_LEASE_TO_95'));
   return { amount: eligible ? tierAmount : 0, checks };
 }
 
@@ -295,7 +289,7 @@ function evaluatePHG(profile, choice, ruleset) {
 
   // PHG purchase-path eligibility is read from the active ruleset.
   const applies = grantRules.appliesTo?.includes(choice.path) === true;
-  checks.push(eligibility('PHG', 'PHG: resale only', applies, applies
+  checks.push(eligibility('PHG', 'PHG: resale only', 'PHG_RESALE_ONLY', applies, applies
     ? 'Your household can apply for the Proximity Housing Grant when buying a resale flat.'
     : 'The Proximity Housing Grant is available only when your household buys a resale flat.'));
   if (!applies) return { amount: 0, checks };
@@ -303,11 +297,11 @@ function evaluatePHG(profile, choice, ruleset) {
   // The optional choice field records WITH, NEAR, or NONE; omitted arrangements default to NONE.
   const livingArrangement = choice.livingArrangement ?? 'NONE';
   if (livingArrangement === 'NONE') {
-    checks.push(eligibility('PHG', 'PHG: living arrangement', true, 'You selected no qualifying arrangement to live with or near your parents or child, so no PHG is included.'));
+    checks.push(eligibility('PHG', 'PHG: living arrangement', 'PHG_LIVING_ARRANGEMENT', true, 'You selected no qualifying arrangement to live with or near your parents or child, so no PHG is included.'));
     return { amount: 0, checks };
   }
   const arrangementPassed = livingArrangement === 'WITH' || livingArrangement === 'NEAR';
-  checks.push(eligibility('PHG', 'PHG: living arrangement', arrangementPassed, arrangementPassed
+  checks.push(eligibility('PHG', 'PHG: living arrangement', 'PHG_LIVING_ARRANGEMENT', arrangementPassed, arrangementPassed
     ? livingArrangement === 'WITH'
       ? 'You selected that you will live with your parents or child.'
       : 'You selected that you will live near your parents or child.'
@@ -323,7 +317,7 @@ function evaluatePHG(profile, choice, ruleset) {
     : null;
   const amountPassed = typeof configuredAmount === 'number';
   const householdDescription = applicantCount === 1 ? 'single-person household' : 'family household';
-  checks.push(eligibility('PHG', 'PHG: amount', amountPassed, amountPassed
+  checks.push(eligibility('PHG', 'PHG: amount', 'PHG_AMOUNT', amountPassed, amountPassed
     ? livingArrangement === 'NEAR'
       ? `You get ${formatMoney(configuredAmount)} as a ${householdDescription} living near your parents or child.`
       : `You get ${formatMoney(configuredAmount)} as a ${householdDescription} living with your parents or child.`
@@ -334,7 +328,7 @@ function evaluatePHG(profile, choice, ruleset) {
   const distanceGrantLabel = typeof grantRules.nearDistanceKm === 'number'
     ? `PHG: ${grantRules.nearDistanceKm} km rule`
     : 'PHG: distance rule';
-  checks.push(eligibility('PHG', distanceGrantLabel, distancePassed, distancePassed
+  checks.push(eligibility('PHG', distanceGrantLabel, 'PHG_NEAR_DISTANCE', distancePassed, distancePassed
     ? livingArrangement === 'NEAR'
       ? `Your selected near arrangement is subject to the ${grantRules.nearDistanceKm} km distance limit.`
       : 'You selected living with your parents or child, so the near-distance limit does not apply.'

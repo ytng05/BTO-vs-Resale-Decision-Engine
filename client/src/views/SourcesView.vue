@@ -182,6 +182,8 @@ const assumptions = computed(() => [
   { title: 'Employment', description: '12-month employment condition is assumed for applicants.' },
   { title: 'Income averaging', description: 'Monthly income is treated as the 12-month average at assessment.' },
   { title: 'EHG lease pro-rating', description: 'Pro-rating is not applied; actual EHG may be lower when the lease does not cover the youngest buyer to age 95.' },
+  { title: 'PHG near distance', description: 'Whether your home is near your parents or child is declared by you; no distance is measured.' },
+  { title: 'Rules held constant', description: `Current rules (ruleset ${response.value?.version ?? 'not yet verified'}) are held constant in projections.` },
   { title: 'Legal & agent fees', description: 'Estimates; these are not verified policy values.' },
 ]);
 
@@ -189,7 +191,6 @@ const datasets = [
   { name: 'HDB resale transactions', provider: 'data.gov.sg', identifier: 'd_8b84c4ee58e3cfc0ece0d773c8ca6abc', licence: 'Singapore Open Data Licence' },
   { name: 'Price Range of HDB Flats Offered', provider: 'data.gov.sg', identifier: 'd_2d493bdcc1d9a44828b6e71cb095b88d', licence: 'Singapore Open Data Licence' },
   { name: 'HDB Resale Price Index', provider: 'data.gov.sg', identifier: 'HDB Resale Price Index', licence: 'Singapore Open Data Licence' },
-  { name: 'Distance for the PHG assessment', provider: 'OneMap', identifier: 'OneMap distance service', licence: 'OneMap (SLA)' },
 ];
 
 function metadataValue(value) {

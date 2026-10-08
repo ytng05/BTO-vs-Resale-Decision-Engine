@@ -49,7 +49,7 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 
 ✅ `cpf.oaInterestRate`: 0.025 for 1 Oct–31 Dec 2026; reviewed quarterly. Source: <https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027> (checked vs official source 2026-10-07: Claude + Har)
 ✅ `cpf.accruedInterestCompounding`: `ANNUAL`. Computed monthly at the OA rate, compounded yearly (CPF Board). Source: CPF Board official answer <https://ask.gov.sg/cpf/questions/cm0f52kzh01d1pz7aq4i1wz4y>.
-☐ `cpf.partialMonthTreatment`: `EXCLUDE_BOTH`. ASSUMPTION (seat 1, pending CPF query). Note: CPF's general interest rule (withdrawals stop earning from the month they occur; refunds earn from the next month, source <https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts>) suggests `INCLUDE_BOTH` may be correct under the "would have earned" definition.
+☐ `cpf.partialMonthTreatment`: Team assumption (DECISIONS.md D12): `EXCLUDE_BOTH`, pending CPF Board confirmation. Alternative considered: `INCLUDE_BOTH`, based on CPF's general interest rule (withdrawals stop earning from the month they occur; refunds earn from the next month; source: <https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts>).
 
 ## Loans (Confirm with Seat 1)
 

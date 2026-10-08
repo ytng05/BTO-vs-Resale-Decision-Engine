@@ -16,7 +16,7 @@ A historical backtest ("risk-based verdict") is planned for later, once the firs
 
 ## Tech stack
 Vue 3 (Composition API), Pinia, Vue Router, Bootstrap 5 (SCSS), Chart.js | Node.js, Express, MongoDB/Mongoose, JWT + bcryptjs | Vitest, Cypress.
-External data: data.gov.sg (resale transactions, Resale Price Index, price range of flats offered) and OneMap (distance for the Proximity Housing Grant test).
+External data: data.gov.sg (resale transactions, Resale Price Index, price range of flats offered). PHG “near” status is declared by the user; no distance service is called.
 
 ## Repository layout
 ```
@@ -73,7 +73,7 @@ TODO (seat 3): hosting choice, environment variables, cache pre-warm on deploy, 
 ## Rulesets and rule volatility
 All policy rules live in `server/src/config/rulesets/`, versioned and date-stamped. Rules moved in Aug 2024, Oct 2024,
 Aug 2025 and Aug 2026. Every saved scenario records the ruleset version that produced it, and the UI shows it.
-The shipped ruleset is a TEMPLATE with empty values to be filled from primary sources.
+The active ruleset is the dated `2026-08-24` snapshot. `ruleset.template.json` remains an empty template for future research.
 
 ## AI / LLM declaration
 Required by the module. Keep `docs/AI_USAGE_LOG.md` up to date and summarise it here before submission.

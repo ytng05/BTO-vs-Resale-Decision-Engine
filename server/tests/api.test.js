@@ -8,11 +8,9 @@ describe('API scaffold', () => {
   const scFirstTimerCouple = {
     profile: {
       applicants: [
-        { age: 35, citizenship: 'SC', firstTimer: true, monthlyIncome: 3500, cpfOaBalance: 0 },
-        { age: 34, citizenship: 'SC', firstTimer: true, monthlyIncome: 3500, cpfOaBalance: 0 },
+        { age: 35, citizenship: 'SC', firstTimer: true, monthlyIncomeCents: 350000, cpfOaBalanceCents: 0 },
+        { age: 34, citizenship: 'SC', firstTimer: true, monthlyIncomeCents: 350000, cpfOaBalanceCents: 0 },
       ],
-      cashSavings: 0,
-      monthlySavings: 0,
     },
     choice: { path: 'RESALE', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NEAR', remainingLeaseYears: 80 },
   };
@@ -28,7 +26,8 @@ describe('API scaffold', () => {
     const res = await request(app).get('/api/ruleset');
     expect(res.status).toBe(200);
     expect(res.body.version).toBeTruthy();
-    expect(['TEMPLATE', 'VERIFIED']).toContain(res.body.status);
+    expect(res.body.status).toBe('VERIFIED');
+    expect(res.body.version).toBe('2026-08-24');
     expect(res.body.rules.grants.ehg).toBeTruthy();
     expect(res.body).toHaveProperty('verifiedBy');
   });
@@ -36,12 +35,30 @@ describe('API scaffold', () => {
   it('POST /api/grants evaluates resale grants and defaults the assessment date', async () => {
     const res = await request(app).post('/api/grants').send(scFirstTimerCouple);
     expect(res.status).toBe(200);
-    expect(res.body.total).toBe(130000);
-    expect(res.body).toMatchObject({ ehg: 30000, familyGrant: 80000, phg: 20000 });
+    expect(res.body.totalGrantsCents).toBe(13000000);
+    expect(res.body.grants).toMatchObject([
+      { id: 'EHG', amountCents: 3000000 },
+      { id: 'FAMILY', amountCents: 8000000 },
+      { id: 'PHG', amountCents: 2000000 },
+    ]);
+    expect(res.body).not.toHaveProperty('ehg');
+    expect(res.body).not.toHaveProperty('familyGrant');
+    expect(res.body).not.toHaveProperty('phg');
+    expect(res.body).not.toHaveProperty('total');
+    expect(res.body).not.toHaveProperty('eligibility');
     expect(res.body.rulesetVersion).toBeTruthy();
-    expect(['TEMPLATE', 'VERIFIED']).toContain(res.body.rulesetStatus);
-    expect(res.body.assessmentDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(Array.isArray(res.body.eligibility)).toBe(true);
+    expect(res.body.rulesetVersion).toBe('2026-08-24');
+    expect(res.body.rulesetStatus).toBe('VERIFIED');
+    expect(res.body.assessmentDate).toBe('2026-01-01');
+    const tests = res.body.grants.flatMap((grant) => grant.tests);
+    const testIds = tests.map((test) => test.id);
+    expect(new Set(testIds).size).toBe(testIds.length);
+    expect(testIds).toEqual(expect.arrayContaining([
+      'FAMILY_RESALE_ONLY', 'FAMILY_HOUSEHOLD_TYPE', 'FAMILY_INCOME_LIMIT', 'FAMILY_AMOUNT',
+      'EHG_CITIZENSHIP', 'EHG_FIRST_TIMER', 'EHG_INCOME_CEILING', 'EHG_INCOME_BAND',
+      'EHG_EMPLOYMENT_ASSUMED', 'EHG_FAMILY_GRANT_PREREQUISITE', 'EHG_LEASE_TO_95',
+      'PHG_RESALE_ONLY', 'PHG_LIVING_ARRANGEMENT', 'PHG_AMOUNT', 'PHG_NEAR_DISTANCE',
+    ]));
   });
 
   it('POST /api/grants evaluates BTO grants', async () => {
@@ -50,7 +67,8 @@ describe('API scaffold', () => {
       choice: { ...scFirstTimerCouple.choice, path: 'BTO', classification: 'STANDARD' },
     });
     expect(res.status).toBe(200);
-    expect(res.body.total).toBe(30000);
+    expect(res.body.totalGrantsCents).toBe(3000000);
+    expect(res.body.assessmentDate).toBe('2026-01-01');
   });
 
   it('POST /api/grants rejects missing applicants', async () => {

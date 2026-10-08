@@ -7,7 +7,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | Method | Path | Owner | Purpose | Status |
 |---|---|---|---|---|
 | GET | `/api/health` | seat 3 | liveness and feature flags | working |
-| GET | `/api/ruleset` | seat 2 | ruleset version, status, effective date | working (template) |
+| GET | `/api/ruleset` | seat 2 | ruleset version, status, effective date | working (dated snapshot) |
 | POST | `/api/grants` | seat 2 | evaluate EHG, Family Grant, PHG, and eligibility explanations | working |
 | POST | `/api/auth/register` | seat 3 | create user (bcryptjs hash) | stub |
 | POST | `/api/auth/login` | seat 3 | returns JWT | stub |
@@ -21,6 +21,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached) | stub |
 | GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects | stub |
 | GET | `/api/data/distance?from=&to=` | seat 3 | OneMap distance for the PHG test | not needed: PHG is declared (D15) |
+| GET | `/api/data/distance?from=&to=` | seat 3 | Distance service | not needed: PHG near arrangement is declared by the user (D15) |
 
 ### GET /api/ruleset
 
@@ -28,18 +29,16 @@ Response: `{ version, status, effectiveDate, verifiedOn, verifiedBy, rules }`. `
 
 ## POST /api/grants
 
-Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/types.js`. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to today's ISO date.
+Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/evaluate.contract.js`. Money is integer cents; applicants use `monthlyIncomeCents` and `cpfOaBalanceCents`. The route converts these to dollars only for `evaluateGrants()`. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to `${choice.purchaseYear}-01-01` (D13).
 
 Example request:
 ```json
 {
   "profile": {
     "applicants": [
-      { "age": 35, "citizenship": "SC", "firstTimer": true, "monthlyIncome": 3500, "cpfOaBalance": 0 },
-      { "age": 34, "citizenship": "SC", "firstTimer": true, "monthlyIncome": 3500, "cpfOaBalance": 0 }
-    ],
-    "cashSavings": 0,
-    "monthlySavings": 0
+      { "age": 35, "citizenship": "SC", "firstTimer": true, "monthlyIncomeCents": 350000, "cpfOaBalanceCents": 0 },
+      { "age": 34, "citizenship": "SC", "firstTimer": true, "monthlyIncomeCents": 350000, "cpfOaBalanceCents": 0 }
+    ]
   },
   "choice": {
     "path": "RESALE",
@@ -55,14 +54,15 @@ Example request:
 Response:
 ```json
 {
-  "ehg": 30000,
-  "familyGrant": 80000,
-  "phg": 20000,
-  "total": 130000,
-  "eligibility": [{ "grant": "EHG income tier", "passed": true, "reason": "..." }],
+  "totalGrantsCents": 13000000,
+  "grants": [
+    { "id": "EHG", "amountCents": 3000000, "tests": [{ "id": "EHG_INCOME_BAND", "passed": true, "reason": "..." }] },
+    { "id": "FAMILY", "amountCents": 8000000, "tests": [{ "id": "FAMILY_AMOUNT", "passed": true, "reason": "..." }] },
+    { "id": "PHG", "amountCents": 2000000, "tests": [{ "id": "PHG_AMOUNT", "passed": true, "reason": "..." }] }
+  ],
   "rulesetVersion": "string",
-  "rulesetStatus": "TEMPLATE|VERIFIED",
-  "assessmentDate": "2026-10-08"
+  "rulesetStatus": "VERIFIED",
+  "assessmentDate": "2026-01-01"
 }
 ```
 
