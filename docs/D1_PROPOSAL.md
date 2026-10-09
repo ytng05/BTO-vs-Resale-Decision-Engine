@@ -35,7 +35,11 @@ net position at horizon =   market value of the flat at the horizon year
   *Alternative:* subtract the refund owed and call the result "money outside CPF". Pick one; use it for both paths.
 - **Housing cash spent, not "cash accumulated".** D19 defers a savings model. Income and other spending are the
   same on both paths, so they cancel out. Counting only housing cash out (upfront cash, the cash part of
-  instalments, stamp duty and fees, rent while waiting) gives the same comparison without modelling savings.
+  instalments, the cash-paid part of stamp duty and fees, rent while waiting) gives the same comparison without
+  modelling savings.
+- **CPF-paid costs are not cash spent.** Stamp duty and legal fees can be paid from the CPF OA. That part is a CPF
+  withdrawal: it attracts accrued interest and shows up through the OA balance, so it must not also be counted
+  as housing cash spent.
 
 ## Years
 
@@ -44,6 +48,9 @@ net position at horizon =   market value of the flat at the horizon year
 - **Application year = key collection − BTO wait.** Seat 3's seed data already has `launchDate` and
   `estimatedWaitMonths` per project, so `btoWaitYears` (D7) should become **`btoWaitMonths`** to match.
   For resale, application and keys are the same year.
+- **BTO withdrawals happen before keys (D5, now urgent).** BTO downpayment and stamp duty are paid at signing the
+  agreement for lease, years before key collection; resale pays everything at completion. The CPF ledger needs a
+  date for each BTO withdrawal, so D5 has to be answered alongside D1.
 - **Grants are tested at the application year (changes D13).** Income ceilings are checked at application, and
   income grows during the wait. D13's assessment date moves from 1 Jan of the purchase year to 1 Jan of the
   application year. **Seat 2: this changes what `evaluate()` passes to `evaluateGrants()`.**
@@ -90,3 +97,9 @@ assumptions that moves the answer most, so the results page should show it.
 - [ ] Rent while waiting as an input, with a default of: ___
 - [ ] Lease decay: limitation note now, value adjustment later
 - [ ] Plus/Prime: deduct the clawback rate from market value
+- [ ] D5: dates of BTO withdrawals (agreement for lease vs key collection)
+
+## For seat 2
+
+- **ABSD:** out of scope for Singapore citizens on a first property (0%). A PR+PR household does pay ABSD on a
+  first property: please confirm the rate against IRAS and say whether PR+PR stays in scope.
