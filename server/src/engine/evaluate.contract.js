@@ -165,7 +165,8 @@ const WARNINGS = Object.freeze({
   HDB_RATE_UNRESOLVED: 'HDB_RATE_UNRESOLVED',
   LEASE_BELOW_95_PRORATION: 'LEASE_BELOW_95_PRORATION',
   INCOME_CEILING_BREACHED_AT_PURCHASE: 'INCOME_CEILING_BREACHED_AT_PURCHASE',
-  CLASSIFICATION_CLAWBACK_ESTIMATED: 'CLASSIFICATION_CLAWBACK_ESTIMATED'
+  CLASSIFICATION_CLAWBACK_ESTIMATED: 'CLASSIFICATION_CLAWBACK_ESTIMATED',
+  CASH_SHORTFALL_AT_PURCHASE: 'CASH_SHORTFALL_AT_PURCHASE' // cashRequiredAtPurchaseCents > cashSavingsCents (D19)
 });
 
 // ---------------------------------------------------------------------------
@@ -188,6 +189,10 @@ const WARNINGS = Object.freeze({
  * Same shape as seat 2's types.js Profile, with money in cents.
  * @typedef {Object} Profile
  * @property {Applicant[]} applicants         - 1 or 2 people
+ * @property {number} cashSavingsCents        - household total cash available for the purchase (D19).
+ *                                              Checked against cashRequiredAtPurchaseCents; a shortfall
+ *                                              warns CASH_SHORTFALL_AT_PURCHASE and lets the strategy
+ *                                              search prune choices the household cannot fund.
  */
 
 /**

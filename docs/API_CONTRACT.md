@@ -44,7 +44,8 @@ All money is integer cents. The client converts dollars to cents when it sends t
 | `assumptions.legalFeesCents`, `agentFeesCents` | Default, form override | Estimates, not policy. Server defaults owned by seat 1 (D17) |
 | `choice.subsidyRecoveryRate` | Server lookup | BTO Plus/Prime only, from the BTO seed record (D18). Never sent by the client |
 | `assumptions.evaluationStartYear` | Server | Never sent by the client |
-| `cashSavings`, `monthlySavings` | Form | Not read by `evaluate()` yet. Open: use for an affordability check, or drop |
+| `profile.cashSavingsCents` | Form | Household total. Entered in dollars (`cashSavings` in the store), converted by the client (D14). Checked against cash required at purchase (D19) |
+| `monthlySavings` | Not collected | Deferred (D19): remove from the form and store |
 
 Response (one call returns the WHOLE grid, never one request per cell):
 ```json
