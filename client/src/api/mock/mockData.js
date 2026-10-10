@@ -4,6 +4,8 @@
 // server/src/engine/evaluate.contract.js. ALL money is integer cents, same as the contract.
 // Growth rates are fractions (0.03 = 3%), the same unit the forms send and the contract uses.
 // Delete or ignore once the real endpoint exists.
+// Imports the server ruleset JSON by relative path on purpose: mock mode shows the same snapshot the API serves, with no copy to drift.
+import rulesetSnapshot from '../../../../server/src/config/rulesets/ruleset-2026-08-24.json';
 
 const GROWTH_STEPS = [0, 0.01, 0.02, 0.03, 0.04, 0.05];
 
@@ -25,7 +27,7 @@ export function mockCompare(payload = {}) {
 
   return {
     mock: true,
-    rulesetVersion: '0.0.0-template',
+    rulesetVersion: rulesetSnapshot.version,
     breakEvenSentence: 'MOCK: the two paths are equal where price growth matches income growth.',
     grid,
     frontier: GROWTH_STEPS.map((g) => ({ annualPriceGrowth: g, annualIncomeGrowth: g })),
@@ -107,5 +109,29 @@ function mockOutcome({ netPositionCents, cpfRefundPrincipalCents, cpfAccruedInte
 }
 
 export function mockRuleset() {
-  return { version: '0.0.0-template', status: 'TEMPLATE', effectiveDate: null, verifiedOn: null };
+  return {
+    version: rulesetSnapshot.version,
+    status: 'VERIFIED',
+    effectiveDate: rulesetSnapshot.effectiveDate,
+    verifiedOn: rulesetSnapshot.verifiedOn,
+    verifiedBy: rulesetSnapshot.verifiedBy,
+    rules: rulesetSnapshot,
+  };
+}
+
+export function mockGrants(payload) {
+  const ruleset = mockRuleset();
+  const testsByGrant = {
+    EHG: [{ id: 'EHG_INCOME_CEILING', passed: false, reason: 'MOCK: no grant calculation performed.' }],
+    FAMILY: [{ id: 'FAMILY_INCOME_LIMIT', passed: false, reason: 'MOCK: no grant calculation performed.' }],
+    PHG: [{ id: 'PHG_AMOUNT', passed: false, reason: 'MOCK: no grant calculation performed.' }],
+  };
+  return {
+    mock: true,
+    totalGrantsCents: 0,
+    grants: Object.entries(testsByGrant).map(([id, tests]) => ({ id, amountCents: 0, tests })),
+    rulesetVersion: ruleset.version,
+    rulesetStatus: ruleset.status,
+    assessmentDate: payload.assessmentDate ?? `${payload.choice.purchaseYear}-01-01`,
+  };
 }
