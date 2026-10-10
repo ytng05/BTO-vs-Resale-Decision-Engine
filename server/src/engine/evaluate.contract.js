@@ -48,7 +48,7 @@
  * your JSON, tell seat 1 rather than renaming — the engine reads these exactly.
  *
  * Kept as a constant so the dependency is visible in code, not just in chat.
- * Keys marked PROPOSED are not in the ruleset yet; seat 2 to add them.
+ * btoWaiting and notes.eip are being added by seat 2 (exact field names to confirm).
  */
 const RULESET_KEYS = Object.freeze({
   // CPF
@@ -73,8 +73,9 @@ const RULESET_KEYS = Object.freeze({
 
   // Flat rules
   MOP_YEARS: 'classifications',               // classifications.<STANDARD|PLUS|PRIME>.mopYears
-  BTO_TYPICAL_WAIT_MONTHS: 'bto.typicalWaitMonths', // PROPOSED: fallback when no seeded project wait applies
-  // EIP is shown by the UI only (eip.note, eip.sourceUrl — PROPOSED); the engine doesn't read it.
+  BTO_DEFAULT_WAIT_MONTHS: 'btoWaiting.defaultMonths', // seat 2 (48, an assumption): fallback when no project wait applies.
+                                                       // btoWaiting also holds the SWT threshold (36 months), used by the UI.
+  // EIP is shown by the UI only (ruleset notes.eip: text + HDB link); the engine doesn't read it.
 
   // Provenance
   VERSION: 'version'
@@ -188,7 +189,7 @@ const RULESET_KEYS = Object.freeze({
  * - BTO keys = application date + btoWaitMonths, to the MONTH (the CPF ledger is
  *   monthly). Wait source, chosen by the route: the chosen project's wait from
  *   seat 3's seed; else the median across that town's seeded projects; else
- *   ruleset bto.typicalWaitMonths, flagged as an assumption.
+ *   ruleset btoWaiting.defaultMonths (seat 2: 48 months), flagged as an assumption.
  * - Resale keys = the application (purchase) date; no wait.
  * - BTO cash and CPF are paid in stages (signing the agreement for lease, then
  *   keys); each stage is a dated ledger entry. Stage split: D5 / EDGE_CASES.md.
@@ -236,6 +237,7 @@ const RULESET_KEYS = Object.freeze({
  * 'FAMILY', 'PHG' → 'PHG'); id, passed, reason and sourceUrl → tests[] unchanged.
  * Test ids are owned by seat 2 (e.g. EHG_INCOME_CEILING, EHG_MIN_LEASE,
  * FAMILY_RESALE_ONLY, PHG_LIVING_ARRANGEMENT); the full list is in rules/grants.js.
+ * sourceUrl comes from the ruleset (grants.checkSources, seat 2), never from code.
  *
  * assessmentDate is `${choice.applicationYear}-01-01` (D13, v2: the APPLICATION
  * year, because income ceilings are checked at application and income grows
@@ -261,7 +263,7 @@ const WARNINGS = Object.freeze({
   CASH_SHORTFALL_AT_PURCHASE: 'CASH_SHORTFALL_AT_PURCHASE', // cashRequiredAtPurchaseCents > cashSavingsCents (D19)
   LOAN_ABOVE_LIMIT: 'LOAN_ABOVE_LIMIT',                     // loan needed > affordability.maxLoanCents
   MOVE_IN_DEADLINE_MISSED: 'MOVE_IN_DEADLINE_MISSED',       // keys later than profile.constraints.moveInByYear
-  BTO_WAIT_ASSUMED: 'BTO_WAIT_ASSUMED'                      // wait came from bto.typicalWaitMonths, not a project
+  BTO_WAIT_ASSUMED: 'BTO_WAIT_ASSUMED'                      // wait came from btoWaiting.defaultMonths, not a project
 });
 
 // ---------------------------------------------------------------------------
@@ -317,7 +319,7 @@ const WARNINGS = Object.freeze({
  * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - resale only, for PHG; declared by the user,
  *                                              not measured (D15); defaults to 'NONE'
  * @property {number} [btoWaitMonths]         - BTO only: months from application to keys (see timeline note)
- * @property {boolean} [btoWaitAssumed]       - true when btoWaitMonths came from bto.typicalWaitMonths
+ * @property {boolean} [btoWaitAssumed]       - true when btoWaitMonths came from btoWaiting.defaultMonths
  * @property {number} [renovationCents]       - renovation budget for this path, spent at keys; default 0
  * @property {number} [subsidyRecoveryRate]   - BTO Plus/Prime only: decimal, e.g. 0.06. Per project, from
  *                                              seat 3's BTO seed record, not the ruleset (D18). 0 / omitted for

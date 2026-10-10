@@ -86,7 +86,7 @@ All money is integer cents. The client converts dollars to cents when it sends t
 | `profile.constraints.moveInByYear` | Form | Optional "must move in by" year; later keys warn `MOVE_IN_DEADLINE_MISSED` |
 | `choice.livingArrangement` | Form | Resale only. Declared by the user, not measured (D15) |
 | `choice.leaseBand` → `remainingLeaseYears` | Form (resale), server (BTO) | Resale: the route uses the band's lower bound. BTO: 99 (D16) |
-| `choice.btoProject` → `btoWaitMonths` | Form (project), server lookup, form override | Chosen project's `estimatedWaitMonths`; else the median of the town's seeded projects; else ruleset `bto.typicalWaitMonths` (warns `BTO_WAIT_ASSUMED`) (D7) |
+| `choice.btoProject` → `btoWaitMonths` | Form (project), server lookup, form override | Chosen project's `estimatedWaitMonths`; else the median of the town's seeded projects; else ruleset `btoWaiting.defaultMonths` (48, an assumption; warns `BTO_WAIT_ASSUMED`) (D7) |
 | `choice.marketValueAtKeysCents` | Server lookup | BTO: near-new resale comparables for the town and flat type at keys (fallback town for towns with no resale stock, e.g. Tengah); resale: the purchase price. Never sent by the client |
 | `choice.purchasePriceCents` | Server lookup | Median from cached data.gov.sg transactions for town, flat type and lease band; seeded launch price for BTO. Never sent by the client |
 | `assumptions.annualPriceGrowth`, `annualIncomeGrowth` | Form (sliders) | Growth as decimals (0.03) |
