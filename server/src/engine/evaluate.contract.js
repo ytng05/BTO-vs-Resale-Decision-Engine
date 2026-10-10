@@ -48,7 +48,7 @@
  * your JSON, tell seat 1 rather than renaming — the engine reads these exactly.
  *
  * Kept as a constant so the dependency is visible in code, not just in chat.
- * btoWaiting and notes.eip are being added by seat 2 (exact field names to confirm).
+ * btoWaiting, notes.eip and grants.checkSources are added by seat 2 (names confirmed 11 Oct).
  */
 const RULESET_KEYS = Object.freeze({
   // CPF
@@ -73,9 +73,10 @@ const RULESET_KEYS = Object.freeze({
 
   // Flat rules
   MOP_YEARS: 'classifications',               // classifications.<STANDARD|PLUS|PRIME>.mopYears
-  BTO_DEFAULT_WAIT_MONTHS: 'btoWaiting.defaultMonths', // seat 2 (48, an assumption): fallback when no project wait applies.
-                                                       // btoWaiting also holds the SWT threshold (36 months), used by the UI.
-  // EIP is shown by the UI only (ruleset notes.eip: text + HDB link); the engine doesn't read it.
+  BTO_DEFAULT_WAIT_MONTHS: 'btoWaiting.defaultMonths', // 48, an assumption: fallback when no project or town wait applies
+  // btoWaiting.shorterWaitingTimeThresholdMonths (36) is read by the UI only, to label SWT projects.
+  // notes.eip = { text, sourceUrl } is shown by the UI only; the engine doesn't read it.
+  // grants.checkSources = { <test id>: <url> } is read by seat 2's grants.js to fill EligibilityTest.sourceUrl.
 
   // Provenance
   VERSION: 'version'
@@ -237,7 +238,7 @@ const RULESET_KEYS = Object.freeze({
  * 'FAMILY', 'PHG' → 'PHG'); id, passed, reason and sourceUrl → tests[] unchanged.
  * Test ids are owned by seat 2 (e.g. EHG_INCOME_CEILING, EHG_MIN_LEASE,
  * FAMILY_RESALE_ONLY, PHG_LIVING_ARRANGEMENT); the full list is in rules/grants.js.
- * sourceUrl comes from the ruleset (grants.checkSources, seat 2), never from code.
+ * sourceUrl comes from the ruleset (grants.checkSources: { <test id>: <url> }, seat 2), never from code.
  *
  * assessmentDate is `${choice.applicationYear}-01-01` (D13, v2: the APPLICATION
  * year, because income ceilings are checked at application and income grows
