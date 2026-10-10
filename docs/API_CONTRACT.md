@@ -7,7 +7,8 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | Method | Path | Owner | Purpose | Status |
 |---|---|---|---|---|
 | GET | `/api/health` | seat 3 | liveness and feature flags | working |
-| GET | `/api/ruleset` | seat 2 | ruleset version, status, effective date | working (template) |
+| GET | `/api/ruleset` | seat 2 | ruleset version, status, effective date | working (dated snapshot) |
+| POST | `/api/grants` | seat 2 | evaluate EHG, Family Grant, PHG, and eligibility explanations | working |
 | POST | `/api/auth/register` | seat 3 | create user (bcryptjs hash) | stub |
 | POST | `/api/auth/login` | seat 3 | returns JWT | stub |
 | GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | stub |
@@ -22,6 +23,50 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached) | stub |
 | GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects | stub |
 | GET | `/api/data/distance?from=&to=` | seat 3 | OneMap distance for the PHG test | not needed: PHG is declared (D15) |
+
+### GET /api/ruleset
+
+Response: `{ version, status, effectiveDate, verifiedOn, verifiedBy, rules }`. `rules` is the active versioned ruleset object; fields not yet verified remain null or empty and must be presented as unverified.
+
+## POST /api/grants
+
+Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/evaluate.contract.js`. Money is integer cents; applicants use `monthlyIncomeCents` and `cpfOaBalanceCents`. The route converts these to dollars only for `evaluateGrants()`. `profile.cashSavingsCents` (D19) is accepted but not read by this route. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to `${choice.purchaseYear}-01-01` (D13).
+
+Example request:
+```json
+{
+  "profile": {
+    "applicants": [
+      { "age": 35, "citizenship": "SC", "firstTimer": true, "monthlyIncomeCents": 350000, "cpfOaBalanceCents": 0 },
+      { "age": 34, "citizenship": "SC", "firstTimer": true, "monthlyIncomeCents": 350000, "cpfOaBalanceCents": 0 }
+    ],
+    "cashSavingsCents": 0
+  },
+  "choice": {
+    "path": "RESALE",
+    "purchaseYear": 2026,
+    "town": "ANG MO KIO",
+    "flatType": "4 ROOM",
+    "livingArrangement": "NEAR",
+    "remainingLeaseYears": 80
+  }
+}
+```
+
+Response:
+```json
+{
+  "totalGrantsCents": 13000000,
+  "grants": [
+    { "id": "EHG", "amountCents": 3000000, "tests": [{ "id": "EHG_INCOME_BAND", "passed": true, "reason": "..." }] },
+    { "id": "FAMILY", "amountCents": 8000000, "tests": [{ "id": "FAMILY_AMOUNT", "passed": true, "reason": "..." }] },
+    { "id": "PHG", "amountCents": 2000000, "tests": [{ "id": "PHG_AMOUNT", "passed": true, "reason": "..." }] }
+  ],
+  "rulesetVersion": "string",
+  "rulesetStatus": "VERIFIED",
+  "assessmentDate": "2026-01-01"
+}
+```
 
 ## POST /api/compare
 
