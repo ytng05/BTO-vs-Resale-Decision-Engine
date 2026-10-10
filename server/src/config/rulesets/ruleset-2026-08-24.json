@@ -121,16 +121,20 @@
         "maxPercent": 75,
         "reducedMaxPercent": 55,
         "reducedIfTenureYearsOver": 25,
-        "reducedIfLoanEndsAfterAge": 65
+        "reducedIfLoanEndsAfterAge": 65,
+        "ageBasis": "IWAA"
       }
     },
+    "minCashDownpaymentPercent": { "hdbLoan": 0, "bankLoan": { "atMaxLtv": 5, "atReducedLtv": 10 } },
     "hdbRatePremium": 0.001,
     "_hdbRatePremiumNote": "HDB concessionary rate is pegged at 0.1% above the CPF OA rate (CPF Board, 22 Sep 2026 release)",
     "maxTenureYears": { "hdbLoan": 25, "bankLoanHdbFlats": 30 },
     "sources": [
       "https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/",
       "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers",
-      "https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027"
+      "https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027",
+      "https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits",
+      "https://discover.nyc.gov.sg/finlit/Life-Hacks/Housing/How-to-save-for-your-first-home-and-use-housing-grants"
     ]
   },
   "transactionCosts": {

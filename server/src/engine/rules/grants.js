@@ -259,12 +259,13 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
 
   // HDB's resale EHG minimum remaining lease is a separate eligibility requirement from lease-to-95 pro-rating.
   const resaleLeaseMinimum = grantRules.minRemainingLeaseYearsResale;
+  const resaleLeaseUnknown = choice.path === 'RESALE' && typeof choice.remainingLeaseYears !== 'number';
+  const leaseNotProvidedReason = 'Remaining lease not provided yet; lease checks not applied.';
   let minimumLeasePassed = true;
   if (choice.path === 'RESALE' && typeof resaleLeaseMinimum === 'number') {
-    minimumLeasePassed = typeof choice.remainingLeaseYears === 'number'
-      && choice.remainingLeaseYears >= resaleLeaseMinimum;
-    const minimumLeaseReason = typeof choice.remainingLeaseYears !== 'number'
-      ? `Please provide your flat's remaining lease to check the ${resaleLeaseMinimum}-year minimum for the EHG.`
+    minimumLeasePassed = resaleLeaseUnknown || choice.remainingLeaseYears >= resaleLeaseMinimum;
+    const minimumLeaseReason = resaleLeaseUnknown
+      ? leaseNotProvidedReason
       : minimumLeasePassed
         ? `Your flat's remaining lease (${choice.remainingLeaseYears} years) meets the ${resaleLeaseMinimum}-year minimum for the EHG.`
         : `Your flat's remaining lease (${choice.remainingLeaseYears} years) is below the ${resaleLeaseMinimum}-year minimum for the EHG.`;
@@ -277,7 +278,10 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
   let leaseShortfall = false;
   let leaseReason = 'The lease coverage requirement has not yet been confirmed.';
   if (typeof leaseTargetAge === 'number' && applicants.length > 0) {
-    if (typeof choice.remainingLeaseYears !== 'number') {
+    if (resaleLeaseUnknown) {
+      leasePassed = true;
+      leaseReason = leaseNotProvidedReason;
+    } else if (typeof choice.remainingLeaseYears !== 'number') {
       leaseReason = `Please provide the remaining lease term for your purchase on ${formatDate(assessmentDate)} so we can check coverage to age ${leaseTargetAge}.`;
     } else {
       const youngestAge = Math.min(...applicants.map((applicant) => applicant.age));

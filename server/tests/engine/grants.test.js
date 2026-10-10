@@ -128,6 +128,25 @@ describe('evaluateGrants', () => {
     }));
   });
 
+  it('resale with null or missing remaining lease skips lease checks without crashing', () => {
+    const { ruleset } = loadRuleset();
+    const base = { path: 'RESALE', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NONE' };
+
+    for (const choice of [{ ...base, remainingLeaseYears: null }, base]) {
+      const result = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset);
+
+      expect(result.ehg).toBe(30000);
+      for (const id of ['EHG_MIN_LEASE', 'EHG_LEASE_TO_95']) {
+        expect(result.eligibility).toContainEqual(expect.objectContaining({
+          grantGroup: 'EHG',
+          id,
+          passed: true,
+          reason: 'Remaining lease not provided yet; lease checks not applied.',
+        }));
+      }
+    }
+  });
+
   it('SC+SC first-timers: $7,000 resale 4-room, living with parents', () => {
     const profile = {
       applicants: [

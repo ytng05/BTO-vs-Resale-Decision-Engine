@@ -28,6 +28,8 @@ const sourceTitles = new Map([
   ['https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts', 'CPF Board: how interest is computed'],
   ['https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/', 'MoneySense: how much can you afford'],
   ['https://www.mof.gov.sg/news-resources/newsroom/buyer-s-stamp-duty-bsd-rates-to-be-raised-for-higher-value-properties/', 'MOF: BSD rates'],
+  ['https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits', 'MAS: loan tenure and LTV limits'],
+  ['https://discover.nyc.gov.sg/finlit/Life-Hacks/Housing/How-to-save-for-your-first-home-and-use-housing-grants', 'NYC: saving for your first home and housing grants'],
   ['https://www.hdb.gov.sg/residential/buying-a-flat/conditions-after-buying', 'HDB: conditions after buying'],
   ['https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises', 'HDB: Feb 2026 BTO press release'],
   ['https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers', 'HDB: Aug 2024 loan measures'],
@@ -42,8 +44,19 @@ function formatPercent(value) {
   return `${new Intl.NumberFormat('en-SG', { maximumFractionDigits: 2 }).format(value)}%`;
 }
 
+export function formatMinCashDownpayment({ hdbLoan, bankLoan }) {
+  const parts = [];
+  if (typeof hdbLoan === 'number') parts.push(`HDB loan ${formatPercent(hdbLoan)} (can be fully CPF)`);
+  if (typeof bankLoan?.atMaxLtv === 'number') {
+    const reduced = typeof bankLoan.atReducedLtv === 'number' ? ` (${formatPercent(bankLoan.atReducedLtv)} at reduced LTV)` : '';
+    parts.push(`bank loan ${formatPercent(bankLoan.atMaxLtv)}${reduced}`);
+  }
+  return parts.length ? parts.join(', ') : 'Not yet verified';
+}
+
 export function formatRuleValue(path, value) {
   if (value === null || value === undefined) return 'Not yet verified';
+  if (path === 'loans.ltv.bankLoan.ageBasis' && value === 'IWAA') return 'income-weighted average age';
   if (path === 'cpf.accruedInterestCompounding' && value === 'ANNUAL') return 'Annual (computed monthly)';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
 

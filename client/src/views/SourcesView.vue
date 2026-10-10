@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { getRuleset } from '../api/client.js';
-import { formatRuleValue, sourceTitle } from './sourcesFormatting.js';
+import { formatMinCashDownpayment, formatRuleValue, sourceTitle } from './sourcesFormatting.js';
 
 const response = ref(null);
 const loading = ref(true);
@@ -35,6 +35,8 @@ const ruleLabels = {
   'loans.ltv.bankLoan.reducedMaxPercent': 'LTV: reduced bank loan maximum',
   'loans.ltv.bankLoan.reducedIfTenureYearsOver': 'Reduced bank LTV: tenure threshold',
   'loans.ltv.bankLoan.reducedIfLoanEndsAfterAge': 'Reduced bank LTV: loan-end age threshold',
+  'loans.ltv.bankLoan.ageBasis': 'Age basis for joint borrowers',
+  'loans.minCashDownpaymentPercent': 'Minimum cash downpayment',
   'loans.hdbRatePremium': 'HDB concessionary loan rate',
   'loans.maxTenureYears.hdbLoan': 'Maximum tenure: HDB loan',
   'loans.maxTenureYears.bankLoanHdbFlats': 'Maximum tenure: bank loan for HDB flats',
@@ -186,6 +188,11 @@ function collectRules(value, path, rows, tierTables, activeRules) {
       value: value.familyGrantEligible === false ? 'Not eligible' : formatRuleValue(path, value.familyGrantEligible),
       note: value.familyGrantReason ?? '',
     });
+    return;
+  }
+
+  if (path === 'loans.minCashDownpaymentPercent' && value && typeof value === 'object') {
+    rows.push({ rule: ruleLabels[path], value: formatMinCashDownpayment(value) });
     return;
   }
 

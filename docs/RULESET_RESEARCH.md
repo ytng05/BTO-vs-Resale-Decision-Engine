@@ -62,6 +62,8 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 ✅ `loans.tdsrPercent`: 55. Applies to bank loans only; N.A. for HDB loans (MoneySense comparison table). Seat 1: apply TDSR only when loan type is bank. Source: <https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/>. (checked vs official source 2026-10-06: Claude + Har)
 ✅ `loans.hdbRatePremium`: 0.001 (OA rate + 0.1%; HDB concessionary rate for 1 Oct–31 Dec 2026 is calculated from `cpf.oaInterestRate` + this premium). Source: <https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027> (checked vs official source 2026-10-07: Claude + Har)
 ✅ `loans.maxTenureYears`: HDB loan 25; bank loan 30 (HDB flats). Source: <https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/>. (checked vs official source 2026-10-06: Claude + Har)
+✅ `loans.ltv.bankLoan.ageBasis`: "IWAA" (income-weighted average age, used for joint borrowers). Source: <https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits> (checked 2026-10-08: Claude + Har)
+✅ `loans.minCashDownpaymentPercent`: HDB loan 0 (can be fully CPF); bank loan 5 at maximum LTV, 10 at reduced LTV. Sources: <https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits>; <https://discover.nyc.gov.sg/finlit/Life-Hacks/Housing/How-to-save-for-your-first-home-and-use-housing-grants> (checked 2026-10-08: Claude + Har)
 
 ## Transaction Costs
 

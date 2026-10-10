@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { formatRuleValue } from '../src/views/sourcesFormatting.js';
+import { formatMinCashDownpayment, formatRuleValue } from '../src/views/sourcesFormatting.js';
+
+describe('Sources view loan additions', () => {
+  it('formats the IWAA age basis', () => {
+    expect(formatRuleValue('loans.ltv.bankLoan.ageBasis', 'IWAA')).toBe('income-weighted average age');
+  });
+
+  it('formats minimum cash downpayment percents without scaling', () => {
+    expect(formatMinCashDownpayment({ hdbLoan: 0, bankLoan: { atMaxLtv: 5, atReducedLtv: 10 } }))
+      .toBe('HDB loan 0% (can be fully CPF), bank loan 5% (10% at reduced LTV)');
+  });
+});
 
 describe('Sources view rule value formatting', () => {
   it('formats percent-unit BSD rates without scaling', () => {
