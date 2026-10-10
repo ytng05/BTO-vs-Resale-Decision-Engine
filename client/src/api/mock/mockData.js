@@ -135,3 +135,15 @@ export function mockGrants(payload) {
     assessmentDate: payload.assessmentDate ?? `${payload.choice.purchaseYear}-01-01`,
   };
 }
+
+// MOCK distance for the dashboard's PHG map (real one: GET /api/data/distance, seat 3).
+// Two fixed points in Tampines, about 2.8 km apart, whatever postal codes are typed.
+export function mockDistance(from, to) {
+  return {
+    mock: true,
+    from: { lat: 1.3496, lng: 103.9568, address: `MOCK flat (${from})`, postal: from },
+    to: { lat: 1.3612, lng: 103.9384, address: `MOCK parents' home (${to})`, postal: to },
+    km: 2.8,
+    source: 'OneMap (Singapore Land Authority)',
+  };
+}

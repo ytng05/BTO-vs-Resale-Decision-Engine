@@ -1,6 +1,6 @@
 // Axios (MIT) — HTTP client for the Express API.
 import axios from 'axios';
-import { mockCompare, mockGrants, mockRuleset } from './mock/mockData.js';
+import { mockCompare, mockDistance, mockGrants, mockRuleset } from './mock/mockData.js';
 
 // VITE_USE_MOCK=true serves clearly-labelled MOCK data so the UI can be built before the backend exists.
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
@@ -47,6 +47,12 @@ export async function getRuleset() {
 export async function grants(payload) {
   if (USE_MOCK) return mockGrants(payload);
   return (await http.post('/grants', payload)).data;
+}
+
+// Straight-line distance between two postal codes, with both points (seat 3, GET /api/data/distance).
+export async function getDistance(from, to) {
+  if (USE_MOCK) return mockDistance(from, to);
+  return (await http.get('/data/distance', { params: { from, to } })).data;
 }
 
 // TODO (seats 3/4/5): timing(), strategy(), auth, scenarios, data endpoints. See docs/API_CONTRACT.md.

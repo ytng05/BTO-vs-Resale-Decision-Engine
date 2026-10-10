@@ -112,7 +112,10 @@ onMounted(load);
           <span v-if="result.mock" data-cy="results-mock-notice">Showing mock data.</span>
         </span>
       </p>
-      <RouterLink to="/plan" class="btn btn-outline-secondary mb-4" data-cy="results-edit-button">Change inputs</RouterLink>
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="results-edit-button">Change inputs</RouterLink>
+        <RouterLink to="/dashboard" class="btn btn-outline-primary" data-cy="results-dashboard-button">See the financial dashboard</RouterLink>
+      </div>
 
       <div v-if="result.outcomeA && result.outcomeB" class="row g-3 mb-3">
         <div class="col-12 col-lg-6">
