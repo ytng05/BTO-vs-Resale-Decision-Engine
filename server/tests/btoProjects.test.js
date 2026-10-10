@@ -9,8 +9,8 @@ import { createDataRouter } from '../src/routes/data.js';
 const app = express().use('/api/data', createDataRouter());
 
 describe('BTO seed data', () => {
-  it('has about 20 projects and no problems (ids, towns, units add up, ranges, source links)', () => {
-    expect(BTO_PROJECTS.length).toBeGreaterThanOrEqual(18);
+  it('has the four launches and no problems (ids, towns, units add up, ranges, source links)', () => {
+    expect(BTO_PROJECTS.length).toBe(31);
     expect(checkSeed()).toEqual([]);
   });
 
@@ -24,6 +24,13 @@ describe('BTO seed data', () => {
       expect(p.town).toMatch(/^[A-Z][A-Z /'-]+$/);
       for (const f of p.flats) expect(f.flatType).toMatch(/^(2 ROOM|3 ROOM|4 ROOM|5 ROOM|MULTI-GENERATION)$/);
     }
+  });
+});
+
+describe('launch totals match the totals HDB announced', () => {
+  it('adds up to 5,547 (Jul 2025), 9,144 (Oct 2025), 4,692 (Feb 2026) and 6,952 (Jun 2026) BTO flats', () => {
+    const total = (launch) => BTO_PROJECTS.filter((p) => p.launch === launch).reduce((s, p) => s + p.totalUnits, 0);
+    expect([total('2025-07'), total('2025-10'), total('2026-02'), total('2026-06')]).toEqual([5547, 9144, 4692, 6952]);
   });
 });
 
@@ -44,7 +51,7 @@ describe('findBtoProjects', () => {
     const all = findBtoProjects();
     expect(all[0].launch >= all.at(-1).launch).toBe(true);
     expect(btoTowns()).toContain('TAMPINES');
-    expect(latestLaunch()).toBe('2025-10');
+    expect(latestLaunch()).toBe('2026-06');
     expect(getBtoProject('nope')).toBeNull();
   });
 });
@@ -53,9 +60,9 @@ describe('GET /api/data/bto-projects', () => {
   it('returns matching projects with towns and a data-as-of month', async () => {
     const res = await request(app).get('/api/data/bto-projects').query({ town: 'tampines', flatType: '4 ROOM' });
     expect(res.status).toBe(200);
-    expect(res.body.count).toBe(1);
-    expect(res.body.projects[0]).toMatchObject({ id: 'simei-symphony', classification: 'STANDARD', waitMonths: 42 });
-    expect(res.body.dataAsOf).toBe('2025-10');
+    expect(res.body.projects.map((p) => p.id)).toEqual(['tampines-bliss', 'tampines-nova', 'simei-symphony']); // newest first
+    expect(res.body.projects[0]).toMatchObject({ classification: 'STANDARD', waitMonths: 23 });
+    expect(res.body.dataAsOf).toBe('2026-06');
     expect(res.body.towns.length).toBeGreaterThan(5);
   });
 
