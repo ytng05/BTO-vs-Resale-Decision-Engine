@@ -6,14 +6,12 @@ import { useScenarioStore } from '../stores/scenario.js';
 import { CITIZENSHIPS, MAX_APPLICANTS, blankApplicant } from '../constants/planOptions.js';
 
 const props = defineProps({
-  // { fieldKey: 'message' }, only filled in after the user has tried to continue.
   errors: { type: Object, default: () => ({}) },
 });
 
 const store = useScenarioStore();
 const applicants = computed(() => store.profile.applicants);
 
-// Always show at least one buyer so the form never starts empty.
 if (store.profile.applicants.length === 0) {
   store.profile.applicants.push(blankApplicant());
 }
@@ -38,17 +36,6 @@ function percentOf(key) {
     },
   });
 }
-
-// The engine expects parentsAddress as { postal: '123456' } (engine/types.js), or null if blank.
-const parentsPostal = computed({
-  get() {
-    return store.profile.parentsAddress?.postal ?? '';
-  },
-  set(value) {
-    const postal = String(value ?? '').trim();
-    store.profile.parentsAddress = postal ? { postal } : null;
-  },
-});
 
 const priceGrowthPct = percentOf('priceGrowth');
 const incomeGrowthPct = percentOf('incomeGrowth');
@@ -207,51 +194,6 @@ const err = (key) => props.errors[key];
           />
           <div class="invalid-feedback">{{ err('cashSavings') }}</div>
         </div>
-      </div>
-      <div class="col-12 col-md-6">
-        <label for="monthly-savings" class="form-label">Cash saved each month</label>
-        <div class="input-group has-validation">
-          <span class="input-group-text">$</span>
-          <input
-            id="monthly-savings"
-            v-model.number="store.profile.monthlySavings"
-            type="number"
-            min="0"
-            step="100"
-            inputmode="numeric"
-            placeholder="e.g. 1000"
-            :aria-invalid="err('monthlySavings') ? 'true' : null"
-            class="form-control"
-            :class="{ 'is-invalid': err('monthlySavings') }"
-            data-cy="situation-monthly-savings-input"
-          />
-          <div class="invalid-feedback">{{ err('monthlySavings') }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Parents -->
-    <h3 class="h6">Parents</h3>
-    <div class="row g-3 mb-4">
-      <div class="col-12 col-md-6">
-        <label for="parents-postal" class="form-label">Parents' postal code (optional)</label>
-        <input
-          id="parents-postal"
-          v-model="parentsPostal"
-          type="text"
-          inputmode="numeric"
-          maxlength="6"
-          class="form-control"
-          :class="{ 'is-invalid': err('parentsAddress') }"
-          :aria-invalid="err('parentsAddress') ? 'true' : null"
-          placeholder="e.g. 560123"
-          aria-describedby="parents-postal-help"
-          data-cy="situation-parents-postal-input"
-        />
-        <div id="parents-postal-help" class="form-text">
-          Used to check whether a resale flat qualifies for the Proximity Housing Grant.
-        </div>
-        <div class="invalid-feedback">{{ err('parentsAddress') }}</div>
       </div>
     </div>
 

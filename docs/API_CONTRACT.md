@@ -7,12 +7,15 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | Method | Path | Owner | Purpose | Status |
 |---|---|---|---|---|
 | GET | `/api/health` | seat 3 | liveness and feature flags | working |
-| GET | `/api/ruleset` | seat 2 | ruleset version, status, effective date | working (template) |
+| GET | `/api/ruleset` | seat 2 | ruleset version, status, effective date | working (dated snapshot) |
+| POST | `/api/grants` | seat 2 | evaluate EHG, Family Grant, PHG, and eligibility explanations | working |
 | POST | `/api/auth/register` | seat 3 | create user (bcryptjs hash) | stub |
 | POST | `/api/auth/login` | seat 3 | returns JWT | stub |
 | GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | stub |
 | GET/DELETE | `/api/scenarios/:id` | seat 3 | load / delete | stub |
 | POST | `/api/compare` | seat 1 | break-even surface for path A vs B | stub |
+| POST | `/api/cpf/accrued-interest` | seat 1 | CPF refund owed at a date: principal + accrued interest (D2, D12) | working (needs verified CPF rate in ruleset) |
+| POST | `/api/stamp-duty` | seat 1 | buyer's stamp duty on a price (D20) | working |
 | POST | `/api/timing` | seat 1 | FEATURE 1: optimal timing search | stub |
 | POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | stub |
 | POST | `/api/backtest` | seat 1 + 3 | FEATURE 3 (later): historical range | off (`FEATURE_BACKTEST`) |
@@ -20,6 +23,50 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached) | working |
 | GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects | working |
 | GET | `/api/data/distance?from=&to=` | seat 3 | OneMap distance for the PHG test | not needed: PHG is declared (D15) |
+
+### GET /api/ruleset
+
+Response: `{ version, status, effectiveDate, verifiedOn, verifiedBy, rules }`. `rules` is the active versioned ruleset object; fields not yet verified remain null or empty and must be presented as unverified.
+
+## POST /api/grants
+
+Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/evaluate.contract.js`. Money is integer cents; applicants use `monthlyIncomeCents` and `cpfOaBalanceCents`. The route converts these to dollars only for `evaluateGrants()`. `profile.cashSavingsCents` (D19) is accepted but not read by this route. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to `${choice.purchaseYear}-01-01` (D13).
+
+Example request:
+```json
+{
+  "profile": {
+    "applicants": [
+      { "age": 35, "citizenship": "SC", "firstTimer": true, "monthlyIncomeCents": 350000, "cpfOaBalanceCents": 0 },
+      { "age": 34, "citizenship": "SC", "firstTimer": true, "monthlyIncomeCents": 350000, "cpfOaBalanceCents": 0 }
+    ],
+    "cashSavingsCents": 0
+  },
+  "choice": {
+    "path": "RESALE",
+    "purchaseYear": 2026,
+    "town": "ANG MO KIO",
+    "flatType": "4 ROOM",
+    "livingArrangement": "NEAR",
+    "remainingLeaseYears": 80
+  }
+}
+```
+
+Response (each `tests[]` entry is `{ id, passed, reason, sourceUrl }`; `sourceUrl` is the official page for that check, read from `grants.checkSources` in the ruleset):
+```json
+{
+  "totalGrantsCents": 13000000,
+  "grants": [
+    { "id": "EHG", "amountCents": 3000000, "tests": [{ "id": "EHG_INCOME_BAND", "passed": true, "reason": "...", "sourceUrl": "https://..." }] },
+    { "id": "FAMILY", "amountCents": 8000000, "tests": [{ "id": "FAMILY_AMOUNT", "passed": true, "reason": "...", "sourceUrl": "https://..." }] },
+    { "id": "PHG", "amountCents": 2000000, "tests": [{ "id": "PHG_AMOUNT", "passed": true, "reason": "...", "sourceUrl": "https://..." }] }
+  ],
+  "rulesetVersion": "string",
+  "rulesetStatus": "VERIFIED",
+  "assessmentDate": "2026-01-01"
+}
+```
 
 ## POST /api/compare
 
@@ -91,3 +138,13 @@ Query (optional): `from`, `to` as `YYYY-Qn`, inclusive.
 Response: `{ base, latest: { quarter, index }, historicalAnnualGrowth: { 5y, 10y, 20y }, count, series: [{ quarter, index }], source, cached, fetchedAt }`
 `historicalAnnualGrowth` is always measured back from the latest quarter (fraction, 0.03 = 3%). Historical only, not a forecast.
 Errors: 400 BAD_REQUEST, 502 UPSTREAM_ERROR, 503 UPSTREAM_RATE_LIMITED.
+## POST /api/cpf/accrued-interest
+Request: `{ withdrawals: [{ date: "YYYY-MM-DD", amountCents, kind? }], asOfDate: "YYYY-MM-DD" }`. `kind` is free text (e.g. `LUMP_SUM`, `INSTALMENT`, `GRANT`, `STAMP_DUTY`).
+Response: `{ principalCents, accruedInterestCents, totalCents, asOfDate, oaRate, accruedInterestCompounding, rulesetVersion, rulesetStatus }`.
+Errors: `400 VALIDATION_ERROR` (bad date or amount, or a withdrawal dated after `asOfDate`); `503 RULESET_UNAVAILABLE` (ruleset has no verified OA rate or ANNUAL compounding).
+Will be called internally by `/api/compare`; exposed on its own so the CPF calculation can be checked against hand-worked cases.
+
+## POST /api/stamp-duty
+Request: `{ priceCents }` (positive integer). Response: `{ bsdCents, dutiableValueCents, rulesetVersion, rulesetStatus }`.
+Errors: `400 VALIDATION_ERROR`; `503 RULESET_UNAVAILABLE` (no BSD tiers in the ruleset).
+

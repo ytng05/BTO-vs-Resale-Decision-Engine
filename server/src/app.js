@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.js';
 import scenarioRoutes from './routes/scenarios.js';
 import analysisRoutes from './routes/analysis.js';
 import dataRoutes from './routes/data.js';
+import grantsRoutes from './routes/grants.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -21,6 +22,7 @@ export function createApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/scenarios', scenarioRoutes);
   app.use('/api', analysisRoutes);
+  app.use('/api', grantsRoutes);
   app.use('/api/data', dataRoutes);
 
   // Unknown /api routes return JSON, not the SPA page.
