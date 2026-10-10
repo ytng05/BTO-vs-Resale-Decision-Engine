@@ -1,3 +1,4 @@
+// Axios (MIT) — HTTP client for the Express API.
 import axios from 'axios';
 import { mockCompare, mockGrants, mockRuleset } from './mock/mockData.js';
 
@@ -6,7 +7,7 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 const http = axios.create({ baseURL: '/api' });
 
 export async function compare(payload) {
-  if (USE_MOCK) return mockCompare();
+  if (USE_MOCK) return mockCompare(payload);
   return (await http.post('/compare', payload)).data;
 }
 

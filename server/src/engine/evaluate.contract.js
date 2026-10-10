@@ -74,7 +74,8 @@ const RULESET_KEYS = Object.freeze({
  * reducedIfTenureYearsOver OR the loan ends after the borrower reaches
  * reducedIfLoanEndsAfterAge; otherwise maxPercent. All values are percents
  * (whole numbers, not decimals). The figures themselves live only in the
- * ruleset. The figure used is reported in resolvedRates.ltvApplied.
+ * ruleset. The figure used is reported in resolvedRates.ltvApplied as a
+ * DECIMAL (75 in the ruleset → 0.75).
  */
 
 /**
@@ -140,12 +141,22 @@ const RULESET_KEYS = Object.freeze({
  * Profile shape as this contract but money in DOLLARS. evaluate() is the only
  * caller and converts at that boundary: applicant monthlyIncomeCents and
  * cpfOaBalanceCents → dollars going in, ehg / familyGrant / phg → cents coming
- * out. Its eligibility[] checks map onto GrantResult.tests.
+ * out. Each eligibility[] entry is { id, grant, grantGroup, passed, reason }:
+ * grantGroup → GrantResult.id ('EHG' → 'EHG', 'Family Grant' → 'FAMILY',
+ * 'PHG' → 'PHG'), and the entry's id → tests[].id unchanged. Test ids are
+ * owned by seat 2 (e.g. EHG_INCOME_CEILING, EHG_MIN_LEASE, FAMILY_RESALE_ONLY,
+ * PHG_LIVING_ARRANGEMENT); the full list is in rules/grants.js.
  *
  * assessmentDate is `${choice.purchaseYear}-01-01` (D13). evaluateGrants()
  * does not age anyone from that date: it treats the ages it is given as ages
  * at assessmentDate. So evaluate() passes each applicant's age projected to
  * the purchase year, age + (purchaseYear - evaluationStartYear).
+ * Income is treated the same way: evaluateGrants() reads monthlyIncome as
+ * the 12-month average AT assessmentDate, so evaluate() passes each
+ * applicant's monthlyIncomeCents projected to the purchase year,
+ * monthlyIncome × (1 + annualIncomeGrowth) ^ (purchaseYear - evaluationStartYear),
+ * converted to dollars. The input is already a 12-month average, so growing
+ * it by the same factor keeps it one.
  * choice.remainingLeaseYears is already the lease at purchase.
  */
 
@@ -154,7 +165,8 @@ const WARNINGS = Object.freeze({
   HDB_RATE_UNRESOLVED: 'HDB_RATE_UNRESOLVED',
   LEASE_BELOW_95_PRORATION: 'LEASE_BELOW_95_PRORATION',
   INCOME_CEILING_BREACHED_AT_PURCHASE: 'INCOME_CEILING_BREACHED_AT_PURCHASE',
-  CLASSIFICATION_CLAWBACK_ESTIMATED: 'CLASSIFICATION_CLAWBACK_ESTIMATED'
+  CLASSIFICATION_CLAWBACK_ESTIMATED: 'CLASSIFICATION_CLAWBACK_ESTIMATED',
+  CASH_SHORTFALL_AT_PURCHASE: 'CASH_SHORTFALL_AT_PURCHASE' // cashRequiredAtPurchaseCents > cashSavingsCents (D19)
 });
 
 // ---------------------------------------------------------------------------
@@ -177,6 +189,10 @@ const WARNINGS = Object.freeze({
  * Same shape as seat 2's types.js Profile, with money in cents.
  * @typedef {Object} Profile
  * @property {Applicant[]} applicants         - 1 or 2 people
+ * @property {number} cashSavingsCents        - household total cash available for the purchase (D19).
+ *                                              Checked against cashRequiredAtPurchaseCents; a shortfall
+ *                                              warns CASH_SHORTFALL_AT_PURCHASE and lets the strategy
+ *                                              search prune choices the household cannot fund.
  */
 
 /**
@@ -193,6 +209,10 @@ const WARNINGS = Object.freeze({
  *                                              not measured (D15); defaults to 'NONE'
  * @property {number} [btoWaitYears]          - BTO only: years from application to key collection (D7).
  *                                              Supplied by the caller (seeded project data or user override)
+ * @property {number} [subsidyRecoveryRate]   - BTO Plus/Prime only: decimal, e.g. 0.06. Per project, from
+ *                                              seat 3's BTO seed record, not the ruleset (D18). 0 / omitted for
+ *                                              Standard and resale. Missing for Plus/Prime → warn
+ *                                              CLASSIFICATION_CLAWBACK_ESTIMATED
  */
 
 /**
@@ -204,6 +224,51 @@ const WARNINGS = Object.freeze({
  * @property {number} loanTenureYears
  * @property {'HDB'|'BANK'} loanType          - TDSR is checked for 'BANK' only
  * @property {number} evaluationStartYear
+ * @property {number} legalFeesCents          - estimate, not policy (D17); server default if not supplied
+ * @property {number} agentFeesCents          - estimate, not policy (D17); server default if not supplied
+ */
+
+// ---------------------------------------------------------------------------
+// API REQUEST — what the client sends to POST /api/compare
+// ---------------------------------------------------------------------------
+// Not the engine's input. The route turns a CompareRequest into Profile /
+// Choice / Assumptions: it looks up purchasePriceCents, sets
+// remainingLeaseYears from leaseBand (D16), fills btoWaitYears and loan
+// defaults, and sets evaluationStartYear. The client store mirrors this
+// shape, except money, which the store keeps in dollars (monthlyIncome,
+// cpfOaBalance) and converts to …Cents when sending (D14).
+
+/**
+ * @typedef {Object} RequestChoice
+ * @property {'BTO'|'RESALE'} path
+ * @property {number} purchaseYear
+ * @property {string} town                    - HDB town name, uppercase
+ * @property {string} flatType                - e.g. '4 ROOM'
+ * @property {'STANDARD'|'PLUS'|'PRIME'|null} classification - null for resale
+ * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - resale only (D15)
+ * @property {string} [leaseBand]             - resale only, e.g. '80-89' (D16)
+ * @property {number} [btoWaitYears]          - BTO only, optional override (D7)
+ */
+
+/**
+ * @typedef {Object} RequestAssumptions
+ * @property {number} annualPriceGrowth       - decimal
+ * @property {number} annualIncomeGrowth      - decimal
+ * @property {number} holdingPeriodYears
+ * @property {number} [loanTenureYears]       - server default if omitted
+ * @property {'HDB'|'BANK'} [loanType]        - server default if omitted
+ * @property {number} [legalFeesCents]        - server default if omitted (D17)
+ * @property {number} [agentFeesCents]        - server default if omitted (D17)
+ */
+
+/**
+ * No purchasePriceCents, remainingLeaseYears or evaluationStartYear: the
+ * server sets those. Profile is the engine Profile (money in cents).
+ * @typedef {Object} CompareRequest
+ * @property {Profile} profile
+ * @property {RequestChoice} choiceA
+ * @property {RequestChoice} choiceB
+ * @property {RequestAssumptions} assumptions
  */
 
 // ---------------------------------------------------------------------------
@@ -228,11 +293,14 @@ const WARNINGS = Object.freeze({
  * Rates actually used, after resolution from the ruleset.
  * Exposed so the annual-vs-monthly comparison is a diff of two outcomes,
  * and so a wrong figure is visible rather than buried in the maths.
+ * ALL values here are decimals (0.025, 0.75), never percents. The ruleset
+ * stores some figures as whole-number percents in `…Percent` fields; the
+ * engine converts them once, on resolution.
  * @typedef {Object} ResolvedRates
- * @property {number} oaRate
- * @property {number|null} hdbConcessionaryRate - oaRate + hdbRatePremium; null if unresolved
- * @property {'ANNUAL'|'MONTHLY'} accruedInterestCompounding
- * @property {number} ltvApplied
+ * @property {number} oaRate                  - decimal, e.g. 0.025
+ * @property {number|null} hdbConcessionaryRate - decimal, oaRate + hdbRatePremium; null if unresolved
+ * @property {'ANNUAL'|'MONTHLY'} accruedInterestCompounding - enum, not a rate
+ * @property {number} ltvApplied              - decimal, e.g. 0.75 (ruleset stores 75)
  */
 
 /**
@@ -302,7 +370,7 @@ function stubEvaluate(profile, choice, assumptions) {
       {
         id: 'PHG',
         amountCents: 0,
-        tests: [{ id: 'PHG_PROXIMITY', passed: false, reason: 'STUB — not computed' }]
+        tests: [{ id: 'PHG_LIVING_ARRANGEMENT', passed: false, reason: 'STUB — not computed' }]
       }
     ],
     cashRequiredAtPurchaseCents: 4_500_000,

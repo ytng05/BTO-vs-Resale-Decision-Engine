@@ -1,7 +1,7 @@
 # API contract (DRAFT 1: agree in week 1, then change only by PR)
 
 All routes are under `/api`. Errors always use `{ "error": { "code": "...", "message": "..." } }`.
-Field names match `server/src/engine/evaluate.contract.js`; `client/src/stores/scenario.js` must use the same names. All money is integer cents.
+Field names match `server/src/engine/evaluate.contract.js`. The request shape is `CompareRequest` in that file. All money in the API is integer cents. `client/src/stores/scenario.js` uses the request names, except money: the store keeps dollars (`monthlyIncome`, `cpfOaBalance`) and converts to `monthlyIncomeCents` / `cpfOaBalanceCents` when sending (D14).
 Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 
 | Method | Path | Owner | Purpose | Status |
@@ -21,7 +21,6 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached) | stub |
 | GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects | stub |
 | GET | `/api/data/distance?from=&to=` | seat 3 | OneMap distance for the PHG test | not needed: PHG is declared (D15) |
-| GET | `/api/data/distance?from=&to=` | seat 3 | Distance service | not needed: PHG near arrangement is declared by the user (D15) |
 
 ### GET /api/ruleset
 
@@ -29,7 +28,7 @@ Response: `{ version, status, effectiveDate, verifiedOn, verifiedBy, rules }`. `
 
 ## POST /api/grants
 
-Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/evaluate.contract.js`. Money is integer cents; applicants use `monthlyIncomeCents` and `cpfOaBalanceCents`. The route converts these to dollars only for `evaluateGrants()`. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to `${choice.purchaseYear}-01-01` (D13).
+Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/evaluate.contract.js`. Money is integer cents; applicants use `monthlyIncomeCents` and `cpfOaBalanceCents`. The route converts these to dollars only for `evaluateGrants()`. `profile.cashSavingsCents` (D19) is accepted but not read by this route. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to `${choice.purchaseYear}-01-01` (D13).
 
 Example request:
 ```json
@@ -38,7 +37,8 @@ Example request:
     "applicants": [
       { "age": 35, "citizenship": "SC", "firstTimer": true, "monthlyIncomeCents": 350000, "cpfOaBalanceCents": 0 },
       { "age": 34, "citizenship": "SC", "firstTimer": true, "monthlyIncomeCents": 350000, "cpfOaBalanceCents": 0 }
-    ]
+    ],
+    "cashSavingsCents": 0
   },
   "choice": {
     "path": "RESALE",
@@ -68,7 +68,7 @@ Response:
 
 ## POST /api/compare
 
-Request: `{ profile, choiceA, choiceB, assumptions }` (`Profile`, `Choice` and `Assumptions` in `engine/evaluate.contract.js`). The client does not send an as-of date; the server sets `evaluationStartYear`.
+Request: `CompareRequest` = `{ profile, choiceA, choiceB, assumptions }` (typedefs in `engine/evaluate.contract.js`; the choices are `RequestChoice`, not the engine `Choice`). The client does not send an as-of date; the server sets `evaluationStartYear`.
 Choice (request): `{ path: "BTO"|"RESALE", purchaseYear, town, flatType, classification?, livingArrangement?, leaseBand?, btoWaitYears? }`. `leaseBand` is resale only (e.g. `"80-89"`); `btoWaitYears` is an optional override.
 
 ### Where each input comes from
@@ -86,8 +86,11 @@ All money is integer cents. The client converts dollars to cents when it sends t
 | `choice.purchasePriceCents` | Server lookup | Median from cached data.gov.sg transactions for town, flat type and lease band; seeded launch price for BTO. Never sent by the client |
 | `assumptions.annualPriceGrowth`, `annualIncomeGrowth`, `holdingPeriodYears` | Form | Growth as decimals (0.03) |
 | `assumptions.loanTenureYears`, `loanType` | Default | Optional in the request; the server fills defaults and echoes them |
+| `assumptions.legalFeesCents`, `agentFeesCents` | Default, form override | Estimates, not policy. Server defaults owned by seat 1 (D17) |
+| `choice.subsidyRecoveryRate` | Server lookup | BTO Plus/Prime only, from the BTO seed record (D18). Never sent by the client |
 | `assumptions.evaluationStartYear` | Server | Never sent by the client |
-| `cashSavings`, `monthlySavings` | Form | Not read by `evaluate()` yet. Open: use for an affordability check, or drop |
+| `profile.cashSavingsCents` | Form | Household total. Entered in dollars (`cashSavings` in the store), converted by the client (D14). Checked against cash required at purchase (D19) |
+| `monthlySavings` | Not collected | Deferred (D19): remove from the form and store |
 
 Response (one call returns the WHOLE grid, never one request per cell):
 ```json
@@ -95,8 +98,8 @@ Response (one call returns the WHOLE grid, never one request per cell):
   "rulesetVersion": "string",
   "holdingPeriodYears": 10,
   "breakEvenSentence": "string",
-  "grid": [[{ "priceGrowth": 0.03, "incomeGrowth": 0.02, "winner": "A|B|TIE", "marginCents": 0 }]],
-  "frontier": [{ "priceGrowth": 0.03, "incomeGrowth": 0.02 }],
+  "grid": [[{ "annualPriceGrowth": 0.03, "annualIncomeGrowth": 0.02, "winner": "A|B|TIE", "marginCents": 0 }]],
+  "frontier": [{ "annualPriceGrowth": 0.03, "annualIncomeGrowth": 0.02 }],
   "outcomeA": {}, "outcomeB": {}
 }
 ```
