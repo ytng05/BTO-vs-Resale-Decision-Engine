@@ -1,7 +1,7 @@
 {
   "_source": "Hand-worked in accrued-interest-worked.xlsx, month by month. Not derived from engine code: these are independent ground truth.",
   "_workedBy": "seat 1",
-  "_verifiedBy": "TODO: seat 2 to work Case 2 independently",
+  "_verifiedBy": "seat 2 (athirah-m), Case 2 worked independently on 2026-10-10 (computed in code with AI assistance, 2027 hand-checked): principal, all nine December credits, stub and total match exactly",
   "_dateWorked": "2026-10-08",
   "_conventions": {
     "decision": "D12 in docs/DECISIONS.md (stated assumption, pending CPF Board confirmation)",
