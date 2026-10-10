@@ -141,7 +141,7 @@ describe('GET /api/data/distance', () => {
 
 describe('routes not built yet', () => {
   it('still answer 501 with an owner', async () => {
-    const res = await request(appWith({})).get('/api/data/bto-projects');
+    const res = await request(appWith({})).get('/api/data/rpi');
     expect(res.status).toBe(501);
   });
 });
