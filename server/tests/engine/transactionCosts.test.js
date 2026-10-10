@@ -3,6 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { computeBuyerStampDuty } from '../../src/engine/costs/transactionCosts.js';
+import { loadRuleset } from '../../src/engine/rules/loadRuleset.js';
 
 const fixture = JSON.parse(
   readFileSync(new URL('../../src/engine/fixtures/buyer-stamp-duty.json', import.meta.url), 'utf8'),
@@ -16,3 +17,18 @@ describe('computeBuyerStampDuty: hand-worked fixture cases', () => {
     expect(computeBuyerStampDuty(c.priceCents, ruleset)).toBe(c.expectedBsdCents);
   });
 });
+
+describe('computeBuyerStampDuty: input guard', () => {
+  it.each([0, -100, NaN, undefined, null, 12.5, '55000000'])('throws for %s', (bad) => {
+    expect(() => computeBuyerStampDuty(bad, ruleset)).toThrow(RangeError);
+  });
+});
+
+describe('buyer stamp duty tiers: fixture vs live ruleset', () => {
+  // The fixture keeps its own copy of the tiers so the hand-worked values can't drift. This test makes a
+  // rate change in the live ruleset fail loudly, forcing the cases to be re-worked by hand (D20).
+  it('the live ruleset tiers equal the fixture tiers the cases were worked against', () => {
+    expect(loadRuleset().ruleset.transactionCosts.buyerStampDutyTiers).toEqual(fixture.tiers);
+  });
+});
+
