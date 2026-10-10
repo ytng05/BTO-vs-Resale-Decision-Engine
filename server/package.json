@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "demo": "node scripts/demo-engine.mjs"
+    "demo": "node scripts/demo-engine.mjs",
+    "refresh-data": "node scripts/refresh-data.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
