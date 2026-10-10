@@ -21,7 +21,11 @@ router.post('/grants', (req, res) => {
     return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: validationMessage } });
   }
 
-  const { profile, choice } = req.body;
+  const { profile, choice: requestedChoice } = req.body;
+  // BTO flats always have a 99-year lease (D16).
+  const choice = requestedChoice.path === 'BTO' && (requestedChoice.remainingLeaseYears ?? null) === null
+    ? { ...requestedChoice, remainingLeaseYears: 99 }
+    : requestedChoice;
   const grantsProfile = {
     applicants: profile.applicants.map(({ monthlyIncomeCents, cpfOaBalanceCents, ...applicant }) => ({
       ...applicant,
@@ -63,6 +67,9 @@ function validateGrantRequest(body) {
     const missingField = requiredApplicantFields.find((field) => applicant?.[field] === undefined || applicant[field] === null);
     if (missingField) {
       return `profile.applicants[${index}].${missingField} is required.`;
+    }
+    if (typeof applicant.firstTimer !== 'boolean') {
+      return `profile.applicants[${index}].firstTimer must be a boolean.`;
     }
     for (const field of ['monthlyIncomeCents', 'cpfOaBalanceCents']) {
       if (!Number.isSafeInteger(applicant[field]) || applicant[field] < 0) {

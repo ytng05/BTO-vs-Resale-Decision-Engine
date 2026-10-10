@@ -90,6 +90,15 @@ function describeCitizenship(applicants) {
   return 'Your citizenship details do not match an eligible combination.';
 }
 
+function familyGrantHouseholdLabel(applicants) {
+  const citizenships = applicants.map((applicant) => applicant.citizenship);
+  if (citizenships.length === 2 && citizenships.every((citizenship) => citizenship === 'SC')) return 'two Singapore Citizens';
+  if (citizenships.length === 2 && citizenships.includes('SC') && citizenships.includes('PR')) {
+    return 'one Singapore Citizen and one Permanent Resident';
+  }
+  return 'your household type';
+}
+
 function findIncomeTier(tiers, income, bandField) {
   for (const tier of tiers ?? []) {
     const band = tier[bandField];
@@ -108,8 +117,9 @@ function findIncomeTier(tiers, income, bandField) {
       continue;
     }
 
+    // Bands are continuous: tiers are ascending, so the first upper bound >= income wins and cents are never rounded.
     const bounds = normalizedBand.split('-').map(Number);
-    if (bounds.length === 2 && income >= bounds[0] && income <= bounds[1]) return tier;
+    if (bounds.length === 2 && income <= bounds[1]) return tier;
   }
 
   return null;
@@ -172,7 +182,7 @@ function evaluateFamilyGrant(profile, choice, ruleset) {
   const amount = findFlatAmount(amountSchedule, choice.flatType);
   checks.push(eligibility('Family Grant', 'Family Grant: amount', 'FAMILY_AMOUNT', amount !== null,
     amount !== null
-      ? `${describeCitizenship(applicants)} You get ${formatMoney(amount)} for a ${formatFlatType(choice.flatType)} flat as ${applicants.length === 2 && applicants.every((applicant) => applicant.citizenship === 'SC') ? 'two Singapore Citizens' : 'your household'}.`
+      ? `The Family Grant for a ${formatFlatType(choice.flatType)} flat is ${formatMoney(amount)} for ${familyGrantHouseholdLabel(applicants)}, if all requirements are met.`
       : `A Family Grant amount for your ${formatFlatType(choice.flatType)} flat and household type has not yet been confirmed.`));
 
   const eligible = checks.every((check) => check.passed);
@@ -184,6 +194,12 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
   const combinationRules = ruleset.grants.eligibilityCombinations;
   const applicants = profile.applicants ?? [];
   const checks = [];
+
+  // EHG purchase-path eligibility comes from the active ruleset.
+  const pathApplies = grantRules.appliesTo?.includes(choice.path) === true;
+  checks.push(eligibility('EHG', 'EHG: BTO and resale', 'EHG_PATH', pathApplies, pathApplies
+    ? 'The EHG applies to your purchase type.'
+    : 'The EHG does not apply to this purchase type.'));
 
   // Research notes state that EHG covers Singapore Citizen and Singapore PR first-timers.
   const citizenshipPassed = applicants.length > 0

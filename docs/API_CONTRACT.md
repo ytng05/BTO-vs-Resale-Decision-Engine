@@ -43,7 +43,7 @@ Example request:
   "choice": {
     "path": "RESALE",
     "purchaseYear": 2026,
-    "town": "TODO",
+    "town": "ANG MO KIO",
     "flatType": "4 ROOM",
     "livingArrangement": "NEAR",
     "remainingLeaseYears": 80

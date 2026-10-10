@@ -3,6 +3,7 @@
 // Shape must match docs/API_CONTRACT.md and the Outcome type in server/src/engine/types.js.
 // Growth rates are fractions (0.03 = 3%), the same unit the forms send and the contract uses.
 // Delete or ignore once the real endpoint exists.
+// Imports the server ruleset JSON by relative path on purpose: mock mode shows the same snapshot the API serves, with no copy to drift.
 import rulesetSnapshot from '../../../../server/src/config/rulesets/ruleset-2026-08-24.json';
 
 const GROWTH_STEPS = [0, 0.01, 0.02, 0.03, 0.04, 0.05];

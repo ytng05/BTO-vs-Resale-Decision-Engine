@@ -55,7 +55,7 @@ describe('API scaffold', () => {
     expect(new Set(testIds).size).toBe(testIds.length);
     expect(testIds).toEqual(expect.arrayContaining([
       'FAMILY_RESALE_ONLY', 'FAMILY_HOUSEHOLD_TYPE', 'FAMILY_INCOME_LIMIT', 'FAMILY_AMOUNT',
-      'EHG_CITIZENSHIP', 'EHG_FIRST_TIMER', 'EHG_INCOME_CEILING', 'EHG_INCOME_BAND', 'EHG_MIN_LEASE',
+      'EHG_CITIZENSHIP', 'EHG_FIRST_TIMER', 'EHG_PATH', 'EHG_INCOME_CEILING', 'EHG_INCOME_BAND', 'EHG_MIN_LEASE',
       'EHG_EMPLOYMENT_ASSUMED', 'EHG_FAMILY_GRANT_PREREQUISITE', 'EHG_LEASE_TO_95',
       'PHG_RESALE_ONLY', 'PHG_LIVING_ARRANGEMENT', 'PHG_AMOUNT', 'PHG_NEAR_DISTANCE',
     ]));
@@ -69,6 +69,38 @@ describe('API scaffold', () => {
     expect(res.status).toBe(200);
     expect(res.body.totalGrantsCents).toBe(3000000);
     expect(res.body.assessmentDate).toBe('2026-01-01');
+  });
+
+  it('POST /api/grants defaults a missing BTO remaining lease to 99 years', async () => {
+    const { remainingLeaseYears, ...choiceWithoutLease } = scFirstTimerCouple.choice;
+    const res = await request(app).post('/api/grants').send({
+      ...scFirstTimerCouple,
+      choice: { ...choiceWithoutLease, path: 'BTO', classification: 'STANDARD' },
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.grants.find((grant) => grant.id === 'EHG').amountCents).toBe(3000000);
+  });
+
+  it('POST /api/grants rejects a non-boolean firstTimer', async () => {
+    const [first, second] = scFirstTimerCouple.profile.applicants;
+    const res = await request(app).post('/api/grants').send({
+      ...scFirstTimerCouple,
+      profile: { applicants: [{ ...first, firstTimer: 'false' }, second] },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toBe('profile.applicants[0].firstTimer must be a boolean.');
+  });
+
+  it('POST /api/grants rejects negative or fractional cents', async () => {
+    const [first, second] = scFirstTimerCouple.profile.applicants;
+    for (const [field, value] of [['monthlyIncomeCents', -1], ['cpfOaBalanceCents', 10.5]]) {
+      const res = await request(app).post('/api/grants').send({
+        ...scFirstTimerCouple,
+        profile: { applicants: [first, { ...second, [field]: value }] },
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error.message).toMatch(new RegExp(`applicants\\[1\\]\\.${field}`));
+    }
   });
 
   it('POST /api/grants rejects missing applicants', async () => {

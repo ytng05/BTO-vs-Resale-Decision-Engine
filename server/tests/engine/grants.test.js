@@ -354,6 +354,56 @@ describe('evaluateGrants', () => {
     expect(result).toMatchObject({ ehg: 80000, familyGrant: 0, phg: 0, total: 80000 });
   });
 
+  it('EHG fails with EHG_PATH when the ruleset does not list the purchase path', () => {
+    const { ruleset } = loadRuleset();
+    const restricted = structuredClone(ruleset);
+    restricted.grants.ehg.appliesTo = ['RESALE'];
+    const choice = { path: 'BTO', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
+
+    const result = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', restricted);
+    expect(result.ehg).toBe(0);
+    expect(result.eligibility).toContainEqual(expect.objectContaining({
+      grantGroup: 'EHG', id: 'EHG_PATH', passed: false, reason: 'The EHG does not apply to this purchase type.',
+    }));
+
+    const allowed = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset);
+    expect(allowed.ehg).toBe(30000);
+    expect(allowed.eligibility).toContainEqual(expect.objectContaining({
+      id: 'EHG_PATH', passed: true, reason: 'The EHG applies to your purchase type.',
+    }));
+  });
+
+  it('treats income bands as continuous for fractional incomes', () => {
+    const { ruleset } = loadRuleset();
+    const choice = { path: 'BTO', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
+    const couple = (first, second, secondFirstTimer = true) => ({
+      applicants: [
+        { age: 35, citizenship: 'SC', firstTimer: true, monthlyIncome: first, cpfOaBalance: 0 },
+        { age: 34, citizenship: 'SC', firstTimer: secondFirstTimer, monthlyIncome: second, cpfOaBalance: 0 },
+      ],
+    });
+
+    // $1,500.01 falls in the $1,501-$2,000 band, not a gap below it.
+    expect(evaluateGrants(couple(750, 750.01), choice, '2026-10-06', ruleset).ehg).toBe(110000);
+    // $9,000.00 is eligible; $9,000.01 is above the ceiling.
+    expect(evaluateGrants(couple(4500, 4500), choice, '2026-10-06', ruleset).ehg).toBe(5000);
+    const aboveCeiling = evaluateGrants(couple(4500, 4500.01), choice, '2026-10-06', ruleset);
+    expect(aboveCeiling.ehg).toBe(0);
+    expect(aboveCeiling.eligibility).toContainEqual(expect.objectContaining({ id: 'EHG_INCOME_CEILING', passed: false }));
+    // First-timer + second-timer half income $750.50 falls in the $751-$1,000 band.
+    expect(evaluateGrants(couple(750.5, 750.5, false), choice, '2026-10-06', ruleset).ehg).toBe(55000);
+  });
+
+  it('Family Grant amount reason is conditional on meeting all requirements', () => {
+    const { ruleset } = loadRuleset();
+    const choice = { path: 'RESALE', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NONE', remainingLeaseYears: 80 };
+    const result = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset);
+    expect(result.eligibility).toContainEqual(expect.objectContaining({
+      id: 'FAMILY_AMOUNT',
+      reason: 'The Family Grant for a 4-room flat is $80,000 for two Singapore Citizens, if all requirements are met.',
+    }));
+  });
+
   it('income $1,500 vs $1,501 boundary', () => {
     const atBoundaryProfile = {
       applicants: [
