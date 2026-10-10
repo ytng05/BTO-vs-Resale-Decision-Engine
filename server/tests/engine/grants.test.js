@@ -419,6 +419,34 @@ describe('evaluateGrants', () => {
     expect(result.eligibility).toContainEqual(expect.objectContaining({ id: 'EHG_CITIZENSHIP', passed: false }));
   });
 
+  it('every eligibility check carries an https sourceUrl from grants.checkSources', () => {
+    const { ruleset } = loadRuleset();
+    const choice = { path: 'RESALE', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NEAR', remainingLeaseYears: 80 };
+    const { eligibility } = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset);
+
+    expect(eligibility.length).toBeGreaterThan(0);
+    for (const check of eligibility) {
+      expect(check.sourceUrl, check.id).toMatch(/^https:\/\/\S+$/);
+      expect(check.sourceUrl).toBe(ruleset.grants.checkSources[check.id]);
+    }
+  });
+
+  it('grants.checkSources has an entry for every eligibility test id', () => {
+    const { ruleset } = loadRuleset();
+    const bto = { path: 'BTO', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
+    const resale = { path: 'RESALE', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NEAR', remainingLeaseYears: 80 };
+    const ids = new Set([bto, resale].flatMap((choice) => evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset).eligibility.map((check) => check.id)));
+    const expectedIds = [
+      'EHG_PATH', 'EHG_CITIZENSHIP', 'EHG_FIRST_TIMER', 'EHG_INCOME_CEILING', 'EHG_INCOME_BAND', 'EHG_EMPLOYMENT_ASSUMED',
+      'EHG_FAMILY_GRANT_PREREQUISITE', 'EHG_MIN_LEASE', 'EHG_LEASE_TO_95', 'FAMILY_RESALE_ONLY', 'FAMILY_HOUSEHOLD_TYPE',
+      'FAMILY_INCOME_LIMIT', 'FAMILY_AMOUNT', 'PHG_RESALE_ONLY', 'PHG_LIVING_ARRANGEMENT', 'PHG_AMOUNT', 'PHG_NEAR_DISTANCE',
+    ];
+
+    for (const id of [...ids, ...expectedIds]) {
+      expect(ruleset.grants.checkSources[id], id).toMatch(/^https:\/\//);
+    }
+  });
+
   it('income $1,500 vs $1,501 boundary', () => {
     const atBoundaryProfile = {
       applicants: [

@@ -377,7 +377,8 @@ export function evaluateGrants(profile, choice, assessmentDate, ruleset) {
   const familyGrant = evaluateFamilyGrant(profile, choice, ruleset);
   const ehg = evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant);
   const phg = evaluatePHG(profile, choice, ruleset);
-  const eligibilityChecks = [...familyGrant.checks, ...ehg.checks, ...phg.checks];
+  const eligibilityChecks = [...familyGrant.checks, ...ehg.checks, ...phg.checks]
+    .map((check) => ({ ...check, sourceUrl: ruleset.grants.checkSources?.[check.id] ?? null }));
 
   return {
     ehg: ehg.amount,
