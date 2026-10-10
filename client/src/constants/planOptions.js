@@ -66,6 +66,16 @@ export const LIVING_ARRANGEMENTS = [
   { value: 'NEAR', label: 'Live near my parents' },
 ];
 
+// Resale remaining-lease bands (Choice.leaseBand in evaluate.contract.js). The route uses each
+// band's lower bound as remainingLeaseYears (D16). Values must match what the server expects.
+export const LEASE_BANDS = [
+  { value: '90-99', label: '90 to 99 years' },
+  { value: '80-89', label: '80 to 89 years' },
+  { value: '70-79', label: '70 to 79 years' },
+  { value: '60-69', label: '60 to 69 years' },
+  { value: '50-59', label: '50 to 59 years' },
+];
+
 // Shape of one buyer in store.profile.applicants. Matches Person in server/src/engine/types.js.
 let nextApplicantId = 1;
 

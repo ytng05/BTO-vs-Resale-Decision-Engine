@@ -11,16 +11,18 @@ function fillSituation() {
   cy.get('[data-cy=situation-buyer-1-income-input]').type('5000');
   cy.get('[data-cy=situation-buyer-1-cpf-input]').type('40000');
   cy.get('[data-cy=situation-cash-savings-input]').type('20000');
-  cy.get('[data-cy=situation-monthly-savings-input]').type('1000');
   cy.get('[data-cy=situation-price-growth-input]').type('3');
   cy.get('[data-cy=situation-income-growth-input]').type('2');
   cy.get('[data-cy=situation-horizon-input]').type('10');
 }
 
-function fillPath(prefix, flatType) {
+function fillPath(prefix, flatType, leaseBand) {
   cy.get(`[data-cy=${prefix}-year-input]`).type(String(nextYear));
   cy.get(`[data-cy=${prefix}-town-select]`).select('TAMPINES');
   cy.get(`[data-cy=${prefix}-flat-type-select]`).select(flatType);
+  if (leaseBand) {
+    cy.get(`[data-cy=${prefix}-lease-band-select]`).select(leaseBand);
+  }
 }
 
 describe('smoke', () => {
@@ -43,7 +45,7 @@ describe('smoke', () => {
     cy.get('[data-cy=plan-step-next]').click(); // situation -> path A
     fillPath('patha', '4 ROOM');
     cy.get('[data-cy=plan-step-next]').click(); // path A -> path B
-    fillPath('pathb', '4 ROOM');
+    fillPath('pathb', '4 ROOM', '80-89');
     cy.get('[data-cy=plan-step-next]').click(); // path B -> results
     cy.location('pathname').should('eq', '/results');
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');

@@ -8,8 +8,7 @@ import { axes, nearestCell } from '../utils/heatmap.js';
 import { formatMoney, formatPercent } from '../utils/format.js';
 
 const props = defineProps({
-  grid: { type: Array, required: true }, // rows of { priceGrowth, incomeGrowth, winner, margin }
-  // The user's own assumptions ({ priceGrowth, incomeGrowth } as fractions), marked on the grid.
+  grid: { type: Array, required: true }, // rows of { annualPriceGrowth, annualIncomeGrowth, winner, marginCents } — money in cents
   userPoint: { type: Object, default: null },
   labelA: { type: String, default: 'BTO' },
   labelB: { type: String, default: 'Resale' },
@@ -26,9 +25,9 @@ const rowsTopDown = computed(() => props.grid.map((row, r) => ({ row, r })).reve
 const nameOf = (winner) => (winner === 'A' ? props.labelA : props.labelB);
 
 function cellLabel(cell) {
-  const where = `Price growth ${formatPercent(cell.priceGrowth)}, income growth ${formatPercent(cell.incomeGrowth)}`;
+  const where = `Price growth ${formatPercent(cell.annualPriceGrowth)}, income growth ${formatPercent(cell.annualIncomeGrowth)}`;
   if (cell.winner === 'TIE') return `${where}: both paths end level.`;
-  return `${where}: ${nameOf(cell.winner)} ends ahead by ${formatMoney(Math.abs(cell.margin))}.`;
+  return `${where}: ${nameOf(cell.winner)} ends ahead by ${formatMoney(Math.abs(cell.marginCents) / 100)}.`;
 }
 
 const isYou = (r, c) => you.value && you.value.row === r && you.value.col === c;
@@ -79,7 +78,7 @@ const selectedText = computed(() => {
         </thead>
         <tbody>
           <tr v-for="{ row, r } in rowsTopDown" :key="`row-${r}`">
-            <th scope="row" class="heatmap__axis heatmap__axis--row small">{{ formatPercent(row[0].incomeGrowth) }}</th>
+            <th scope="row" class="heatmap__axis heatmap__axis--row small">{{ formatPercent(row[0].annualIncomeGrowth) }}</th>
             <td
               v-for="(cell, c) in row"
               :key="`${r}-${c}`"

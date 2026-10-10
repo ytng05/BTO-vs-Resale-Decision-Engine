@@ -13,6 +13,8 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | stub |
 | GET/DELETE | `/api/scenarios/:id` | seat 3 | load / delete | stub |
 | POST | `/api/compare` | seat 1 | break-even surface for path A vs B | stub |
+| POST | `/api/cpf/accrued-interest` | seat 1 | CPF refund owed at a date: principal + accrued interest (D2, D12) | working (needs verified CPF rate in ruleset) |
+| POST | `/api/stamp-duty` | seat 1 | buyer's stamp duty on a price (D20) | working |
 | POST | `/api/timing` | seat 1 | FEATURE 1: optimal timing search | stub |
 | POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | stub |
 | POST | `/api/backtest` | seat 1 + 3 | FEATURE 3 (later): historical range | off (`FEATURE_BACKTEST`) |
@@ -75,3 +77,14 @@ Response: `{ rulesetVersion, range: { min, median, max }, windows: [], caveats: 
 ## Wording rules (guardrails)
 "net financial position after N years" (never "profit"), "historical range" (never "probability"),
 never present the break-even as a prediction, and always show the ruleset version.
+
+## POST /api/cpf/accrued-interest
+Request: `{ withdrawals: [{ date: "YYYY-MM-DD", amountCents, kind? }], asOfDate: "YYYY-MM-DD" }`. `kind` is free text (e.g. `LUMP_SUM`, `INSTALMENT`, `GRANT`, `STAMP_DUTY`).
+Response: `{ principalCents, accruedInterestCents, totalCents, asOfDate, oaRate, accruedInterestCompounding, rulesetVersion, rulesetStatus }`.
+Errors: `400 VALIDATION_ERROR` (bad date or amount, or a withdrawal dated after `asOfDate`); `503 RULESET_UNAVAILABLE` (ruleset has no verified OA rate or ANNUAL compounding).
+Will be called internally by `/api/compare`; exposed on its own so the CPF calculation can be checked against hand-worked cases.
+
+## POST /api/stamp-duty
+Request: `{ priceCents }` (positive integer). Response: `{ bsdCents, dutiableValueCents, rulesetVersion, rulesetStatus }`.
+Errors: `400 VALIDATION_ERROR`; `503 RULESET_UNAVAILABLE` (no BSD tiers in the ruleset).
+
