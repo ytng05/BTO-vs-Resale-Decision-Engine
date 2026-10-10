@@ -114,7 +114,7 @@ sale date, and its result is the CPF refund obligation in the measure.
 ## Decisions needed from the team
 
 - [ ] Same calendar year (horizon year) instead of same holding period
-- [ ] Measure: total wealth (with CPF OA balance) or "money outside CPF"
+- [ ] Measure: net position with the CPF refund obligation (ranks the same as total wealth)
 - [ ] `keyCollectionYear`, with grants tested at the application year
 - [ ] Rent while waiting as an input, default 0 (living with parents), prominent slider with a sourced rental guide
 - [ ] Instalment split between CPF and cash: (a) CPF first while the OA lasts, or (b) user-entered cash top-up
