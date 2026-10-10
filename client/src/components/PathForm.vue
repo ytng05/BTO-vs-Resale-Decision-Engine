@@ -1,11 +1,18 @@
 <script setup>
 // Steps 2 and 3 of the plan stepper. One component serves both paths:
 //   <PathForm choice-key="choiceA" />  (BTO: adds classification, no Executive flats)
-//   <PathForm choice-key="choiceB" />  (resale)
+//   <PathForm choice-key="choiceB" />  (resale: adds living arrangement + lease band)
 // The path itself ('BTO' / 'RESALE') is fixed in the store, so there is no input for it.
 import { computed } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
-import { TOWNS, FLAT_TYPES, BTO_FLAT_TYPES, CLASSIFICATIONS, LIVING_ARRANGEMENTS } from '../constants/planOptions.js';
+import {
+  TOWNS,
+  FLAT_TYPES,
+  BTO_FLAT_TYPES,
+  CLASSIFICATIONS,
+  LIVING_ARRANGEMENTS,
+  LEASE_BANDS,
+} from '../constants/planOptions.js';
 
 const props = defineProps({
   choiceKey: { type: String, required: true, validator: (v) => v === 'choiceA' || v === 'choiceB' },
@@ -15,7 +22,7 @@ const props = defineProps({
 const store = useScenarioStore();
 const choice = computed(() => store[props.choiceKey]);
 const isBto = computed(() => choice.value.path === 'BTO');
-// Resale only: engine/types.js defaults livingArrangement to 'NONE', so start the dropdown there.
+// Resale only: defaults to 'NONE', so start the dropdown there.
 if (!isBto.value && choice.value.livingArrangement === undefined) {
   choice.value.livingArrangement = 'NONE';
 }
@@ -125,6 +132,22 @@ const err = (key) => props.errors[key];
           Decides whether this resale flat qualifies for the Proximity Housing Grant.
         </div>
         <div class="invalid-feedback">{{ err('livingArrangement') }}</div>
+      </div>
+
+      <div v-if="!isBto" class="col-12 col-md-6">
+        <label :for="`${prefix}-lease-band`" class="form-label">Remaining lease</label>
+        <select
+          :id="`${prefix}-lease-band`"
+          v-model="choice.leaseBand"
+          class="form-select"
+          :class="{ 'is-invalid': err('leaseBand') }"
+          :aria-invalid="err('leaseBand') ? 'true' : null"
+          :data-cy="`${prefix}-lease-band-select`"
+        >
+          <option :value="null" disabled>Choose the remaining lease</option>
+          <option v-for="b in LEASE_BANDS" :key="b.value" :value="b.value">{{ b.label }}</option>
+        </select>
+        <div class="invalid-feedback">{{ err('leaseBand') }}</div>
       </div>
     </div>
   </div>

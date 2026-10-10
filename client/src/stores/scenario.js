@@ -2,21 +2,19 @@ import { defineStore } from 'pinia';
 import { blankApplicant } from '../constants/planOptions.js';
 
 // Holds the whole scenario so users can move backwards in the stepper without losing input.
-// Field names follow server/src/engine/types.js (Profile / Choice / Assumptions) — this is the
-// CONTRACT the plan forms bind to. If a form needs a field not listed here, add it here first,
-// in a PR, so the shape stays the single source of truth (see docs/API_CONTRACT.md).
+// Field names follow server/src/engine/evaluate.contract.js (Profile / Choice / Assumptions) —
+// this is the CONTRACT the plan forms bind to. If a form needs a field not listed here, add it
+// here first, in a PR, so the shape stays the single source of truth (see docs/API_CONTRACT.md).
+// Money is kept in DOLLARS here (monthlyIncome, cpfOaBalance, cashSavings); the client converts
+// to …Cents only at the one send boundary, client/src/api/client.js's toCompareRequest() (D14).
 export const STEPS = ['Situation', 'Path A', 'Path B', 'Results'];
 
 const blank = () => ({
   step: 0,
 
-  profile: {
-    // One buyer to start; the form can add a second. blankApplicant() lives in
-    // constants/planOptions.js so every buyer gets the same defaults and a stable id.
+    profile: {
     applicants: [blankApplicant()],
     cashSavings: null,
-    monthlySavings: null,
-    parentsAddress: null, // engine/types.js: optional { postal?, lat?, lng? }; null when blank
   },
 
   choiceA: {
@@ -26,8 +24,7 @@ const blank = () => ({
                               // not the resale TOWNS list — Tengah etc. currently unselectable
     flatType: null,
     classification: 'STANDARD', // 'STANDARD' | 'PLUS' | 'PRIME' — Standard is the default
-    livingArrangement: 'NONE',  // 'WITH' | 'NEAR' | 'NONE' — a Choice field in engine/types.js (PHG)
-    remainingLeaseYears: 99,    // BTO: new 99-year lease
+    // No remainingLeaseYears here: the server always sets it (99 for BTO, D16). Never sent by the client.
   },
 
   choiceB: {
@@ -35,18 +32,17 @@ const blank = () => ({
     purchaseYear: null,
     town: null,
     flatType: null,
-    livingArrangement: 'NONE',  // 'WITH' | 'NEAR' | 'NONE' — a Choice field in engine/types.js (PHG)
-    remainingLeaseYears: null,  // TODO (seat 3): derive from the resale dataset's remaining_lease;
-                                // ask seat 2 what the engine assumes while it is missing
+    livingArrangement: 'NONE',  // 'WITH' | 'NEAR' | 'NONE' — Choice.livingArrangement, for PHG (D15)
+    leaseBand: null,             // e.g. '80-89' (Choice.leaseBand, D16); server derives
+                                  // remainingLeaseYears from its lower bound. Never sent as remainingLeaseYears.
   },
 
   assumptions: {
-    // Stored as FRACTIONS per engine/types.js (0.03 = 3%). The form shows "3" with a % add-on
-    // and converts to/from 0.03 — that conversion is the form's job, not the store's.
+    // Stored as FRACTIONS per the engine contract (0.03 = 3%). The form shows "3" with a %
+    // add-on and converts to/from 0.03 — that conversion is the form's job, not the store's.
     priceGrowth: null,
     incomeGrowth: null,
-    horizonYears: null,   // shown in the form as "Compare after … years"
-    asOfDate: null,       // TODO (seats 3+4): agree where this is set — here on creation, or in the API route
+    horizonYears: null,   // shown in the form as "Compare after … years"; sent as holdingPeriodYears
   },
 });
 
