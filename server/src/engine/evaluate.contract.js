@@ -298,10 +298,11 @@ const WARNINGS = Object.freeze({
  * @property {Applicant[]} applicants         - exactly 2, at least one 'SC'
  * @property {number} cashSavingsCents        - household cash held TODAY, at evaluationStartYear (D19).
  *                                              No further saving is assumed until monthlySavings is
- *                                              defined. A shortfall for a purchase in evaluationStartYear
- *                                              lets the timing optimiser prune that choice; for a later
- *                                              year it only warns (CASH_SHORTFALL_AT_PURCHASE). The UI
- *                                              shows this assumption.
+ *                                              defined. Checked against cashRequiredAtPurchaseCents:
+ *                                              a shortfall for a purchase in evaluationStartYear lets the
+ *                                              timing optimiser prune that choice; for a later purchase
+ *                                              year it only warns (CASH_SHORTFALL_AT_PURCHASE), because
+ *                                              saving in between may cover it. The UI shows this assumption.
  * @property {Constraints} [constraints]
  */
 
@@ -472,9 +473,10 @@ const WARNINGS = Object.freeze({
  * @property {number} totalGrantsCents
  * @property {GrantResult[]} grants
  * @property {Affordability} affordability
- * @property {number} cashRequiredAtPurchaseCents - cash from the household's own savings at purchase,
+ * @property {number} cashRequiredAtPurchaseCents - cash the household pays from its own savings at purchase,
  *                                              AFTER using the CPF OA balance and grants and after the loan
- *                                              (minimum cash downpayment per the ruleset)
+ *                                              (e.g. any minimum cash downpayment required for a bank loan,
+ *                                              per the ruleset). BTO pays in stages; see EDGE_CASES.md.
  * @property {number} cpfUsedAtPurchaseCents
  * @property {number} loanPrincipalCents
  * @property {number} marketValueAtHorizonCents
