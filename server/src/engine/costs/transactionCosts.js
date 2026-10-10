@@ -24,10 +24,16 @@ export function computeTransactionCosts(purchase, ruleset) {
  * @param {number} dutiableValueCents  purchase price in integer cents (price only, D20)
  * @param {object} ruleset
  * @returns {number} BSD payable in integer cents (a whole number of dollars)
+ * @throws {RangeError} unless dutiableValueCents is a positive safe integer
  *
  * Tests: tests/engine/transactionCosts.test.js against engine/fixtures/buyer-stamp-duty.json.
  */
 export function computeBuyerStampDuty(dutiableValueCents, ruleset) {
+  // Guard: a failed price lookup (0, NaN, undefined, fractional cents) must fail loudly, not return $1 or NaN.
+  if (!Number.isSafeInteger(dutiableValueCents) || dutiableValueCents <= 0) {
+    throw new RangeError(`dutiableValueCents must be a positive integer number of cents, got ${dutiableValueCents}`);
+  }
+
   const tiers = ruleset.transactionCosts.buyerStampDutyTiers;
 
   // Running total is cents × percent, i.e. hundredths of a cent
