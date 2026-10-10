@@ -189,10 +189,13 @@ const WARNINGS = Object.freeze({
  * Same shape as seat 2's types.js Profile, with money in cents.
  * @typedef {Object} Profile
  * @property {Applicant[]} applicants         - 1 or 2 people
- * @property {number} cashSavingsCents        - household total cash available for the purchase (D19).
- *                                              Checked against cashRequiredAtPurchaseCents; a shortfall
- *                                              warns CASH_SHORTFALL_AT_PURCHASE and lets the strategy
- *                                              search prune choices the household cannot fund.
+ * @property {number} cashSavingsCents        - household cash held TODAY, at evaluationStartYear (D19).
+ *                                              No further saving is assumed until monthlySavings is
+ *                                              defined. Checked against cashRequiredAtPurchaseCents:
+ *                                              a shortfall for a purchase in evaluationStartYear lets the
+ *                                              strategy search prune that choice; for a later purchase
+ *                                              year it only warns (CASH_SHORTFALL_AT_PURCHASE), because
+ *                                              saving in between may cover it. The UI shows this assumption.
  */
 
 /**
@@ -307,7 +310,10 @@ const WARNINGS = Object.freeze({
  * @typedef {Object} Outcome
  * @property {number} totalGrantsCents
  * @property {GrantResult[]} grants
- * @property {number} cashRequiredAtPurchaseCents
+ * @property {number} cashRequiredAtPurchaseCents - cash the household pays from its own savings at purchase,
+ *                                              AFTER using the CPF OA balance and grants and after the loan
+ *                                              (e.g. any minimum cash downpayment required for a bank loan,
+ *                                              per the ruleset). BTO pays in stages; see EDGE_CASES.md.
  * @property {number} cpfUsedAtPurchaseCents
  * @property {number} loanPrincipalCents
  * @property {number} totalInterestPaidCents

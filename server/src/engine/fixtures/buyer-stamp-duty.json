@@ -1,0 +1,95 @@
+{
+  "_source": "Hand-worked in bsd-worked-template-v2.xlsx, tier by tier. Not derived from engine code.",
+  "_workedBy": "seat 1",
+  "_dateWorked": "2026-10-10",
+  "_conventions": {
+    "decision": "D20 in docs/DECISIONS.md",
+    "banding": "Marginal: each slice of the value is taxed at its own band's rate. An amount exactly on a boundary sits in the lower band.",
+    "rounding": "Total duty rounded DOWN to the whole dollar, minimum $1 (IRAS). Different from CPF interest rounding (D12) on purpose.",
+    "dutiableValue": "Purchase price only (stated simplification, D20)."
+  },
+  "_tiersNote": "Copied from ruleset-2026-08-24.json (transactionCosts.buyerStampDutyTiers), same shape: ratePercent, portion in DOLLARS, last portion 'remainder'. Kept here so a ruleset update can't silently change these expected values.",
+  "tiers": [
+    {
+      "ratePercent": 1,
+      "portion": 180000
+    },
+    {
+      "ratePercent": 2,
+      "portion": 180000
+    },
+    {
+      "ratePercent": 3,
+      "portion": 640000
+    },
+    {
+      "ratePercent": 4,
+      "portion": 500000
+    },
+    {
+      "ratePercent": 5,
+      "portion": 1500000
+    },
+    {
+      "ratePercent": 6,
+      "portion": "remainder"
+    }
+  ],
+  "_units": "All money in integer cents.",
+  "cases": [
+    {
+      "id": "bsd-boundary-180k",
+      "description": "Exactly on the tier 1/2 boundary: all in the 1% band",
+      "priceCents": 18000000,
+      "expectedBsdCents": 180000
+    },
+    {
+      "id": "bsd-just-above-180k",
+      "description": "One dollar above the boundary: that dollar at 2% ($0.02), then floored",
+      "priceCents": 18000100,
+      "expectedBsdCents": 180000
+    },
+    {
+      "id": "bsd-boundary-360k",
+      "description": "Exactly on the tier 2/3 boundary",
+      "priceCents": 36000000,
+      "expectedBsdCents": 540000
+    },
+    {
+      "id": "bsd-typical-resale",
+      "description": "Typical 4-room resale, inside tier 3",
+      "priceCents": 55000000,
+      "expectedBsdCents": 1110000
+    },
+    {
+      "id": "bsd-boundary-1m",
+      "description": "Exactly on the tier 3/4 boundary",
+      "priceCents": 100000000,
+      "expectedBsdCents": 2460000
+    },
+    {
+      "id": "bsd-above-1m",
+      "description": "Inside tier 4",
+      "priceCents": 128000000,
+      "expectedBsdCents": 3580000
+    },
+    {
+      "id": "bsd-above-1-5m",
+      "description": "Inside the 5% band (a few HDB resale flats have sold above $1.5M). Hand-worked independently by seat 2 (athirah-m).",
+      "priceCents": 160000000,
+      "expectedBsdCents": 4960000
+    },
+    {
+      "id": "bsd-non-whole-dollar",
+      "description": "Price with cents: $10,976.6664 floored to $10,976",
+      "priceCents": 54588888,
+      "expectedBsdCents": 1097600
+    },
+    {
+      "id": "bsd-minimum-duty",
+      "description": "Nominal $1 transaction: $0.01 floors to $0, so the $1 minimum applies",
+      "priceCents": 100,
+      "expectedBsdCents": 100
+    }
+  ]
+}

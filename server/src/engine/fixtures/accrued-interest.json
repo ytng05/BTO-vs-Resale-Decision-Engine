@@ -1,0 +1,105 @@
+{
+  "_source": "Hand-worked in accrued-interest-worked.xlsx, month by month. Not derived from engine code: these are independent ground truth.",
+  "_workedBy": "seat 1",
+  "_verifiedBy": "seat 2 (athirah-m), Case 2 worked independently on 2026-10-10 (computed in code with AI assistance, 2027 hand-checked): principal, all nine December credits, stub and total match exactly",
+  "_dateWorked": "2026-10-08",
+  "_conventions": {
+    "decision": "D12 in docs/DECISIONS.md (stated assumption, pending CPF Board confirmation)",
+    "compounding": "ANNUAL: interest computed monthly at the OA rate, credited each December (D2, CPF Board)",
+    "partialMonthTreatment": "EXCLUDE_BOTH: full calendar months only; the withdrawal month and the sale month do not accrue",
+    "instalmentAccrualBasis": "Each withdrawal (lump sum, instalment, grant) accrues from the month after it is made",
+    "stubBasis": "After the last December credit, simple interest at oaRate / 12 per full month on the obligation carried into the stub (principal plus credited interest; principal only if no December credit yet)",
+    "rounding": "Full precision within the year; round to the nearest cent, halves up, at each annual credit and once on the stub credit. Never monthly."
+  },
+  "_units": "All money in integer cents. Months are numbered from 1 = the purchase month.",
+  "cases": [
+    {
+      "id": "lump-sum-only",
+      "description": "Single CPF withdrawal at purchase, no instalments. Isolates the compounding formula alone.",
+      "inputs": {
+        "oaRate": 0.025,
+        "compounding": "ANNUAL",
+        "startYear": 2027,
+        "startMonth": 1,
+        "lumpSumCents": 8000000,
+        "monthlyInstalmentCents": 0,
+        "grantCents": 0,
+        "grantMonth": 0,
+        "saleMonth": 120
+      },
+      "expected": {
+        "principalCents": 8000000,
+        "accruedInterestCents": 2199089,
+        "totalRefundCents": 10199089,
+        "stubMonths": 11,
+        "stubCreditCents": 228493
+      }
+    },
+    {
+      "id": "lump-sum-plus-instalments",
+      "description": "Adds monthly CPF instalments (month 1 to the sale month), each accruing from its own date. Catches the error of treating total CPF used as a day-one lump sum.",
+      "inputs": {
+        "oaRate": 0.025,
+        "compounding": "ANNUAL",
+        "startYear": 2027,
+        "startMonth": 1,
+        "lumpSumCents": 8000000,
+        "monthlyInstalmentCents": 120000,
+        "grantCents": 0,
+        "grantMonth": 0,
+        "saleMonth": 120
+      },
+      "expected": {
+        "principalCents": 22400000,
+        "accruedInterestCents": 4083860,
+        "totalRefundCents": 26483860,
+        "stubMonths": 11,
+        "stubCreditCents": 574506
+      }
+    },
+    {
+      "id": "grant-and-mid-year-sale",
+      "description": "Adds a grant credited to the OA in month 1 and a sale in June 2036, so the stub (January to May 2036) credits outside a year end.",
+      "inputs": {
+        "oaRate": 0.025,
+        "compounding": "ANNUAL",
+        "startYear": 2027,
+        "startMonth": 1,
+        "lumpSumCents": 8000000,
+        "monthlyInstalmentCents": 120000,
+        "grantCents": 4500000,
+        "grantMonth": 1,
+        "saleMonth": 114
+      },
+      "expected": {
+        "principalCents": 26180000,
+        "accruedInterestCents": 4933626,
+        "totalRefundCents": 31113626,
+        "stubMonths": 5,
+        "stubCreditCents": 315811
+      }
+    },
+    {
+      "id": "sale-before-first-december",
+      "description": "Purchase June 2027, sale October 2027: no December credit, so the whole period is one stub on principal only (D12). Instalments accrue from the month after payment; the sale-month instalment earns nothing.",
+      "inputs": {
+        "oaRate": 0.025,
+        "compounding": "ANNUAL",
+        "startYear": 2027,
+        "startMonth": 6,
+        "lumpSumCents": 8000000,
+        "monthlyInstalmentCents": 120000,
+        "grantCents": 0,
+        "grantMonth": 0,
+        "saleMonth": 5
+      },
+      "expected": {
+        "principalCents": 8600000,
+        "accruedInterestCents": 51500,
+        "totalRefundCents": 8651500,
+        "stubMonths": 3,
+        "stubCreditCents": 51500
+      }
+    }
+  ]
+}
