@@ -6,7 +6,35 @@ import { mockCompare, mockRuleset } from './mock/mockData.js';
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 const http = axios.create({ baseURL: '/api' });
 
-export async function compare(payload) {
+const toCents = (dollars) => (typeof dollars === 'number' ? Math.round(dollars * 100) : dollars);
+
+// Converts the store's shape (dollars, its own growth-rate field names) into the contract's
+// CompareRequest (cents, annualPriceGrowth/annualIncomeGrowth/holdingPeriodYears). This is the
+// one conversion boundary D14 describes — nothing else should hand-build a request.
+export function toCompareRequest(store) {
+  return {
+    profile: {
+      applicants: store.profile.applicants.map((a) => ({
+        age: a.age,
+        citizenship: a.citizenship,
+        firstTimer: a.firstTimer,
+        monthlyIncomeCents: toCents(a.monthlyIncome),
+        cpfOaBalanceCents: toCents(a.cpfOaBalance),
+      })),
+      cashSavingsCents: toCents(store.profile.cashSavings),
+    },
+    choiceA: { ...store.choiceA },
+    choiceB: { ...store.choiceB },
+    assumptions: {
+      annualPriceGrowth: store.assumptions.priceGrowth,
+      annualIncomeGrowth: store.assumptions.incomeGrowth,
+      holdingPeriodYears: store.assumptions.horizonYears,
+    },
+  };
+}
+
+export async function compare(store) {
+  const payload = toCompareRequest(store);
   if (USE_MOCK) return mockCompare(payload);
   return (await http.post('/compare', payload)).data;
 }
