@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { validateSituation, validateChoice, validateStep } from '../src/validation/planValidation.js';
 
 const goodApplicant = () => ({ age: 30, citizenship: 'SC', firstTimer: true, monthlyIncome: 5000, cpfOaBalance: 40000 });
-const goodProfile = () => ({ applicants: [goodApplicant()], cashSavings: 20000, monthlySavings: 1000, parentsAddress: null });
+const goodProfile = () => ({ applicants: [goodApplicant()], cashSavings: 20000 });
 const goodAssumptions = () => ({ priceGrowth: 0.03, incomeGrowth: 0.02, horizonYears: 10 });
 
 describe('validateSituation', () => {
@@ -37,14 +37,6 @@ describe('validateSituation', () => {
     expect(validateSituation(profile, goodAssumptions())['applicants.0.monthlyIncome']).toMatch(/monthly/);
   });
 
-  it('allows a blank parents postal code but rejects a malformed one', () => {
-    const profile = goodProfile();
-    profile.parentsAddress = { postal: '123456' };
-    expect(validateSituation(profile, goodAssumptions())).toEqual({});
-    profile.parentsAddress = { postal: '1234' };
-    expect(validateSituation(profile, goodAssumptions())).toHaveProperty('parentsAddress');
-  });
-
   it('shows growth range errors in percent at both bounds', () => {
     const tooLow = validateSituation(goodProfile(), { ...goodAssumptions(), priceGrowth: -0.25, incomeGrowth: -0.25 });
     expect(tooLow.priceGrowth).toBe('Flat price growth must be between -20% and 20% a year.');
@@ -70,7 +62,7 @@ describe('validateSituation', () => {
 describe('validateChoice', () => {
   const opts = { currentYear: 2026 };
   const bto = () => ({ path: 'BTO', purchaseYear: 2027, town: 'TAMPINES', flatType: '4 ROOM', classification: 'STANDARD' });
-  const resale = () => ({ path: 'RESALE', purchaseYear: 2028, town: 'BEDOK', flatType: 'EXECUTIVE', livingArrangement: 'NONE' });
+  const resale = () => ({ path: 'RESALE', purchaseYear: 2028, town: 'BEDOK', flatType: 'EXECUTIVE', livingArrangement: 'NONE', leaseBand: '80-89' });
 
   it('accepts complete BTO and resale choices', () => {
     expect(validateChoice(bto(), opts)).toEqual({});
@@ -94,10 +86,9 @@ describe('validateChoice', () => {
     expect(validateChoice(resale(), opts)).not.toHaveProperty('flatType');
   });
 
-  it('needs the parents postal code when living with or near them', () => {
+  it('accepts living with or near parents without any postal code (D15: declared, not measured)', () => {
     const near = { ...resale(), livingArrangement: 'NEAR' };
-    expect(validateChoice(near, { ...opts, profile: { parentsAddress: null } })).toHaveProperty('livingArrangement');
-    expect(validateChoice(near, { ...opts, profile: { parentsAddress: { postal: '123456' } } })).toEqual({});
+    expect(validateChoice(near, opts)).toEqual({});
   });
 
   it('does not ask BTO buyers about living arrangement', () => {

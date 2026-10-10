@@ -2,7 +2,7 @@
 // One line per eligibility test, each with its own reason (docs/UI.md §8 "Explanation / reason blocks").
 // Status is written out ("Eligible" / "Not eligible"), not shown by colour alone.
 defineProps({
-  items: { type: Array, default: () => [] }, // [{ grant, passed, reason }] from Outcome.eligibility
+  items: { type: Array, default: () => [] }, // [{ grant, passed, reason }], flattened from Outcome.grants[].tests by PathOutcomeCard
   cyPrefix: { type: String, required: true }, // e.g. 'results-patha'
 });
 
