@@ -4,11 +4,11 @@
 - Compounding convention (monthly vs annual): record the decision in DECISIONS.md D2.
 - Each instalment accrues from its own date; grants accrue from the credit date.
 - Partial months (D12: withdrawal and sale months excluded; simple-interest stub on the obligation carried into it, including a sale before the first December credit), and BTO vs resale withdrawal timing.
-- Refund capped when sale proceeds cannot cover the loan plus the refund.
+- Refund capped when sale proceeds cannot cover the loan plus the refund. Confirmed ([CPF FAQ](https://www.cpf.gov.sg/service/article/how-much-do-i-need-to-refund-to-my-cpf-account-if-i-am-selling-my-whole-property)): the loan is repaid first; at or above market value only what's left is refunded; below market value the shortfall is topped up in cash; joint owners split by CPF used. Under D1 there is no sale, so this only applies to an "if you sold" figure (tests/engine/saleProceeds.test.js).
 - Subsidy clawback (Plus/Prime) is separate from CPF accrued interest; both come out of proceeds.
 
 ## Cash required at purchase (seat 1)
-- BTO cash is paid in stages (booking fee, downpayment and stamp duty at signing the agreement for lease, the rest at key collection); resale pays at completion. Each stage needs its own date for the cash check and for the CPF ledger (D5; see docs/D1_PROPOSAL.md). To confirm (seat 2, secondary source; checking HDB's own page): with an HDB loan, 10% at signing the agreement for lease and 15% at key collection; with a bank loan, 20% at signing, of which at least 5% in cash.
+- BTO cash is paid in stages (booking fee, downpayment and stamp duty at signing the agreement for lease, the rest at key collection); resale pays at completion. Each stage needs its own date for the cash check and for the CPF ledger (D5; see docs/D1_PROPOSAL.md). Confirmed on HDB's Sign Agreement for Lease page (D5): HDB loan 10% at signing + 15% at keys; bank loan at 55% LTV 20% at signing (at least 10% cash) + 25% at keys; bank loan at 75% LTV still to confirm.
 - Cash shortfall: prunes only for a purchase in evaluationStartYear; later purchase years warn only (D19).
 - Minimum cash downpayment (confirmed by seat 2): HDB loan 0% (the 25% downpayment can be fully CPF OA); bank loan 5% at the maximum LTV, 10% at the reduced LTV. Read from `loans.minCashDownpaymentPercent` (`{ hdbLoan, bankLoan: { atMaxLtv, atReducedLtv } }`), added to the ruleset in #13.
 - Cash over valuation (COV) on resale must be paid in cash. We price at the median and assume COV = 0 (price = valuation); state this in the UI (D20).
