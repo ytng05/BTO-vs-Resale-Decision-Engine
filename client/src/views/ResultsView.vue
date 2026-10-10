@@ -19,17 +19,17 @@ const loading = ref(false);
 // the store's blank state already seeds one empty buyer.)
 const hasInputs = computed(() => [0, 1, 2].every((step) => Object.keys(validateStep(step, store)).length === 0));
 
-const horizonYears = computed(() => result.value?.horizonYears ?? store.assumptions.horizonYears ?? null);
+const horizonYears = computed(() => result.value?.holdingPeriodYears ?? store.assumptions.horizonYears ?? null);
 
 const userPoint = computed(() => ({
   priceGrowth: store.assumptions.priceGrowth,
   incomeGrowth: store.assumptions.incomeGrowth,
 }));
 
-// Positive when Path A ends ahead.
+// Positive when Path A ends ahead. Cents, per the contract.
 const gap = computed(() => {
-  const a = result.value?.outcomeA?.netFinancialPosition;
-  const b = result.value?.outcomeB?.netFinancialPosition;
+  const a = result.value?.outcomeA?.netPositionCents;
+  const b = result.value?.outcomeB?.netPositionCents;
   return typeof a === 'number' && typeof b === 'number' ? a - b : null;
 });
 
@@ -38,7 +38,7 @@ const gapSentence = computed(() => {
   const years = horizonYears.value ? `After ${horizonYears.value} years, ` : '';
   if (gap.value === 0) return `${years}both paths end with the same net financial position under your assumptions.`;
   const ahead = gap.value > 0 ? 'BTO' : 'resale';
-  return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value))} ahead in net financial position under your assumptions.`;
+  return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in net financial position under your assumptions.`;
 });
 
 const labelOf = (options, value) => options.find((o) => o.value === value)?.label ?? value;
@@ -54,13 +54,7 @@ async function load() {
   loading.value = true;
   error.value = null;
   try {
-    result.value = await compare({
-      profile: store.profile,
-      choiceA: store.choiceA,
-      choiceB: store.choiceB,
-      // The engine works from an explicit "today" (engine/types.js); it is not a form field.
-      assumptions: { ...store.assumptions, asOfDate: new Date().toISOString().slice(0, 10) },
-    });
+    result.value = await compare(store);
   } catch (e) {
     // Say what went wrong and how to fix it (rulebook: errors never apologise or stay vague).
     error.value =
