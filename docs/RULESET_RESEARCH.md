@@ -65,6 +65,12 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 ✅ `loans.ltv.bankLoan.ageBasis`: "IWAA" (income-weighted average age, used for joint borrowers). Source: <https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits> (checked 2026-10-08: Claude + Har)
 ✅ `loans.minCashDownpaymentPercent`: HDB loan 0 (can be fully CPF); bank loan 5 at maximum LTV, 10 at reduced LTV. Sources: <https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits>; <https://discover.nyc.gov.sg/finlit/Life-Hacks/Housing/How-to-save-for-your-first-home-and-use-housing-grants> (checked 2026-10-08: Claude + Har)
 
+## BTO Waiting and Resale Notes
+
+✅ `btoWaiting.shorterWaitingTimeThresholdMonths`: 36. Shorter Waiting Time (SWT) flats have waits under three years. Source: <https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises> (checked 2026-10-10: Claude + Har)
+ASSUMPTION `btoWaiting.defaultMonths`: 48. Fallback only when neither the selected project's `btoWaitMonths` nor a town median from seeded projects exists; most Feb 2026 BTO flats had waits under four years. Not a policy fact.
+✅ `notes.eip`: Resale only: EIP and SPR quotas may limit which blocks can be bought; quotas update on the 1st of each month; check HDB's EIP/SPR quota e-Service. Source: <https://www.hdb.gov.sg/business/estate-agents-and-salespersons/buying-a-resale-flat/eligibility> (checked 2026-10-10: Claude + Har)
+
 ## Transaction Costs
 
 ✅ `transactionCosts.buyerStampDutyTiers`: 1% first 180k; 2% next 180k; 3% next 640k; 4% next 500k; 5% next 1.5m; 6% remainder. Source: <https://www.mof.gov.sg/news-resources/newsroom/buyer-s-stamp-duty-bsd-rates-to-be-raised-for-higher-value-properties/> (effective 15 Feb 2023). (checked vs official source 2026-10-06: Claude + Har)
