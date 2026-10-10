@@ -8,7 +8,7 @@
 - Subsidy clawback (Plus/Prime) is separate from CPF accrued interest; both come out of proceeds.
 
 ## Cash required at purchase (seat 1)
-- BTO cash is paid in stages (booking fee, downpayment and stamp duty at signing the agreement for lease, the rest at key collection); resale pays at completion. Each stage needs its own date for the cash check and for the CPF ledger (D5; see docs/D1_PROPOSAL.md). Per seat 2: with an HDB loan the downpayment is split between signing the agreement for lease and key collection (15% at keys); with a bank loan, 20% at signing, of which at least 5% in cash.
+- BTO cash is paid in stages (booking fee, downpayment and stamp duty at signing the agreement for lease, the rest at key collection); resale pays at completion. Each stage needs its own date for the cash check and for the CPF ledger (D5; see docs/D1_PROPOSAL.md). To confirm (seat 2, secondary source; checking HDB's own page): with an HDB loan, 10% at signing the agreement for lease and 15% at key collection; with a bank loan, 20% at signing, of which at least 5% in cash.
 - Cash shortfall: prunes only for a purchase in evaluationStartYear; later purchase years warn only (D19).
 - Minimum cash downpayment (confirmed by seat 2): HDB loan 0% (the 25% downpayment can be fully CPF OA); bank loan 5% at the maximum LTV, 10% at the reduced LTV. Read from `loans.minCashDownpaymentPercent` (`{ hdbLoan, bankLoan: { atMaxLtv, atReducedLtv } }`), added to the ruleset in #13.
 - Cash over valuation (COV) on resale must be paid in cash. We price at the median and assume COV = 0 (price = valuation); state this in the UI (D20).
