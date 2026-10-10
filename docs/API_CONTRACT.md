@@ -71,7 +71,26 @@ Response:
 ## POST /api/compare
 
 Request: `CompareRequest` = `{ profile, choiceA, choiceB, assumptions }` (typedefs in `engine/evaluate.contract.js`; the choices are `RequestChoice`, not the engine `Choice`). The client does not send an as-of date; the server sets `evaluationStartYear`.
-Choice (request): `{ path: "BTO"|"RESALE", applicationYear, town, flatType, classification?, btoProject?, btoWaitMonths?, livingArrangement?, leaseBand?, renovationCents? }`. `applicationYear` is the BTO application year or the resale purchase year. `btoProject` (BTO) picks a seeded project and so its wait; `btoWaitMonths` is an optional override; `leaseBand` and `livingArrangement` are resale only. Contract v2 (D1): both paths are measured at `assumptions.horizonYear`, with no sale.
+Choice (request): `{ path: "BTO"|"RESALE", applicationYear, town, flatType, classification?, btoProjectId?, btoWaitMonths?, livingArrangement?, leaseBand?, renovationCents? }`. `applicationYear` is the BTO application year or the resale purchase year. `btoProjectId` (BTO) picks a project from `GET /api/data/bto-projects`, and so its wait; `btoWaitMonths` is an optional override; `leaseBand` and `livingArrangement` are resale only. Contract v2 (D1): both paths are measured at `assumptions.horizonYear`, with no sale.
+
+### Request example (v2)
+
+```json
+{
+  "profile": {
+    "applicants": [
+      { "age": 28, "citizenship": "SC", "firstTimer": true, "monthlyIncomeCents": 450000, "cpfOaBalanceCents": 3000000 },
+      { "age": 29, "citizenship": "PR", "firstTimer": true, "monthlyIncomeCents": 400000, "cpfOaBalanceCents": 2500000 }
+    ],
+    "cashSavingsCents": 4000000,
+    "constraints": { "moveInByYear": 2031 }
+  },
+  "choiceA": { "path": "BTO", "applicationYear": 2027, "town": "TAMPINES", "flatType": "4 ROOM", "classification": "STANDARD", "btoProjectId": "<id from /api/data/bto-projects>", "btoWaitMonths": 48, "renovationCents": 3000000 },
+  "choiceB": { "path": "RESALE", "applicationYear": 2027, "town": "TAMPINES", "flatType": "4 ROOM", "classification": null, "leaseBand": "80-89", "livingArrangement": "NEAR", "renovationCents": 2000000 },
+  "assumptions": { "annualPriceGrowth": 0.024, "annualIncomeGrowth": 0.03, "horizonYear": 2041, "monthlyHousingCostWhileWaitingCents": 0 }
+}
+```
+`btoProjectId`, `btoWaitMonths`, `horizonYear` and `monthlyHousingCostWhileWaitingCents` are optional (route fills the wait and the defaults). Illustrative values only.
 
 ### Where each input comes from
 
@@ -79,14 +98,14 @@ All money is integer cents. The client converts dollars to cents when it sends t
 
 | Input | Source | Notes |
 |---|---|---|
-| `profile.applicants[].age`, `citizenship`, `firstTimer` | Form | Exactly two applicants, at least one SC (singles and PR+PR not modelled yet; 400 otherwise) |
+| `profile.applicants[].age`, `citizenship`, `firstTimer` | Form | Exactly two applicants, at least one SC (singles and PR+PR not modelled yet). Validated in the form (seat 4) AND in every route that takes a profile (`400 VALIDATION_ERROR`) |
 | `profile.applicants[].monthlyIncomeCents`, `cpfOaBalanceCents` | Form | Entered in dollars, converted by the client |
 | `choice.path`, `applicationYear`, `town`, `flatType`, `classification` | Form | `classification` is BTO only. BTO keys = application (1 Jan) + wait, to the month |
 | `choice.renovationCents` | Form | Per path, spent at keys; default 0 |
 | `profile.constraints.moveInByYear` | Form | Optional "must move in by" year; later keys warn `MOVE_IN_DEADLINE_MISSED` |
 | `choice.livingArrangement` | Form | Resale only. Declared by the user, not measured (D15) |
 | `choice.leaseBand` → `remainingLeaseYears` | Form (resale), server (BTO) | Resale: the route uses the band's lower bound. BTO: 99 (D16) |
-| `choice.btoProject` → `btoWaitMonths` | Form (project), server lookup, form override | Chosen project's `estimatedWaitMonths`; else the median of the town's seeded projects; else ruleset `btoWaiting.defaultMonths` (48, an assumption; warns `BTO_WAIT_ASSUMED`) (D7) |
+| `choice.btoProjectId` → `btoWaitMonths` | Form (project), server lookup, form override | Chosen project's `estimatedWaitMonths`; else the median of the town's seeded projects; else ruleset `btoWaiting.defaultMonths` (48, an assumption; warns `BTO_WAIT_ASSUMED`) (D7) |
 | `choice.marketValueAtKeysCents` | Server lookup | BTO: near-new resale comparables for the town and flat type at keys (fallback town for towns with no resale stock, e.g. Tengah); resale: the purchase price. Never sent by the client |
 | `choice.purchasePriceCents` | Server lookup | Median from cached data.gov.sg transactions for town, flat type and lease band; seeded launch price for BTO. Never sent by the client |
 | `assumptions.annualPriceGrowth`, `annualIncomeGrowth` | Form (sliders) | Growth as decimals (0.03) |

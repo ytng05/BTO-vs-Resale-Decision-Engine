@@ -1,5 +1,6 @@
 /**
- * CONTRACT v2 — do not change without team agreement.
+ * CONTRACT v2 — FROZEN once #23 merges. Change only by a PR approved by seat 1
+ * and every seat whose code reads the changed field.
  *
  * evaluate() is the single primitive the whole app is built on.
  * Every higher-level feature is a wrapper that calls it in a loop:
@@ -199,6 +200,16 @@ const RULESET_KEYS = Object.freeze({
  */
 
 /**
+ * NOTE ON THE INSTALMENT SPLIT — agreed on #16 (option a), stated limitation.
+ * Each monthly instalment is paid from CPF OA first, while the OA balance
+ * lasts, then in cash. OA available = the applicants' cpfOaBalanceCents minus
+ * CPF used at purchase. Ongoing monthly OA contributions are NOT modelled yet,
+ * so CPF runs out sooner than in reality and housing cash spent is overstated;
+ * the UI states this. CPF-paid instalments are ledger entries for
+ * computeAccruedInterest(); cash-paid ones count in housingCashSpentCents.
+ */
+
+/**
  * NOTE ON RENT WHILE WAITING — per the D1 proposal (#16).
  * Applies to BOTH paths: assumptions.monthlyHousingCostWhileWaitingCents for
  * every month from evaluationStartYear until that path's keys. Default 0
@@ -361,7 +372,8 @@ const WARNINGS = Object.freeze({
  * @property {string} town                    - HDB town name, uppercase
  * @property {string} flatType                - e.g. '4 ROOM'
  * @property {'STANDARD'|'PLUS'|'PRIME'|null} classification - null for resale
- * @property {string} [btoProject]            - BTO only: seeded project name; sets the wait
+ * @property {string} [btoProjectId]          - BTO only: id of a project from GET /api/data/bto-projects
+ *                                              (seat 3's seed); sets the wait. Picker filtered by town
  * @property {number} [btoWaitMonths]         - BTO only, optional override
  * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - resale only (D15)
  * @property {string} [leaseBand]             - resale only, e.g. '80-89' (D16)
