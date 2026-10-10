@@ -7,6 +7,11 @@
 - Refund capped when sale proceeds cannot cover the loan plus the refund.
 - Subsidy clawback (Plus/Prime) is separate from CPF accrued interest; both come out of proceeds.
 
+## Cash required at purchase (seat 1)
+- BTO cash is paid in stages (booking fee, downpayment and stamp duty at signing the agreement for lease, the rest at key collection); resale pays at completion. Each stage needs its own date for the cash check and for the CPF ledger (D5; see docs/D1_PROPOSAL.md).
+- Cash shortfall: prunes only for a purchase in evaluationStartYear; later purchase years warn only (D19).
+- Minimum cash downpayment for a bank loan vs an HDB loan: confirm with seat 2 and read from the ruleset.
+
 ## Grant eligibility (seat 2)
 - EHG income tiers, 12-month averaging, boundary at the ceiling.
 - First-timer per person; first-timer with second-timer; SC+SC, SC+PR, PR+PR.
