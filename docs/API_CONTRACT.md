@@ -71,7 +71,7 @@ Response:
 ## POST /api/compare
 
 Request: `CompareRequest` = `{ profile, choiceA, choiceB, assumptions }` (typedefs in `engine/evaluate.contract.js`; the choices are `RequestChoice`, not the engine `Choice`). The client does not send an as-of date; the server sets `evaluationStartYear`.
-Choice (request): `{ path: "BTO"|"RESALE", purchaseYear, town, flatType, classification?, livingArrangement?, leaseBand?, btoWaitYears? }`. `leaseBand` is resale only (e.g. `"80-89"`); `btoWaitYears` is an optional override.
+Choice (request): `{ path: "BTO"|"RESALE", applicationYear, town, flatType, classification?, btoProject?, btoWaitMonths?, livingArrangement?, leaseBand?, renovationCents? }`. `applicationYear` is the BTO application year or the resale purchase year. `btoProject` (BTO) picks a seeded project and so its wait; `btoWaitMonths` is an optional override; `leaseBand` and `livingArrangement` are resale only. Contract v2 (D1): both paths are measured at `assumptions.horizonYear`, with no sale.
 
 ### Where each input comes from
 
@@ -79,14 +79,19 @@ All money is integer cents. The client converts dollars to cents when it sends t
 
 | Input | Source | Notes |
 |---|---|---|
-| `profile.applicants[].age`, `citizenship`, `firstTimer` | Form | |
+| `profile.applicants[].age`, `citizenship`, `firstTimer` | Form | Exactly two applicants, at least one SC (singles and PR+PR not modelled yet; 400 otherwise) |
 | `profile.applicants[].monthlyIncomeCents`, `cpfOaBalanceCents` | Form | Entered in dollars, converted by the client |
-| `choice.path`, `purchaseYear`, `town`, `flatType`, `classification` | Form | `classification` is BTO only |
+| `choice.path`, `applicationYear`, `town`, `flatType`, `classification` | Form | `classification` is BTO only. BTO keys = application (1 Jan) + wait, to the month |
+| `choice.renovationCents` | Form | Per path, spent at keys; default 0 |
+| `profile.constraints.moveInByYear` | Form | Optional "must move in by" year; later keys warn `MOVE_IN_DEADLINE_MISSED` |
 | `choice.livingArrangement` | Form | Resale only. Declared by the user, not measured (D15) |
 | `choice.leaseBand` → `remainingLeaseYears` | Form (resale), server (BTO) | Resale: the route uses the band's lower bound. BTO: 99 (D16) |
-| `choice.btoWaitYears` | Server lookup, form override | From seeded BTO project data (D7) |
+| `choice.btoProject` → `btoWaitMonths` | Form (project), server lookup, form override | Chosen project's `estimatedWaitMonths`; else the median of the town's seeded projects; else ruleset `bto.typicalWaitMonths` (warns `BTO_WAIT_ASSUMED`) (D7) |
+| `choice.marketValueAtKeysCents` | Server lookup | BTO: near-new resale comparables for the town and flat type at keys (fallback town for towns with no resale stock, e.g. Tengah); resale: the purchase price. Never sent by the client |
 | `choice.purchasePriceCents` | Server lookup | Median from cached data.gov.sg transactions for town, flat type and lease band; seeded launch price for BTO. Never sent by the client |
-| `assumptions.annualPriceGrowth`, `annualIncomeGrowth`, `holdingPeriodYears` | Form | Growth as decimals (0.03) |
+| `assumptions.annualPriceGrowth`, `annualIncomeGrowth` | Form (sliders) | Growth as decimals (0.03) |
+| `assumptions.horizonYear` | Form, default | Must be ≥ the later key year (400 otherwise). Default: later key year + 10 |
+| `assumptions.monthlyHousingCostWhileWaitingCents` | Form (slider) | Rent until keys, both paths. Default 0 (living with parents); show a sourced rental guide beside the slider |
 | `assumptions.loanTenureYears`, `loanType` | Default | Optional in the request; the server fills defaults and echoes them |
 | `assumptions.legalFeesCents`, `agentFeesCents` | Default, form override | Estimates, not policy. Server defaults owned by seat 1 (D17) |
 | `choice.subsidyRecoveryRate` | Server lookup | BTO Plus/Prime only, from the BTO seed record (D18). Never sent by the client |
@@ -98,14 +103,14 @@ Response (one call returns the WHOLE grid, never one request per cell):
 ```json
 {
   "rulesetVersion": "string",
-  "holdingPeriodYears": 10,
+  "horizonYear": 2041,
   "breakEvenSentence": "string",
   "grid": [[{ "annualPriceGrowth": 0.03, "annualIncomeGrowth": 0.02, "winner": "A|B|TIE", "marginCents": 0 }]],
   "frontier": [{ "annualPriceGrowth": 0.03, "annualIncomeGrowth": 0.02 }],
   "outcomeA": {}, "outcomeB": {}
 }
 ```
-`outcomeA/B` are `Outcome` objects (see `evaluate.contract.js`). `marginCents` is the difference in net financial position after `holdingPeriodYears`, in cents. `holdingPeriodYears` echoes the horizon used, so the page can say "after N years".
+`outcomeA/B` are `Outcome` objects (see `evaluate.contract.js`, v2: timeline, affordability, `costBreakdown`, `yearlyCashFlow`, net position at the horizon). `marginCents` is the difference in net position at `horizonYear`, in cents. Errors: `400 VALIDATION_ERROR` for an out-of-scope household or a `horizonYear` before either path's keys.
 
 ## POST /api/timing
 Request: `{ profile, choiceBase, candidateYears, assumptions }`
