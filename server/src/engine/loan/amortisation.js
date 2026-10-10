@@ -16,7 +16,9 @@ const toFirstOfMonth = (monthNumber) => {
 /**
  * Loan schedule (D23). Pure: one row per monthly instalment.
  *
- * Conventions (D23, stated assumption; seat 2 to check HDB's own convention):
+ * Conventions (D23, stated assumption: HDB doesn't publish its rounding convention):
+ *  - the rate is held FIXED for the whole tenure (D9); in practice the HDB rate is reviewed quarterly
+ *    and the instalment recalculated when it changes
  *  - monthly rate r = annualRate ÷ 12 (monthly rest)
  *  - regular instalment = P × r ÷ (1 − (1 + r)^−n), rounded to the NEAREST cent (halves up)
  *  - each month: interest = opening balance × r, rounded to the nearest cent;
