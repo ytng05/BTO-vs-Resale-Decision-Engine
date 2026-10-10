@@ -1,5 +1,17 @@
 // SEAT 1 owns this file.
-import { NotImplementedError } from '../errors.js';
+
+// 'YYYY-MM-DD' → absolute month number (year * 12 + zero-based month)
+const toMonthNumber = (dateString) => {
+  const [year, month] = dateString.split('-').map(Number);
+  return year * 12 + (month - 1);
+};
+
+// Absolute month number → 'YYYY-MM-01'
+const toFirstOfMonth = (monthNumber) => {
+  const year = Math.floor(monthNumber / 12);
+  const month = (monthNumber % 12) + 1;
+  return `${year}-${String(month).padStart(2, '0')}-01`;
+};
 
 /**
  * Loan schedule (D23). Pure: one row per monthly instalment.
@@ -23,6 +35,60 @@ import { NotImplementedError } from '../errors.js';
  *
  * Tests: tests/engine/loanSchedule.test.js against engine/fixtures/loan-schedule.json.
  */
-export function buildLoanSchedule(loan) {
-  throw new NotImplementedError('buildLoanSchedule', 'seat 1');
+export function buildLoanSchedule({ principalCents, annualRate, tenureYears, keyCollectionDate }) {
+  // 1. Set up
+  const n = tenureYears * 12;
+  const r = annualRate / 12;
+  // 0.026 → 260. Assumes at most four decimal places, which holds for HDB rates.
+  const rateBps = Math.round(annualRate * 10000);
+  const DENOMINATOR = 10000 * 12; // bps × months
+
+  // 2. Regular instalment – the one step that needs decimal maths, rounded once
+  const regularInstalmentCents =
+    r === 0
+      ? Math.round(principalCents / n)
+      : Math.round((principalCents * r) / (1 - (1 + r) ** -n));
+
+  const keyMonth = toMonthNumber(keyCollectionDate);
+  const rows = [];
+  let balance = principalCents;
+
+  // 3. One row per month, first instalment one month after key collection
+  for (let m = 1; m <= n; m++) {
+    const openingBalanceCents = balance;
+
+    // Interest on the opening balance, half-up with integer arithmetic
+    const interestCents = Math.floor(
+      (2 * openingBalanceCents * rateBps + DENOMINATOR) / (2 * DENOMINATOR)
+    );
+
+    // Final month pays whatever clears the balance to exactly 0
+    const instalmentCents =
+      m === n ? openingBalanceCents + interestCents : regularInstalmentCents;
+
+    const principalRepaidCents = instalmentCents - interestCents;
+    const closingBalanceCents = openingBalanceCents - principalRepaidCents;
+
+    // The loan should only clear in the last month
+    if (m < n && closingBalanceCents <= 0) {
+      throw new Error(
+        `Loan cleared early in month ${m} of ${n}: closing balance ${closingBalanceCents} cents`
+      );
+    }
+
+    rows.push({
+      month: m,
+      paymentDate: toFirstOfMonth(keyMonth + m),
+      openingBalanceCents,
+      instalmentCents,
+      interestCents,
+      principalRepaidCents,
+      closingBalanceCents
+    });
+
+    balance = closingBalanceCents;
+  }
+
+  // 4. Return the rows
+  return rows;
 }
