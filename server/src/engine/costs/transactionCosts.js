@@ -12,3 +12,42 @@ import { NotImplementedError } from '../errors.js';
 export function computeTransactionCosts(purchase, ruleset) {
   throw new NotImplementedError('computeTransactionCosts', 'seat 1');
 }
+
+/**
+ * Buyer's stamp duty on a purchase (D20).
+ *
+ * Marginal bands from ruleset.transactionCosts.buyerStampDutyTiers ({ ratePercent, portion } with portion in
+ * DOLLARS, last portion 'remainder'). Each slice of the value is taxed at its own band's rate; an amount exactly
+ * on a boundary sits in the lower band. The total is rounded DOWN to the whole dollar, minimum $1 (IRAS).
+ * This is deliberately different from CPF interest rounding (D12, half-up to the cent): don't "fix" one to match.
+ *
+ * @param {number} dutiableValueCents  purchase price in integer cents (price only, D20)
+ * @param {object} ruleset
+ * @returns {number} BSD payable in integer cents (a whole number of dollars)
+ *
+ * Tests: tests/engine/transactionCosts.test.js against engine/fixtures/buyer-stamp-duty.json.
+ */
+export function computeBuyerStampDuty(dutiableValueCents, ruleset) {
+  const tiers = ruleset.transactionCosts.buyerStampDutyTiers;
+
+  // Running total is cents × percent, i.e. hundredths of a cent
+  let total = 0;
+  let remaining = dutiableValueCents;
+
+  for (const tier of tiers) {
+    if (remaining <= 0) break;
+
+    // Portions are in dollars; the last tier is 'remainder'
+    const slice =
+      tier.portion === 'remainder'
+        ? remaining
+        : Math.min(remaining, tier.portion * 100);
+
+    total += slice * tier.ratePercent;
+    remaining -= slice;
+  }
+
+  // Round down to whole dollars, then apply the $1 minimum
+  const wholeDollars = Math.floor(total / 10000);
+  return Math.max(wholeDollars * 100, 100);
+}
