@@ -103,6 +103,15 @@ describe('API scaffold', () => {
     }
   });
 
+  it('POST /api/grants rejects single-buyer purchases', async () => {
+    const res = await request(app).post('/api/grants').send({
+      ...scFirstTimerCouple,
+      profile: { applicants: [scFirstTimerCouple.profile.applicants[0]] },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toBe("Single-buyer purchases aren't modelled yet.");
+  });
+
   it('POST /api/grants rejects missing applicants', async () => {
     const res = await request(app).post('/api/grants').send({
       profile: {},

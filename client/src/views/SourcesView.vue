@@ -666,6 +666,9 @@ onMounted(async () => {
 .sources-tier-toggle {
   min-height: 2.75rem;
   padding-inline: var(--space-2);
+}
+
+.sources-metadata {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: var(--space-4) var(--space-5);

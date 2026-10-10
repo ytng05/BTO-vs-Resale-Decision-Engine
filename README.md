@@ -77,6 +77,8 @@ The active ruleset is the dated `2026-08-24` snapshot. `ruleset.template.json` r
 
 ## AI / LLM declaration
 - The initial repository scaffold (folder structure, Express and Vue boilerplate, configuration, function stubs with contracts, mock data, test skeletons, documentation templates) was generated with Claude (Anthropic).
+- With TA approval, GitHub Copilot generated the grants eligibility logic and grant tests. The team reviewed the
+  generated logic; policy values are read from the checked-in ruleset; use is recorded in `docs/AI_USAGE_LOG.md`.
 - TODO (whole team, before submission): summarise each seat's AI use from docs/AI_USAGE_LOG.md.
 
 ## Libraries and credits

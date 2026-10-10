@@ -58,6 +58,9 @@ function validateGrantRequest(body) {
   if (!Array.isArray(applicants) || applicants.length === 0) {
     return 'profile.applicants must contain one or two applicants.';
   }
+  if (applicants.length === 1) {
+    return "Single-buyer purchases aren't modelled yet.";
+  }
   if (applicants.length > 2) {
     return 'profile.applicants must contain no more than two applicants.';
   }

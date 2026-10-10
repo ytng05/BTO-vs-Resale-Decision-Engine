@@ -404,6 +404,21 @@ describe('evaluateGrants', () => {
     }));
   });
 
+  it('PR+PR BTO household gets no EHG because EHG needs at least one SC', () => {
+    const { ruleset } = loadRuleset();
+    const profile = {
+      applicants: [
+        { age: 35, citizenship: 'PR', firstTimer: true, monthlyIncome: 3500, cpfOaBalance: 0 },
+        { age: 34, citizenship: 'PR', firstTimer: true, monthlyIncome: 3500, cpfOaBalance: 0 },
+      ],
+    };
+    const choice = { path: 'BTO', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
+    const result = evaluateGrants(profile, choice, '2026-10-06', ruleset);
+
+    expect(result.ehg).toBe(0);
+    expect(result.eligibility).toContainEqual(expect.objectContaining({ id: 'EHG_CITIZENSHIP', passed: false }));
+  });
+
   it('income $1,500 vs $1,501 boundary', () => {
     const atBoundaryProfile = {
       applicants: [

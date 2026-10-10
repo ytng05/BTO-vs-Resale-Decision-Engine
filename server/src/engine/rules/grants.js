@@ -201,12 +201,13 @@ function evaluateEHG(profile, choice, assessmentDate, ruleset, familyGrant) {
     ? 'The EHG applies to your purchase type.'
     : 'The EHG does not apply to this purchase type.'));
 
-  // Research notes state that EHG covers Singapore Citizen and Singapore PR first-timers.
+  // EHG is for citizen households (HDB MyNiceHome): at least one SC, and every applicant SC or PR.
   const citizenshipPassed = applicants.length > 0
+    && applicants.some((applicant) => applicant.citizenship === 'SC')
     && applicants.every((applicant) => applicant.citizenship === 'SC' || applicant.citizenship === 'PR');
   checks.push(eligibility('EHG', 'EHG: citizenship', 'EHG_CITIZENSHIP', citizenshipPassed, citizenshipPassed
     ? `${describeCitizenship(applicants)} Your household meets the citizenship requirement for EHG.`
-    : 'Your household’s citizenship combination does not meet the EHG requirements.'));
+    : 'The EHG needs at least one Singapore Citizen in the household, and every applicant must be a Singapore Citizen or Permanent Resident.'));
 
   // First-timer status is per person; the checked FT+ST table applies when exactly one of two is a first-timer.
   const firstTimerCount = applicants.filter((applicant) => applicant.firstTimer).length;
