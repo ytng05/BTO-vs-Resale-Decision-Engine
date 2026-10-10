@@ -67,7 +67,7 @@ export async function fetchDatastorePage({ datasetId, limit = 1000, offset = 0, 
 }
 
 /** Fetch every page of a query. maxRecords stops a too-broad filter from pulling the whole dataset. */
-export async function fetchAllRecords({ datasetId, filters, sort, pageSize = 5000, maxRecords = 20000 }) {
+export async function fetchAllRecords({ datasetId, filters, sort, pageSize = 2000, maxRecords = 20000 }) {
   const all = [];
   for (let offset = 0; ; offset += pageSize) {
     const { records, total } = await fetchDatastorePage({ datasetId, limit: pageSize, offset, filters, sort });

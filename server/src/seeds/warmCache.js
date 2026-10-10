@@ -8,6 +8,9 @@ import { getRpiSeries } from '../services/datagov/rpi.js';
 
 const WARM_FLAT_TYPES = ['3 ROOM', '4 ROOM', '5 ROOM']; // the types the app is mostly used for
 const WARM_MONTHS = 12; // must match the route's default, or the cache keys will not line up
+const PAUSE_MS = 1500; // ~6 requests per 10 s, under the dev-key limit of 8
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 
 async function main() {
   const conn = await connectDb();
@@ -23,12 +26,15 @@ async function main() {
   const failed = [];
 
   await getRpiSeries();
+  await sleep(PAUSE_MS);
+
   for (const town of towns) {
     for (const flatType of WARM_FLAT_TYPES) {
       try {
         const r = await getResalePriceBasis({ town, flatType, months: WARM_MONTHS });
         if (r.cached) alreadyCached += 1;
         else fetched += 1;
+        await sleep(PAUSE_MS);
       } catch (err) {
         failed.push(`${town} ${flatType}: ${err.message}`);
       }

@@ -52,7 +52,10 @@ export function summariseResale(records) {
 
 /** Median resale price (and spread) for a town + flat type over the last `months` months. */
 export async function getResalePriceBasis({ town, flatType, months, asOf = new Date() }) {
-  const window = monthWindow(asOf, months);
+    // End at the last full month: the current month is still being reported.
+  const lastFullMonth = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() - 1, 1));
+  const window = monthWindow(lastFullMonth, months);
+
   const from = window.at(-1);
   const to = window[0];
   const key = `${DATASETS.resaleTransactions}:${town}:${flatType}:${from}..${to}`;
@@ -63,7 +66,7 @@ export async function getResalePriceBasis({ town, flatType, months, asOf = new D
       filters: { town, flat_type: flatType, month: window },
     });
     // Keep only the fields we use so cache entries stay small.
-    return raw.map(({ month, resale_price, floor_area_sqm }) => ({ month, resale_price, floor_area_sqm }));
+        return raw.map(({ month, resale_price, floor_area_sqm, remaining_lease }) => ({ month, resale_price, floor_area_sqm, remaining_lease }));
   });
 
   return {
