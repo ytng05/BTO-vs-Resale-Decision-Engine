@@ -23,7 +23,7 @@ External data: data.gov.sg (resale transactions, Resale Price Index, price range
 server/src/engine/     pure calculation engine (seats 1 and 2): cpf, loan, costs, rules, solvers
 server/src/config/     env, feature flags, versioned ruleset JSON (rules live here, not in code)
 server/src/routes/     Express routes (contract in docs/API_CONTRACT.md)
-server/src/services/   data.gov.sg and OneMap clients (seat 3)
+server/src/services/   data.gov.sg client (seat 3)
 server/src/models/     Mongoose schemas
 client/src/            Vue app: views, components, Pinia store, API client with mock mode
 cypress/e2e/           end-to-end tests
@@ -76,15 +76,11 @@ Aug 2025 and Aug 2026. Every saved scenario records the ruleset version that pro
 The active ruleset is the dated `2026-08-24` snapshot. `ruleset.template.json` remains an empty template for future research.
 
 ## AI / LLM declaration
-Required by the module. Keep `docs/AI_USAGE_LOG.md` up to date and summarise it here before submission.
-- The initial repository scaffold (folder structure, Express and Vue boilerplate, configuration, function stubs with
-  contracts, mock data, test skeletons, documentation templates) was generated with Claude (Anthropic).
-- GitHub Copilot was used to scaffold the grants eligibility logic and tests, and to assist with later edits
-  to `grants.js` under team direction (see log). The team designed and reviewed the rules; policy values are
-  read from the checked-in ruleset, and expected test values come from hand-worked examples.
+- The initial repository scaffold (folder structure, Express and Vue boilerplate, configuration, function stubs with contracts, mock data, test skeletons, documentation templates) was generated with Claude (Anthropic).
+- TODO (whole team, before submission): summarise each seat's AI use from docs/AI_USAGE_LOG.md.
 
 ## Libraries and credits
 Vue, Pinia, Vue Router (MIT), Bootstrap (MIT), Chart.js (MIT), Axios (MIT), Express (MIT), Mongoose (MIT),
 jsonwebtoken (MIT), bcryptjs (MIT/BSD), dotenv (BSD-2), Vitest (MIT), Supertest (MIT), Cypress (MIT), concurrently (MIT), Vite (MIT), Sass (MIT).
 Credit each library again in code comments where it is used, and in the presentation.
-Data: data.gov.sg (Singapore Open Data Licence), OneMap (SLA). Confirm licence wording before submission.
+Data: data.gov.sg (Singapore Open Data Licence). Confirm licence wording before submission.
