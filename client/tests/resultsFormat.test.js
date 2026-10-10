@@ -57,13 +57,15 @@ describe('heatmap helpers', () => {
 
 describe('mock compare response', () => {
   it('matches the contract: fractions on the axes, outcomes for both paths', () => {
-    const res = mockCompare({ assumptions: { horizonYears: 15 } });
-    expect(res.grid[0][1].priceGrowth).toBe(0.01);
-    expect(res.horizonYears).toBe(15);
+    const res = mockCompare({ assumptions: { holdingPeriodYears: 15 } });
+    expect(res.grid[0][1].annualPriceGrowth).toBe(0.01);
+    expect(res.holdingPeriodYears).toBe(15);
     for (const o of [res.outcomeA, res.outcomeB]) {
-      expect(o.grants.total).toBe(o.grants.ehg + o.grants.familyGrant + o.grants.phg);
-      expect(o.cpfRefund.total).toBe(o.cpfRefund.principal + o.cpfRefund.accruedInterest);
-      expect(o.eligibility.length).toBeGreaterThan(0);
+      expect(o.totalGrantsCents).toBe(o.grants.reduce((sum, g) => sum + g.amountCents, 0));
+      expect(typeof o.cpfRefundPrincipalCents).toBe('number');
+      expect(typeof o.cpfAccruedInterestCents).toBe('number');
+      const allTests = o.grants.flatMap((g) => g.tests);
+      expect(allTests.length).toBeGreaterThan(0);
     }
   });
 });
