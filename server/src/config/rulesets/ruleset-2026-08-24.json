@@ -6,6 +6,25 @@
   "verifiedBy": "Har (seat 2)",
 
   "grants": {
+    "checkSources": {
+      "EHG_PATH": "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/",
+      "EHG_CITIZENSHIP": "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/",
+      "EHG_FIRST_TIMER": "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/",
+      "EHG_INCOME_CEILING": "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant",
+      "EHG_INCOME_BAND": "https://www.hdb.gov.sg/-/media/buying-a-flat/flat-grant-and-loan-eligibility/couples-and-families/enhanced-cpf-housing-grant/EHG-amount-Families.pdf",
+      "EHG_EMPLOYMENT_ASSUMED": "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant",
+      "EHG_FAMILY_GRANT_PREREQUISITE": "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/",
+      "EHG_MIN_LEASE": "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/",
+      "EHG_LEASE_TO_95": "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant",
+      "FAMILY_RESALE_ONLY": "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/",
+      "FAMILY_HOUSEHOLD_TYPE": "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/",
+      "FAMILY_INCOME_LIMIT": "https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/",
+      "FAMILY_AMOUNT": "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Increased-CPF-Housing-Grant-for-resale-flat-buyers",
+      "PHG_RESALE_ONLY": "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant",
+      "PHG_LIVING_ARRANGEMENT": "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant",
+      "PHG_AMOUNT": "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant",
+      "PHG_NEAR_DISTANCE": "https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant"
+    },
     "ehg": {
       "appliesTo": ["BTO", "RESALE"],
       "incomeCeiling": { "family": 9000, "single": 4500 },
@@ -162,5 +181,17 @@
       "https://www.hdb.gov.sg/residential/buying-a-flat/conditions-after-buying",
       "https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises"
     ]
+  },
+  "btoWaiting": {
+    "shorterWaitingTimeThresholdMonths": 36,
+    "defaultMonths": 48,
+    "_note": "Wait used = selected project's btoWaitMonths (seat 3 seed data) → else median of the town's seeded projects → else defaultMonths. defaultMonths is an ASSUMPTION: most Feb 2026 BTO flats had waits under four years. SWT flats have waits under three years.",
+    "sources": ["https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises"]
+  },
+  "notes": {
+    "eip": {
+      "text": "Resale only: the Ethnic Integration Policy (EIP) and SPR quota may limit which blocks you can buy in. Quotas are updated on the 1st of each month; check the flat on HDB's EIP/SPR quota e-Service before committing.",
+      "sourceUrl": "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/buying-a-resale-flat/eligibility"
+    }
   }
 }

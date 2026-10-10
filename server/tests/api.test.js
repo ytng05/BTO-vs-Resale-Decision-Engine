@@ -51,6 +51,10 @@ describe('API scaffold', () => {
     expect(res.body.rulesetStatus).toBe('VERIFIED');
     expect(res.body.assessmentDate).toBe('2026-01-01');
     const tests = res.body.grants.flatMap((grant) => grant.tests);
+    for (const test of tests) {
+      expect(Object.keys(test).sort()).toEqual(['id', 'passed', 'reason', 'sourceUrl']);
+      expect(test.sourceUrl).toMatch(/^https:\/\//);
+    }
     const testIds = tests.map((test) => test.id);
     expect(new Set(testIds).size).toBe(testIds.length);
     expect(testIds).toEqual(expect.arrayContaining([
