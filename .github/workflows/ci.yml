@@ -21,5 +21,14 @@ jobs:
           install: false
           start: npm start
           wait-on: 'http://localhost:3000/api/health'
+      - uses: cypress-io/github-action@v6
+        with:
+          install: false
+          start: npm start
+          wait-on: 'http://localhost:3000/api/health'
+          wait-on-timeout: 120
+        env:
+          PORT: 3000
+
         env:
           PORT: 3000

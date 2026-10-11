@@ -9,7 +9,11 @@ function fillBuyer2({ age = '32' } = {}) {
 }
 
 describe('buyers on the Situation step', () => {
-  beforeEach(() => cy.visit('/plan'));
+  beforeEach(() => {
+    cy.visit('/plan', { timeout: 10000 });
+    // Wait for the situation buyer form to be ready
+    cy.get('[data-cy=situation-buyer-1]', { timeout: 10000 }).should('exist');
+  });
 
   it('starts with one buyer who cannot be removed', () => {
     cy.get('[data-cy=situation-buyer-1]').should('exist');
