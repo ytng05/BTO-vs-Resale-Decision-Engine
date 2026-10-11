@@ -205,9 +205,10 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     cashOut.push({ month, amountCents: cents });
     if (atPurchase) cashRequiredAtPurchaseCents += cents;
   };
-  // OA above the retention first, the rest in cash
-  const payOaAboveRetentionThenCash = (month, cents) => {
-    const fromOa = Math.min(cents, Math.max(0, oaLeftCents - retentionCents));
+  // D28 v3: the retention is a ceiling, not a floor. Where there is no loan to fall back on (signing) or
+  // the loan is capped (keys), any OA left, the retained part included, pays before cash
+  const payOaThenCash = (month, cents) => {
+    const fromOa = Math.min(cents, Math.max(0, oaLeftCents));
     payOa(month, fromOa, 'LUMP_SUM');
     payCash(month, cents - fromOa);
   };
@@ -239,20 +240,20 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     return used;
   };
 
-  // BTO signing (D30 v2): the signing percent of the price from grants first, then OA above the
-  // retention, then cash; then stamp duty, then legal fees
+  // BTO signing (D30 v2, D28 v3): the signing percent of the price from grants first, then any OA (the
+  // retained part included), then cash; then stamp duty, then legal fees
   let priceDueAtKeysCents = priceCents;
   if (isBto) {
     const atSigningPercent = ruleset.loans.btoDownpaymentStages.hdbLoan.atSigningPercent;
     const signingCents = Math.round((priceCents * atSigningPercent) / 100);
     const grantAtSigningCents = useGrants(signingMonth, signingCents);
-    payOaAboveRetentionThenCash(signingMonth, signingCents - grantAtSigningCents);
+    payOaThenCash(signingMonth, signingCents - grantAtSigningCents);
     priceDueAtKeysCents -= signingCents;
     bsdPaidFrom = payFee(signingMonth, bsdCents);
     legalPaidFrom = payFee(signingMonth, legalCents);
   }
 
-  // At keys: grants, then OA above the retention, then the loan, then cash
+  // At keys: grants, then OA above the retention, then the loan, then the retained OA (D28 v3), then cash
   let remainingCents = priceDueAtKeysCents;
   remainingCents -= useGrants(keyMonth, remainingCents);
   // Grants left over after the price (grantsLeftCents) go to the CPF Special/Retirement and MediSave
@@ -267,7 +268,9 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   const loanPrincipalCents = Math.min(loanRequiredCents, maxLoan.maxLoanCents);
   const shortfallCents = loanRequiredCents - loanPrincipalCents;
   if (shortfallCents > 0) warnings.add(WARNINGS.LOAN_ABOVE_LIMIT);
-  payCash(keyMonth, shortfallCents);
+  // D28 v3: a capped loan's shortfall comes from the retained OA first, then cash. The loan, the
+  // shortfall and LOAN_ABOVE_LIMIT are unchanged; only the cash split moves.
+  payOaThenCash(keyMonth, shortfallCents);
 
   // Resale: stamp duty and legal fees at keys, after the price
   if (!isBto) {
