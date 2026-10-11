@@ -47,7 +47,7 @@ describe.each(fixture.cases.map((c) => [c.id, c]))('evaluate: %s', (_id, c) => {
     const o = run(c);
     expect(o.netPositionCents).toBe(
       o.marketValueAtHorizonCents - o.outstandingLoanAtHorizonCents - o.cpfRefundPrincipalCents
-        - o.cpfAccruedInterestCents - o.clawbackCents - o.housingCashSpentCents,
+        - o.cpfAccruedInterestCents + o.cpfGrantRefundCents - o.clawbackCents - o.housingCashSpentCents,
     );
   });
 });

@@ -127,3 +127,25 @@ sale date, and its result is the CPF refund obligation in the measure.
 
 - **ABSD:** out of scope for Singapore citizens on a first property (0%). A PR+PR household does pay ABSD on a
   first property: please confirm the rate against IRAS and say whether PR+PR stays in scope.
+
+## Amendment: grants (seat 2 on #49, 2026-10-11)
+
+"Why the CPF refund obligation" above holds for the household's own OA, not for grants. A grant was never in the OA
+they'd have had without buying, and on sale its refund (with accrued interest) goes back into their own OA (CPF:
+refund on sale), not to the government. Subtracting it as a debt with no matching asset made every grant lower net
+position by its accrued interest (E1's $125,000 of grants: about $9,700 lower; E2's $30,000: about $4,200 lower).
+
+The measure now adds the grant part back:
+
+```
+net position at horizon =   market value − outstanding loan
+                          − CPF refund obligation (principal + accrued interest)
+                          + grant part of that refund (grants used + their accrued interest)
+                          − clawback − cumulative housing cash spent
+```
+
+This is seat 2's option (a), the wealth view: the whole refund returns to the household's CPF, and their own OA used
+(plus the interest it would have earned) is the cost. Option (b), leaving CPF out on both sides, was not taken: it
+would make anything paid from the OA free and drop the CPF interest cost. Grants left over after the price go to
+SA/RA and MediSave (#46) and are still not counted.
+

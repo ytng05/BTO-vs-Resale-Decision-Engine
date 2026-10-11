@@ -174,13 +174,21 @@ const RULESET_KEYS = Object.freeze({
  *   netPositionCents =   marketValueAtHorizonCents
  *                      − outstandingLoanAtHorizonCents
  *                      − (cpfRefundPrincipalCents + cpfAccruedInterestCents)
+ *                      + cpfGrantRefundCents
  *                      − clawbackCents
  *                      − housingCashSpentCents
  *
- * - The CPF refund obligation ranks the paths identically to "total wealth
- *   including the CPF OA balance": the two differ only by the OA balance the
- *   household would have had without buying, which is the same on both paths.
- *   It comes from computeAccruedInterest() called with the horizon date.
+ * - The refund of the household's OWN CPF (refund principal + interest, less
+ *   the grant part) ranks the paths identically to "total wealth including the
+ *   CPF OA balance": the two differ only by the OA balance the household would
+ *   have had without buying, which is the same on both paths. It comes from
+ *   computeAccruedInterest() called with the horizon date.
+ * - Grants (D1, seat 2 on #49): on sale the refund of a grant and its accrued
+ *   interest goes back into the buyers' own OA (CPF: refund on sale), so it is
+ *   not a debt. The grant was never in the OA they'd have had without buying,
+ *   so counting its refund as a cost made a grant lower net position.
+ *   cpfGrantRefundCents adds that part back. The two refund fields still
+ *   report the full refund, grants included.
  * - housingCashSpentCents counts only housing cash out, from
  *   evaluationStartYear to the horizon: upfront cash, the cash part of
  *   instalments, cash-paid stamp duty / fees / renovation, and rent while
@@ -561,6 +569,10 @@ const WARNINGS = Object.freeze({
  * @property {number} outstandingLoanAtHorizonCents
  * @property {number} cpfRefundPrincipalCents  - CPF principal owed back at the horizon
  * @property {number} cpfAccruedInterestCents  - accrued interest owed back at the horizon (D12 conventions)
+ * @property {number} cpfGrantRefundCents      - the grant part of the two above (grants used + their accrued
+ *                                              interest), which goes back into the buyers' own OA, so the
+ *                                              measure adds it back (D1). The full refund on the GRANT ledger
+ *                                              entries less the refund without them; 0 with no grants used
  * @property {number} clawbackCents           - Plus/Prime only, else 0
  * @property {number} housingCashSpentCents   - sum of the CASH-paid cost lines and cash instalments
  * @property {CostLine[]} costBreakdown
