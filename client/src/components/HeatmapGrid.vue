@@ -12,7 +12,7 @@ const props = defineProps({
   userPoint: { type: Object, default: null },
   labelA: { type: String, default: 'BTO' },
   labelB: { type: String, default: 'Resale' },
-  horizonYears: { type: Number, default: null },
+  horizonYear: { type: Number, default: null },
 });
 
 const axis = computed(() => axes(props.grid));
@@ -51,8 +51,8 @@ const selectedText = computed(() => {
     <div class="table-responsive">
       <table class="heatmap__table">
         <caption class="visually-hidden">
-          Which path ends with the higher net financial position<template v-if="horizonYears">
-            after {{ horizonYears }} years</template>,
+          Which path ends with the higher net financial position<template v-if="horizonYear">
+            at {{ horizonYear }}</template>,
           for each combination of yearly flat price growth (columns) and income growth (rows).
         </caption>
         <thead>
