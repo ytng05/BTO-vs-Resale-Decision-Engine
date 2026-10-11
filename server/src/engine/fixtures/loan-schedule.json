@@ -1,0 +1,165 @@
+{
+  "_source": "Hand-worked in loan-schedule-template.xlsx, month by month. Not derived from engine code.",
+  "_workedBy": "seat 1",
+  "_dateWorked": "2026-10-11",
+  "_conventions": {
+    "decision": "D23 in docs/DECISIONS.md (stated assumption; seat 2 to check HDB's convention)",
+    "monthlyRate": "annualRate / 12",
+    "instalment": "annuity formula, rounded to the nearest cent (halves up)",
+    "interest": "opening balance x monthly rate, rounded to the nearest cent each month",
+    "finalInstalment": "clears the balance to exactly 0",
+    "timing": "first instalment one month after key collection"
+  },
+  "_units": "All money in integer cents.",
+  "cases": [
+    {
+      "id": "loan-1-year",
+      "description": "$12,000 at 2.6% over 1 year, worked end to end (every row asserted).",
+      "inputs": {
+        "principalCents": 1200000,
+        "annualRate": 0.026,
+        "tenureYears": 1,
+        "keyCollectionDate": "2027-01-01"
+      },
+      "expected": {
+        "instalments": 12,
+        "regularInstalmentCents": 101414,
+        "finalInstalmentCents": 101412,
+        "totalInterestCents": 16966,
+        "rows": [
+          {
+            "month": 1,
+            "paymentDate": "2027-02-01",
+            "openingBalanceCents": 1200000,
+            "instalmentCents": 101414,
+            "interestCents": 2600,
+            "principalRepaidCents": 98814,
+            "closingBalanceCents": 1101186
+          },
+          {
+            "month": 2,
+            "paymentDate": "2027-03-01",
+            "openingBalanceCents": 1101186,
+            "instalmentCents": 101414,
+            "interestCents": 2386,
+            "principalRepaidCents": 99028,
+            "closingBalanceCents": 1002158
+          },
+          {
+            "month": 3,
+            "paymentDate": "2027-04-01",
+            "openingBalanceCents": 1002158,
+            "instalmentCents": 101414,
+            "interestCents": 2171,
+            "principalRepaidCents": 99243,
+            "closingBalanceCents": 902915
+          },
+          {
+            "month": 4,
+            "paymentDate": "2027-05-01",
+            "openingBalanceCents": 902915,
+            "instalmentCents": 101414,
+            "interestCents": 1956,
+            "principalRepaidCents": 99458,
+            "closingBalanceCents": 803457
+          },
+          {
+            "month": 5,
+            "paymentDate": "2027-06-01",
+            "openingBalanceCents": 803457,
+            "instalmentCents": 101414,
+            "interestCents": 1741,
+            "principalRepaidCents": 99673,
+            "closingBalanceCents": 703784
+          },
+          {
+            "month": 6,
+            "paymentDate": "2027-07-01",
+            "openingBalanceCents": 703784,
+            "instalmentCents": 101414,
+            "interestCents": 1525,
+            "principalRepaidCents": 99889,
+            "closingBalanceCents": 603895
+          },
+          {
+            "month": 7,
+            "paymentDate": "2027-08-01",
+            "openingBalanceCents": 603895,
+            "instalmentCents": 101414,
+            "interestCents": 1308,
+            "principalRepaidCents": 100106,
+            "closingBalanceCents": 503789
+          },
+          {
+            "month": 8,
+            "paymentDate": "2027-09-01",
+            "openingBalanceCents": 503789,
+            "instalmentCents": 101414,
+            "interestCents": 1092,
+            "principalRepaidCents": 100322,
+            "closingBalanceCents": 403467
+          },
+          {
+            "month": 9,
+            "paymentDate": "2027-10-01",
+            "openingBalanceCents": 403467,
+            "instalmentCents": 101414,
+            "interestCents": 874,
+            "principalRepaidCents": 100540,
+            "closingBalanceCents": 302927
+          },
+          {
+            "month": 10,
+            "paymentDate": "2027-11-01",
+            "openingBalanceCents": 302927,
+            "instalmentCents": 101414,
+            "interestCents": 656,
+            "principalRepaidCents": 100758,
+            "closingBalanceCents": 202169
+          },
+          {
+            "month": 11,
+            "paymentDate": "2027-12-01",
+            "openingBalanceCents": 202169,
+            "instalmentCents": 101414,
+            "interestCents": 438,
+            "principalRepaidCents": 100976,
+            "closingBalanceCents": 101193
+          },
+          {
+            "month": 12,
+            "paymentDate": "2028-01-01",
+            "openingBalanceCents": 101193,
+            "instalmentCents": 101412,
+            "interestCents": 219,
+            "principalRepaidCents": 101193,
+            "closingBalanceCents": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "loan-25-years-hdb",
+      "description": "$300,000 at the HDB rate (OA 2.5% + 0.1%) over 25 years: checkpoints.",
+      "inputs": {
+        "principalCents": 30000000,
+        "annualRate": 0.026,
+        "tenureYears": 25,
+        "keyCollectionDate": "2030-05-01"
+      },
+      "expected": {
+        "instalments": 300,
+        "firstPaymentDate": "2030-06-01",
+        "lastPaymentDate": "2055-05-01",
+        "regularInstalmentCents": 136101,
+        "finalInstalmentCents": 136039,
+        "totalInterestCents": 10830238,
+        "closingBalanceAfterMonthCents": {
+          "12": 29136547,
+          "60": 25449484,
+          "120": 20267956
+        }
+      }
+    }
+  ]
+}

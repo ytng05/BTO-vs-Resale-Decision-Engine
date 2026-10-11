@@ -41,7 +41,7 @@ router.post('/grants', (req, res) => {
     amountCents: dollarsToCents(result[grantKeys[grantGroup]]),
     tests: result.eligibility
       .filter((test) => test.grantGroup === grantGroup)
-      .map(({ id, passed, reason }) => ({ id, passed, reason })),
+      .map(({ id, passed, reason, sourceUrl }) => ({ id, passed, reason, sourceUrl })),
   }));
 
   return res.json({

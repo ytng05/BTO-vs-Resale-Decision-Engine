@@ -53,14 +53,14 @@ Example request:
 }
 ```
 
-Response:
+Response (each `tests[]` entry is `{ id, passed, reason, sourceUrl }`; `sourceUrl` is the official page for that check, read from `grants.checkSources` in the ruleset):
 ```json
 {
   "totalGrantsCents": 13000000,
   "grants": [
-    { "id": "EHG", "amountCents": 3000000, "tests": [{ "id": "EHG_INCOME_BAND", "passed": true, "reason": "..." }] },
-    { "id": "FAMILY", "amountCents": 8000000, "tests": [{ "id": "FAMILY_AMOUNT", "passed": true, "reason": "..." }] },
-    { "id": "PHG", "amountCents": 2000000, "tests": [{ "id": "PHG_AMOUNT", "passed": true, "reason": "..." }] }
+    { "id": "EHG", "amountCents": 3000000, "tests": [{ "id": "EHG_INCOME_BAND", "passed": true, "reason": "...", "sourceUrl": "https://..." }] },
+    { "id": "FAMILY", "amountCents": 8000000, "tests": [{ "id": "FAMILY_AMOUNT", "passed": true, "reason": "...", "sourceUrl": "https://..." }] },
+    { "id": "PHG", "amountCents": 2000000, "tests": [{ "id": "PHG_AMOUNT", "passed": true, "reason": "...", "sourceUrl": "https://..." }] }
   ],
   "rulesetVersion": "string",
   "rulesetStatus": "VERIFIED",
