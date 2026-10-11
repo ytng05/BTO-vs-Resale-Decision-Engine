@@ -135,7 +135,7 @@ sale date, and its result is the CPF refund obligation in the measure.
 "Why the CPF refund obligation" above holds for the household's own OA, not for grants. A grant was never in the OA
 they'd have had without buying, and on sale its refund (with accrued interest) goes back into their own OA (CPF:
 refund on sale), not to the government. Subtracting it as a debt with no matching asset made every grant lower net
-position by its accrued interest (E1's $125,000 of grants: about $9,700 lower; E2's $30,000: about $4,200 lower).
+position (E1's $125,000 of grants: about $9,300 lower; E2's $30,000: about $3,400 lower, with D28 v3 funding).
 
 The measure now counts only the refund of the household's own OA savings; the grant refund is reported as
 information (ytng on #47, as contract reviewer):
