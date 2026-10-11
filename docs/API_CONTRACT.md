@@ -34,7 +34,7 @@ Response: `{ version, status, effectiveDate, verifiedOn, verifiedBy, rules }`. `
 
 ## POST /api/grants
 
-Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/evaluate.contract.js`. Money is integer cents; applicants use `monthlyIncomeCents` and `cpfOaBalanceCents`. The route converts these to dollars only for `evaluateGrants()`. `profile.cashSavingsCents` (D19) is accepted but not read by this route. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to `${choice.purchaseYear}-01-01` (D13).
+Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/evaluate.contract.js`. Money is integer cents; applicants use `monthlyIncomeCents` and `cpfOaBalanceCents`. The route converts these to dollars only for `evaluateGrants()`. `profile.cashSavingsCents` (D19) is accepted but not read by this route. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to `${choice.applicationYear}-01-01` (D13). `choice.applicationYear` is required (400 `VALIDATION_ERROR` if missing). At least one applicant must be a Singapore Citizen (D21): otherwise 400 "At least one buyer must be a Singapore Citizen (D21)." A single buyer returns 400 "Single-buyer purchases aren't modelled yet."
 
 Example request:
 ```json
@@ -48,7 +48,7 @@ Example request:
   },
   "choice": {
     "path": "RESALE",
-    "purchaseYear": 2026,
+    "applicationYear": 2026,
     "town": "ANG MO KIO",
     "flatType": "4 ROOM",
     "livingArrangement": "NEAR",

@@ -12,7 +12,7 @@ describe('API scaffold', () => {
         { age: 34, citizenship: 'SC', firstTimer: true, monthlyIncomeCents: 350000, cpfOaBalanceCents: 0 },
       ],
     },
-    choice: { path: 'RESALE', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NEAR', remainingLeaseYears: 80 },
+    choice: { path: 'RESALE', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NEAR', remainingLeaseYears: 80 },
   };
 
   it('GET /api/health returns ok and the feature flags', async () => {
@@ -114,6 +114,34 @@ describe('API scaffold', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error.message).toBe("Single-buyer purchases aren't modelled yet.");
+  });
+
+  it('POST /api/grants rejects a missing applicationYear', async () => {
+    const { applicationYear, ...choiceWithoutYear } = scFirstTimerCouple.choice;
+    const res = await request(app).post('/api/grants').send({ ...scFirstTimerCouple, choice: choiceWithoutYear });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.message).toMatch(/choice\.applicationYear/);
+  });
+
+  it('POST /api/grants rejects a household with no Singapore Citizen (D21)', async () => {
+    const applicants = scFirstTimerCouple.profile.applicants.map((applicant) => ({ ...applicant, citizenship: 'PR' }));
+    const res = await request(app).post('/api/grants').send({ ...scFirstTimerCouple, profile: { applicants } });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.message).toBe('At least one buyer must be a Singapore Citizen (D21).');
+  });
+
+  it('POST /api/grants reports a missing citizenship before the D21 check', async () => {
+    const [first, second] = scFirstTimerCouple.profile.applicants;
+    const { citizenship, ...withoutCitizenship } = first;
+    const res = await request(app).post('/api/grants').send({
+      ...scFirstTimerCouple,
+      profile: { applicants: [withoutCitizenship, { ...second, citizenship: 'PR' }] },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toMatch(/citizenship/);
+    expect(res.body.error.message).not.toMatch(/D21/);
   });
 
   it('POST /api/grants rejects missing applicants', async () => {

@@ -24,7 +24,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'RESALE',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       livingArrangement: 'NEAR',
@@ -49,7 +49,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'RESALE',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '5 ROOM',
       livingArrangement: 'NONE',
@@ -73,7 +73,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'RESALE',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       livingArrangement: 'NONE',
@@ -89,7 +89,7 @@ describe('evaluateGrants', () => {
   it('resale lease of 19 years fails the EHG minimum remaining lease check', () => {
     const choice = {
       path: 'RESALE',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       livingArrangement: 'NONE',
@@ -110,7 +110,7 @@ describe('evaluateGrants', () => {
   it('resale lease of exactly 20 years passes the EHG minimum remaining lease check', () => {
     const choice = {
       path: 'RESALE',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       livingArrangement: 'NONE',
@@ -130,7 +130,7 @@ describe('evaluateGrants', () => {
 
   it('resale with null or missing remaining lease skips lease checks without crashing', () => {
     const { ruleset } = loadRuleset();
-    const base = { path: 'RESALE', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NONE' };
+    const base = { path: 'RESALE', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NONE' };
 
     for (const choice of [{ ...base, remainingLeaseYears: null }, base]) {
       const result = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset);
@@ -158,7 +158,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'RESALE',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       livingArrangement: 'WITH',
@@ -183,7 +183,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'RESALE',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       livingArrangement: 'NEAR',
@@ -207,7 +207,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'RESALE',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       livingArrangement: 'NONE',
@@ -237,7 +237,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'BTO',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       classification: 'STANDARD',
@@ -261,7 +261,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'BTO',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       classification: 'STANDARD',
@@ -292,7 +292,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'BTO',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       classification: 'STANDARD',
@@ -317,7 +317,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'BTO',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       classification: 'STANDARD',
@@ -341,7 +341,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'BTO',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       classification: 'STANDARD',
@@ -358,7 +358,7 @@ describe('evaluateGrants', () => {
     const { ruleset } = loadRuleset();
     const restricted = structuredClone(ruleset);
     restricted.grants.ehg.appliesTo = ['RESALE'];
-    const choice = { path: 'BTO', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
+    const choice = { path: 'BTO', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
 
     const result = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', restricted);
     expect(result.ehg).toBe(0);
@@ -375,7 +375,7 @@ describe('evaluateGrants', () => {
 
   it('treats income bands as continuous for fractional incomes', () => {
     const { ruleset } = loadRuleset();
-    const choice = { path: 'BTO', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
+    const choice = { path: 'BTO', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
     const couple = (first, second, secondFirstTimer = true) => ({
       applicants: [
         { age: 35, citizenship: 'SC', firstTimer: true, monthlyIncome: first, cpfOaBalance: 0 },
@@ -396,7 +396,7 @@ describe('evaluateGrants', () => {
 
   it('Family Grant amount reason is conditional on meeting all requirements', () => {
     const { ruleset } = loadRuleset();
-    const choice = { path: 'RESALE', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NONE', remainingLeaseYears: 80 };
+    const choice = { path: 'RESALE', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NONE', remainingLeaseYears: 80 };
     const result = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset);
     expect(result.eligibility).toContainEqual(expect.objectContaining({
       id: 'FAMILY_AMOUNT',
@@ -412,7 +412,7 @@ describe('evaluateGrants', () => {
         { age: 34, citizenship: 'PR', firstTimer: true, monthlyIncome: 3500, cpfOaBalance: 0 },
       ],
     };
-    const choice = { path: 'BTO', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
+    const choice = { path: 'BTO', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
     const result = evaluateGrants(profile, choice, '2026-10-06', ruleset);
 
     expect(result.ehg).toBe(0);
@@ -421,7 +421,7 @@ describe('evaluateGrants', () => {
 
   it('every eligibility check carries an https sourceUrl from grants.checkSources', () => {
     const { ruleset } = loadRuleset();
-    const choice = { path: 'RESALE', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NEAR', remainingLeaseYears: 80 };
+    const choice = { path: 'RESALE', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NEAR', remainingLeaseYears: 80 };
     const { eligibility } = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset);
 
     expect(eligibility.length).toBeGreaterThan(0);
@@ -433,8 +433,8 @@ describe('evaluateGrants', () => {
 
   it('grants.checkSources has an entry for every eligibility test id', () => {
     const { ruleset } = loadRuleset();
-    const bto = { path: 'BTO', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
-    const resale = { path: 'RESALE', purchaseYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NEAR', remainingLeaseYears: 80 };
+    const bto = { path: 'BTO', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', classification: 'STANDARD', remainingLeaseYears: 99 };
+    const resale = { path: 'RESALE', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NEAR', remainingLeaseYears: 80 };
     const ids = new Set([bto, resale].flatMap((choice) => evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset).eligibility.map((check) => check.id)));
     const expectedIds = [
       'EHG_PATH', 'EHG_CITIZENSHIP', 'EHG_FIRST_TIMER', 'EHG_INCOME_CEILING', 'EHG_INCOME_BAND', 'EHG_EMPLOYMENT_ASSUMED',
@@ -468,7 +468,7 @@ describe('evaluateGrants', () => {
     };
     const choice = {
       path: 'BTO',
-      purchaseYear: 2026,
+      applicationYear: 2026,
       town: 'TODO',
       flatType: '4 ROOM',
       classification: 'STANDARD',
