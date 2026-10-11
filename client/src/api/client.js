@@ -26,9 +26,9 @@ export function toCompareRequest(store) {
     choiceA: { ...store.choiceA },
     choiceB: { ...store.choiceB },
     assumptions: {
-      annualPriceGrowth: store.assumptions.priceGrowth,
-      annualIncomeGrowth: store.assumptions.incomeGrowth,
-      holdingPeriodYears: store.assumptions.horizonYears,
+      annualPriceGrowth: store.assumptions.annualPriceGrowth,
+      annualIncomeGrowth: store.assumptions.annualIncomeGrowth,
+      horizonYear: store.assumptions.horizonYear,
     },
   };
 }
