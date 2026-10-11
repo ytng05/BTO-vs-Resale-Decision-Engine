@@ -257,7 +257,8 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   remainingCents -= useGrants(keyMonth, remainingCents);
   // Grants left over after the price (grantsLeftCents) go to the CPF Special/Retirement and MediSave
   // accounts (HDB Sign Agreement for Lease page; seat 2 on #46), so they never reach the OA: they can't pay
-  // fees or instalments and aren't refund principal. D1 doesn't count CPF balances, so they drop out here.
+  // fees or instalments and aren't refund principal. D1 doesn't count CPF balances, so they drop out here;
+  // they never make a grant lower net position, and counting them is still open (D1).
   const oaAtKeysCents = Math.min(remainingCents, Math.max(0, oaLeftCents - retentionCents));
   payOa(keyMonth, oaAtKeysCents, 'LUMP_SUM');
   remainingCents -= oaAtKeysCents;
@@ -339,6 +340,16 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     );
   const cpfHorizon = cpfAt(horizonMonth);
 
+  // Refund of the household's own CPF only: as cpfAt(), but without the GRANT entries.
+  const ownRefund = computeAccruedInterest(
+    ledger.filter((e) => e.kind !== 'GRANT' && toMonthNumber(e.date) < horizonMonth),
+    toDate(horizonMonth),
+    ruleset
+  );
+  // The grant part is the difference, not a separate calculation, so the parts sum to the total
+  // exactly to the cent despite D12's rounding.
+  const cpfGrantRefundCents = cpfHorizon.totalCents - ownRefund.totalCents;
+
   const yearlyCashFlow = [];
   for (let year = startYear; year <= horizonYear; year += 1) {
     const nextJan = monthOf(year + 1);
@@ -375,8 +386,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   const netPositionCents =
     marketValueAtHorizonCents
     - outstandingLoanAtHorizonCents
-    - cpfHorizon.principalCents
-    - cpfHorizon.accruedInterestCents
+    - ownRefund.totalCents
     - clawbackCents
     - housingCashSpentCents;
 
@@ -432,6 +442,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     outstandingLoanAtHorizonCents,
     cpfRefundPrincipalCents: cpfHorizon.principalCents,
     cpfAccruedInterestCents: cpfHorizon.accruedInterestCents,
+    cpfGrantRefundCents,
     clawbackCents,
     housingCashSpentCents,
     costBreakdown,
