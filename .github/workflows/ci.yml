@@ -4,6 +4,15 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Throwaway MongoDB for server/tests/db.test.js. Lives only for this run; never touches Atlas.
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+        # Wait until Mongo answers before the steps run.
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -12,6 +21,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+        env:
+          MONGODB_URI_TEST: mongodb://localhost:27017/bto_test
+          JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+
       # Build with mock data so the Cypress smoke test does not depend on unfinished engine routes.
       - run: npm run build
         env:
