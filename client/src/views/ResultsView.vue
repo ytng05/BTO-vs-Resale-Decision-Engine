@@ -5,6 +5,7 @@ import { useScenarioStore } from '../stores/scenario.js';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
 import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
+import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
 import { validateStep } from '../validation/planValidation.js';
@@ -154,7 +155,7 @@ onMounted(load);
         </div>
       </div>
 
-      <div class="card">
+      <div class="card mb-3">
         <div class="card-body">
           <h2 class="h5">Where each path ends ahead</h2>
           <p class="text-secondary">Select a square to see the difference. "You" marks your own assumptions.</p>
@@ -167,6 +168,9 @@ onMounted(load);
           />
         </div>
       </div>
+
+      <!-- Background market context, not part of the comparison itself: fetches independently of /compare. -->
+      <HistoricalRpiChart />
       <!-- TODO (seat 5): timing optimiser panel and strategy top 3 once /api/timing and /api/strategy exist. -->
     </template>
   </section>
