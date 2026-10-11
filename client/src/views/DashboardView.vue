@@ -13,7 +13,6 @@ import { formatMoney } from '../utils/format.js';
 import WhatIfPanel from '../components/dashboard/WhatIfPanel.vue';
 import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
-import PhgMap from '../components/dashboard/PhgMap.vue';
 
 const store = useScenarioStore();
 const thisYear = new Date().getFullYear();
@@ -122,10 +121,6 @@ const warnings = computed(() => [
 ]);
 const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ?? '');
 
-const parentsPostal = computed(() => {
-  const p = store.profile.parentsAddress;
-  return typeof p === 'string' ? p : p?.postal ?? '';
-});
 </script>
 
 <template>
@@ -218,8 +213,6 @@ const parentsPostal = computed(() => {
                 <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>.
               </p>
               <GrantsTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
-              <hr class="my-4" />
-              <PhgMap :initial-parents-postal="parentsPostal" />
             </div>
           </section>
 

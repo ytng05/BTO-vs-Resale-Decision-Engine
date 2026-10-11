@@ -41,17 +41,6 @@ describe('financial dashboard', () => {
     cy.get('[data-cy=dashboard-cashflow] canvas').should('be.visible');
   });
 
-  it('checks the distance to parents and shows it on a map', () => {
-    openDashboard();
-    cy.get('[data-cy=dashboard-phg-check-button]').click();
-    cy.get('#phg-flat-error').should('contain', '6-digit postal code');
-    cy.get('[data-cy=dashboard-phg-flat-input]').type('520123');
-    cy.get('[data-cy=dashboard-phg-parents-input]').clear().type('529510');
-    cy.get('[data-cy=dashboard-phg-check-button]').click();
-    cy.get('[data-cy=dashboard-phg-distance]').should('contain', 'km');
-    cy.get('.leaflet-container').should('be.visible');
-  });
-
   it('re-runs when a what-if slider moves, and resets to the plan', () => {
     openDashboard();
     cy.get('[data-cy=whatif-holding-slider]').invoke('val', 15).trigger('input');
