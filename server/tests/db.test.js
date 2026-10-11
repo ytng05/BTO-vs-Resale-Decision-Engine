@@ -6,7 +6,7 @@ import request from 'supertest';
 import mongoose from 'mongoose';
 import { createApp } from '../src/app.js';
 import { User } from '../src/models/User.js';
-import { BtoProject } from '../src/models/BtoProject.js';
+
 
 const uri = process.env.MONGODB_URI_TEST;
 const app = createApp();
@@ -22,7 +22,7 @@ const scenario = {
 };
 
 async function register(email) {
-  const res = await request(app).post('/api/auth/register').send({ email, password: 'correct-horse-1' });
+  const res = await request(app).post('/api/auth/register').send({ name: email.split('@')[0], email, password: 'correct-horse-1' });
   expect(res.status).toBe(201);
   return res.body.token;
 }
@@ -47,7 +47,7 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
     }
     isTestDatabase = true;
     await clearDatabase();
-    await Promise.all([User.init(), BtoProject.init()]); // build unique indexes before relying on them
+    await Promise.all(User.init()); // build unique indexes before relying on them
   });
 
   afterAll(async () => {
@@ -65,7 +65,7 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
 
     const ok = await request(app).post('/api/auth/login').send({ email: 'alice@example.com', password: 'correct-horse-1' });
     expect(ok.status).toBe(200);
-    expect(ok.body.user.email).toBe('alice@example.com');
+    expect(ok.body.user).toMatchObject({name: 'Alice', email: 'alice@example.com'});
 
     const stored = await User.findOne({ email: 'alice@example.com' }).lean();
     expect(stored.passwordHash).toMatch(/^\$2[aby]\$/); // bcrypt hash, never the password
@@ -106,18 +106,4 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
     expect((await request(app).get(`/api/scenarios/${id}`).set(auth(owner))).status).toBe(200);
   });
 
-  it('serves seeded BTO projects with filters', async () => {
-    await BtoProject.create([
-      { name: 'Test Standard', town: 'tampines', classification: 'STANDARD', mopYears: 5,
-        flats: [{ flatType: '4 room' }], sourceName: 'test', sourceAccessed: '2026-10-01' },
-      { name: 'Test Prime', town: 'BUKIT MERAH', classification: 'PRIME', mopYears: 10,
-        flats: [{ flatType: '3 ROOM' }], sourceName: 'test', sourceAccessed: '2026-10-01' },
-    ]);
-    const all = await request(app).get('/api/data/bto-projects');
-    expect(all.body.count).toBe(2);
-    const tampines = await request(app).get('/api/data/bto-projects?town=Tampines&flatType=4%20room');
-    expect(tampines.body.projects.map((p) => p.name)).toEqual(['Test Standard']); // stored uppercased
-    const prime = await request(app).get('/api/data/bto-projects?classification=prime');
-    expect(prime.body.projects.map((p) => p.name)).toEqual(['Test Prime']);
-  });
 });

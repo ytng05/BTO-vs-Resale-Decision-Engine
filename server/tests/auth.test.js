@@ -8,7 +8,7 @@ import { requireAuth, signToken } from '../src/middleware/auth.js';
 import { env } from '../src/config/env.js';
 
 const app = createApp();
-const user = { _id: '64b000000000000000000001', email: 'test@example.com' };
+const user = { _id: '64b000000000000000000001', name: 'Test User', email: 'test@example.com' };
 const bearer = (token) => ({ Authorization: `Bearer ${token}` });
 
 function runRequireAuth(header) {
@@ -23,7 +23,7 @@ describe('requireAuth', () => {
   it('accepts a valid token and sets req.user', () => {
     const { req, next } = runRequireAuth(`Bearer ${signToken(user)}`);
     expect(next).toHaveBeenCalled();
-    expect(req.user).toEqual({ id: user._id, email: user.email });
+    expect(req.user).toEqual({ id: user._id, name: user.name, email: user.email });
   });
 
   it.each([
@@ -51,6 +51,12 @@ describe('POST /api/auth/register and /login', () => {
     expect(res.status).toBe(400);
   });
 
+    it('requires a name on register', async () => {
+    const res = await request(app).post('/api/auth/register').send({ name: '   ', email: 'a@b.co', password: 'longenough' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toMatch(/name/);
+  });
+
   it('rejects a password longer than bcrypt can use', async () => {
     const res = await request(app).post('/api/auth/login').send({ email: 'a@b.co', password: 'x'.repeat(73) });
     expect(res.status).toBe(400);
@@ -67,7 +73,7 @@ describe('GET /api/auth/me', () => {
   it('returns the token owner', async () => {
     const res = await request(app).get('/api/auth/me').set(bearer(signToken(user)));
     expect(res.status).toBe(200);
-    expect(res.body.user).toEqual({ id: user._id, email: user.email });
+    expect(res.body.user).toEqual({ id: user._id, name: user.name, email: user.email });
   });
 
   it('needs a token', async () => {

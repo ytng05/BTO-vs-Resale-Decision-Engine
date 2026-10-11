@@ -10,13 +10,14 @@ const router = Router();
 const BCRYPT_ROUNDS = 10;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_MIN = 8;
+const NAME_MAX = 100;
 // bcrypt only reads the first 72 bytes, so longer passwords are rejected instead of being silently cut.
 const PASSWORD_MAX_BYTES = 72;
 // Compared against when the email is unknown, so a wrong email takes as long as a wrong password
 // (otherwise response time would reveal which emails have accounts).
 const DUMMY_HASH = bcrypt.hashSync('no-such-user', BCRYPT_ROUNDS);
 
-const publicUser = (user) => ({ id: String(user._id), email: user.email });
+const publicUser = (user) => ({ id: String(user._id), name: user.name, email: user.email });
 
 function validationError(res, message) {
   return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message } });
@@ -35,12 +36,20 @@ function validateCredentials(req, res, next) {
   return next();
 }
 
-// POST /api/auth/register  { email, password } -> 201 { token, user: { id, email } }
-router.post('/register', validateCredentials, requireDb, async (req, res, next) => {
+// Register also needs a name (seat 4's form collects it)
+function validateName(req, res, next) {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+  if (!name || name.length > NAME_MAX) return validationError(res, `Enter your name (at most ${NAME_MAX} characters).`);
+  req.credentials.name = name;
+  return next();
+}
+
+// POST /api/auth/register  { name, email, password } -> 201 { token, user: { id, name, email } }
+router.post('/register', validateCredentials, validateName, requireDb, async (req, res, next) => {
   try {
-    const { email, password } = req.credentials;
+    const { name, email, password } = req.credentials;
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    const user = await User.create({ email, passwordHash });
+    const user = await User.create({ name, email, passwordHash });
     res.status(201).json({ token: signToken(user), user: publicUser(user) });
   } catch (err) {
     if (err.code === 11000) {
