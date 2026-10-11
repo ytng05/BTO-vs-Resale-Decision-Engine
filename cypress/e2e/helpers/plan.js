@@ -1,26 +1,26 @@
-// Shared Cypress steps for filling in the plan stepper with valid input.
+// Shared Cypress steps for filling in the plan stepper with valid input (contract v2 forms).
 // Not a spec file (no .cy.js), so Cypress does not run it on its own.
 
 export const nextYear = new Date().getFullYear() + 1;
 
-export function fillSituation({ priceGrowth = '3', incomeGrowth = '2', horizon = '10' } = {}) {
-  cy.get('[data-cy=situation-buyer-1-age-input]').type('30');
-  cy.get('[data-cy=situation-buyer-1-income-input]').type('5000');
-  cy.get('[data-cy=situation-buyer-1-cpf-input]').type('40000');
+// Two buyers (the contract models exactly two; at least one SC, which is the default).
+export function fillSituation({ priceGrowth = '3', incomeGrowth = '2', horizonYear } = {}) {
+  [1, 2].forEach((n) => {
+    cy.get(`[data-cy=situation-buyer-${n}-age-input]`).type(n === 1 ? '30' : '29');
+    cy.get(`[data-cy=situation-buyer-${n}-income-input]`).type('5000');
+    cy.get(`[data-cy=situation-buyer-${n}-cpf-input]`).type('40000');
+  });
   cy.get('[data-cy=situation-cash-savings-input]').type('20000');
   cy.get('[data-cy=situation-price-growth-input]').type(priceGrowth);
   cy.get('[data-cy=situation-income-growth-input]').type(incomeGrowth);
-  cy.get('[data-cy=situation-horizon-input]').type(horizon);
+  if (horizonYear) cy.get('[data-cy=situation-horizon-year-input]').type(String(horizonYear));
 }
 
-export function fillPath(prefix, { town = 'TAMPINES', flatType = '4 ROOM', leaseBand } = {}) {
+export function fillPath(prefix, { town = 'TAMPINES', flatType = '4 ROOM', leaseBand = '80-89' } = {}) {
   cy.get(`[data-cy=${prefix}-year-input]`).type(String(nextYear));
   cy.get(`[data-cy=${prefix}-town-select]`).select(town);
   cy.get(`[data-cy=${prefix}-flat-type-select]`).select(flatType);
-  // Resale only: BTO has no lease-band dropdown.
-  if (leaseBand) {
-    cy.get(`[data-cy=${prefix}-lease-band-select]`).select(leaseBand);
-  }
+  if (prefix === 'pathb') cy.get('[data-cy=pathb-lease-band-select]').select(leaseBand);
 }
 
 // Fills all three steps and lands on /results.
@@ -30,7 +30,7 @@ export function completePlan(situation = {}) {
   cy.get('[data-cy=plan-step-next]').click();
   fillPath('patha');
   cy.get('[data-cy=plan-step-next]').click();
-  fillPath('pathb', { town: 'BEDOK', leaseBand: '80-89' });
+  fillPath('pathb', { town: 'BEDOK' });
   cy.get('[data-cy=plan-step-next]').click();
   cy.location('pathname').should('eq', '/results');
 }

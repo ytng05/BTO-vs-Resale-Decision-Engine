@@ -1,35 +1,57 @@
 // Axios (MIT) — HTTP client for the Express API.
 import axios from 'axios';
-import { mockCompare, mockGrants, mockRuleset, mockBtoProjects, mockResalePrice, mockRpi } from './mock/mockData.js';
+import {
+  mockBtoProjects, mockCompare, mockGrants, mockLogin, mockRegister, mockResalePrice, mockRpi, mockRuleset,
+} from './mock/mockData.js';
 
 // VITE_USE_MOCK=true serves clearly-labelled MOCK data so the UI can be built before the backend exists.
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 const http = axios.create({ baseURL: '/api' });
 
 const toCents = (dollars) => (typeof dollars === 'number' ? Math.round(dollars * 100) : dollars);
+const isSet = (v) => v !== null && v !== undefined && v !== '';
+// Leaves out optional fields the user did not fill in, so the server applies its own defaults.
+const withoutUnset = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => isSet(v)));
 
-// Converts the store's shape (dollars, its own growth-rate field names) into the contract's
-// CompareRequest (cents, annualPriceGrowth/annualIncomeGrowth/holdingPeriodYears). This is the
-// one conversion boundary D14 describes — nothing else should hand-build a request.
+// One choice as the contract's RequestChoice: dollars become …Cents (renovationCents, btoPriceCents).
+function toRequestChoice(choice) {
+  const { btoPrice, renovation, ...rest } = choice;
+  return withoutUnset({
+    ...rest,
+    btoPriceCents: isSet(btoPrice) ? toCents(btoPrice) : null,
+    renovationCents: toCents(renovation ?? 0),
+  });
+}
+
+// Converts the store's shape (dollars) into the contract's CompareRequest (cents), contract v2/v2.1.
+// This is the one conversion boundary D14 describes — nothing else should hand-build a request.
 export function toCompareRequest(store) {
+  const a = store.assumptions;
   return {
     profile: {
-      applicants: store.profile.applicants.map((a) => ({
-        age: a.age,
-        citizenship: a.citizenship,
-        firstTimer: a.firstTimer,
-        monthlyIncomeCents: toCents(a.monthlyIncome),
-        cpfOaBalanceCents: toCents(a.cpfOaBalance),
+      applicants: store.profile.applicants.map((p) => ({
+        age: p.age,
+        citizenship: p.citizenship,
+        firstTimer: p.firstTimer,
+        monthlyIncomeCents: toCents(p.monthlyIncome),
+        cpfOaBalanceCents: toCents(p.cpfOaBalance),
       })),
       cashSavingsCents: toCents(store.profile.cashSavings),
+      constraints: withoutUnset({ moveInByYear: store.profile.constraints?.moveInByYear }),
     },
-    choiceA: { ...store.choiceA },
-    choiceB: { ...store.choiceB },
-    assumptions: {
-      annualPriceGrowth: store.assumptions.annualPriceGrowth,
-      annualIncomeGrowth: store.assumptions.annualIncomeGrowth,
-      horizonYear: store.assumptions.horizonYear,
-    },
+    choiceA: toRequestChoice(store.choiceA),
+    choiceB: toRequestChoice(store.choiceB),
+    assumptions: withoutUnset({
+      annualPriceGrowth: a.annualPriceGrowth,
+      annualIncomeGrowth: a.annualIncomeGrowth,
+      horizonYear: a.horizonYear,
+      // Rent until keys, both paths; 0 = living with parents (D1, D22).
+      monthlyHousingCostWhileWaitingCents: toCents(a.monthlyHousingCostWhileWaiting ?? 0),
+      loanTenureYears: a.loanTenureYears,
+      loanType: a.loanType,
+      legalFeesCents: isSet(a.legalFees) ? toCents(a.legalFees) : null,
+      agentFeesCents: isSet(a.agentFees) ? toCents(a.agentFees) : null,
+    }),
   };
 }
 
@@ -44,60 +66,63 @@ export async function getRuleset() {
   return (await http.get('/ruleset')).data;
 }
 
-// TODO (seats 3/4/5): timing(), strategy(), auth, scenarios, data endpoints. See docs/API_CONTRACT.md.
-
-export async function getBtoProjects(params = {}) {
-  if (USE_MOCK) return mockBtoProjects();
-  return (await http.get('/data/bto-projects', { params })).data;
+// { name?, email, password } -> { token, user }. See docs/API_CONTRACT.md "POST /api/auth/register".
+export async function register(payload) {
+  if (USE_MOCK) return mockRegister(payload);
+  return (await http.post('/auth/register', payload)).data;
 }
 
+// { email, password } -> { token, user }. See docs/API_CONTRACT.md "POST /api/auth/login".
+export async function login(payload) {
+  if (USE_MOCK) return mockLogin(payload);
+  return (await http.post('/auth/login', payload)).data;
+}
+
+// Seeded BTO projects (seat 3, GET /api/data/bto-projects). Filters are optional:
+// { town, flatType, classification }. Returns { projects, towns, dataAsOf, ... }; prices in cents.
+export async function getBtoProjects(filters = {}) {
+  if (USE_MOCK) return mockBtoProjects(filters);
+  return (await http.get('/data/bto-projects', { params: filters })).data;
+}
+
+// Resale price summary for a town + flat type (seat 3, GET /api/data/resale-price).
 export async function getResalePrice(params) {
   if (USE_MOCK) return mockResalePrice();
   return (await http.get('/data/resale-price', { params })).data;
 }
 
+// Resale Price Index series (seat 3, GET /api/data/rpi).
 export async function getRpi(params = {}) {
   if (USE_MOCK) return mockRpi();
   return (await http.get('/data/rpi', { params })).data;
 }
+
 export async function grants(payload) {
   if (USE_MOCK) return mockGrants(payload);
   return (await http.post('/grants', payload)).data;
 }
 
+// TODO (seat 5): timing() for /api/timing. strategy() dropped .
 
-// ---- Auth and saved scenarios ----
+// ---- Saved scenarios (seat 3) ----
 // No mock versions: these always call the real API (run `npm run dev` with MONGODB_URI set).
 
-// The token from login/register, kept in localStorage so a page refresh keeps the user logged in.
-// try/catch because storage can be blocked (private windows, strict browser settings).
-const TOKEN_KEY = 'bto-auth-token';
-export const tokenStore = {
-  get() {
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
-  },
-  set(token) {
-    try { localStorage.setItem(TOKEN_KEY, token); } catch { /* stays logged in until refresh */ }
-  },
-  clear() {
-    try { localStorage.removeItem(TOKEN_KEY); } catch { /* nothing stored */ }
-  },
-};
+// Attach the logged-in user's token to every API request. stores/auth.js (seat 4) saves
+// { token, user } under this key; the server needs the token on /api/scenarios* and /api/auth/me.
+const AUTH_STORAGE_KEY = 'hdb-app:auth';
+function storedToken() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY))?.token ?? null;
+  } catch {
+    return null; // storage blocked or corrupt: send the request without a token
+  }
+}
 
-// Attach the token to every API request when there is one.
 http.interceptors.request.use((config) => {
-  const token = tokenStore.get();
+  const token = storedToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
-
-export async function register(email, password) {
-  return (await http.post('/auth/register', { email, password })).data;
-}
-
-export async function login(email, password) {
-  return (await http.post('/auth/login', { email, password })).data;
-}
 
 export async function getMe() {
   return (await http.get('/auth/me')).data;
@@ -119,3 +144,4 @@ export async function getScenario(id) {
 export async function deleteScenario(id) {
   await http.delete(`/scenarios/${encodeURIComponent(id)}`);
 }
+

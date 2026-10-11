@@ -161,8 +161,9 @@ const RULESET_KEYS = Object.freeze({
  * The HDB concessionary rate is pegged to the OA rate (CPF Board), so the
  * ruleset stores the peg, loans.hdbRatePremium, and the engine computes
  * hdbConcessionaryRate = oaRate + hdbRatePremium. It then moves with oaRate
- * in the backtest. If either value is missing, the engine reports
- * hdbConcessionaryRate: null and warns HDB_RATE_UNRESOLVED.
+ * in the backtest. If either value is missing, evaluate() v1 throws, since
+ * every loan is an HDB loan (D32). HDB_RATE_UNRESOLVED (hdbConcessionaryRate:
+ * null) is kept for when bank loans, which don't need the rate, are modelled.
  */
 
 /**
@@ -546,7 +547,9 @@ const WARNINGS = Object.freeze({
  * @property {Timeline} timeline
  * @property {number} totalGrantsCents
  * @property {GrantResult[]} grants
- * @property {number} purchasePriceCents      - v2.1: the price used, before grants (echo of choice.purchasePriceCents)
+ * @property {number} purchasePriceCents      - v2.1: the price used, before grants: choice.purchasePriceCents grown
+ *                                              to the application date (D31); equal to it when applicationYear =
+ *                                              evaluationStartYear
  * @property {Affordability} affordability
  * @property {number} cashRequiredAtPurchaseCents - cash the household pays from its own savings at purchase,
  *                                              AFTER using the CPF OA balance and grants and after the loan
@@ -572,7 +575,10 @@ const WARNINGS = Object.freeze({
 // THE PRIMITIVE
 // ---------------------------------------------------------------------------
 
-/**
+/*
+ * evaluate(profile, choice, assumptions, ruleset) → Outcome
+ * Implemented in ./index.js; import it from there, not from this file.
+ *
  * Evaluate one housing choice for one household under one set of assumptions.
  *
  * @param {Profile} profile
@@ -580,104 +586,9 @@ const WARNINGS = Object.freeze({
  * @param {Assumptions} assumptions
  * @param {Object} ruleset - the versioned policy config (seat 2 owns this)
  * @returns {Outcome}
- * @throws if the profile is out of scope (not exactly two applicants, or no SC)
+ * @throws if the profile is out of scope (not exactly two applicants, or no SC),
+ *         loanType is not 'HDB' (D32), a ruleset key it needs is missing,
  *         or horizonYear is before this choice's keys
  */
-function evaluate(profile, choice, assumptions, ruleset) {
-  throw new Error('Not implemented — seat 1');
-}
 
-// ---------------------------------------------------------------------------
-// STUB — for seats 4 and 5 to build screens against before the engine lands.
-// Returns fixed, obviously-fake numbers in the correct shape.
-// Delete once evaluate() is implemented.
-// ---------------------------------------------------------------------------
-
-/**
- * @param {Profile} profile
- * @param {Choice} choice
- * @param {Assumptions} assumptions
- * @returns {Outcome}
- */
-function stubEvaluate(profile, choice, assumptions) {
-  const isResale = choice.path === 'RESALE';
-  const startYear = assumptions.evaluationStartYear ?? 2026;
-  const horizonYear = assumptions.horizonYear ?? startYear + 14;
-  const keysYear = isResale ? choice.applicationYear : choice.applicationYear + 4;
-  const yearlyCashFlow = [];
-  for (let year = startYear; year <= horizonYear; year += 1) {
-    const hasKeys = year >= keysYear;
-    yearlyCashFlow.push({
-      year,
-      housingCashOutCents: hasKeys ? 600_000 : 1_200_000,
-      cpfUsedCents: hasKeys ? 1_440_000 : 0,
-      loanBalanceEndCents: hasKeys ? Math.max(0, 45_000_000 - (year - keysYear) * 1_500_000) : 0,
-      marketValueEndCents: hasKeys ? 60_000_000 + (year - keysYear) * 1_500_000 : 0,
-      cpfObligationEndCents: hasKeys ? 8_000_000 + (year - keysYear) * 1_700_000 : 0
-    });
-  }
-  return {
-    horizonYear,
-    timeline: {
-      applicationDate: `${choice.applicationYear}-01-01`,
-      keyCollectionDate: `${keysYear}-${isResale ? '01' : '05'}-01`,
-      monthsWaiting: isResale ? 0 : 52,
-      earliestSaleDate: `${keysYear + 5}-${isResale ? '01' : '05'}-01`
-    },
-    totalGrantsCents: isResale ? 11_000_000 : 6_000_000,
-    grants: [
-      {
-        id: 'EHG',
-        amountCents: 6_000_000,
-        tests: [{ id: 'EHG_INCOME_CEILING', passed: true, reason: 'STUB — not computed', sourceUrl: null }]
-      },
-      {
-        id: 'FAMILY',
-        amountCents: isResale ? 5_000_000 : 0,
-        tests: [{ id: 'FAMILY_RESALE_ONLY', passed: isResale, reason: 'STUB — not computed', sourceUrl: null }]
-      },
-      {
-        id: 'PHG',
-        amountCents: 0,
-        tests: [{ id: 'PHG_LIVING_ARRANGEMENT', passed: false, reason: 'STUB — not computed', sourceUrl: null }]
-      }
-    ],
-    purchasePriceCents: choice.purchasePriceCents ?? (isResale ? 55_000_000 : 37_850_000),
-    affordability: {
-      maxLoanCents: 48_000_000,
-      loanRequiredCents: 45_000_000,
-      withinLimit: true,
-      shortfallCents: 0,
-      limitingRule: 'MSR'
-    },
-    cashRequiredAtPurchaseCents: 4_500_000,
-    cpfUsedAtPurchaseCents: 8_000_000,
-    loanPrincipalCents: 45_000_000,
-    marketValueAtHorizonCents: 72_000_000,
-    outstandingLoanAtHorizonCents: 30_000_000,
-    cpfRefundPrincipalCents: 20_000_000,
-    cpfAccruedInterestCents: 3_200_000,
-    clawbackCents: 0,
-    housingCashSpentCents: 6_300_000,
-    costBreakdown: [
-      { id: 'BSD', label: "Buyer's stamp duty", amountCents: 1_110_000, paidFrom: 'CPF' },
-      { id: 'RENOVATION', label: 'Renovation', amountCents: 3_000_000, paidFrom: 'CASH' },
-      { id: 'RENT_WHILE_WAITING', label: 'Rent while waiting', amountCents: isResale ? 0 : 3_300_000, paidFrom: 'CASH' },
-      { id: 'LOAN_INTEREST', label: 'Loan interest', amountCents: 8_000_000, paidFrom: 'CPF' },
-      { id: 'CPF_ACCRUED_INTEREST', label: 'CPF accrued interest owed', amountCents: 3_200_000, paidFrom: 'NONE' }
-    ],
-    yearlyCashFlow,
-    netPositionCents: 12_500_000,
-    resolvedRates: {
-      oaRate: 0.025,
-      hdbConcessionaryRate: 0.026,
-      accruedInterestCompounding: 'ANNUAL',
-      ltvApplied: 0.75,
-      assessmentRate: 0.03
-    },
-    rulesetVersion: 'STUB',
-    warnings: isResale ? [] : [WARNINGS.BTO_WAIT_ASSUMED]
-  };
-}
-
-export { evaluate, stubEvaluate, RULESET_KEYS, WARNINGS };
+export { RULESET_KEYS, WARNINGS };
