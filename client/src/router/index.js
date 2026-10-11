@@ -11,6 +11,7 @@ const router = createRouter({
     { path: '/', name: 'home', component: HomeView },
     { path: '/plan', name: 'plan', component: PlanView },
     { path: '/results', name: 'results', component: ResultsView },
+    { path: '/dashboard', component: () => import('../views/DashboardView.vue') },
     { path: '/sources', name: 'sources', component: SourcesView },
     { path: '/login', name: 'login', component: LoginView },
   ],
