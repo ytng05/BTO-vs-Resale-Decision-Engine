@@ -160,6 +160,14 @@
       }
     },
     "minCashDownpaymentPercent": { "hdbLoan": 0, "bankLoan": { "atMaxLtv": 5, "atReducedLtv": 10 } },
+    "btoDownpaymentStages": {
+      "hdbLoan": { "atSigningPercent": 10, "atKeysPercent": 15 },
+      "bankLoan": {
+        "atReducedLtv": { "atSigningPercent": 20, "minCashAtSigningPercent": 10, "atKeysPercent": 25 },
+        "atMaxLtv": null
+      },
+      "_note": "Percent of the purchase price. HDB Sign Agreement for Lease page. Bank loan at 75% LTV not yet confirmed (null)."
+    },
     "hdbRatePremium": 0.001,
     "_hdbRatePremiumNote": "HDB concessionary rate is pegged at 0.1% above the CPF OA rate (CPF Board, 22 Sep 2026 release)",
     "maxTenureYears": { "hdbLoan": 25, "bankLoanHdbFlats": 30 },
@@ -187,7 +195,8 @@
       "https://www.mas.gov.sg/news/parliamentary-replies/2022/reply-to-parliamentary-question-on-setting-total-debt-servicing-ratio-medium-term-interest-rate-floor-at-4-per-cent-per-annum",
       "https://www.mas.gov.sg/regulation/explainers/tdsr-for-property-loans/calculating-tdsr",
       "https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life",
-      "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-resale-flats/plan-source-and-contract/mode-of-financing"
+      "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-resale-flats/plan-source-and-contract/mode-of-financing",
+      "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-new-flats/sign-agreement-for-lease"
     ]
   },
   "transactionCosts": {
