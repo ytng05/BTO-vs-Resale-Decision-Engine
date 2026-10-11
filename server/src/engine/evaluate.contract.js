@@ -70,7 +70,8 @@ const RULESET_KEYS = Object.freeze({
   MAX_TENURE_BANK: 'loans.maxTenureYears.bankLoanHdbFlats',
   HDB_LOAN_TENURE: 'loans.hdbLoanTenure',     // { ageLimit: 65, ageBasis: 'AVERAGE', leaseBufferYears: 20 } (seat 2)
   STRESS_TEST_RATE: 'loans.stressTestRate',   // { hdbLoanFloor: 0.03, bankLoanFloor: 0.04 } (seat 2)
-  // loans.ltv.hdbLoan.leaseMustCoverYoungestToAge (95): HDB loan LTV pro-rating — see affordability note
+  // loans.ltv.hdbLoan.leaseMustCoverYoungestToAge (95) and loans.ltv.hdbLoan.leaseProRating.percentPerYearShort (2):
+  // HDB loan LTV pro-rating — see affordability note
   MIN_CASH_DOWNPAYMENT: 'loans.minCashDownpaymentPercent', // { hdbLoan, bankLoan: { atMaxLtv, atReducedLtv } }
 
   // Duties and grants
@@ -272,8 +273,13 @@ const RULESET_KEYS = Object.freeze({
  *     Age doesn't cap a bank loan; it lowers the LTV (below).
  * LTV:
  *   - HDB loan: ltv.hdbLoan.maxPercent, pro-rated down when remainingLeaseYears
- *     doesn't cover the YOUNGEST applicant to ltv.hdbLoan.leaseMustCoverYoungestToAge
- *     (pro-rating formula: seat 2 to supply); warns LEASE_BELOW_95_PRORATION
+ *     doesn't cover the YOUNGEST applicant to ltv.hdbLoan.leaseMustCoverYoungestToAge;
+ *     warns LEASE_BELOW_95_PRORATION. Seat 2's formula (a DERIVED assumption fitted to
+ *     the 2019 MOM/CPF lease examples; HDB doesn't publish one):
+ *       shortfall = max(0, leaseMustCoverYoungestToAge − youngest age − remainingLeaseYears)
+ *       factor    = max(0, 1 − leaseProRating.percentPerYearShort ÷ 100 × shortfall)
+ *       ltvApplied = maxPercent ÷ 100 × factor
+ *     e.g. youngest 25 with a 65-year lease: 5 years short, factor 90%
  *   - bank loan: ltv.bankLoan.reducedMaxPercent if the tenure is over
  *     reducedIfTenureYearsOver OR IWAA + tenure is over reducedIfLoanEndsAfterAge
  * Tenure is not a separate limit: it shortens the MSR/TDSR loan. limitingRule
