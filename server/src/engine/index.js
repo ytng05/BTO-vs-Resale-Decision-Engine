@@ -35,7 +35,7 @@ const grow = (cents, g, months) => Math.round(cents * (1 + g) ** (months / 12));
 const GRANT_GROUP_TO_ID = Object.freeze({ EHG: 'EHG', 'Family Grant': 'FAMILY', PHG: 'PHG' });
 
 // BTO payment at signing the agreement for lease, as a whole-number percent of the price (D30).
-// TODO(seat 2): move to the ruleset (invariant 6). Not in RULESET_KEYS yet, which is frozen.
+// TODO(#41): read loans.btoDownpaymentStages.hdbLoan.atSigningPercent (#35) instead (invariant 6).
 const BTO_SIGNING_PERCENT = 10;
 
 // ---------------------------------------------------------------------------
@@ -71,7 +71,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   }
 
   // Ruleset keys not in RULESET_KEYS yet: fail loudly, naming the key, rather than guess a value.
-  // TODO(follow-up PR): replace loans.hdbLoanOaRetention with the per-buyer key.
+  // TODO(#41): replace loans.hdbLoanOaRetention with the per-buyer key (D28).
   for (const [key, value] of [
     ['btoWaiting.monthsToAgreementForLease', ruleset.btoWaiting?.monthsToAgreementForLease],
     ['loans.hdbLoanOaRetention', ruleset.loans?.hdbLoanOaRetention]
