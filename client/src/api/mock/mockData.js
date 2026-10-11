@@ -8,11 +8,17 @@
 import rulesetSnapshot from '../../../../server/src/config/rulesets/ruleset-2026-08-24.json';
 
 const GROWTH_STEPS = [0, 0.01, 0.02, 0.03, 0.04, 0.05];
+const DEFAULT_BTO_WAIT_MONTHS = rulesetSnapshot.btoWaiting?.defaultMonths ?? 48;
+const GRANT_SOURCES = rulesetSnapshot.grants?.checkSources ?? {};
+
+function sourceUrlFor(testId) {
+  return GRANT_SOURCES[testId] ?? null;
+}
 
 export function mockCompare(payload = {}) {
   const assumptions = payload.assumptions ?? {};
   const choiceA = payload.choiceA ?? { path: 'BTO', applicationYear: 2026 };
-  const choiceB = payload.choiceB ?? { path: 'RESALE', applicationYear: 2026 };
+  const choiceB = payload.choiceB ?? { path: 'RESALE', applicationYear: 2026, livingArrangement: 'NEAR' };
   const evaluationStartYear = assumptions.evaluationStartYear ?? 2026;
 
   // v2: both paths are measured at one common horizonYear (D1), not at a per-outcome holding period.
@@ -42,6 +48,8 @@ export function mockCompare(payload = {}) {
     breakEvenSentence: 'MOCK: the two paths are equal at the horizon year where price growth matches income growth.',
     grid,
     frontier: GROWTH_STEPS.map((g) => ({ annualPriceGrowth: g, annualIncomeGrowth: g })),
+    // Mock persona: SC+SC couple, $7,000/month household income (EHG income band $6,501-$7,000 -> $30,000,
+    // per the live ruleset), buying a 2-4 room flat, declared as living NEAR their parents on the resale path.
     outcomeA: mockOutcome({
       choice: choiceA,
       evaluationStartYear,
@@ -52,18 +60,39 @@ export function mockCompare(payload = {}) {
       grants: [
         {
           id: 'EHG',
-          amountCents: 5_000_000,
-          tests: [{ id: 'EHG_INCOME_CEILING', passed: true, reason: 'MOCK: household income is within the assessed range.', sourceUrl: null }],
+          amountCents: 3_000_000,
+          tests: [
+            {
+              id: 'EHG_INCOME_BAND',
+              passed: true,
+              reason: 'MOCK: household income band $6,501-$7,000 gets the $30,000 EHG tier.',
+              sourceUrl: sourceUrlFor('EHG_INCOME_BAND'),
+            },
+          ],
         },
         {
           id: 'FAMILY',
           amountCents: 0,
-          tests: [{ id: 'FAMILY_RESALE_ONLY', passed: false, reason: 'MOCK: this grant applies to resale flats only.', sourceUrl: null }],
+          tests: [
+            {
+              id: 'FAMILY_RESALE_ONLY',
+              passed: false,
+              reason: 'MOCK: this grant applies to resale flats only.',
+              sourceUrl: sourceUrlFor('FAMILY_RESALE_ONLY'),
+            },
+          ],
         },
         {
           id: 'PHG',
           amountCents: 0,
-          tests: [{ id: 'PHG_LIVING_ARRANGEMENT', passed: false, reason: 'MOCK: not living with or near parents.', sourceUrl: null }],
+          tests: [
+            {
+              id: 'PHG_RESALE_ONLY',
+              passed: false,
+              reason: 'MOCK: this grant applies to resale flats only.',
+              sourceUrl: sourceUrlFor('PHG_RESALE_ONLY'),
+            },
+          ],
         },
       ],
       clawbackCents: 0,
@@ -78,18 +107,39 @@ export function mockCompare(payload = {}) {
       grants: [
         {
           id: 'EHG',
-          amountCents: 5_000_000,
-          tests: [{ id: 'EHG_INCOME_CEILING', passed: true, reason: 'MOCK: household income is within the assessed range.', sourceUrl: null }],
+          amountCents: 3_000_000,
+          tests: [
+            {
+              id: 'EHG_INCOME_BAND',
+              passed: true,
+              reason: 'MOCK: household income band $6,501-$7,000 gets the $30,000 EHG tier.',
+              sourceUrl: sourceUrlFor('EHG_INCOME_BAND'),
+            },
+          ],
         },
         {
           id: 'FAMILY',
-          amountCents: 4_000_000,
-          tests: [{ id: 'FAMILY_RESALE_ONLY', passed: true, reason: 'MOCK: first-timer buying a resale flat.', sourceUrl: null }],
+          amountCents: 8_000_000,
+          tests: [
+            {
+              id: 'FAMILY_HOUSEHOLD_TYPE',
+              passed: true,
+              reason: 'MOCK: SC+SC couple buying a 2- to 4-room resale flat gets $80,000.',
+              sourceUrl: sourceUrlFor('FAMILY_HOUSEHOLD_TYPE'),
+            },
+          ],
         },
         {
           id: 'PHG',
-          amountCents: 0,
-          tests: [{ id: 'PHG_LIVING_ARRANGEMENT', passed: false, reason: 'MOCK: no parents\u2019 postal code was given.', sourceUrl: null }],
+          amountCents: 2_000_000,
+          tests: [
+            {
+              id: 'PHG_LIVING_ARRANGEMENT',
+              passed: true,
+              reason: 'MOCK: you said you\u2019ll live near your parents.',
+              sourceUrl: sourceUrlFor('PHG_LIVING_ARRANGEMENT'),
+            },
+          ],
         },
       ],
       clawbackCents: 0,
@@ -101,7 +151,7 @@ export function mockCompare(payload = {}) {
 function keysYearFor(choice, evaluationStartYear) {
   const applicationYear = choice.applicationYear ?? evaluationStartYear;
   if (choice.path === 'RESALE') return applicationYear;
-  const waitMonths = choice.btoWaitMonths ?? 52;
+  const waitMonths = choice.btoWaitMonths ?? DEFAULT_BTO_WAIT_MONTHS;
   return applicationYear + Math.ceil(waitMonths / 12);
 }
 
@@ -117,7 +167,7 @@ function mockOutcome({
 }) {
   const isResale = choice.path === 'RESALE';
   const applicationYear = choice.applicationYear ?? evaluationStartYear;
-  const waitMonths = isResale ? 0 : choice.btoWaitMonths ?? 52;
+  const waitMonths = isResale ? 0 : choice.btoWaitMonths ?? DEFAULT_BTO_WAIT_MONTHS;
   const keysYear = keysYearFor(choice, evaluationStartYear);
   const renovationCents = choice.renovationCents ?? 3_000_000;
   const totalGrantsCents = grants.reduce((sum, g) => sum + g.amountCents, 0);
@@ -187,7 +237,7 @@ function mockOutcome({
       accruedInterestCompounding: 'ANNUAL',
       ltvApplied: 0.75,
     },
-    rulesetVersion: '0.0.0-template',
+    rulesetVersion: rulesetSnapshot.version,
     warnings: isResale ? [] : ['BTO_WAIT_ASSUMED'],
   };
 }
