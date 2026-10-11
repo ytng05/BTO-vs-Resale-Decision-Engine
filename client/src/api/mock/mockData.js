@@ -328,3 +328,52 @@ export function mockRpi() {
     cached: false, stale: false, fetchedAt: '2026-01-01T00:00:00.000Z',
   };
 }
+
+// Mock auth: no real server, so accounts are "registered" into localStorage for the length of the
+// browser session. Lets the login/register screens and the route guard be built and demoed before
+// seat 3's /api/auth routes exist. Shape matches docs/API_CONTRACT.md: { token, user }.
+// Errors mimic the axios shape (err.response.data.error.message) so auth.js handles mock and real
+// errors identically.
+const MOCK_USERS_KEY = 'hdb-app:mock-users';
+
+function mockApiError(status, code, message) {
+  const err = new Error(message);
+  err.response = { status, data: { error: { code, message } } };
+  return err;
+}
+
+function readMockUsers() {
+  try {
+    return JSON.parse(localStorage.getItem(MOCK_USERS_KEY)) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+function writeMockUsers(users) {
+  try {
+    localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
+  } catch {
+    // best-effort; mock mode is a dev convenience, not durable storage
+  }
+}
+
+function mockToken(email) {
+  return `mock.${btoa(email)}.${Date.now()}`;
+}
+
+export async function mockRegister({ name, email, password } = {}) {
+  if (!name || !email || !password) throw mockApiError(400, 'VALIDATION_ERROR', 'Name, email and password are required.');
+  if (password.length < 8) throw mockApiError(400, 'VALIDATION_ERROR', 'Password must be at least 8 characters.');
+  const users = readMockUsers();
+  if (users.some((u) => u.email === email)) throw mockApiError(409, 'EMAIL_TAKEN', 'That email is already registered.');
+  users.push({ name, email, password }); // MOCK ONLY: plaintext in localStorage, never done server-side
+  writeMockUsers(users);
+  return { token: mockToken(email), user: { id: email, name, email } };
+}
+
+export async function mockLogin({ email, password } = {}) {
+  const user = readMockUsers().find((u) => u.email === email && u.password === password);
+  if (!user) throw mockApiError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect.');
+  return { token: mockToken(email), user: { id: user.email, name: user.name, email: user.email } };
+}
