@@ -6,7 +6,8 @@
 //   GET /api/data/distance?from=460123&to=529510
 //     -> straight-line km between two postal codes, plus both points for the map
 //   GET /api/data/bto-projects?town=TAMPINES&flatType=4 ROOM&classification=STANDARD   (all filters optional)
-//     -> seeded BTO projects: waiting months, floor areas, launch price ranges (cents), source link
+//     -> seeded BTO projects (3-5 room only, prices before grants): waiting months, floor areas,
+//        launch price ranges (cents), priceBasis, source link
 //   GET /api/data/bto-projects/:id
 //     -> one project
 //
@@ -17,7 +18,7 @@ import { notImplemented } from '../middleware/notImplemented.js';
 import { loadResale, resaleCacheKey, RESALE_SOURCE } from '../services/datagov/resalePrices.js';
 import { locateAndMeasure } from '../services/onemap/client.js';
 import { cached, ONE_DAY_MS } from '../services/cache.js';
-import { btoTowns, CLASSIFICATIONS, findBtoProjects, getBtoProject, latestLaunch } from '../services/btoProjects.js';
+import { btoTowns, CLASSIFICATIONS, findBtoProjects, getBtoProject, latestLaunch, SUPPORTED_FLAT_TYPES } from '../services/btoProjects.js';
 
 const TOWN = /^[A-Z][A-Z /'-]{1,40}$/;
 const FLAT_TYPE = /^(1 ROOM|2 ROOM|3 ROOM|4 ROOM|5 ROOM|EXECUTIVE|MULTI-GENERATION)$/;
@@ -83,7 +84,9 @@ export function createDataRouter(overrides = {}) {
     const flatType = String(req.query.flatType ?? '').trim().toUpperCase() || undefined;
     const classification = String(req.query.classification ?? '').trim().toUpperCase() || undefined;
     if (town && !TOWN.test(town)) return badRequest(res, 'Give a town, e.g. ?town=TAMPINES');
-    if (flatType && !FLAT_TYPE.test(flatType)) return badRequest(res, 'Give a flat type, e.g. ?flatType=4 ROOM');
+    if (flatType && !SUPPORTED_FLAT_TYPES.includes(flatType)) {
+      return badRequest(res, `BTO flat type must be one of ${SUPPORTED_FLAT_TYPES.join(', ')}`);
+    }
     if (classification && !CLASSIFICATIONS.includes(classification)) {
       return badRequest(res, `Classification must be one of ${CLASSIFICATIONS.join(', ')}`);
     }

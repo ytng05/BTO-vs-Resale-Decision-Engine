@@ -5,10 +5,20 @@ import { BTO_PROJECTS } from '../seeds/btoProjects.js';
 
 export const CLASSIFICATIONS = ['STANDARD', 'PLUS', 'PRIME'];
 
+// Scope (D27): couples choosing a 3-, 4- or 5-room flat. 2-room Flexi (two sizes that don't combine into
+// one price) and 3Gen (needs parents in the household) stay in the seed but are never served.
+export const SUPPORTED_FLAT_TYPES = ['3 ROOM', '4 ROOM', '5 ROOM'];
+
+// Seed prices must be before grants: the engine subtracts grants itself (D26).
+export const PRICE_BASIS = 'BEFORE_GRANTS';
+
+const supported = (f) => SUPPORTED_FLAT_TYPES.includes(f.flatType);
+const usable = (p) => p.priceBasis === PRICE_BASIS;
+
 const toCents = (dollars) => Math.round(dollars * 100);
 
 /** One project in API shape: price ranges in cents, floor area as { min, max }. */
-export function toApiProject(project, flats = project.flats) {
+export function toApiProject(project, flats = project.flats.filter(supported)) {
   return {
     id: project.id,
     name: project.name,
@@ -16,6 +26,7 @@ export function toApiProject(project, flats = project.flats) {
     classification: project.classification,
     launch: project.launch,
     waitMonths: project.waitMonths,
+    priceBasis: project.priceBasis,
     totalUnits: project.totalUnits,
     flats: flats.map((f) => ({
       flatType: f.flatType,
@@ -36,22 +47,23 @@ export function toApiProject(project, flats = project.flats) {
  */
 export function findBtoProjects({ town, flatType, classification } = {}, projects = BTO_PROJECTS) {
   return projects
+    .filter(usable)
     .filter((p) => !town || p.town === town)
     .filter((p) => !classification || p.classification === classification)
-    .map((p) => ({ p, flats: flatType ? p.flats.filter((f) => f.flatType === flatType) : p.flats }))
+    .map((p) => ({ p, flats: p.flats.filter(supported).filter((f) => !flatType || f.flatType === flatType) }))
     .filter(({ flats }) => flats.length > 0)
     .sort((a, b) => b.p.launch.localeCompare(a.p.launch) || a.p.name.localeCompare(b.p.name))
     .map(({ p, flats }) => toApiProject(p, flats));
 }
 
 export function getBtoProject(id, projects = BTO_PROJECTS) {
-  const p = projects.find((x) => x.id === id);
+  const p = projects.filter(usable).find((x) => x.id === id);
   return p ? toApiProject(p) : null;
 }
 
 /** Towns that have at least one seeded project (for the Path A town dropdown). */
 export function btoTowns(projects = BTO_PROJECTS) {
-  return [...new Set(projects.map((p) => p.town))].sort();
+  return [...new Set(projects.filter(usable).filter((p) => p.flats.some(supported)).map((p) => p.town))].sort();
 }
 
 /** Latest launch month in the seed, shown as "data as of". */
@@ -72,6 +84,8 @@ export function checkSeed(projects = BTO_PROJECTS) {
     if (!/^\d{4}-\d{2}$/.test(p.launch ?? '')) problems.push(`${where}: launch must be YYYY-MM`);
     if (p.waitMonths !== null && !(Number.isInteger(p.waitMonths) && p.waitMonths > 0)) problems.push(`${where}: waitMonths must be a whole number of months or null`);
     if (!/^https:\/\//.test(p.sourceUrl ?? '')) problems.push(`${where}: needs a sourceUrl`);
+    if (p.priceBasis !== PRICE_BASIS) problems.push(`${where}: priceBasis must be ${PRICE_BASIS} (prices before grants)`);
+    if (!(p.flats ?? []).some(supported)) problems.push(`${where}: has no 3-, 4- or 5-room flats`);
     const units = (p.flats ?? []).reduce((s, f) => s + f.units, 0) + (p.excludedUnits ?? 0);
     if (units !== p.totalUnits) problems.push(`${where}: flat units add up to ${units}, but totalUnits is ${p.totalUnits}`);
     for (const f of p.flats ?? []) {

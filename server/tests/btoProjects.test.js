@@ -34,6 +34,22 @@ describe('launch totals match the totals HDB announced', () => {
   });
 });
 
+describe('scope and price basis (D26, D27)', () => {
+  it('only serves 3-, 4- and 5-room flats, though the seed keeps every type HDB listed', () => {
+    const served = findBtoProjects().flatMap((p) => p.flats.map((f) => f.flatType));
+    expect(new Set(served)).toEqual(new Set(['3 ROOM', '4 ROOM', '5 ROOM']));
+    expect(BTO_PROJECTS.some((p) => p.flats.some((f) => f.flatType === '2 ROOM'))).toBe(true);
+    expect(getBtoProject('ping-yi-court').flats.map((f) => f.flatType)).toEqual(['3 ROOM', '4 ROOM', '5 ROOM']);
+  });
+
+  it('marks every project as priced before grants, and refuses any project that is not', () => {
+    expect(findBtoProjects().every((p) => p.priceBasis === 'BEFORE_GRANTS')).toBe(true);
+    const netOfGrants = [{ ...BTO_PROJECTS[0], priceBasis: 'AFTER_GRANTS' }];
+    expect(findBtoProjects({}, netOfGrants)).toEqual([]);
+    expect(checkSeed(netOfGrants)[0]).toMatch(/priceBasis must be BEFORE_GRANTS/);
+  });
+});
+
 describe('findBtoProjects', () => {
   it('filters by town, flat type and classification, and trims flats to the type asked for', () => {
     const found = findBtoProjects({ town: 'YISHUN', flatType: '5 ROOM' });
@@ -64,6 +80,12 @@ describe('GET /api/data/bto-projects', () => {
     expect(res.body.projects[0]).toMatchObject({ classification: 'STANDARD', waitMonths: 23 });
     expect(res.body.dataAsOf).toBe('2026-06');
     expect(res.body.towns.length).toBeGreaterThan(5);
+  });
+
+  it('refuses 2-room and 3Gen as a flat type filter', async () => {
+    const res = await request(app).get('/api/data/bto-projects').query({ flatType: '2 ROOM' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toMatch(/3 ROOM, 4 ROOM, 5 ROOM/);
   });
 
   it('rejects a bad filter with a plain message', async () => {
