@@ -1,6 +1,6 @@
 // Axios (MIT) — HTTP client for the Express API.
 import axios from 'axios';
-import { mockBtoProjects, mockCompare, mockGrants, mockRuleset } from './mock/mockData.js';
+import { mockBtoProjects, mockCompare, mockGrants, mockResalePrice, mockRpi, mockRuleset } from './mock/mockData.js';
 
 // VITE_USE_MOCK=true serves clearly-labelled MOCK data so the UI can be built before the backend exists.
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
@@ -69,6 +69,18 @@ export async function getRuleset() {
 export async function getBtoProjects(filters = {}) {
   if (USE_MOCK) return mockBtoProjects(filters);
   return (await http.get('/data/bto-projects', { params: filters })).data;
+}
+
+// Resale price summary for a town + flat type (seat 3, GET /api/data/resale-price).
+export async function getResalePrice(params) {
+  if (USE_MOCK) return mockResalePrice();
+  return (await http.get('/data/resale-price', { params })).data;
+}
+
+// Resale Price Index series (seat 3, GET /api/data/rpi).
+export async function getRpi(params = {}) {
+  if (USE_MOCK) return mockRpi();
+  return (await http.get('/data/rpi', { params })).data;
 }
 
 export async function grants(payload) {
