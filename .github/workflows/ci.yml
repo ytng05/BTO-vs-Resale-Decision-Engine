@@ -4,6 +4,15 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Throwaway MongoDB for server/tests/db.test.js. Lives only for this run; never touches Atlas.
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+        # Wait until Mongo answers before the steps run.
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -242,7 +242,7 @@ Response `200`: `{ scenarios: [{ id, name, rulesetVersion, createdAt, updatedAt 
 
 ### POST /api/scenarios
 Request: `{ name, profile, choiceA, choiceB, assumptions, result? }`. `name` 1 to 100 characters; `profile`, `choiceA`, `choiceB`, `assumptions` (and `result` if given) must be objects.
-`rulesetVersion` is set by the server: taken from `result.rulesetVersion` when a result is saved, otherwise the current ruleset version.
+`rulesetVersion` and `evaluationStartYear` are set by the server: taken from `result.rulesetVersion` / `result.evaluationStartYear` when a result is saved, otherwise the current ruleset version and the current year. Recalculating a reopened scenario should reuse both
 Response `201`: `{ scenario: { id, name, profile, choiceA, choiceB, assumptions, result, rulesetVersion, createdAt, updatedAt } }`.
 Errors: `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `503 DB_UNAVAILABLE`.
 

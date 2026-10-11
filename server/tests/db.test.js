@@ -14,11 +14,20 @@ const auth = (token) => ({ Authorization: `Bearer ${token}` });
 
 const scenario = {
   name: 'Tampines BTO vs Bedok resale',
-  profile: { applicants: [{ age: 30, monthlyIncome: 5000 }], cashSavings: 20000 },
-  choiceA: { path: 'BTO', town: 'TAMPINES', flatType: '4 ROOM' },
-  choiceB: { path: 'RESALE', town: 'BEDOK', flatType: '4 ROOM', leaseBand: '80-89' },
-  assumptions: { priceGrowth: 0.03, incomeGrowth: 0.02, horizonYears: 10 },
-  result: { rulesetVersion: 'test-ruleset', breakEvenSentence: 'test' },
+    // Same shape as client/src/stores/scenario.js (v2): money in dollars, growth as fractions.
+  profile: {
+    applicants: [
+      { id: 'applicant-1', age: 30, citizenship: 'SC', firstTimer: true, monthlyIncome: 5000, cpfOaBalance: 40000 },
+      { id: 'applicant-2', age: 29, citizenship: 'PR', firstTimer: true, monthlyIncome: 4500, cpfOaBalance: 30000 },
+    ],
+    cashSavings: 20000,
+    constraints: { moveInByYear: null },
+  },
+  choiceA: { path: 'BTO', applicationYear: 2027, town: 'TAMPINES', flatType: '4 ROOM', classification: 'STANDARD', renovation: 0 },
+  choiceB: { path: 'RESALE', applicationYear: 2027, town: 'BEDOK', flatType: '4 ROOM', livingArrangement: 'NONE', leaseBand: '80-89', renovation: 0 },
+  assumptions: { annualPriceGrowth: 0.03, annualIncomeGrowth: 0.02, horizonYear: 2040 },
+  result: { rulesetVersion: 'test-ruleset', evaluationStartYear: 2026, breakEvenSentence: 'test' },
+
 };
 
 async function register(email) {
@@ -78,6 +87,7 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
     const saved = await request(app).post('/api/scenarios').set(auth(token)).send(scenario);
     expect(saved.status).toBe(201);
     expect(saved.body.scenario.rulesetVersion).toBe('test-ruleset');
+    expect(saved.body.scenario.evaluationStartYear).toBe(2026); // taken from the result
     const { id } = saved.body.scenario;
 
     const list = await request(app).get('/api/scenarios').set(auth(token));
@@ -94,6 +104,15 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
     expect((await request(app).delete(`/api/scenarios/${id}`).set(auth(token))).status).toBe(204);
     expect((await request(app).get(`/api/scenarios/${id}`).set(auth(token))).status).toBe(404);
   });
+
+    it('stamps the current year when no result is saved', async () => {
+    const token = await register('erin@example.com');
+    const { result, ...withoutResult } = scenario;
+    const saved = await request(app).post('/api/scenarios').set(auth(token)).send(withoutResult);
+    expect(saved.status).toBe(201);
+    expect(saved.body.scenario.evaluationStartYear).toBe(new Date().getFullYear());
+  });
+
 
   it('never shows one user’s scenario to another', async () => {
     const owner = await register('carol@example.com');

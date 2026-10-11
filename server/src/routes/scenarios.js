@@ -59,7 +59,12 @@ router.post('/', validateScenario, requireDb, async (req, res, next) => {
     const { result } = req.scenario;
     // Record the ruleset that produced the result. With no result saved, it is the current ruleset.
     const rulesetVersion = typeof result?.rulesetVersion === 'string' ? result.rulesetVersion : loadRuleset().version;
-    const doc = await Scenario.create({ ...req.scenario, rulesetVersion, userId: req.user.id });
+    // Same idea for the start year, so "recalculate" on a reopened scenario starts from the same year
+    const evaluationStartYear = Number.isInteger(result?.evaluationStartYear)
+      ? result.evaluationStartYear
+      : new Date().getFullYear();
+    const doc = await Scenario.create({ ...req.scenario, rulesetVersion, evaluationStartYear, userId: req.user.id });
+
     res.status(201).json({ scenario: toJson(doc.toObject()) });
   } catch (err) {
     next(err);
