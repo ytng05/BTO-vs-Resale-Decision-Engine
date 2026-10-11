@@ -146,7 +146,7 @@
     {
       "id": "A5-hdb-short-lease",
       "description": "HDB loan, resale with 40 years left: the lease cap (40 - 20 = 20) sets tenure, and 30 + 40 = 70 < 95, so LTV is pro-rated. LTV binds under any pro-rating (unprorated LTV loan $262,500 < MSR loan $432,746.19).",
-      "_provenance": "LTV rows set up in max-loan-template-v4 (column F) with Claude, as sheet formulas from the stated rules, not engine code. Seat 1 checked them by hand (25 years short: 75% x 50% = 37.5%; $350,000 x 37.5% = $131,250), and they match an independent exact recomputation.",
+      "_provenance": "LTV rows worked by hand by seat 1 (25 years short: 75% x 50% = 37.5%; $350,000 x 37.5% = $131,250). Confirmed by sheet formulas in max-loan-template-v4 (column F, set up with Claude from the stated rules, not engine code) and by an independent exact recomputation.",
       "inputs": {
         "loanType": "HDB",
         "applicants": [
@@ -174,7 +174,7 @@
     {
       "id": "A6-hdb-float-check",
       "description": "HDB loan, resale with 49 years left (athirah's #32 review): 30 + 49 = 79, 16 years short of 95, LTV binds. The decimal factor 75 x (1 - 0.02 x 16) is 50.99999999999999 in floats; worked in whole numbers the LTV loan must not lose $1.",
-      "_provenance": "Set up in max-loan-template-v4 (column G) with Claude, as sheet formulas from the stated rules, not engine code. Seat 1 checked them by hand (16 years short: 75% x 68% = 51%; $350,000 x 51% = $178,500; MSR loan by the annuity formula), and they match an independent exact recomputation.",
+      "_provenance": "Worked by hand by seat 1 (16 years short: 75% x 68% = 51%; $350,000 x 51% = $178,500; MSR loan by the annuity formula). Confirmed by sheet formulas in max-loan-template-v4 (column G, set up with Claude from the stated rules, not engine code) and by an independent exact recomputation.",
       "inputs": {
         "loanType": "HDB",
         "applicants": [

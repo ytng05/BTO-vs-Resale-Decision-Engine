@@ -98,6 +98,8 @@ export function computeMaxLoan(inputs, ruleset) {
     const yearsShort = Math.max(0, ltvRules.leaseMustCoverYoungestToAge - (youngestAge + remainingLeaseYears));
     ltvProrated = yearsShort > 0;
     const factorPercent = Math.max(0, 100 - percentPerYearShort * yearsShort);
+    // Whole basis points only while percentPerYearShort is a whole number (2 today); a fractional rate would
+    // leave a fraction here, which the floor in step 8 still handles but no longer exactly.
     ltvBasisPoints = ltvRules.maxPercent * factorPercent;
   } else {
     const reduced =
