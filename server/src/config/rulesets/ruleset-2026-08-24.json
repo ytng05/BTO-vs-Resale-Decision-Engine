@@ -135,7 +135,14 @@
     "msrPercent": 30,
     "tdsrPercent": 55,
     "ltv": {
-      "hdbLoan": { "maxPercent": 75 },
+      "hdbLoan": {
+        "maxPercent": 75,
+        "leaseMustCoverYoungestToAge": 95,
+        "leaseProRating": {
+          "percentPerYearShort": 2,
+          "_note": "DERIVED ASSUMPTION: HDB/CPF don't publish a formula. factor = 1 − 2% × years short of 95 (capped at 1), consistent with the worked examples in the 2019 MOM/CPF press release (25-year-old, 65-year lease → 90%; 55-year lease → 70%). LTV = maxPercent × factor."
+        }
+      },
       "bankLoan": {
         "maxPercent": 75,
         "reducedMaxPercent": 55,
@@ -148,12 +155,28 @@
     "hdbRatePremium": 0.001,
     "_hdbRatePremiumNote": "HDB concessionary rate is pegged at 0.1% above the CPF OA rate (CPF Board, 22 Sep 2026 release)",
     "maxTenureYears": { "hdbLoan": 25, "bankLoanHdbFlats": 30 },
+    "hdbLoanTenure": {
+      "ageLimit": 65,
+      "ageBasis": "AVERAGE",
+      "leaseBufferYears": 20,
+      "_note": "Tenure = shortest of maxTenureYears.hdbLoan, ageLimit − average applicant age, remaining lease − leaseBufferYears (HDB)",
+      "_ageRoundingNote": "Average age rounded UP to a whole year (stated assumption; not published by HDB)."
+    },
+    "stressTestRate": {
+      "hdbLoanFloor": 0.03,
+      "bankLoanFloor": 0.04,
+      "_note": "Assess with the higher of the floor and the actual rate"
+    },
     "sources": [
       "https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/",
       "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers",
       "https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027",
       "https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits",
-      "https://discover.nyc.gov.sg/finlit/Life-Hacks/Housing/How-to-save-for-your-first-home-and-use-housing-grants"
+      "https://discover.nyc.gov.sg/finlit/Life-Hacks/Housing/How-to-save-for-your-first-home-and-use-housing-grants",
+      "https://www.hdb.gov.sg/cs/infoweb/residential/buying-a-flat/understanding-your-eligibility-and-housing-loan-options/housing-loan-options/housing-loan-from-hdb",
+      "https://www.mas.gov.sg/news/parliamentary-replies/2022/reply-to-parliamentary-question-on-setting-total-debt-servicing-ratio-medium-term-interest-rate-floor-at-4-per-cent-per-annum",
+      "https://www.mas.gov.sg/regulation/explainers/tdsr-for-property-loans/calculating-tdsr",
+      "https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life"
     ]
   },
   "transactionCosts": {

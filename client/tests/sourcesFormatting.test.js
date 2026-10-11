@@ -10,6 +10,16 @@ describe('Sources view loan additions', () => {
     expect(formatMinCashDownpayment({ hdbLoan: 0, bankLoan: { atMaxLtv: 5, atReducedLtv: 10 } }))
       .toBe('HDB loan 0% (can be fully CPF), bank loan 5% (10% at reduced LTV)');
   });
+
+  it('formats HDB loan tenure, lease rule and stress-test floors', () => {
+    expect(formatRuleValue('loans.hdbLoanTenure.ageLimit', 65)).toBe('age 65');
+    expect(formatRuleValue('loans.hdbLoanTenure.ageBasis', 'AVERAGE')).toBe('average applicant age');
+    expect(formatRuleValue('loans.hdbLoanTenure.leaseBufferYears', 20)).toBe('20 years');
+    expect(formatRuleValue('loans.ltv.hdbLoan.leaseMustCoverYoungestToAge', 95)).toBe('age 95');
+    expect(formatRuleValue('loans.ltv.hdbLoan.leaseProRating.percentPerYearShort', 2)).toBe('2% per year');
+    expect(formatRuleValue('loans.stressTestRate.hdbLoanFloor', 0.03)).toBe('3%');
+    expect(formatRuleValue('loans.stressTestRate.bankLoanFloor', 0.04)).toBe('4%');
+  });
 });
 
 describe('Sources view rule value formatting', () => {

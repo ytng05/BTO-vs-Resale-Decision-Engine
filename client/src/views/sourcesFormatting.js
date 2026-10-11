@@ -7,6 +7,8 @@ const currencyFormatter = new Intl.NumberFormat('en-SG', {
 const fractionRateFields = new Set([
   'cpf.oaInterestRate',
   'loans.hdbRatePremium',
+  'loans.stressTestRate.hdbLoanFloor',
+  'loans.stressTestRate.bankLoanFloor',
 ]);
 
 const unitByField = {
@@ -19,6 +21,9 @@ const unitByField = {
   mopYears: 'years',
   reducedIfTenureYearsOver: 'years',
   reducedIfLoanEndsAfterAge: 'age',
+  ageLimit: 'age',
+  leaseBufferYears: 'years',
+  leaseMustCoverYoungestToAge: 'age',
 };
 
 const sourceTitles = new Map([
@@ -29,6 +34,10 @@ const sourceTitles = new Map([
   ['https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/', 'MoneySense: how much can you afford'],
   ['https://www.mof.gov.sg/news-resources/newsroom/buyer-s-stamp-duty-bsd-rates-to-be-raised-for-higher-value-properties/', 'MOF: BSD rates'],
   ['https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits', 'MAS: loan tenure and LTV limits'],
+  ['https://www.mas.gov.sg/regulation/explainers/tdsr-for-property-loans/calculating-tdsr', 'MAS: Calculating TDSR'],
+  ['https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life', 'MOM: 2019 more flexibility to buy a home for life'],
+  ['https://www.mas.gov.sg/news/parliamentary-replies/2022/reply-to-parliamentary-question-on-setting-total-debt-servicing-ratio-medium-term-interest-rate-floor-at-4-per-cent-per-annum', 'MAS: 2022 reply on the 4% interest rate floor'],
+  ['https://www.hdb.gov.sg/cs/infoweb/residential/buying-a-flat/understanding-your-eligibility-and-housing-loan-options/housing-loan-options/housing-loan-from-hdb', 'HDB: Housing Loan from HDB'],
   ['https://discover.nyc.gov.sg/finlit/Life-Hacks/Housing/How-to-save-for-your-first-home-and-use-housing-grants', 'NYC: saving for your first home and housing grants'],
   ['https://www.hdb.gov.sg/residential/buying-a-flat/conditions-after-buying', 'HDB: conditions after buying'],
   ['https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises', 'HDB: Feb 2026 BTO press release'],
@@ -57,6 +66,8 @@ export function formatMinCashDownpayment({ hdbLoan, bankLoan }) {
 export function formatRuleValue(path, value) {
   if (value === null || value === undefined) return 'Not yet verified';
   if (path === 'loans.ltv.bankLoan.ageBasis' && value === 'IWAA') return 'income-weighted average age';
+  if (path === 'loans.hdbLoanTenure.ageBasis' && value === 'AVERAGE') return 'average applicant age';
+  if (path.endsWith('.percentPerYearShort') && typeof value === 'number') return `${formatPercent(value)} per year`;
   if (path === 'cpf.accruedInterestCompounding' && value === 'ANNUAL') return 'Annual (computed monthly)';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
 
