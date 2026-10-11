@@ -19,11 +19,14 @@ const loading = ref(false);
 // the store's blank state already seeds one empty buyer.)
 const hasInputs = computed(() => [0, 1, 2].every((step) => Object.keys(validateStep(step, store)).length === 0));
 
-const horizonYears = computed(() => result.value?.holdingPeriodYears ?? store.assumptions.horizonYears ?? null);
+// Contract v2: Outcome.horizonYear is the authoritative value once results load (both paths share it,
+// D1). Before that, fall back to the user's own assumption so the empty/loading states can still size
+// things sensibly.
+const horizonYear = computed(() => result.value?.horizonYear ?? store.assumptions.horizonYear ?? null);
 
 const userPoint = computed(() => ({
-  priceGrowth: store.assumptions.priceGrowth,
-  incomeGrowth: store.assumptions.incomeGrowth,
+  priceGrowth: store.assumptions.annualPriceGrowth,
+  incomeGrowth: store.assumptions.annualIncomeGrowth,
 }));
 
 // Positive when Path A ends ahead. Cents, per the contract.
@@ -35,7 +38,7 @@ const gap = computed(() => {
 
 const gapSentence = computed(() => {
   if (gap.value === null) return '';
-  const years = horizonYears.value ? `After ${horizonYears.value} years, ` : '';
+  const years = horizonYear.value ? `By ${horizonYear.value}, ` : '';
   if (gap.value === 0) return `${years}both paths end with the same net financial position under your assumptions.`;
   const ahead = gap.value > 0 ? 'BTO' : 'resale';
   return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in net financial position under your assumptions.`;
@@ -45,7 +48,7 @@ const labelOf = (options, value) => options.find((o) => o.value === value)?.labe
 function describe(choice) {
   const parts = [labelOf(TOWNS, choice.town), labelOf(FLAT_TYPES, choice.flatType)];
   if (choice.path === 'BTO' && choice.classification) parts.push(labelOf(CLASSIFICATIONS, choice.classification));
-  if (choice.purchaseYear) parts.push(`from ${choice.purchaseYear}`);
+  if (choice.applicationYear) parts.push(`from ${choice.applicationYear}`);
   return parts.filter(Boolean).join(', ');
 }
 
@@ -120,7 +123,7 @@ onMounted(load);
             title="Path A: BTO"
             :subtitle="describe(store.choiceA)"
             :outcome="result.outcomeA"
-            :horizon-years="horizonYears"
+            :horizon-year="horizonYear"
             cy-prefix="results-patha"
           />
         </div>
@@ -129,7 +132,7 @@ onMounted(load);
             title="Path B: Resale"
             :subtitle="describe(store.choiceB)"
             :outcome="result.outcomeB"
-            :horizon-years="horizonYears"
+            :horizon-year="horizonYear"
             cy-prefix="results-pathb"
           />
         </div>
@@ -142,7 +145,7 @@ onMounted(load);
           <HeatmapGrid
             :grid="result.grid"
             :user-point="userPoint"
-            :horizon-years="horizonYears"
+            :horizon-year="horizonYear"
             label-a="BTO"
             label-b="Resale"
           />
