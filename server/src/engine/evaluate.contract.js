@@ -234,8 +234,8 @@ const RULESET_KEYS = Object.freeze({
  * so the route uses requestChoice.btoPriceCents when given (it must lie inside
  * the range) and otherwise the range's midpoint. Stated limitation: resale is
  * priced at a transaction median, BTO at the midpoint of two extremes, so the
- * two paths' prices come from different statistics, and the range (e.g. $117k
- * for a Tampines 4-room) is as large as the grants being compared. The
+ * two paths' prices come from different statistics, and the range (e.g. $119k
+ * for a Tampines Bliss 4-room, $481k–$600k) is as large as the grants being compared. The
  * dashboard therefore shows the price used next to HDB's range and gives the
  * user a slider. Flat types are 3 ROOM, 4 ROOM and 5 ROOM on both paths (D27).
  */

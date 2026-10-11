@@ -85,7 +85,7 @@ Choice (request): `{ path: "BTO"|"RESALE", applicationYear, town, flatType, clas
     "cashSavingsCents": 4000000,
     "constraints": { "moveInByYear": 2031 }
   },
-  "choiceA": { "path": "BTO", "applicationYear": 2027, "town": "TAMPINES", "flatType": "4 ROOM", "classification": "STANDARD", "btoProjectId": "<id from /api/data/bto-projects>", "btoPriceCents": 37850000, "btoWaitMonths": 48, "renovationCents": 3000000 },
+  "choiceA": { "path": "BTO", "applicationYear": 2027, "town": "TAMPINES", "flatType": "4 ROOM", "classification": "STANDARD", "btoProjectId": "tampines-bliss", "btoPriceCents": 54050000, "renovationCents": 3000000 },
   "choiceB": { "path": "RESALE", "applicationYear": 2027, "town": "TAMPINES", "flatType": "4 ROOM", "classification": null, "leaseBand": "80-89", "livingArrangement": "NEAR", "renovationCents": 2000000 },
   "assumptions": { "annualPriceGrowth": 0.024, "annualIncomeGrowth": 0.03, "horizonYear": 2041, "monthlyHousingCostWhileWaitingCents": 0 }
 }
@@ -128,11 +128,11 @@ Response (one call returns the WHOLE grid, never one request per cell):
   "grid": [[{ "annualPriceGrowth": 0.03, "annualIncomeGrowth": 0.02, "winner": "A|B|TIE", "marginCents": 0 }]],
   "frontier": [{ "annualPriceGrowth": 0.03, "annualIncomeGrowth": 0.02 }],
   "outcomeA": {}, "outcomeB": {},
-  "btoProjectA": { "id": "string", "name": "string", "launch": "YYYY-MM", "waitMonths": 31, "priceMinCents": 32000000, "priceMaxCents": 43700000, "sourceUrl": "string" },
+  "btoProjectA": { "id": "tampines-bliss", "name": "Tampines Bliss", "launch": "2026-02", "waitMonths": 23, "priceMinCents": 48100000, "priceMaxCents": 60000000, "sourceUrl": "string" },
   "btoProjectB": null
 }
 ```
-`btoProjectA/B` (v2.1) is the BTO project the route used for that choice (`null` for resale), so the dashboard can show "priced at $378,500, HDB range $320,000–$437,000" and bound the price slider (D26). `outcomeA/B` are `Outcome` objects (see `evaluate.contract.js`, v2: timeline, affordability, `costBreakdown`, `yearlyCashFlow`, net position at the horizon). `marginCents` is the difference in net position at `horizonYear`, in cents. Errors: `400 VALIDATION_ERROR` for an out-of-scope household or a `horizonYear` before either path's keys.
+`btoProjectA/B` (v2.1) is the BTO project the route used for that choice (`null` for resale), so the dashboard can show "priced at $540,500, HDB range $481,000–$600,000" and bound the price slider (D26). `outcomeA/B` are `Outcome` objects (see `evaluate.contract.js`, v2: timeline, affordability, `costBreakdown`, `yearlyCashFlow`, net position at the horizon). `marginCents` is the difference in net position at `horizonYear`, in cents. Errors: `400 VALIDATION_ERROR` for an out-of-scope household or a `horizonYear` before either path's keys.
 
 ## POST /api/timing
 Request: `{ profile, choiceBase, candidateYears, assumptions }`
