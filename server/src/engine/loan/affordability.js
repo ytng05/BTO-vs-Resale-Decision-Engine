@@ -26,8 +26,9 @@
  *   maxLoanCents: number,
  *   limitingRule: 'MSR'|'TDSR'|'LTV'
  * }} assessmentRate and ltvApplied are decimals (0.03, 0.75); tdsrLoanCents is null for an HDB loan
- * @throws {RangeError} if the tenure works out to 0 years or less
+ * @throws {RangeError} if an HDB loan has no numeric loanRate, or the tenure works out to 0 years or less
  *   (average age at or above the age limit, or lease at or below the buffer).
+ * @throws {Error} for an HDB loan, if loans.ltv.hdbLoan.leaseProRating.percentPerYearShort isn't a number.
  */
 export function computeMaxLoan(inputs, ruleset) {
   const loans = ruleset.loans;
@@ -36,6 +37,11 @@ export function computeMaxLoan(inputs, ruleset) {
   // Input and ruleset names in one place – rename here to match the contract
   const { applicants, loanRate, tenureAskedYears, purchasePriceCents: priceCents, remainingLeaseYears } = inputs;
   const ltvRules = isHdb ? loans.ltv.hdbLoan : loans.ltv.bankLoan;
+
+  // An HDB loan needs its rate: Math.max(floor, null) would quietly assess at the floor
+  if (isHdb && typeof loanRate !== 'number') {
+    throw new RangeError(`loanRate must be a number for an HDB loan, got ${loanRate}`);
+  }
 
   // 1. Household income (cents)
   const incomeCents = applicants.reduce((sum, a) => sum + a.monthlyIncomeCents, 0);
@@ -77,24 +83,32 @@ export function computeMaxLoan(inputs, ruleset) {
   // 6. TDSR – bank only; null (not 0) for HDB
   const tdsrLoanCents = isHdb ? null : loanFromCap((incomeCents * loans.tdsrPercent) / 100);
 
-  // 7. LTV
-  let ltvPercent;
+  // 7. LTV in basis points (hundredths of a percent: 75% = 7500), so the maths stays in whole numbers.
+  //    A decimal factor would not: 0.75 × (1 − 0.02 × 16) is 0.5099…, and the floor below would lose $1 (A6).
+  let ltvBasisPoints;
   let ltvProrated = false;
   if (isHdb) {
-    ltvPercent = ltvRules.maxPercent;
+    // Seat 2's DERIVED pro-rating (#35): factor % = 100 − percentPerYearShort × years short, never below 0,
+    // where years short = years the lease falls short of covering the youngest buyer to 95.
+    const percentPerYearShort = ltvRules.leaseProRating?.percentPerYearShort;
+    if (typeof percentPerYearShort !== 'number') {
+      throw new Error('Ruleset key loans.ltv.hdbLoan.leaseProRating.percentPerYearShort is missing or not a number');
+    }
     const youngestAge = Math.min(...applicants.map((a) => a.age));
-    ltvProrated = youngestAge + remainingLeaseYears < ltvRules.leaseMustCoverYoungestToAge;
-    // TODO: pro-rate (seat 2 formula). Until then ltvApplied stays at the unprorated maximum.
+    const yearsShort = Math.max(0, ltvRules.leaseMustCoverYoungestToAge - (youngestAge + remainingLeaseYears));
+    ltvProrated = yearsShort > 0;
+    const factorPercent = Math.max(0, 100 - percentPerYearShort * yearsShort);
+    ltvBasisPoints = ltvRules.maxPercent * factorPercent;
   } else {
     const reduced =
       tenureYears > ltvRules.reducedIfTenureYearsOver ||
       ageUsed + tenureYears > ltvRules.reducedIfLoanEndsAfterAge;
-    ltvPercent = reduced ? ltvRules.reducedMaxPercent : ltvRules.maxPercent;
+    ltvBasisPoints = (reduced ? ltvRules.reducedMaxPercent : ltvRules.maxPercent) * 100;
   }
-  const ltvApplied = ltvPercent / 100;
+  const ltvApplied = ltvBasisPoints / 10000; // reported only, so a float is fine
 
-  // 8. LTV loan – integer maths, floored to a whole cent (the loan may not exceed LTV)
-  const ltvLoanCents = Math.floor((priceCents * ltvPercent) / 100);
+  // 8. LTV loan – one multiply, one divide, one floor to a whole cent (the loan may not exceed LTV)
+  const ltvLoanCents = Math.floor((priceCents * ltvBasisPoints) / 10000);
 
   // 9. Smallest applicable limit, in tie order MSR, TDSR, LTV; rounded down to the dollar
   const limits = [['MSR', msrLoanCents]];
