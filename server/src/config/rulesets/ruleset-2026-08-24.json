@@ -211,7 +211,7 @@
   "btoWaiting": {
     "shorterWaitingTimeThresholdMonths": 36,
     "defaultMonths": 48,
-    "_defaultMonthsNote": "STATED ASSUMPTION: used only when neither the selected project nor the town's seeded projects give a wait. Most Feb 2026 BTO flats had waits under four years.",
+    "_defaultMonthsNote": "STATED ASSUMPTION: used only when neither the selected project nor the town's seeded projects give a wait. HDB Feb 2026 BTO: \"About 8 in 10 BTO flats on offer have waiting times of less than 4 years.\"",
     "monthsToAgreementForLease": 9,
     "_monthsToAgreementForLeaseNote": "STATED ASSUMPTION: months from application to signing the agreement for lease. HDB says signing is within 9 months after BOOKING an uncompleted flat; no published application-to-booking figure.",
     "_note": "Wait used = selected project's btoWaitMonths (seat 3 seed data) → else median of the town's seeded projects → else defaultMonths. defaultMonths is an ASSUMPTION: most Feb 2026 BTO flats had waits under four years. SWT flats have waits under three years.",
