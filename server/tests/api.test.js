@@ -132,6 +132,18 @@ describe('API scaffold', () => {
     expect(res.body.error.message).toBe('At least one buyer must be a Singapore Citizen (D21).');
   });
 
+  it('POST /api/grants reports a missing citizenship before the D21 check', async () => {
+    const [first, second] = scFirstTimerCouple.profile.applicants;
+    const { citizenship, ...withoutCitizenship } = first;
+    const res = await request(app).post('/api/grants').send({
+      ...scFirstTimerCouple,
+      profile: { applicants: [withoutCitizenship, { ...second, citizenship: 'PR' }] },
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toMatch(/citizenship/);
+    expect(res.body.error.message).not.toMatch(/D21/);
+  });
+
   it('POST /api/grants rejects missing applicants', async () => {
     const res = await request(app).post('/api/grants').send({
       profile: {},

@@ -64,9 +64,6 @@ function validateGrantRequest(body) {
   if (applicants.length > 2) {
     return 'profile.applicants must contain no more than two applicants.';
   }
-  if (!applicants.some((applicant) => applicant?.citizenship === 'SC')) {
-    return 'At least one buyer must be a Singapore Citizen (D21).';
-  }
 
   const requiredApplicantFields = ['age', 'citizenship', 'firstTimer', 'monthlyIncomeCents', 'cpfOaBalanceCents'];
   for (const [index, applicant] of applicants.entries()) {
@@ -82,6 +79,10 @@ function validateGrantRequest(body) {
         return `profile.applicants[${index}].${field} must be a non-negative integer number of cents.`;
       }
     }
+  }
+
+  if (!applicants.some((applicant) => applicant.citizenship === 'SC')) {
+    return 'At least one buyer must be a Singapore Citizen (D21).';
   }
 
   if (!['BTO', 'RESALE'].includes(body?.choice?.path)) {
