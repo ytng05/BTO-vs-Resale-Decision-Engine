@@ -13,6 +13,11 @@ describe('Sources view BTO waiting rules', () => {
     expect(statedAssumptionText('Wait used = project wait')).toBeNull();
     expect(statedAssumptionText(undefined)).toBeNull();
   });
+
+  it('extracts the average-age rounding assumption text', () => {
+    expect(statedAssumptionText('STATED ASSUMPTION: the average applicant age is rounded UP to a whole year (HDB does not publish its rounding).'))
+      .toBe('the average applicant age is rounded UP to a whole year (HDB does not publish its rounding).');
+  });
 });
 
 describe('Sources view derived assumptions', () => {

@@ -176,7 +176,7 @@
       "ageBasis": "AVERAGE",
       "leaseBufferYears": 20,
       "_note": "Tenure = shortest of maxTenureYears.hdbLoan, ageLimit − average applicant age, remaining lease − leaseBufferYears (HDB)",
-      "_ageRoundingNote": "Average age rounded UP to a whole year (stated assumption; not published by HDB)."
+      "_ageBasisNote": "STATED ASSUMPTION: the average applicant age is rounded UP to a whole year (HDB does not publish its rounding)."
     },
     "stressTestRate": {
       "hdbLoanFloor": 0.03,
@@ -184,7 +184,7 @@
       "_note": "Assess with the higher of the floor and the actual rate"
     },
     "hdbLoanOaRetentionPerBuyer": 20000,
-    "_hdbLoanOaRetentionNote": "Dollars. Each buyer taking an HDB loan may retain UP TO $20,000 of available OA savings (optional); the rest goes to the purchase. Per buyer, not per household.",
+    "_hdbLoanOaRetentionPerBuyerNote": "Dollars. Each buyer taking an HDB loan may retain UP TO $20,000 of available OA savings (optional); the rest goes to the purchase. Per buyer, not per household.",
     "sources": [
       "https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/",
       "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers",
