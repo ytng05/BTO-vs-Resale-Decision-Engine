@@ -236,6 +236,7 @@ function mockOutcome({
       hdbConcessionaryRate: 0.026,
       accruedInterestCompounding: 'ANNUAL',
       ltvApplied: 0.75,
+      assessmentRate: 0.03,
     },
     rulesetVersion: rulesetSnapshot.version,
     warnings: isResale ? [] : ['BTO_WAIT_ASSUMED'],
