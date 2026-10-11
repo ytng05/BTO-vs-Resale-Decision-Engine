@@ -255,10 +255,9 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   // At keys: grants, then OA above the retention, then the loan, then cash
   let remainingCents = priceDueAtKeysCents;
   remainingCents -= useGrants(keyMonth, remainingCents);
-  // Grants above the remaining price stay in the OA (#36 review, point 5). They are not refund
-  // principal yet: they become ledger entries only when the OA later pays fees or instalments.
-  oaLeftCents += grantsLeftCents;
-  grantsLeftCents = 0;
+  // Grants left over after the price (grantsLeftCents) go to the CPF Special/Retirement and MediSave
+  // accounts (HDB Sign Agreement for Lease page; seat 2 on #46), so they never reach the OA: they can't pay
+  // fees or instalments and aren't refund principal. D1 doesn't count CPF balances, so they drop out here.
   const oaAtKeysCents = Math.min(remainingCents, Math.max(0, oaLeftCents - retentionCents));
   payOa(keyMonth, oaAtKeysCents, 'LUMP_SUM');
   remainingCents -= oaAtKeysCents;
