@@ -125,17 +125,32 @@
     "partialMonthTreatment": "EXCLUDE_BOTH",
     "_partialMonthTreatmentNote": "Team assumption (DECISIONS.md D12): EXCLUDE_BOTH, pending CPF Board confirmation. Alternative considered: INCLUDE_BOTH, based on CPF's general interest rule (withdrawals stop earning from the month they occur; refunds earn from the next month).",
     "_compoundingNote": "Computed monthly at the OA rate, compounded yearly (CPF Board)",
+    "housingUsageLeaseRule": {
+      "leaseMustCoverYoungestToAge": 95,
+      "leaseProRating": {
+        "percentPerYearShort": 2,
+        "_note": "DERIVED: fitted to the 2019 MOM/CPF examples of CPF usage limits (two data points: 25-year-old, 65-year lease → 90%; 55-year lease → 70%). If the lease doesn't cover the youngest buyer to 95, CPF usage is pro-rated by this factor."
+      }
+    },
     "sources": [
       "https://ask.gov.sg/cpf/questions/cm0f52kzh01d1pz7aq4i1wz4y",
       "https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts",
-      "https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027"
+      "https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027",
+      "https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life"
     ]
   },
   "loans": {
     "msrPercent": 30,
     "tdsrPercent": 55,
     "ltv": {
-      "hdbLoan": { "maxPercent": 75 },
+      "hdbLoan": {
+        "maxPercent": 75,
+        "leaseMustCoverYoungestToAge": 95,
+        "leaseProRating": {
+          "percentPerYearShort": 2,
+          "_note": "DERIVED ASSUMPTION: HDB doesn't publish an LTV pro-rating formula. factor = 1 − 2% × years short of 95 (capped at 1), derived from the 2019 MOM/CPF examples of CPF USAGE limits (two data points: 25-year-old, 65-year lease → 90%; 55-year lease → 70%) and assumed to apply to the HDB loan LTV. LTV = maxPercent × factor."
+        }
+      },
       "bankLoan": {
         "maxPercent": 75,
         "reducedMaxPercent": 55,
@@ -145,15 +160,43 @@
       }
     },
     "minCashDownpaymentPercent": { "hdbLoan": 0, "bankLoan": { "atMaxLtv": 5, "atReducedLtv": 10 } },
+    "btoDownpaymentStages": {
+      "hdbLoan": { "atSigningPercent": 10, "atKeysPercent": 15 },
+      "bankLoan": {
+        "atReducedLtv": { "atSigningPercent": 20, "minCashAtSigningPercent": 10, "atKeysPercent": 25 },
+        "atMaxLtv": null
+      },
+      "_note": "Percent of the purchase price. HDB Sign Agreement for Lease page. Bank loan at 75% LTV not yet confirmed (null)."
+    },
     "hdbRatePremium": 0.001,
     "_hdbRatePremiumNote": "HDB concessionary rate is pegged at 0.1% above the CPF OA rate (CPF Board, 22 Sep 2026 release)",
     "maxTenureYears": { "hdbLoan": 25, "bankLoanHdbFlats": 30 },
+    "hdbLoanTenure": {
+      "ageLimit": 65,
+      "ageBasis": "AVERAGE",
+      "leaseBufferYears": 20,
+      "_note": "Tenure = shortest of maxTenureYears.hdbLoan, ageLimit − average applicant age, remaining lease − leaseBufferYears (HDB)",
+      "_ageBasisNote": "STATED ASSUMPTION: the average applicant age is rounded UP to a whole year (HDB does not publish its rounding)."
+    },
+    "stressTestRate": {
+      "hdbLoanFloor": 0.03,
+      "bankLoanFloor": 0.04,
+      "_note": "Assess with the higher of the floor and the actual rate"
+    },
+    "hdbLoanOaRetentionPerBuyer": 20000,
+    "_hdbLoanOaRetentionPerBuyerNote": "Dollars. Each buyer taking an HDB loan may retain UP TO $20,000 of available OA savings (optional); the rest goes to the purchase. Per buyer, not per household.",
     "sources": [
       "https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/",
       "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers",
       "https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027",
       "https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits",
-      "https://discover.nyc.gov.sg/finlit/Life-Hacks/Housing/How-to-save-for-your-first-home-and-use-housing-grants"
+      "https://discover.nyc.gov.sg/finlit/Life-Hacks/Housing/How-to-save-for-your-first-home-and-use-housing-grants",
+      "https://www.hdb.gov.sg/cs/infoweb/residential/buying-a-flat/understanding-your-eligibility-and-housing-loan-options/housing-loan-options/housing-loan-from-hdb",
+      "https://www.mas.gov.sg/news/parliamentary-replies/2022/reply-to-parliamentary-question-on-setting-total-debt-servicing-ratio-medium-term-interest-rate-floor-at-4-per-cent-per-annum",
+      "https://www.mas.gov.sg/regulation/explainers/tdsr-for-property-loans/calculating-tdsr",
+      "https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life",
+      "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-resale-flats/plan-source-and-contract/mode-of-financing",
+      "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-new-flats/sign-agreement-for-lease"
     ]
   },
   "transactionCosts": {
@@ -185,8 +228,14 @@
   "btoWaiting": {
     "shorterWaitingTimeThresholdMonths": 36,
     "defaultMonths": 48,
-    "_note": "Wait used = selected project's btoWaitMonths (seat 3 seed data) → else median of the town's seeded projects → else defaultMonths. defaultMonths is an ASSUMPTION: most Feb 2026 BTO flats had waits under four years. SWT flats have waits under three years.",
-    "sources": ["https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises"]
+    "_defaultMonthsNote": "STATED ASSUMPTION: used only when neither the selected project nor the town's seeded projects give a wait. HDB Feb 2026 BTO: \"About 8 in 10 BTO flats on offer have waiting times of less than 4 years.\"",
+    "monthsToAgreementForLease": 9,
+    "_monthsToAgreementForLeaseNote": "STATED ASSUMPTION: months from application to signing the agreement for lease. HDB says signing is within 9 months after BOOKING an uncompleted flat; no published application-to-booking figure.",
+    "_note": "Wait used = selected project's btoWaitMonths (seat 3 seed data) → else median of the town's seeded projects → else defaultMonths. defaultMonths is an ASSUMPTION (see _defaultMonthsNote). SWT flats have waits under three years.",
+    "sources": [
+      "https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises",
+      "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-new-flats/sign-agreement-for-lease"
+    ]
   },
   "notes": {
     "eip": {
