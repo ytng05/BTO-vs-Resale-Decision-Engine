@@ -52,7 +52,6 @@ const BTO_SIGNING_PERCENT = 10;
 export function evaluate(profile, choice, assumptions, ruleset) {
   const warnings = new Set();
   const isBto = choice.path === 'BTO';
-  const isHdbLoan = assumptions.loanType === 'HDB';
   const g = assumptions.annualPriceGrowth;
   const startYear = assumptions.evaluationStartYear;
   const horizonYear = assumptions.horizonYear;
@@ -66,6 +65,18 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   }
   if (!applicants.some((a) => a.citizenship === 'SC')) {
     throw new RangeError('At least one applicant must be a Singapore Citizen');
+  }
+  if (assumptions.loanType !== 'HDB') {
+    throw new RangeError(`Bank loans aren't modelled yet (D32); loanType must be 'HDB', got '${assumptions.loanType}'`);
+  }
+
+  // Ruleset keys not in RULESET_KEYS yet: fail loudly, naming the key, rather than guess a value.
+  // TODO(follow-up PR): replace loans.hdbLoanOaRetention with the per-buyer key.
+  for (const [key, value] of [
+    ['btoWaiting.monthsToAgreementForLease', ruleset.btoWaiting?.monthsToAgreementForLease],
+    ['loans.hdbLoanOaRetention', ruleset.loans?.hdbLoanOaRetention]
+  ]) {
+    if (typeof value !== 'number') throw new Error(`Ruleset key ${key} is missing or not a number`);
   }
 
   // -------------------------------------------------------------------------
@@ -84,7 +95,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     throw new RangeError(`Keys (${toDate(keyMonth)}) are after the horizon (31 Dec ${horizonYear})`);
   }
   // D30: signing = application + monthsToAgreementForLease, never after keys.
-  // btoWaiting.monthsToAgreementForLease isn't in RULESET_KEYS yet (fixture override, pending seat 2).
+  // btoWaiting.monthsToAgreementForLease (#35) is a stated assumption, not HDB's figure (D30); checked above.
   const signingMonth = isBto
     ? Math.min(applicationMonth + ruleset.btoWaiting.monthsToAgreementForLease, keyMonth)
     : keyMonth;
@@ -150,15 +161,15 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     typeof oaRate === 'number' && typeof premium === 'number'
       ? Math.round((oaRate + premium) * 1e6) / 1e6
       : null;
-  if (hdbConcessionaryRate === null) warnings.add(WARNINGS.HDB_RATE_UNRESOLVED);
-  if (isHdbLoan && hdbConcessionaryRate === null) {
+  // Every loan is an HDB loan (D32), so an unresolved HDB rate can't be scheduled: throw rather than warn
+  if (hdbConcessionaryRate === null) {
     throw new Error('HDB loan needs cpf.oaInterestRate and loans.hdbRatePremium in the ruleset');
   }
 
   const maxLoan = computeMaxLoan(
     {
       loanType: assumptions.loanType,
-      loanRate: isHdbLoan ? hdbConcessionaryRate : null,
+      loanRate: hdbConcessionaryRate,
       tenureAskedYears: assumptions.loanTenureYears,
       purchasePriceCents: priceCents,
       remainingLeaseYears: choice.remainingLeaseYears,
@@ -168,15 +179,13 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   );
   if (maxLoan.ltvProrated) warnings.add(WARNINGS.LEASE_BELOW_95_PRORATION);
 
-  // Loan rate for the schedule. The engine has no bank rate (affordability note), so a bank loan is
-  // scheduled at the bank stress-test floor. TODO(seat 1/2): confirm, or add a bank rate assumption.
-  const loanRate = isHdbLoan ? hdbConcessionaryRate : ruleset.loans.stressTestRate.bankLoanFloor;
+  const loanRate = hdbConcessionaryRate; // HDB loans only (D32)
 
   // -------------------------------------------------------------------------
   // 6. Funding plan (D28 / D30). Every OA withdrawal and grant is a dated CPF ledger entry.
   // -------------------------------------------------------------------------
-  // hdbLoanOaRetention is in DOLLARS in the ruleset; it applies to HDB loans only.
-  const retentionCents = isHdbLoan ? Math.round((ruleset.loans.hdbLoanOaRetention ?? 0) * 100) : 0;
+  // hdbLoanOaRetention is in DOLLARS in the ruleset (checked to be a number above)
+  const retentionCents = Math.round(ruleset.loans.hdbLoanOaRetention * 100);
   let oaLeftCents = applicants.reduce((sum, a) => sum + a.cpfOaBalanceCents, 0);
 
   const ledger = [];          // { date, amountCents, kind } for computeAccruedInterest()
@@ -394,7 +403,6 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     timeline,
     totalGrantsCents,
     grants,
-    purchasePriceCents: choice.purchasePriceCents, // v2.1 echo: today's price, before grants (D26)
     affordability: {
       maxLoanCents: maxLoan.maxLoanCents,
       loanRequiredCents,
@@ -404,6 +412,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     },
     cashRequiredAtPurchaseCents,
     cpfUsedAtPurchaseCents,
+    purchasePriceCents: priceCents, // grown to the application date (D31), not today's input
     loanPrincipalCents,
     marketValueAtHorizonCents,
     outstandingLoanAtHorizonCents,

@@ -51,3 +51,21 @@ describe.each(fixture.cases.map((c) => [c.id, c]))('evaluate: %s', (_id, c) => {
     );
   });
 });
+
+describe('evaluate: out of scope and missing ruleset keys', () => {
+  const e1 = fixture.cases[0].inputs;
+
+  it("throws for a 'BANK' loan (not modelled yet, D32)", () => {
+    const assumptions = { ...e1.assumptions, loanType: 'BANK' };
+    expect(() => evaluate(e1.profile, e1.choice, assumptions, ruleset)).toThrow(/D32/);
+  });
+
+  it.each([
+    ['btoWaiting', 'monthsToAgreementForLease'],
+    ['loans', 'hdbLoanOaRetention'],
+  ])('throws, naming the key, when %s.%s is missing', (section, key) => {
+    const broken = { ...ruleset, [section]: { ...ruleset[section] } };
+    delete broken[section][key];
+    expect(() => evaluate(e1.profile, e1.choice, e1.assumptions, broken)).toThrow(`${section}.${key}`);
+  });
+});

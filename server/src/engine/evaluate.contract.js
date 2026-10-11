@@ -161,8 +161,9 @@ const RULESET_KEYS = Object.freeze({
  * The HDB concessionary rate is pegged to the OA rate (CPF Board), so the
  * ruleset stores the peg, loans.hdbRatePremium, and the engine computes
  * hdbConcessionaryRate = oaRate + hdbRatePremium. It then moves with oaRate
- * in the backtest. If either value is missing, the engine reports
- * hdbConcessionaryRate: null and warns HDB_RATE_UNRESOLVED.
+ * in the backtest. If either value is missing, evaluate() v1 throws, since
+ * every loan is an HDB loan (D32). HDB_RATE_UNRESOLVED (hdbConcessionaryRate:
+ * null) is kept for when bank loans, which don't need the rate, are modelled.
  */
 
 /**
@@ -546,7 +547,9 @@ const WARNINGS = Object.freeze({
  * @property {Timeline} timeline
  * @property {number} totalGrantsCents
  * @property {GrantResult[]} grants
- * @property {number} purchasePriceCents      - v2.1: the price used, before grants (echo of choice.purchasePriceCents)
+ * @property {number} purchasePriceCents      - v2.1: the price used, before grants: choice.purchasePriceCents grown
+ *                                              to the application date (D31); equal to it when applicationYear =
+ *                                              evaluationStartYear
  * @property {Affordability} affordability
  * @property {number} cashRequiredAtPurchaseCents - cash the household pays from its own savings at purchase,
  *                                              AFTER using the CPF OA balance and grants and after the loan
@@ -572,7 +575,10 @@ const WARNINGS = Object.freeze({
 // THE PRIMITIVE
 // ---------------------------------------------------------------------------
 
-/**
+/*
+ * evaluate(profile, choice, assumptions, ruleset) → Outcome
+ * Implemented in ./index.js; import it from there, not from this file.
+ *
  * Evaluate one housing choice for one household under one set of assumptions.
  *
  * @param {Profile} profile
@@ -580,11 +586,9 @@ const WARNINGS = Object.freeze({
  * @param {Assumptions} assumptions
  * @param {Object} ruleset - the versioned policy config (seat 2 owns this)
  * @returns {Outcome}
- * @throws if the profile is out of scope (not exactly two applicants, or no SC)
+ * @throws if the profile is out of scope (not exactly two applicants, or no SC),
+ *         loanType is not 'HDB' (D32), a ruleset key it needs is missing,
  *         or horizonYear is before this choice's keys
  */
-function evaluate(profile, choice, assumptions, ruleset) {
-  throw new Error('Not implemented — seat 1');
-}
 
-export { evaluate, RULESET_KEYS, WARNINGS };
+export { RULESET_KEYS, WARNINGS };
