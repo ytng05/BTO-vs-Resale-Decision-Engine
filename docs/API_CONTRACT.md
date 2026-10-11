@@ -17,7 +17,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | POST | `/api/cpf/accrued-interest` | seat 1 | CPF refund owed at a date: principal + accrued interest (D2, D12) | working (needs verified CPF rate in ruleset) |
 | POST | `/api/stamp-duty` | seat 1 | buyer's stamp duty on a price (D20) | working |
 | POST | `/api/timing` | seat 1 | FEATURE 1: optimal timing search | stub |
-| POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | stub |
+| POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | future work: off by default (`FEATURE_STRATEGY_SEARCH`), returns 501 `FEATURE_DISABLED` |
 | POST | `/api/backtest` | seat 1 + 3 | FEATURE 3 (later): historical range | off (`FEATURE_BACKTEST`) |
 | GET | `/api/data/resale-price?town=&flatType=` | seat 3 | resale price basis from data.gov.sg (cents, cached daily) | working |
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached daily) | working |
@@ -142,6 +142,7 @@ Request: `{ profile, choiceBase, candidateYears, assumptions }`
 Response: `{ rulesetVersion, best: { year, outcome }, all: [{ year, outcome }], explanation: ["string"] }`
 
 ## POST /api/strategy
+Future work (dropped per the prof's feedback, contract v2). Off by default: returns `501 FEATURE_DISABLED`. Shape kept for reference.
 Request: `{ profile, constraints, assumptions }`
 Response: `{ rulesetVersion, top: [{ choice, outcome, reasons: ["string"] }] }` (max 3, ranked)
 
