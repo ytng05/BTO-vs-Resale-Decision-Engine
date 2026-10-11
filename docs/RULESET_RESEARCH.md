@@ -28,7 +28,7 @@ Latest rule change reported in these notes: 24 Aug 2026 (NDR 2026 income ceiling
 ✅ `grants.familyGrant.incomeCeiling`: 16,000 for HFE applications from 24 Aug 2026. Source: <https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/> (updated 23 Aug 2026). (checked: Claude + Har)
 ✅ `grants.familyGrant.amounts` (SC+SC): 2-4 room: 80,000; 5-room+: 50,000. Source reported: HDB KEO letter, 15 Feb 2023, <https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Increased-CPF-Housing-Grant-for-resale-flat-buyers>. (checked vs official source 2026-10-06: Claude + Har)
 ✅ `grants.familyGrant.amounts` (SC+PR): 2-4 room: 70,000. Source: <https://www.togetherforbetter.gov.sg/lifestage/youngadults/>. (checked vs official source 2026-10-06: Claude + Har)
-☐ `grants.familyGrant.amounts` (SC+PR): 5-room+: 40,000. ⚠️ Not yet confirmed. Note: MOF Budget 2023 annex and MyNiceHome give $50,000 for 5-room+ without an SC/SPR split; HDB page not yet checked. (note added 2026-10-10) Note: MOF Budget 2023 annex and MyNiceHome give $50,000 for 5-room+ without an SC/SPR split; HDB page not yet checked. (checked 2026-10-10: Claude + Har)
+☐ `grants.familyGrant.amounts` (SC+PR): 5-room+: 40,000. ⚠️ Not yet confirmed. Note: MOF Budget 2023 annex and MyNiceHome give $50,000 for 5-room+ without an SC/SPR split; HDB page not yet checked. (note added 2026-10-10)
 ☐ `grants.familyGrant.amounts` (first-timer + second-timer): 2-4 room: 40,000; 5-room+: 25,000 ("Half-Housing Grant"). ⚠️ Secondary sources only; confirm on HDB.
 ✅ `grants.familyGrant.amounts` (PR+PR): not eligible for Family Grant; an applicant must be SC with at least one other SC/SPR. Source: <https://www.mynicehome.gov.sg/get-started/hdb-grants-guide/> (checked: Claude + Har)
 

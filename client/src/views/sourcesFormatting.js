@@ -91,6 +91,10 @@ export function formatRuleValue(path, value) {
   return String(value);
 }
 
+export function isDerivedAssumption(note) {
+  return typeof note === 'string' && note.startsWith('DERIVED ASSUMPTION');
+}
+
 export function sourceTitle(url) {
   if (sourceTitles.has(url)) return sourceTitles.get(url);
 

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { getRuleset } from '../api/client.js';
-import { formatMinCashDownpayment, formatRuleValue, sourceTitle } from './sourcesFormatting.js';
+import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption, sourceTitle } from './sourcesFormatting.js';
 
 const response = ref(null);
 const loading = ref(true);
@@ -44,7 +44,7 @@ const ruleLabels = {
   'loans.hdbLoanTenure.ageBasis': 'HDB loan tenure: age basis for joint borrowers',
   'loans.hdbLoanTenure.leaseBufferYears': 'HDB loan tenure: remaining lease buffer',
   'loans.ltv.hdbLoan.leaseMustCoverYoungestToAge': 'HDB loan LTV: lease must cover youngest buyer to age',
-  'loans.ltv.hdbLoan.leaseProRating.percentPerYearShort': 'HDB loan LTV pro-rating (derived assumption): reduction per year of lease short of 95',
+  'loans.ltv.hdbLoan.leaseProRating.percentPerYearShort': 'HDB loan LTV pro-rating: reduction per year of lease short of 95',
   'loans.stressTestRate.hdbLoanFloor': 'Stress-test rate floor: HDB loan',
   'loans.stressTestRate.bankLoanFloor': 'Stress-test rate floor: bank loan',
   'classifications.STANDARD.mopYears': 'MOP: Standard BTO',
@@ -219,7 +219,11 @@ function collectRules(value, path, rows, tierTables, activeRules) {
       rows.push({ rule: ruleLabels[path] ?? fallbackLabel(path), value: 'Not yet verified' });
       return;
     }
+    const firstRow = rows.length;
     entries.forEach(([key, nestedValue]) => collectRules(nestedValue, `${path}.${key}`, rows, tierTables, activeRules));
+    if (isDerivedAssumption(value._note)) {
+      rows.slice(firstRow).forEach((row) => { row.note = 'Derived assumption: HDB does not publish this formula.'; });
+    }
     return;
   }
 
@@ -317,6 +321,7 @@ const assumptions = computed(() => [
   { title: 'Employment', description: '12-month employment condition is assumed for applicants.' },
   { title: 'Income averaging', description: 'Monthly income is treated as the 12-month average at assessment.' },
   { title: 'EHG lease pro-rating', description: 'Pro-rating is not applied; actual EHG may be lower when the lease does not cover the youngest buyer to age 95.' },
+  { title: 'HDB loan LTV lease pro-rating', description: 'HDB and CPF do not publish a formula. We assume LTV falls 2% for each year the lease is short of 95, based on the 2019 MOM/CPF worked examples.' },
   { title: 'PHG near distance', description: 'Whether your home is near your parents or child is declared by you; no distance is measured.' },
   { title: 'Rules held constant', description: `Current rules (ruleset ${response.value?.version ?? 'not yet verified'}) are held constant in projections.` },
   { title: 'Legal & agent fees', description: 'Estimates; these are not verified policy values.' },

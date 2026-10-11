@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatMinCashDownpayment, formatRuleValue } from '../src/views/sourcesFormatting.js';
+import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption } from '../src/views/sourcesFormatting.js';
+
+describe('Sources view derived assumptions', () => {
+  it('recognises ruleset notes that flag a derived assumption', () => {
+    expect(isDerivedAssumption('DERIVED ASSUMPTION: no published formula.')).toBe(true);
+    expect(isDerivedAssumption('Assess with the higher of the floor and the actual rate')).toBe(false);
+    expect(isDerivedAssumption(undefined)).toBe(false);
+  });
+});
 
 describe('Sources view loan additions', () => {
   it('formats the IWAA age basis', () => {
