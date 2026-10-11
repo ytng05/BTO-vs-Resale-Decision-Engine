@@ -1,0 +1,172 @@
+{
+  "_source": "Hand-worked in max-loan-template-v3.xlsx, case by case. Not derived from engine code.",
+  "_workedBy": "seat 1",
+  "_dateWorked": "2026-10-11",
+  "_checkedBy": "Independent script recomputation of every MSR/TDSR loan, tenure and age (matches to the cent)",
+  "_conventions": {
+    "decision": "NOTE ON AFFORDABILITY in evaluate.contract.js (#30); HDB rules from seat 2's review of #30 (HDB 'Housing loan from HDB' page)",
+    "assessmentRate": "Higher of the floor (loans.stressTestRate) and the loan rate. Bank loans: no bank rate in the model, so the floor.",
+    "ageUsed": "HDB loan: plain average of the applicants' ages. Bank loan: IWAA = sum(age x income) / sum(income). Both rounded UP to a whole year.",
+    "tenure": "Whole years. HDB: shortest of asked, maxTenureYears.hdbLoan, ageLimit - ageUsed, remainingLeaseYears - leaseBufferYears. Bank: shortest of asked and maxTenureYears.bankLoanHdbFlats.",
+    "instalmentCapToLoan": "cap x (1 - (1 + r)^-n) / r, r = assessmentRate / 12, n = tenureYears x 12; rounded to the nearest cent (halves up)",
+    "ltv": "HDB: maxPercent, pro-rated when youngest age + remainingLeaseYears < leaseMustCoverYoungestToAge (formula: seat 2). Bank: reducedMaxPercent if tenure > reducedIfTenureYearsOver OR IWAA + tenure > reducedIfLoanEndsAfterAge.",
+    "maxLoan": "Smallest of the MSR loan, the TDSR loan (bank only) and the LTV loan, ROUNDED DOWN to the whole dollar. limitingRule: MSR | TDSR | LTV."
+  },
+  "_units": "All money in integer cents. Rates and LTV as decimals.",
+  "_rulesetNote": "Loan rules in ruleset shape, using seat 2's key names as agreed on #30 (loans.hdbLoanTenure, loans.stressTestRate, loans.ltv.hdbLoan.leaseMustCoverYoungestToAge). Kept here so a ruleset update can't silently change these expected values.",
+  "ruleset": {
+    "loans": {
+      "msrPercent": 30,
+      "tdsrPercent": 55,
+      "ltv": {
+        "hdbLoan": { "maxPercent": 75, "leaseMustCoverYoungestToAge": 95 },
+        "bankLoan": {
+          "maxPercent": 75,
+          "reducedMaxPercent": 55,
+          "reducedIfTenureYearsOver": 25,
+          "reducedIfLoanEndsAfterAge": 65,
+          "ageBasis": "IWAA"
+        }
+      },
+      "maxTenureYears": { "hdbLoan": 25, "bankLoanHdbFlats": 30 },
+      "hdbLoanTenure": { "ageLimit": 65, "ageBasis": "AVERAGE", "leaseBufferYears": 20 },
+      "stressTestRate": { "hdbLoanFloor": 0.03, "bankLoanFloor": 0.04 }
+    }
+  },
+  "cases": [
+    {
+      "id": "A1-hdb-ltv-binds",
+      "description": "HDB loan, new flat: the MSR loan is above the LTV loan, so LTV binds.",
+      "inputs": {
+        "loanType": "HDB",
+        "applicants": [
+          { "age": 30, "monthlyIncomeCents": 350000 },
+          { "age": 32, "monthlyIncomeCents": 350000 }
+        ],
+        "purchasePriceCents": 50000000,
+        "remainingLeaseYears": 99,
+        "tenureAskedYears": 25,
+        "loanRate": 0.026
+      },
+      "expected": {
+        "assessmentRate": 0.03,
+        "ageUsed": 31,
+        "tenureYears": 25,
+        "msrLoanCents": 44284055,
+        "tdsrLoanCents": null,
+        "ltvApplied": 0.75,
+        "ltvProrated": false,
+        "ltvLoanCents": 37500000,
+        "maxLoanCents": 37500000,
+        "limitingRule": "LTV"
+      }
+    },
+    {
+      "id": "A2-hdb-msr-binds",
+      "description": "HDB loan, new flat, lower income: MSR binds; the max loan is floored to the dollar.",
+      "inputs": {
+        "loanType": "HDB",
+        "applicants": [
+          { "age": 30, "monthlyIncomeCents": 200000 },
+          { "age": 32, "monthlyIncomeCents": 200000 }
+        ],
+        "purchasePriceCents": 40000000,
+        "remainingLeaseYears": 99,
+        "tenureAskedYears": 25,
+        "loanRate": 0.026
+      },
+      "expected": {
+        "assessmentRate": 0.03,
+        "ageUsed": 31,
+        "tenureYears": 25,
+        "msrLoanCents": 25305174,
+        "tdsrLoanCents": null,
+        "ltvApplied": 0.75,
+        "ltvProrated": false,
+        "ltvLoanCents": 30000000,
+        "maxLoanCents": 25305100,
+        "limitingRule": "MSR"
+      }
+    },
+    {
+      "id": "A3-bank-30-years",
+      "description": "Bank loan, 30 years: assessed at the 4% floor; IWAA 35.89 rounds up to 36; tenure 30 > 25 (and 36 + 30 > 65), so the reduced 55% LTV applies and binds.",
+      "_status": "maxLoanCents and limitingRule are final (LTV binds at any floor below ~9.2%). msrLoanCents and tdsrLoanCents assume the 4% bank floor; seat 2 to confirm a current MAS source.",
+      "inputs": {
+        "loanType": "BANK",
+        "applicants": [
+          { "age": 35, "monthlyIncomeCents": 500000 },
+          { "age": 37, "monthlyIncomeCents": 400000 }
+        ],
+        "purchasePriceCents": 60000000,
+        "remainingLeaseYears": 99,
+        "tenureAskedYears": 30,
+        "loanRate": null
+      },
+      "expected": {
+        "assessmentRate": 0.04,
+        "ageUsed": 36,
+        "tenureYears": 30,
+        "msrLoanCents": 56554535,
+        "tdsrLoanCents": 103683314,
+        "ltvApplied": 0.55,
+        "ltvProrated": false,
+        "ltvLoanCents": 33000000,
+        "maxLoanCents": 33000000,
+        "limitingRule": "LTV"
+      }
+    },
+    {
+      "id": "A4-hdb-older-couple",
+      "description": "HDB loan, ages 50 and 52: average age 51 caps tenure at 65 - 51 = 14 years, so MSR binds.",
+      "inputs": {
+        "loanType": "HDB",
+        "applicants": [
+          { "age": 50, "monthlyIncomeCents": 250000 },
+          { "age": 52, "monthlyIncomeCents": 250000 }
+        ],
+        "purchasePriceCents": 45000000,
+        "remainingLeaseYears": 99,
+        "tenureAskedYears": 25,
+        "loanRate": 0.026
+      },
+      "expected": {
+        "assessmentRate": 0.03,
+        "ageUsed": 51,
+        "tenureYears": 14,
+        "msrLoanCents": 20556523,
+        "tdsrLoanCents": null,
+        "ltvApplied": 0.75,
+        "ltvProrated": false,
+        "ltvLoanCents": 33750000,
+        "maxLoanCents": 20556500,
+        "limitingRule": "MSR"
+      }
+    },
+    {
+      "id": "A5-hdb-short-lease",
+      "description": "HDB loan, resale with 40 years left: the lease cap (40 - 20 = 20) sets tenure, and 30 + 40 = 70 < 95, so LTV is pro-rated. LTV binds under any pro-rating (unprorated LTV loan $262,500 < MSR loan $432,746.19).",
+      "_status": "Pending seat 2's pro-rating formula: ltvApplied, ltvLoanCents and maxLoanCents are not in expected yet (maxLoanCents = floor($262,500 x pro-rating factor)).",
+      "inputs": {
+        "loanType": "HDB",
+        "applicants": [
+          { "age": 30, "monthlyIncomeCents": 400000 },
+          { "age": 32, "monthlyIncomeCents": 400000 }
+        ],
+        "purchasePriceCents": 35000000,
+        "remainingLeaseYears": 40,
+        "tenureAskedYears": 25,
+        "loanRate": 0.026
+      },
+      "expected": {
+        "assessmentRate": 0.03,
+        "ageUsed": 31,
+        "tenureYears": 20,
+        "msrLoanCents": 43274619,
+        "tdsrLoanCents": null,
+        "ltvProrated": true,
+        "limitingRule": "LTV"
+      }
+    }
+  ]
+}
