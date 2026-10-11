@@ -4,16 +4,18 @@
 const nextYear = new Date().getFullYear() + 1;
 
 // Fills each plan step with valid input so validation lets the stepper move on.
+// Contract v2: exactly two buyers (at least one SC); "compare in year" is optional, so it is left blank.
 function fillSituation() {
-  cy.get('[data-cy=situation-buyer-1-age-input]').type('30');
-  cy.get('[data-cy=situation-buyer-1-citizenship-select]').select('SC');
-  cy.get('[data-cy=situation-buyer-1-first-timer-switch]').check();
-  cy.get('[data-cy=situation-buyer-1-income-input]').type('5000');
-  cy.get('[data-cy=situation-buyer-1-cpf-input]').type('40000');
+  [1, 2].forEach((n) => {
+    cy.get(`[data-cy=situation-buyer-${n}-age-input]`).type(n === 1 ? '30' : '29');
+    cy.get(`[data-cy=situation-buyer-${n}-citizenship-select]`).select('SC');
+    cy.get(`[data-cy=situation-buyer-${n}-first-timer-switch]`).check();
+    cy.get(`[data-cy=situation-buyer-${n}-income-input]`).type('5000');
+    cy.get(`[data-cy=situation-buyer-${n}-cpf-input]`).type('40000');
+  });
   cy.get('[data-cy=situation-cash-savings-input]').type('20000');
   cy.get('[data-cy=situation-price-growth-input]').type('3');
   cy.get('[data-cy=situation-income-growth-input]').type('2');
-  cy.get('[data-cy=situation-horizon-input]').type('10');
 }
 
 function fillPath(prefix, flatType, leaseBand) {
