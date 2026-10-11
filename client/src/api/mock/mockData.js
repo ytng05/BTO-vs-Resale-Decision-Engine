@@ -271,40 +271,45 @@ export function mockGrants(payload) {
   };
 }
 
-// MOCK BTO projects for the Path A form (real one: GET /api/data/bto-projects, seat 3).
-// Three projects in the API's shape (prices in cents), filtered the same way the route filters.
+// MOCK BTO projects (real one: GET /api/data/bto-projects, seat 3). Same shape as the route: prices in cents,
+// before grants; top-level priceMinCents/priceMaxCents when one flatType is asked for. Filtered like the route.
 const MOCK_BTO_PROJECTS = [
-  { id: 'tampines-bliss', name: 'MOCK Tampines Bliss', town: 'TAMPINES', classification: 'STANDARD', launch: '2026-02', waitMonths: 23,
+  { id: 'tampines-bliss', name: 'MOCK Tampines Bliss', town: 'TAMPINES', classification: 'STANDARD', launch: '2026-02', waitMonths: 23, subsidyRecoveryRate: 0,
     flats: [{ flatType: '3 ROOM', priceMinCents: 36_300_000, priceMaxCents: 44_400_000 }, { flatType: '4 ROOM', priceMinCents: 48_100_000, priceMaxCents: 60_000_000 }] },
-  { id: 'tampines-nova', name: 'MOCK Tampines Nova', town: 'TAMPINES', classification: 'PLUS', launch: '2026-02', waitMonths: 32,
+  { id: 'tampines-nova', name: 'MOCK Tampines Nova', town: 'TAMPINES', classification: 'PLUS', launch: '2026-02', waitMonths: 32, subsidyRecoveryRate: 0.06,
     flats: [{ flatType: '4 ROOM', priceMinCents: 45_900_000, priceMaxCents: 60_200_000 }] },
-  { id: 'ping-yi-court', name: 'MOCK Ping Yi Court', town: 'BEDOK', classification: 'STANDARD', launch: '2025-10', waitMonths: 33,
+  { id: 'ping-yi-court', name: 'MOCK Ping Yi Court', town: 'BEDOK', classification: 'STANDARD', launch: '2025-10', waitMonths: 33, subsidyRecoveryRate: 0,
     flats: [{ flatType: '4 ROOM', priceMinCents: 49_800_000, priceMaxCents: 62_400_000 }, { flatType: '5 ROOM', priceMinCents: 71_500_000, priceMaxCents: 85_700_000 }] },
-].map((p) => ({ ...p, sourceUrl: 'https://www.hdb.gov.sg', verified: false, priceBasis: 'BEFORE_GRANTS' }));
+].map((p) => ({ ...p, priceBasis: 'BEFORE_GRANTS', sourceUrl: 'https://www.hdb.gov.sg', sourceAccessed: '2026-10-11', verified: false }));
 
 export function mockBtoProjects({ town, flatType, classification } = {}) {
   const projects = MOCK_BTO_PROJECTS
     .filter((p) => (!town || p.town === town) && (!classification || p.classification === classification))
     .map((p) => ({ ...p, flats: flatType ? p.flats.filter((f) => f.flatType === flatType) : p.flats }))
-    .filter((p) => p.flats.length > 0);
+    .filter((p) => p.flats.length > 0)
+    .map((p) => (p.flats.length === 1 ? { ...p, priceMinCents: p.flats[0].priceMinCents, priceMaxCents: p.flats[0].priceMaxCents } : p));
   return {
     mock: true,
-    projects,
     count: projects.length,
+    projects,
     towns: [...new Set(MOCK_BTO_PROJECTS.map((p) => p.town))].sort(),
     dataAsOf: '2026-02',
     source: 'MOCK',
   };
 }
 
-export function mockResalePrice() {
+// MOCK resale price basis (real one: GET /api/data/resale-price, seat 3). Money in cents (D14).
+export function mockResalePrice({ town = 'MOCK TOWN', flatType = '4 ROOM' } = {}) {
   return {
     mock: true,
-    town: 'MOCK TOWN', flatType: '4 ROOM',
-    window: { from: '2025-11', to: '2026-10', months: 12 },
-    count: 100, median: 500000, p25: 450000, p75: 550000, medianPricePerSqm: 5000, lowSample: false,
+    town, flatType,
+    window: { from: '2025-10', to: '2026-09', months: 12 },
+    count: 100,
+    medianPriceCents: 50_000_000, p25PriceCents: 45_000_000, p75PriceCents: 55_000_000,
+    medianPricePerSqmCents: 500_000, medianFloorAreaSqm: 93, medianRemainingLeaseYears: 72.5,
+    lowSample: false,
     source: { datasetId: 'MOCK', name: 'MOCK resale data' },
-    cached: false, fetchedAt: '2026-01-01T00:00:00.000Z',
+    cached: false, stale: false, fetchedAt: '2026-01-01T00:00:00.000Z',
   };
 }
 
@@ -320,6 +325,55 @@ export function mockRpi() {
       { quarter: '2026-Q1', index: 99 }, { quarter: '2026-Q2', index: 100 },
     ],
     source: { datasetId: 'MOCK', name: 'MOCK Resale Price Index' },
-    cached: false, fetchedAt: '2026-01-01T00:00:00.000Z',
+    cached: false, stale: false, fetchedAt: '2026-01-01T00:00:00.000Z',
   };
+}
+
+// Mock auth: no real server, so accounts are "registered" into localStorage for the length of the
+// browser session. Lets the login/register screens and the route guard be built and demoed before
+// seat 3's /api/auth routes exist. Shape matches docs/API_CONTRACT.md: { token, user }.
+// Errors mimic the axios shape (err.response.data.error.message) so auth.js handles mock and real
+// errors identically.
+const MOCK_USERS_KEY = 'hdb-app:mock-users';
+
+function mockApiError(status, code, message) {
+  const err = new Error(message);
+  err.response = { status, data: { error: { code, message } } };
+  return err;
+}
+
+function readMockUsers() {
+  try {
+    return JSON.parse(localStorage.getItem(MOCK_USERS_KEY)) ?? [];
+  } catch {
+    return [];
+  }
+}
+
+function writeMockUsers(users) {
+  try {
+    localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
+  } catch {
+    // best-effort; mock mode is a dev convenience, not durable storage
+  }
+}
+
+function mockToken(email) {
+  return `mock.${btoa(email)}.${Date.now()}`;
+}
+
+export async function mockRegister({ name, email, password } = {}) {
+  if (!name || !email || !password) throw mockApiError(400, 'VALIDATION_ERROR', 'Name, email and password are required.');
+  if (password.length < 8) throw mockApiError(400, 'VALIDATION_ERROR', 'Password must be at least 8 characters.');
+  const users = readMockUsers();
+  if (users.some((u) => u.email === email)) throw mockApiError(409, 'EMAIL_TAKEN', 'That email is already registered.');
+  users.push({ name, email, password }); // MOCK ONLY: plaintext in localStorage, never done server-side
+  writeMockUsers(users);
+  return { token: mockToken(email), user: { id: email, name, email } };
+}
+
+export async function mockLogin({ email, password } = {}) {
+  const user = readMockUsers().find((u) => u.email === email && u.password === password);
+  if (!user) throw mockApiError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect.');
+  return { token: mockToken(email), user: { id: user.email, name: user.name, email: user.email } };
 }

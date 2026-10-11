@@ -311,3 +311,65 @@ a:focus-visible,
   outline: 2px solid $primary;
   outline-offset: 2px;
 }
+
+// ---- Financial dashboard (feature 2) ----------------------------------------------
+// Summary card accents, chart and map boxes. BTO = $primary, resale = $warning, matching the heatmap (UI.md §3).
+
+.dash-card--bto { border-top: 4px solid $primary; }
+.dash-card--resale { border-top: 4px solid $warning; }
+
+.dash-chart {
+  position: relative;
+  width: 100%;
+  height: 18rem;
+
+  &--tall { height: 26rem; }
+}
+
+.dash-map {
+  height: 14rem;
+  border-radius: $radius-md;
+  border: 1px solid $border;
+}
+
+.dash-dot {
+  display: inline-block;
+  width: $space-3;
+  height: $space-3;
+  border-radius: 50%;
+  margin-right: $space-2;
+  vertical-align: middle;
+
+  &--bto { background: $primary; }
+  &--resale { background: $warning; }
+}
+
+// Grants table: on phones each grant stacks, with "BTO" / "Resale" written above its cell
+@include media-breakpoint-down(md) {
+  .dash-grants {
+    thead { display: none; }
+    tr, th, td { display: block; }
+    tr { border-bottom: 1px solid $border-subtle; padding: $space-2 0; }
+    th, td { border: 0; padding: $space-1 0; }
+
+    td::before {
+      content: attr(data-label);
+      display: block;
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--bs-secondary-color);
+    }
+  }
+}
+
+// Line the "Check" button up with the inputs (which have a label above them)
+@include media-breakpoint-up(sm) {
+  .dash-phg-button { margin-top: 1.85rem; }
+}
+
+@include media-breakpoint-up(lg) {
+  .dash-whatif {
+    position: sticky;
+    top: $space-5;
+  }
+}
