@@ -4,6 +4,7 @@ import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
+import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
 import { validateStep } from '../validation/planValidation.js';
@@ -138,6 +139,18 @@ onMounted(load);
             :horizon-year="horizonYear"
             cy-prefix="results-pathb"
           />
+        </div>
+      </div>
+
+      <div v-if="result.outcomeA && result.outcomeB" class="card mb-3">
+        <div class="card-body">
+          <h2 class="h5">Net position over time</h2>
+          <p class="text-secondary">
+            How much you'd own outright each year, before selling. For what makes up the figure at
+            {{ horizonYear }} itself, see the
+            <RouterLink to="/dashboard" data-cy="results-cashflow-dashboard-link">financial dashboard</RouterLink>.
+          </p>
+          <CashFlowOverTimeChart :outcome-a="result.outcomeA" :outcome-b="result.outcomeB" :horizon-year="horizonYear" />
         </div>
       </div>
 
