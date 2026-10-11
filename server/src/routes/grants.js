@@ -33,7 +33,7 @@ router.post('/grants', (req, res) => {
       cpfOaBalance: centsToDollars(cpfOaBalanceCents),
     })),
   };
-  const assessmentDate = req.body.assessmentDate ?? `${choice.purchaseYear}-01-01`;
+  const assessmentDate = req.body.assessmentDate ?? `${choice.applicationYear}-01-01`;
   const { ruleset, version, status } = loadRuleset();
   const result = evaluateGrants(grantsProfile, choice, assessmentDate, ruleset);
   const grants = grantGroups.map((grantGroup) => ({
@@ -64,6 +64,9 @@ function validateGrantRequest(body) {
   if (applicants.length > 2) {
     return 'profile.applicants must contain no more than two applicants.';
   }
+  if (!applicants.some((applicant) => applicant?.citizenship === 'SC')) {
+    return 'At least one buyer must be a Singapore Citizen (D21).';
+  }
 
   const requiredApplicantFields = ['age', 'citizenship', 'firstTimer', 'monthlyIncomeCents', 'cpfOaBalanceCents'];
   for (const [index, applicant] of applicants.entries()) {
@@ -84,8 +87,8 @@ function validateGrantRequest(body) {
   if (!['BTO', 'RESALE'].includes(body?.choice?.path)) {
     return "choice.path must be either 'BTO' or 'RESALE'.";
   }
-  if (!Number.isInteger(body.choice.purchaseYear)) {
-    return 'choice.purchaseYear must be a four-digit calendar year.';
+  if (!Number.isInteger(body.choice.applicationYear)) {
+    return 'choice.applicationYear is required and must be a four-digit calendar year.';
   }
 
   return null;
