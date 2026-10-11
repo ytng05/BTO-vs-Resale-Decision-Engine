@@ -30,11 +30,13 @@ net position at horizon =   market value of the flat at the horizon year
                           − cumulative housing cash spent from the start year to the horizon year
 ```
 
-- **Why the CPF refund obligation, and why it's fair.** Every dollar of CPF used for housing lowers the household's
-  OA by that dollar plus the interest it would have earned, which is exactly the refund obligation. So this measure
-  ranks the two paths **identically** to "total wealth including the CPF OA balance": the two differ only by the OA
-  balance the household would have had without buying, which is the same on both paths. Using the obligation means
-  no CPF contribution model is needed, and it comes straight from `computeAccruedInterest()`.
+- **Why the CPF refund obligation, and why it's fair.** Every dollar of the household's **own OA savings** used for
+  housing lowers their OA by that dollar plus the interest it would have earned, which is exactly the refund
+  obligation on those savings. So the measure ranks the two paths the same way as "total wealth including the CPF OA
+  balance": the two differ only by the OA balance the household would have had without buying, which is the same on
+  both paths. Using the obligation means no CPF contribution model is needed, and it comes straight from
+  `computeAccruedInterest()`. *Corrected 2026-10-11 (seat 2 on #49, ytng on #47): this holds for OA savings only, not
+  for grants, which were never in that OA; see "Amendment: grants" below.*
 - **Housing cash spent, not "cash accumulated".** D19 defers a savings model. Income and other spending are the
   same on both paths, so they cancel out. Counting only housing cash out (upfront cash, the cash part of
   instalments, the cash-paid part of stamp duty and fees, rent while waiting) gives the same comparison without
@@ -135,14 +137,21 @@ they'd have had without buying, and on sale its refund (with accrued interest) g
 refund on sale), not to the government. Subtracting it as a debt with no matching asset made every grant lower net
 position by its accrued interest (E1's $125,000 of grants: about $9,700 lower; E2's $30,000: about $4,200 lower).
 
-The measure now adds the grant part back:
+The measure now counts only the refund of the household's own OA savings; the grant refund is reported as
+information (ytng on #47, as contract reviewer):
 
 ```
 net position at horizon =   market value − outstanding loan
-                          − CPF refund obligation (principal + accrued interest)
-                          + grant part of that refund (grants used + their accrued interest)
+                          − CPF savings refund (own OA used + accrued interest)
                           − clawback − cumulative housing cash spent
 ```
+
+Contract: `cpfSavingsRefundPrincipalCents` and `cpfSavingsAccruedInterestCents` are in net position;
+`grantRefundPrincipalCents` and `grantRefundAccruedInterestCents` are information only; the yearly
+`cpfSavingsObligationEndCents` is the savings refund at each 31 Dec. The savings refund is its own D12 run and is
+canonical; grant interest is the combined run's interest less it, so the parts add up to one combined run to the cent.
+`cpfRefundPrincipalCents`, `cpfAccruedInterestCents` and the yearly `cpfObligationEndCents` stay as combined totals,
+deprecated, until the client stops reading them.
 
 This is seat 2's option (a), the wealth view: the whole refund returns to the household's CPF, and their own OA used
 (plus the interest it would have earned) is the cost. Option (b), leaving CPF out on both sides, was not taken: it

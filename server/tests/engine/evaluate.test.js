@@ -43,12 +43,25 @@ describe.each(fixture.cases.map((c) => [c.id, c]))('evaluate: %s', (_id, c) => {
     expect(run(c).yearlyCashFlow).toEqual(c.expectedYearlyCashFlow);
   });
 
-  it('net position is the D1 sum of its parts', () => {
+  it('net position is the D1 sum of its parts (CPF savings refund only)', () => {
     const o = run(c);
     expect(o.netPositionCents).toBe(
-      o.marketValueAtHorizonCents - o.outstandingLoanAtHorizonCents - o.cpfRefundPrincipalCents
-        - o.cpfAccruedInterestCents + o.cpfGrantRefundCents - o.clawbackCents - o.housingCashSpentCents,
+      o.marketValueAtHorizonCents - o.outstandingLoanAtHorizonCents - o.cpfSavingsRefundPrincipalCents
+        - o.cpfSavingsAccruedInterestCents - o.clawbackCents - o.housingCashSpentCents,
     );
+  });
+
+  it('savings + grant refund parts equal the deprecated combined fields, to the cent', () => {
+    const o = run(c);
+    expect(o.cpfSavingsRefundPrincipalCents + o.grantRefundPrincipalCents).toBe(o.cpfRefundPrincipalCents);
+    expect(o.cpfSavingsAccruedInterestCents + o.grantRefundAccruedInterestCents).toBe(o.cpfAccruedInterestCents);
+  });
+
+  it('the horizon-year row carries the horizon refunds: savings-only and the deprecated combined one', () => {
+    const o = run(c);
+    const last = o.yearlyCashFlow.at(-1);
+    expect(last.cpfSavingsObligationEndCents).toBe(o.cpfSavingsRefundPrincipalCents + o.cpfSavingsAccruedInterestCents);
+    expect(last.cpfObligationEndCents).toBe(o.cpfRefundPrincipalCents + o.cpfAccruedInterestCents);
   });
 });
 
