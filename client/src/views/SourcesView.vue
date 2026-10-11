@@ -28,6 +28,8 @@ const ruleLabels = {
   'grants.proximityHousingGrant.nearDistanceKm': 'PHG near-distance threshold',
   'cpf.oaInterestRate': 'CPF OA interest rate',
   'cpf.accruedInterestCompounding': 'Accrued interest method',
+  'cpf.housingUsageLeaseRule.leaseMustCoverYoungestToAge': 'CPF usage: lease must cover youngest buyer to age',
+  'cpf.housingUsageLeaseRule.leaseProRating.percentPerYearShort': 'CPF usage pro-rating: reduction per year short of 95',
   'loans.msrPercent': 'Mortgage Servicing Ratio (MSR)',
   'loans.tdsrPercent': 'Total Debt Servicing Ratio (TDSR)',
   'loans.ltv.hdbLoan.maxPercent': 'LTV: HDB loan maximum',
@@ -238,7 +240,7 @@ function collectRules(value, path, rows, tierTables, activeRules) {
       if (statedNote) rows.slice(rowsBefore).forEach((row) => { row.note = `Stated assumption: ${statedNote}`; });
     });
     if (isDerivedAssumption(value._note)) {
-      rows.slice(firstRow).forEach((row) => { row.note = 'Derived assumption: HDB does not publish this formula.'; });
+      rows.slice(firstRow).forEach((row) => { row.note = 'Derived assumption: not a published formula.'; });
     }
     return;
   }
@@ -338,7 +340,7 @@ const assumptions = computed(() => [
   { title: 'Employment', description: '12-month employment condition is assumed for applicants.' },
   { title: 'Income averaging', description: 'Monthly income is treated as the 12-month average at assessment.' },
   { title: 'EHG lease pro-rating', description: 'Pro-rating is not applied; actual EHG may be lower when the lease does not cover the youngest buyer to age 95.' },
-  { title: 'HDB loan LTV lease pro-rating', description: 'HDB and CPF do not publish a formula. We assume LTV falls 2% for each year the lease is short of 95, based on the 2019 MOM/CPF worked examples.' },
+  { title: 'HDB loan LTV lease pro-rating', description: 'HDB does not publish a formula. We assume LTV falls 2% for each year the lease is short of 95, using the 2019 MOM/CPF examples for CPF usage limits (two data points).' },
   { title: 'PHG near distance', description: 'Whether your home is near your parents or child is declared by you; no distance is measured.' },
   { title: 'Rules held constant', description: `Current rules (ruleset ${response.value?.version ?? 'not yet verified'}) are held constant in projections.` },
   { title: 'Legal & agent fees', description: 'Estimates; these are not verified policy values.' },

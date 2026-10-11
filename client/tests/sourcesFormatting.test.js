@@ -18,6 +18,7 @@ describe('Sources view BTO waiting rules', () => {
 describe('Sources view derived assumptions', () => {
   it('recognises ruleset notes that flag a derived assumption', () => {
     expect(isDerivedAssumption('DERIVED ASSUMPTION: no published formula.')).toBe(true);
+    expect(isDerivedAssumption('DERIVED: fitted to the 2019 MOM/CPF examples.')).toBe(true);
     expect(isDerivedAssumption('Assess with the higher of the floor and the actual rate')).toBe(false);
     expect(isDerivedAssumption(undefined)).toBe(false);
   });
@@ -39,6 +40,8 @@ describe('Sources view loan additions', () => {
     expect(formatRuleValue('loans.hdbLoanTenure.leaseBufferYears', 20)).toBe('20 years');
     expect(formatRuleValue('loans.ltv.hdbLoan.leaseMustCoverYoungestToAge', 95)).toBe('age 95');
     expect(formatRuleValue('loans.ltv.hdbLoan.leaseProRating.percentPerYearShort', 2)).toBe('2% per year');
+    expect(formatRuleValue('cpf.housingUsageLeaseRule.leaseMustCoverYoungestToAge', 95)).toBe('age 95');
+    expect(formatRuleValue('cpf.housingUsageLeaseRule.leaseProRating.percentPerYearShort', 2)).toBe('2% per year');
     expect(formatRuleValue('loans.hdbLoanOaRetentionPerBuyer', 20000)).toBe('$20,000');
     expect(formatRuleValue('btoWaiting.monthsToAgreementForLease', 9)).toBe('9 months');
     expect(formatRuleValue('loans.stressTestRate.hdbLoanFloor', 0.03)).toBe('3%');

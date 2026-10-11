@@ -125,10 +125,18 @@
     "partialMonthTreatment": "EXCLUDE_BOTH",
     "_partialMonthTreatmentNote": "Team assumption (DECISIONS.md D12): EXCLUDE_BOTH, pending CPF Board confirmation. Alternative considered: INCLUDE_BOTH, based on CPF's general interest rule (withdrawals stop earning from the month they occur; refunds earn from the next month).",
     "_compoundingNote": "Computed monthly at the OA rate, compounded yearly (CPF Board)",
+    "housingUsageLeaseRule": {
+      "leaseMustCoverYoungestToAge": 95,
+      "leaseProRating": {
+        "percentPerYearShort": 2,
+        "_note": "DERIVED: fitted to the 2019 MOM/CPF examples of CPF usage limits (two data points: 25-year-old, 65-year lease → 90%; 55-year lease → 70%). If the lease doesn't cover the youngest buyer to 95, CPF usage is pro-rated by this factor."
+      }
+    },
     "sources": [
       "https://ask.gov.sg/cpf/questions/cm0f52kzh01d1pz7aq4i1wz4y",
       "https://www.cpf.gov.sg/service/article/how-is-my-cpf-interest-computed-and-credited-into-my-accounts",
-      "https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027"
+      "https://www.cpf.gov.sg/member/infohub/news/news-releases/government-extends-4-per-cent-interest-rate-floor-on-special-medisave-and-retirement-account-monies-until-31-december-2027",
+      "https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life"
     ]
   },
   "loans": {
@@ -140,7 +148,7 @@
         "leaseMustCoverYoungestToAge": 95,
         "leaseProRating": {
           "percentPerYearShort": 2,
-          "_note": "DERIVED ASSUMPTION: HDB/CPF don't publish a formula. factor = 1 − 2% × years short of 95 (capped at 1), consistent with the worked examples in the 2019 MOM/CPF press release (25-year-old, 65-year lease → 90%; 55-year lease → 70%). LTV = maxPercent × factor."
+          "_note": "DERIVED ASSUMPTION: HDB doesn't publish an LTV pro-rating formula. factor = 1 − 2% × years short of 95 (capped at 1), derived from the 2019 MOM/CPF examples of CPF USAGE limits (two data points: 25-year-old, 65-year lease → 90%; 55-year lease → 70%) and assumed to apply to the HDB loan LTV. LTV = maxPercent × factor."
         }
       },
       "bankLoan": {

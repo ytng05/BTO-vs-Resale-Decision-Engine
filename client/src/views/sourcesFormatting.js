@@ -97,7 +97,7 @@ export function formatRuleValue(path, value) {
 }
 
 export function isDerivedAssumption(note) {
-  return typeof note === 'string' && note.startsWith('DERIVED ASSUMPTION');
+  return typeof note === 'string' && note.startsWith('DERIVED');
 }
 
 export function statedAssumptionText(note) {
