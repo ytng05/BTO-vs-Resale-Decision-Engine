@@ -313,17 +313,48 @@ export function mockResalePrice({ town = 'MOCK TOWN', flatType = '4 ROOM' } = {}
   };
 }
 
+// Quarters from `start` (inclusive) to `end` (inclusive), both 'YYYY-Qn'. Used to build the mock RPI
+// series and (by the real route, independently) to walk `from`/`to` query ranges.
+function quartersFrom(start, end) {
+  const [sy, sq] = start.split('-Q').map(Number);
+  const [ey, eq] = end.split('-Q').map(Number);
+  const out = [];
+  for (let n = sy * 4 + (sq - 1); n <= ey * 4 + (eq - 1); n += 1) {
+    out.push(`${Math.floor(n / 4)}-Q${(n % 4) + 1}`);
+  }
+  return out;
+}
+
+// Annualised growth between the series' last point and the one `years` back (same convention as the
+// real /api/data/rpi route: measured back from the latest quarter, historical only, not a forecast).
+function annualGrowth(series, years) {
+  const n = years * 4;
+  if (series.length <= n) return null;
+  const now = series[series.length - 1].index;
+  const then = series[series.length - 1 - n].index;
+  return Math.round((((now / then) ** (1 / years) - 1) * 1000)) / 1000;
+}
+
 export function mockRpi() {
+  // ~20.5 years of mock history so the era filter (5y/10y/20y/all) has something to show. A gentle
+  // upward trend with a GFC-era dip (2008-2009) and a flatter cooling-measures stretch (2013-2016),
+  // for a shape that looks like real HDB RPI data, not a straight line. Base 2009-Q1 = 100.
+  const quarters = quartersFrom('2006-Q1', '2026-Q2');
+  const series = quarters.map((quarter, i) => {
+    const q09 = quartersFrom('2006-Q1', '2009-Q1').length - 1; // index of 2009-Q1, the base quarter
+    let index = 100 * 1.008 ** (i - q09); // ~3.3%/yr baseline compounding off the base quarter
+    if (i >= q09 - 4 && i < q09 + 2) index *= 0.9; // GFC dip either side of the base quarter
+    if (quarter >= '2013-Q1' && quarter <= '2016-Q4') index *= 0.97; // cooling-measures flat stretch
+    return { quarter, index: Math.round(index * 10) / 10 };
+  });
+
   return {
     mock: true,
     base: '2009-Q1 = 100',
-    latest: { quarter: '2026-Q2', index: 100 },
-    historicalAnnualGrowth: { '5y': 0.03, '10y': 0.03, '20y': 0.03 },
-    count: 4,
-    series: [
-      { quarter: '2025-Q3', index: 97 }, { quarter: '2025-Q4', index: 98 },
-      { quarter: '2026-Q1', index: 99 }, { quarter: '2026-Q2', index: 100 },
-    ],
+    latest: series[series.length - 1],
+    historicalAnnualGrowth: { '5y': annualGrowth(series, 5), '10y': annualGrowth(series, 10), '20y': annualGrowth(series, 20) },
+    count: series.length,
+    series,
     source: { datasetId: 'MOCK', name: 'MOCK Resale Price Index' },
     cached: false, stale: false, fetchedAt: '2026-01-01T00:00:00.000Z',
   };
