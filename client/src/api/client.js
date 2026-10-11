@@ -1,35 +1,57 @@
 // Axios (MIT) — HTTP client for the Express API.
 import axios from 'axios';
-import { mockCompare, mockGrants, mockRuleset } from './mock/mockData.js';
+import {
+  mockBtoProjects, mockCompare, mockGrants, mockLogin, mockRegister, mockResalePrice, mockRpi, mockRuleset,
+} from './mock/mockData.js';
 
 // VITE_USE_MOCK=true serves clearly-labelled MOCK data so the UI can be built before the backend exists.
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 const http = axios.create({ baseURL: '/api' });
 
 const toCents = (dollars) => (typeof dollars === 'number' ? Math.round(dollars * 100) : dollars);
+const isSet = (v) => v !== null && v !== undefined && v !== '';
+// Leaves out optional fields the user did not fill in, so the server applies its own defaults.
+const withoutUnset = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => isSet(v)));
 
-// Converts the store's shape (dollars, its own growth-rate field names) into the contract's
-// CompareRequest (cents, annualPriceGrowth/annualIncomeGrowth/holdingPeriodYears). This is the
-// one conversion boundary D14 describes — nothing else should hand-build a request.
+// One choice as the contract's RequestChoice: dollars become …Cents (renovationCents, btoPriceCents).
+function toRequestChoice(choice) {
+  const { btoPrice, renovation, ...rest } = choice;
+  return withoutUnset({
+    ...rest,
+    btoPriceCents: isSet(btoPrice) ? toCents(btoPrice) : null,
+    renovationCents: toCents(renovation ?? 0),
+  });
+}
+
+// Converts the store's shape (dollars) into the contract's CompareRequest (cents), contract v2/v2.1.
+// This is the one conversion boundary D14 describes — nothing else should hand-build a request.
 export function toCompareRequest(store) {
+  const a = store.assumptions;
   return {
     profile: {
-      applicants: store.profile.applicants.map((a) => ({
-        age: a.age,
-        citizenship: a.citizenship,
-        firstTimer: a.firstTimer,
-        monthlyIncomeCents: toCents(a.monthlyIncome),
-        cpfOaBalanceCents: toCents(a.cpfOaBalance),
+      applicants: store.profile.applicants.map((p) => ({
+        age: p.age,
+        citizenship: p.citizenship,
+        firstTimer: p.firstTimer,
+        monthlyIncomeCents: toCents(p.monthlyIncome),
+        cpfOaBalanceCents: toCents(p.cpfOaBalance),
       })),
       cashSavingsCents: toCents(store.profile.cashSavings),
+      constraints: withoutUnset({ moveInByYear: store.profile.constraints?.moveInByYear }),
     },
-    choiceA: { ...store.choiceA },
-    choiceB: { ...store.choiceB },
-    assumptions: {
-      annualPriceGrowth: store.assumptions.priceGrowth,
-      annualIncomeGrowth: store.assumptions.incomeGrowth,
-      holdingPeriodYears: store.assumptions.horizonYears,
-    },
+    choiceA: toRequestChoice(store.choiceA),
+    choiceB: toRequestChoice(store.choiceB),
+    assumptions: withoutUnset({
+      annualPriceGrowth: a.annualPriceGrowth,
+      annualIncomeGrowth: a.annualIncomeGrowth,
+      horizonYear: a.horizonYear,
+      // Rent until keys, both paths; 0 = living with parents (D1, D22).
+      monthlyHousingCostWhileWaitingCents: toCents(a.monthlyHousingCostWhileWaiting ?? 0),
+      loanTenureYears: a.loanTenureYears,
+      loanType: a.loanType,
+      legalFeesCents: isSet(a.legalFees) ? toCents(a.legalFees) : null,
+      agentFeesCents: isSet(a.agentFees) ? toCents(a.agentFees) : null,
+    }),
   };
 }
 
@@ -44,9 +66,41 @@ export async function getRuleset() {
   return (await http.get('/ruleset')).data;
 }
 
+// { name?, email, password } -> { token, user }. See docs/API_CONTRACT.md "POST /api/auth/register".
+export async function register(payload) {
+  if (USE_MOCK) return mockRegister(payload);
+  return (await http.post('/auth/register', payload)).data;
+}
+
+// { email, password } -> { token, user }. See docs/API_CONTRACT.md "POST /api/auth/login".
+export async function login(payload) {
+  if (USE_MOCK) return mockLogin(payload);
+  return (await http.post('/auth/login', payload)).data;
+}
+
+// Seeded BTO projects (seat 3, GET /api/data/bto-projects). Filters are optional:
+// { town, flatType, classification }. Returns { projects, towns, dataAsOf, ... }; prices in cents.
+export async function getBtoProjects(filters = {}) {
+  if (USE_MOCK) return mockBtoProjects(filters);
+  return (await http.get('/data/bto-projects', { params: filters })).data;
+}
+
+// Resale price summary for a town + flat type (seat 3, GET /api/data/resale-price).
+export async function getResalePrice(params) {
+  if (USE_MOCK) return mockResalePrice();
+  return (await http.get('/data/resale-price', { params })).data;
+}
+
+// Resale Price Index series (seat 3, GET /api/data/rpi).
+export async function getRpi(params = {}) {
+  if (USE_MOCK) return mockRpi();
+  return (await http.get('/data/rpi', { params })).data;
+}
+
 export async function grants(payload) {
   if (USE_MOCK) return mockGrants(payload);
   return (await http.post('/grants', payload)).data;
 }
 
-// TODO (seats 3/4/5): timing(), strategy(), auth, scenarios, data endpoints. See docs/API_CONTRACT.md.
+// TODO (seat 3): scenarios (GET/POST /api/scenarios). TODO (seat 5): timing() for /api/timing.
+// strategy() dropped (future work).

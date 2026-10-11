@@ -145,4 +145,39 @@ describe('API scaffold', () => {
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
+
+  it('GET /api/data/bto-projects rejects an unknown classification', async () => {
+    const res = await request(app).get('/api/data/bto-projects?classification=LUXURY');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('BAD_REQUEST');
+  });
+
+  it('GET /api/data/bto-projects works without a database (projects come from the seed file)', async () => {
+    const res = await request(app).get('/api/data/bto-projects');
+    expect(res.status).toBe(200);
+    expect(res.body.count).toBeGreaterThan(0);
+  });
+
+    it('GET /api/data/resale-price requires a town', async () => {
+    const res = await request(app).get('/api/data/resale-price?flatType=4%20ROOM');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('BAD_REQUEST');
+  });
+
+  it('GET /api/data/resale-price rejects an unknown flat type', async () => {
+    const res = await request(app).get('/api/data/resale-price?town=TAMPINES&flatType=4RM');
+    expect(res.status).toBe(400);
+  });
+
+    it('GET /api/data/rpi rejects a malformed quarter', async () => {
+    const res = await request(app).get('/api/data/rpi?from=2024-Q5');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('BAD_REQUEST');
+  });
+
+  it('GET /api/data/rpi rejects from after to', async () => {
+    const res = await request(app).get('/api/data/rpi?from=2025-Q1&to=2024-Q1');
+    expect(res.status).toBe(400);
+  });
+
 });

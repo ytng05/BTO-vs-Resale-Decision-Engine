@@ -1,14 +1,15 @@
 <script setup>
 // One line per eligibility test, each with its own reason (docs/UI.md §8 "Explanation / reason blocks").
-// Status is written out ("Eligible" / "Not eligible"), not shown by colour alone.
+// Status is written out ("Eligible" / "Not eligible"), not shown by colour alone. sourceUrl (contract
+// v2) links each reason to its official source when seat 2's ruleset provides one.
 defineProps({
-  items: { type: Array, default: () => [] }, // [{ grant, passed, reason }], flattened from Outcome.grants[].tests by PathOutcomeCard
+  items: { type: Array, default: () => [] }, // [{ grant, passed, reason, sourceUrl }], flattened from Outcome.grants[].tests by PathOutcomeCard
   cyPrefix: { type: String, required: true }, // e.g. 'results-patha'
 });
 
 const GRANT_NAMES = {
   EHG: 'Enhanced CPF Housing Grant',
-  FAMILY_GRANT: 'CPF Housing Grant (Family)',
+  FAMILY: 'CPF Housing Grant (Family)',
   PHG: 'Proximity Housing Grant',
 };
 const grantName = (code) => GRANT_NAMES[code] ?? code;
@@ -25,6 +26,12 @@ const grantName = (code) => GRANT_NAMES[code] ?? code;
       >{{ item.passed ? 'Eligible' : 'Not eligible' }}</span>
       <br />
       <span class="text-secondary" :data-cy="`${cyPrefix}-eligibility-reason-${i}`">{{ item.reason }}</span>
+      <template v-if="item.sourceUrl">
+        <br />
+        <a :href="item.sourceUrl" target="_blank" rel="noopener" class="small" :data-cy="`${cyPrefix}-eligibility-source-${i}`">
+          Source
+        </a>
+      </template>
     </li>
   </ul>
   <p v-else class="text-secondary mb-0" :data-cy="`${cyPrefix}-eligibility-empty`">
