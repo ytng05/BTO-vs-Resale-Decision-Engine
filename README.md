@@ -4,7 +4,7 @@ IS216 Web Application Development 2, group project (SMU).
 
 Every first-time buyer in Singapore faces the same fork: take a BTO now and wait, or keep saving and buy resale later.
 This app does not forecast prices. It solves for the assumptions at which the two paths are equal and shows the result
-as a decision surface (heatmap), plus an optimal-timing search and a ranked strategy recommendation.
+as a decision surface (heatmap), plus an optimal-timing search. A ranked strategy recommendation is future work (dropped after the prof's feedback).
 A historical backtest ("risk-based verdict") is planned for later, once the first two features work.
 
 > Illustrative projection, not financial advice. Policy figures come from the versioned ruleset and are only as good as
@@ -12,18 +12,18 @@ A historical backtest ("risk-based verdict") is planned for later, once the firs
 
 ## Scope
 - HDB BTO (Standard / Plus / Prime) versus HDB resale. Executive Condominiums are out of scope.
-- Features, in build order: (1) base break-even comparison, (2) optimal timing search, (3) strategy recommendation over the full space, (4) later: risk-based verdict (historical backtest).
+- Features, in build order: (1) base break-even comparison, (2) optimal timing search, (3) later: risk-based verdict (historical backtest). Future work: strategy recommendation over the full space.
 
 ## Tech stack
 Vue 3 (Composition API), Pinia, Vue Router, Bootstrap 5 (SCSS), Chart.js | Node.js, Express, MongoDB/Mongoose, JWT + bcryptjs | Vitest, Cypress.
-External data: data.gov.sg (resale transactions, Resale Price Index, price range of flats offered) and OneMap (distance for the Proximity Housing Grant test).
+External data: data.gov.sg (resale transactions, Resale Price Index, price range of flats offered). PHG “near” status is declared by the user; no distance service is called.
 
 ## Repository layout
 ```
 server/src/engine/     pure calculation engine (seats 1 and 2): cpf, loan, costs, rules, solvers
 server/src/config/     env, feature flags, versioned ruleset JSON (rules live here, not in code)
 server/src/routes/     Express routes (contract in docs/API_CONTRACT.md)
-server/src/services/   data.gov.sg and OneMap clients (seat 3)
+server/src/services/   data.gov.sg client (seat 3)
 server/src/models/     Mongoose schemas
 client/src/            Vue app: views, components, Pinia store, API client with mock mode
 cypress/e2e/           end-to-end tests
@@ -69,23 +69,21 @@ TODO: list demo credentials here once auth is implemented.
 
 ## Deployment
 TODO (seat 3): hosting choice, environment variables, cache pre-warm on deploy, URL of the first page.
+After deploy: npm run warm -w server (need MONGODB_URI and DATAGOV_API_KEY)
 
 ## Rulesets and rule volatility
 All policy rules live in `server/src/config/rulesets/`, versioned and date-stamped. Rules moved in Aug 2024, Oct 2024,
 Aug 2025 and Aug 2026. Every saved scenario records the ruleset version that produced it, and the UI shows it.
-The shipped ruleset is a TEMPLATE with empty values to be filled from primary sources.
+The active ruleset is the dated `2026-08-24` snapshot. `ruleset.template.json` remains an empty template for future research.
 
 ## AI / LLM declaration
-Required by the module. Keep `docs/AI_USAGE_LOG.md` up to date and summarise it here before submission.
-- The initial repository scaffold (folder structure, Express and Vue boilerplate, configuration, function stubs with
-  contracts, mock data, test skeletons, documentation templates) was generated with Claude (Anthropic).
-- With TA approval, GitHub Copilot assisted with `evaluateGrants` business logic and grant tests. Policy values were read
-  from the checked-in ruleset; use is recorded in `docs/AI_USAGE_LOG.md`.
-- The calculation engine, solvers and endpoints are implemented by the team. Other AI-assisted work is listed in
-  `docs/AI_USAGE_LOG.md`.
+- The initial repository scaffold (folder structure, Express and Vue boilerplate, configuration, function stubs with contracts, mock data, test skeletons, documentation templates) was generated with Claude (Anthropic).
+- With TA approval, GitHub Copilot generated the grants eligibility logic and grant tests. The team reviewed the
+  generated logic; policy values are read from the checked-in ruleset; use is recorded in `docs/AI_USAGE_LOG.md`.
+- TODO (whole team, before submission): summarise each seat's AI use from docs/AI_USAGE_LOG.md.
 
 ## Libraries and credits
 Vue, Pinia, Vue Router (MIT), Bootstrap (MIT), Chart.js (MIT), Axios (MIT), Express (MIT), Mongoose (MIT),
 jsonwebtoken (MIT), bcryptjs (MIT/BSD), dotenv (BSD-2), Vitest (MIT), Supertest (MIT), Cypress (MIT), concurrently (MIT), Vite (MIT), Sass (MIT).
 Credit each library again in code comments where it is used, and in the presentation.
-Data: data.gov.sg (Singapore Open Data Licence), OneMap (SLA). Confirm licence wording before submission.
+Data: data.gov.sg (Singapore Open Data Licence). Confirm licence wording before submission.

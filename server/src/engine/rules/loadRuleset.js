@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const RULESET_PATH = path.resolve(here, '../../config/rulesets/ruleset.template.json');
+const RULESET_PATH = path.resolve(here, '../../config/rulesets/ruleset-2026-08-24.json');
 
 /** @returns {{ ruleset: object, version: string, status: 'TEMPLATE'|'VERIFIED' }} */
 export function loadRuleset(file = RULESET_PATH) {

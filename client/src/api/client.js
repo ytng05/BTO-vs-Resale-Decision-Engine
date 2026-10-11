@@ -1,6 +1,6 @@
 // Axios (MIT) — HTTP client for the Express API.
 import axios from 'axios';
-import { mockCompare, mockRuleset } from './mock/mockData.js';
+import { mockCompare, mockGrants, mockRuleset, mockBtoProjects, mockResalePrice, mockRpi } from './mock/mockData.js';
 
 // VITE_USE_MOCK=true serves clearly-labelled MOCK data so the UI can be built before the backend exists.
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
@@ -26,9 +26,9 @@ export function toCompareRequest(store) {
     choiceA: { ...store.choiceA },
     choiceB: { ...store.choiceB },
     assumptions: {
-      annualPriceGrowth: store.assumptions.priceGrowth,
-      annualIncomeGrowth: store.assumptions.incomeGrowth,
-      holdingPeriodYears: store.assumptions.horizonYears,
+      annualPriceGrowth: store.assumptions.annualPriceGrowth,
+      annualIncomeGrowth: store.assumptions.annualIncomeGrowth,
+      horizonYear: store.assumptions.horizonYear,
     },
   };
 }
@@ -45,3 +45,24 @@ export async function getRuleset() {
 }
 
 // TODO (seats 3/4/5): timing(), strategy(), auth, scenarios, data endpoints. See docs/API_CONTRACT.md.
+
+export async function getBtoProjects(params = {}) {
+  if (USE_MOCK) return mockBtoProjects();
+  return (await http.get('/data/bto-projects', { params })).data;
+}
+
+export async function getResalePrice(params) {
+  if (USE_MOCK) return mockResalePrice();
+  return (await http.get('/data/resale-price', { params })).data;
+}
+
+export async function getRpi(params = {}) {
+  if (USE_MOCK) return mockRpi();
+  return (await http.get('/data/rpi', { params })).data;
+}
+export async function grants(payload) {
+  if (USE_MOCK) return mockGrants(payload);
+  return (await http.post('/grants', payload)).data;
+}
+
+

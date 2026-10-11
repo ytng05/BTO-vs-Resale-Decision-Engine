@@ -2,7 +2,7 @@
 import { NotImplementedError } from '../errors.js';
 
 /**
- * Search over purchaseYear for a fixed path/town/flat type. The objective is not monotonic because
+ * Search over choice.applicationYear (contract v2) for a fixed path/town/flat type. The objective is not monotonic because
  * EHG falls in income tiers, so the best year is neither the earliest nor the latest.
  * Report it as "under these assumptions", not as a prediction.
  *

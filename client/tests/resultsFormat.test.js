@@ -57,9 +57,9 @@ describe('heatmap helpers', () => {
 
 describe('mock compare response', () => {
   it('matches the contract: fractions on the axes, outcomes for both paths', () => {
-    const res = mockCompare({ assumptions: { holdingPeriodYears: 15 } });
+    const res = mockCompare({ assumptions: { horizonYear: 2050 } });
     expect(res.grid[0][1].annualPriceGrowth).toBe(0.01);
-    expect(res.holdingPeriodYears).toBe(15);
+    expect(res.horizonYear).toBe(2050);
     for (const o of [res.outcomeA, res.outcomeB]) {
       expect(o.totalGrantsCents).toBe(o.grants.reduce((sum, g) => sum + g.amountCents, 0));
       expect(typeof o.cpfRefundPrincipalCents).toBe('number');
