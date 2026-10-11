@@ -267,7 +267,7 @@ export function mockGrants(payload) {
     grants: Object.entries(testsByGrant).map(([id, tests]) => ({ id, amountCents: 0, tests })),
     rulesetVersion: ruleset.version,
     rulesetStatus: ruleset.status,
-    assessmentDate: payload.assessmentDate ?? `${payload.choice.purchaseYear}-01-01`,
+    assessmentDate: payload.assessmentDate ?? `${payload.choice.applicationYear}-01-01`,
   };
 }
 
