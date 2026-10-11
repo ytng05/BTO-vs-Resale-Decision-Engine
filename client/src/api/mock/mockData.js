@@ -267,18 +267,64 @@ export function mockGrants(payload) {
     grants: Object.entries(testsByGrant).map(([id, tests]) => ({ id, amountCents: 0, tests })),
     rulesetVersion: ruleset.version,
     rulesetStatus: ruleset.status,
-    assessmentDate: payload.assessmentDate ?? `${payload.choice.purchaseYear}-01-01`,
+    assessmentDate: payload.assessmentDate ?? `${payload.choice.applicationYear}-01-01`,
   };
 }
 
-// MOCK distance for the dashboard's PHG map (real one: GET /api/data/distance, seat 3).
-// Two fixed points in Tampines, about 2.8 km apart, whatever postal codes are typed.
-export function mockDistance(from, to) {
+// MOCK BTO projects (real one: GET /api/data/bto-projects, seat 3). Same shape as the route: prices in cents,
+// before grants; top-level priceMinCents/priceMaxCents when one flatType is asked for. Filtered like the route.
+const MOCK_BTO_PROJECTS = [
+  { id: 'tampines-bliss', name: 'MOCK Tampines Bliss', town: 'TAMPINES', classification: 'STANDARD', launch: '2026-02', waitMonths: 23, subsidyRecoveryRate: 0,
+    flats: [{ flatType: '3 ROOM', priceMinCents: 36_300_000, priceMaxCents: 44_400_000 }, { flatType: '4 ROOM', priceMinCents: 48_100_000, priceMaxCents: 60_000_000 }] },
+  { id: 'tampines-nova', name: 'MOCK Tampines Nova', town: 'TAMPINES', classification: 'PLUS', launch: '2026-02', waitMonths: 32, subsidyRecoveryRate: 0.06,
+    flats: [{ flatType: '4 ROOM', priceMinCents: 45_900_000, priceMaxCents: 60_200_000 }] },
+  { id: 'ping-yi-court', name: 'MOCK Ping Yi Court', town: 'BEDOK', classification: 'STANDARD', launch: '2025-10', waitMonths: 33, subsidyRecoveryRate: 0,
+    flats: [{ flatType: '4 ROOM', priceMinCents: 49_800_000, priceMaxCents: 62_400_000 }, { flatType: '5 ROOM', priceMinCents: 71_500_000, priceMaxCents: 85_700_000 }] },
+].map((p) => ({ ...p, priceBasis: 'BEFORE_GRANTS', sourceUrl: 'https://www.hdb.gov.sg', sourceAccessed: '2026-10-11', verified: false }));
+
+export function mockBtoProjects({ town, flatType, classification } = {}) {
+  const projects = MOCK_BTO_PROJECTS
+    .filter((p) => (!town || p.town === town) && (!classification || p.classification === classification))
+    .map((p) => ({ ...p, flats: flatType ? p.flats.filter((f) => f.flatType === flatType) : p.flats }))
+    .filter((p) => p.flats.length > 0)
+    .map((p) => (p.flats.length === 1 ? { ...p, priceMinCents: p.flats[0].priceMinCents, priceMaxCents: p.flats[0].priceMaxCents } : p));
   return {
     mock: true,
-    from: { lat: 1.3496, lng: 103.9568, address: `MOCK flat (${from})`, postal: from },
-    to: { lat: 1.3612, lng: 103.9384, address: `MOCK parents' home (${to})`, postal: to },
-    km: 2.8,
-    source: 'OneMap (Singapore Land Authority)',
+    count: projects.length,
+    projects,
+    towns: [...new Set(MOCK_BTO_PROJECTS.map((p) => p.town))].sort(),
+    dataAsOf: '2026-02',
+    source: 'MOCK',
+  };
+}
+
+// MOCK resale price basis (real one: GET /api/data/resale-price, seat 3). Money in cents (D14).
+export function mockResalePrice({ town = 'MOCK TOWN', flatType = '4 ROOM' } = {}) {
+  return {
+    mock: true,
+    town, flatType,
+    window: { from: '2025-10', to: '2026-09', months: 12 },
+    count: 100,
+    medianPriceCents: 50_000_000, p25PriceCents: 45_000_000, p75PriceCents: 55_000_000,
+    medianPricePerSqmCents: 500_000, medianFloorAreaSqm: 93, medianRemainingLeaseYears: 72.5,
+    lowSample: false,
+    source: { datasetId: 'MOCK', name: 'MOCK resale data' },
+    cached: false, stale: false, fetchedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
+export function mockRpi() {
+  return {
+    mock: true,
+    base: '2009-Q1 = 100',
+    latest: { quarter: '2026-Q2', index: 100 },
+    historicalAnnualGrowth: { '5y': 0.03, '10y': 0.03, '20y': 0.03 },
+    count: 4,
+    series: [
+      { quarter: '2025-Q3', index: 97 }, { quarter: '2025-Q4', index: 98 },
+      { quarter: '2026-Q1', index: 99 }, { quarter: '2026-Q2', index: 100 },
+    ],
+    source: { datasetId: 'MOCK', name: 'MOCK Resale Price Index' },
+    cached: false, stale: false, fetchedAt: '2026-01-01T00:00:00.000Z',
   };
 }

@@ -4,7 +4,10 @@
 // range, one of the allowed options). It deliberately does NOT check eligibility
 // (income ceilings, age limits, citizenship rules): those are policy figures that
 // live in the versioned ruleset and are checked by the rules engine on the server.
+// The one household rule here (exactly two buyers, at least one Singapore Citizen) is the
+// app's SCOPE from API_CONTRACT.md, not a policy figure.
 //
+// Field keys follow the store (client/src/stores/scenario.js), which follows contract v2/v2.1.
 // Each validator returns an object of { fieldKey: 'message' }. Empty object = valid.
 // Pure functions, so they can be unit-tested without mounting any component.
 
@@ -16,7 +19,7 @@ import {
   CITIZENSHIPS,
   LIVING_ARRANGEMENTS,
   LEASE_BANDS,
-  MAX_APPLICANTS,
+  REQUIRED_APPLICANTS,
 } from '../constants/planOptions.js';
 
 const isBlank = (v) => v === null || v === undefined || v === '';
@@ -57,14 +60,14 @@ function checkOption(errors, key, value, options, label) {
   }
 }
 
-export function validateSituation(profile, assumptions) {
+export function validateSituation(profile, assumptions, { currentYear = new Date().getFullYear() } = {}) {
   const errors = {};
   const applicants = profile?.applicants ?? [];
 
-  if (applicants.length === 0) {
-    errors.applicants = 'Add at least one buyer.';
-  } else if (applicants.length > MAX_APPLICANTS) {
-    errors.applicants = `Add at most ${MAX_APPLICANTS} buyers.`;
+  if (applicants.length !== REQUIRED_APPLICANTS) {
+    errors.applicants = 'This version compares households of two buyers. Fill in both buyers.';
+  } else if (!applicants.some((a) => a.citizenship === 'SC')) {
+    errors.applicants = 'At least one buyer must be a Singapore Citizen.';
   }
 
   applicants.forEach((a, i) => {
@@ -83,38 +86,60 @@ export function validateSituation(profile, assumptions) {
 
   checkNumber(errors, 'cashSavings', profile?.cashSavings, { label: 'cash savings', min: 0, requiredMessage: 'Enter your cash savings (0 if none).' });
 
+  // Optional "must move in by" year.
+  checkNumber(errors, 'moveInByYear', profile?.constraints?.moveInByYear, {
+    label: 'move-in year',
+    min: currentYear,
+    max: currentYear + 30,
+    integer: true,
+    required: false,
+    rangeMessage: `Enter a year from ${currentYear} to ${currentYear + 30}, or leave it blank.`,
+  });
+
   // Growth rates are stored as decimals (0.03 = 3%).
-  checkNumber(errors, 'priceGrowth', assumptions?.priceGrowth, {
+  checkNumber(errors, 'annualPriceGrowth', assumptions?.annualPriceGrowth, {
     label: 'flat price growth',
     min: -0.2,
     max: 0.2,
     requiredMessage: 'Enter flat price growth (% a year).',
     rangeMessage: 'Flat price growth must be between -20% and 20% a year.',
   });
-  checkNumber(errors, 'incomeGrowth', assumptions?.incomeGrowth, {
+  checkNumber(errors, 'annualIncomeGrowth', assumptions?.annualIncomeGrowth, {
     label: 'income growth',
     min: -0.2,
     max: 0.3,
     requiredMessage: 'Enter income growth (% a year).',
     rangeMessage: 'Income growth must be between -20% and 30% a year.',
   });
-  checkNumber(errors, 'horizonYears', assumptions?.horizonYears, {
-    label: 'number of years to compare after',
-    min: 1,
-    max: 50,
+
+  // Optional: the year both paths are compared at. Blank = the server's default (later key year + 10).
+  // The server also checks it is not before either path's keys.
+  checkNumber(errors, 'horizonYear', assumptions?.horizonYear, {
+    label: 'year to compare at',
+    min: currentYear + 1,
+    max: currentYear + 60,
     integer: true,
-    requiredMessage: 'Enter how many years to compare after.',
-    rangeMessage: 'Choose between 1 and 50 years.',
+    required: false,
+    rangeMessage: `Enter a year from ${currentYear + 1} to ${currentYear + 60}, or leave it blank.`,
+  });
+
+  // Rent (or other housing cost) per month until keys; blank or 0 = living with parents.
+  checkNumber(errors, 'monthlyHousingCostWhileWaiting', assumptions?.monthlyHousingCostWhileWaiting, {
+    label: 'monthly rent while waiting',
+    min: 0,
+    max: 20000,
+    required: false,
+    tooHighMessage: 'That looks too high for monthly rent. Enter the amount per month.',
   });
 
   return errors;
 }
 
-export function validateChoice(choice, { currentYear = new Date().getFullYear() } = {}) {
+export function validateChoice(choice, { currentYear = new Date().getFullYear(), btoPriceRange } = {}) {
   const errors = {};
   const isBto = choice?.path === 'BTO';
 
-  checkNumber(errors, 'purchaseYear', choice?.purchaseYear, {
+  checkNumber(errors, 'applicationYear', choice?.applicationYear, {
     label: 'year',
     min: currentYear,
     max: currentYear + 15,
@@ -124,19 +149,42 @@ export function validateChoice(choice, { currentYear = new Date().getFullYear() 
   });
   checkOption(errors, 'town', choice?.town, TOWNS, 'town');
   checkOption(errors, 'flatType', choice?.flatType, isBto ? BTO_FLAT_TYPES : FLAT_TYPES, 'flat type');
-  if (isBto) checkOption(errors, 'classification', choice?.classification, CLASSIFICATIONS, 'classification');
 
-  if (!isBto) {
+  if (isBto) {
+    checkOption(errors, 'classification', choice?.classification, CLASSIFICATIONS, 'classification');
+    // Optional price slider: must sit inside the chosen project's HDB range (D26).
+    // `btoPriceRange` is { min, max } in dollars, passed in by the form when a project is chosen.
+    if (!isBlank(choice?.btoPrice) && btoPriceRange) {
+      checkNumber(errors, 'btoPrice', choice.btoPrice, {
+        label: 'BTO price',
+        min: btoPriceRange.min,
+        max: btoPriceRange.max,
+        rangeMessage: "Choose a price inside the project's HDB price range.",
+      });
+    }
+    checkNumber(errors, 'btoWaitMonths', choice?.btoWaitMonths, {
+      label: 'waiting time', min: 1, max: 120, integer: true, required: false,
+      rangeMessage: 'Enter a waiting time from 1 to 120 months, or leave it blank.',
+    });
+  } else {
     checkOption(errors, 'livingArrangement', choice?.livingArrangement, LIVING_ARRANGEMENTS, 'living arrangement');
     checkOption(errors, 'leaseBand', choice?.leaseBand, LEASE_BANDS, 'remaining lease band');
   }
+
+  // Renovation budget for this flat; blank or 0 = none.
+  checkNumber(errors, 'renovation', choice?.renovation, {
+    label: 'renovation budget',
+    min: 0,
+    max: 500000,
+    required: false,
+  });
 
   return errors;
 }
 
 // Errors for whichever step the stepper is on. Step 3 (Results) has no inputs.
-export function validateStep(step, store, options) {
-  if (step === 0) return validateSituation(store.profile, store.assumptions);
+export function validateStep(step, store, options = {}) {
+  if (step === 0) return validateSituation(store.profile, store.assumptions, options);
   if (step === 1) return validateChoice(store.choiceA, options);
   if (step === 2) return validateChoice(store.choiceB, options);
   return {};

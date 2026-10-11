@@ -3,7 +3,7 @@
 import { completePlan } from './helpers/plan.js';
 
 function openDashboard() {
-  completePlan(); // the helper uses a 10-year holding period
+  completePlan();
   cy.get('[data-cy=results-dashboard-button]').click();
   cy.location('pathname').should('eq', '/dashboard');
   cy.get('[data-cy=dashboard-headline]').should('be.visible');
@@ -17,13 +17,15 @@ describe('financial dashboard', () => {
     cy.location('pathname').should('eq', '/plan');
   });
 
-  it('leads with who ends ahead and shows the ruleset version', () => {
+  it('leads with who ends ahead in which year, and shows the ruleset version', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-headline]').invoke('text')
-      .should('match', /(BTO|Resale) ends S\$[\d,]+ ahead after 10 years|Both paths end level/);
+      .should('match', /(BTO|Resale) ends S\$[\d,]+ ahead by \d{4}|Both paths end level by \d{4}/);
     cy.get('[data-cy=dashboard-ruleset-version]').should('contain', 'Ruleset');
     ['bto', 'resale'].forEach((p) => {
       cy.get(`[data-cy=dashboard-summary-${p}-net]`).invoke('text').should('match', /S\$[\d,]+/);
+      cy.get(`[data-cy=dashboard-summary-${p}-affordability]`).invoke('text')
+        .should('match', /Within your loan limit|Loan short by S\$[\d,]+/);
     });
   });
 
@@ -36,17 +38,23 @@ describe('financial dashboard', () => {
     cy.get('[data-cy=dashboard-sources-link]').should('have.attr', 'href', '/sources');
   });
 
-  it('draws the money in and out chart', () => {
+  it('draws how the net position adds up, and lists the costs', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-cashflow] canvas').should('be.visible');
+    cy.get('[data-cy=dashboard-costs], [data-cy=dashboard-costs-empty]').should('exist');
   });
 
-  it('re-runs when a what-if slider moves, and resets to the plan', () => {
+  it('re-runs when the comparison year moves, and resets to the plan', () => {
     openDashboard();
-    cy.get('[data-cy=whatif-holding-slider]').invoke('val', 15).trigger('input');
-    cy.get('[data-cy=whatif-holding-value]').should('contain', '15 years');
-    cy.get('[data-cy=dashboard-headline]').should('contain', 'after 15 years');
-    cy.get('[data-cy=dashboard-whatif-reset]').click();
-    cy.get('[data-cy=dashboard-headline]').should('contain', 'after 10 years');
+    cy.get('[data-cy=dashboard-headline]').invoke('text').then((before) => {
+      const startYear = before.match(/by (\d{4})/)[1];
+      cy.get('[data-cy=whatif-horizon-slider]').invoke('attr', 'max').then((max) => {
+        cy.get('[data-cy=whatif-horizon-slider]').invoke('val', max).trigger('input');
+        cy.get('[data-cy=whatif-horizon-value]').should('contain', max);
+        cy.get('[data-cy=dashboard-headline]').should('contain', `by ${max}`);
+        cy.get('[data-cy=dashboard-whatif-reset]').click();
+        cy.get('[data-cy=dashboard-headline]').should('contain', `by ${startYear}`);
+      });
+    });
   });
 });
