@@ -1,6 +1,8 @@
 // Axios (MIT) — HTTP client for the Express API.
 import axios from 'axios';
-import { mockBtoProjects, mockCompare, mockGrants, mockResalePrice, mockRpi, mockRuleset } from './mock/mockData.js';
+import {
+  mockBtoProjects, mockCompare, mockGrants, mockLogin, mockRegister, mockResalePrice, mockRpi, mockRuleset,
+} from './mock/mockData.js';
 
 // VITE_USE_MOCK=true serves clearly-labelled MOCK data so the UI can be built before the backend exists.
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
@@ -64,6 +66,18 @@ export async function getRuleset() {
   return (await http.get('/ruleset')).data;
 }
 
+// { name?, email, password } -> { token, user }. See docs/API_CONTRACT.md "POST /api/auth/register".
+export async function register(payload) {
+  if (USE_MOCK) return mockRegister(payload);
+  return (await http.post('/auth/register', payload)).data;
+}
+
+// { email, password } -> { token, user }. See docs/API_CONTRACT.md "POST /api/auth/login".
+export async function login(payload) {
+  if (USE_MOCK) return mockLogin(payload);
+  return (await http.post('/auth/login', payload)).data;
+}
+
 // Seeded BTO projects (seat 3, GET /api/data/bto-projects). Filters are optional:
 // { town, flatType, classification }. Returns { projects, towns, dataAsOf, ... }; prices in cents.
 export async function getBtoProjects(filters = {}) {
@@ -88,5 +102,5 @@ export async function grants(payload) {
   return (await http.post('/grants', payload)).data;
 }
 
-// TODO: timing() for /api/timing (seat 5), login/register + scenarios (seats 3/4).
+// TODO (seat 3): scenarios (GET/POST /api/scenarios). TODO (seat 5): timing() for /api/timing.
 // strategy() dropped (future work).
