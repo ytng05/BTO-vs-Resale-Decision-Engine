@@ -270,3 +270,43 @@ export function mockGrants(payload) {
     assessmentDate: payload.assessmentDate ?? `${payload.choice.purchaseYear}-01-01`,
   };
 }
+
+export function mockBtoProjects() {
+  return {
+    mock: true,
+    count: 1,
+    projects: [{
+      _id: 'mock-1', name: 'MOCK Project', town: 'MOCK TOWN', classification: 'STANDARD',
+      mopYears: 0, subsidyRecoveryRate: 0,
+      flats: [{ flatType: '4 ROOM', indicativePriceLow: 0, indicativePriceHigh: 0 }],
+      sourceName: 'MOCK', sourceAccessed: '2026-01-01',
+    }],
+  };
+}
+
+export function mockResalePrice() {
+  return {
+    mock: true,
+    town: 'MOCK TOWN', flatType: '4 ROOM',
+    window: { from: '2025-11', to: '2026-10', months: 12 },
+    count: 100, median: 500000, p25: 450000, p75: 550000, medianPricePerSqm: 5000, lowSample: false,
+    source: { datasetId: 'MOCK', name: 'MOCK resale data' },
+    cached: false, fetchedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
+export function mockRpi() {
+  return {
+    mock: true,
+    base: '2009-Q1 = 100',
+    latest: { quarter: '2026-Q2', index: 100 },
+    historicalAnnualGrowth: { '5y': 0.03, '10y': 0.03, '20y': 0.03 },
+    count: 4,
+    series: [
+      { quarter: '2025-Q3', index: 97 }, { quarter: '2025-Q4', index: 98 },
+      { quarter: '2026-Q1', index: 99 }, { quarter: '2026-Q2', index: 100 },
+    ],
+    source: { datasetId: 'MOCK', name: 'MOCK Resale Price Index' },
+    cached: false, fetchedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
