@@ -9,17 +9,17 @@
     "ageUsed": "HDB loan: plain average of the applicants' ages. Bank loan: IWAA = sum(age x income) / sum(income). Both rounded UP to a whole year.",
     "tenure": "Whole years. HDB: shortest of asked, maxTenureYears.hdbLoan, ageLimit - ageUsed, remainingLeaseYears - leaseBufferYears. Bank: shortest of asked and maxTenureYears.bankLoanHdbFlats.",
     "instalmentCapToLoan": "cap x (1 - (1 + r)^-n) / r, r = assessmentRate / 12, n = tenureYears x 12; rounded to the nearest cent (halves up)",
-    "ltv": "HDB: maxPercent, pro-rated when youngest age + remainingLeaseYears < leaseMustCoverYoungestToAge (formula: seat 2). Bank: reducedMaxPercent if tenure > reducedIfTenureYearsOver OR IWAA + tenure > reducedIfLoanEndsAfterAge.",
+    "ltv": "HDB: maxPercent x factor, factor = max(0, 1 - percentPerYearShort / 100 x shortfall), shortfall = max(0, leaseMustCoverYoungestToAge - youngest age - remainingLeaseYears) (seat 2's derived assumption, #35). Bank: reducedMaxPercent if tenure > reducedIfTenureYearsOver OR IWAA + tenure > reducedIfLoanEndsAfterAge.",
     "maxLoan": "Smallest of the MSR loan, the TDSR loan (bank only) and the LTV loan, ROUNDED DOWN to the whole dollar. limitingRule: MSR | TDSR | LTV."
   },
   "_units": "All money in integer cents. Rates and LTV as decimals.",
-  "_rulesetNote": "Loan rules in ruleset shape, using seat 2's key names as agreed on #30 (loans.hdbLoanTenure, loans.stressTestRate, loans.ltv.hdbLoan.leaseMustCoverYoungestToAge). Kept here so a ruleset update can't silently change these expected values.",
+  "_rulesetNote": "Loan rules in ruleset shape, using seat 2's key names as agreed on #30 (loans.hdbLoanTenure, loans.stressTestRate, loans.ltv.hdbLoan.leaseMustCoverYoungestToAge, loans.ltv.hdbLoan.leaseProRating; values match seat 2's #35). Kept here so a ruleset update can't silently change these expected values.",
   "ruleset": {
     "loans": {
       "msrPercent": 30,
       "tdsrPercent": 55,
       "ltv": {
-        "hdbLoan": { "maxPercent": 75, "leaseMustCoverYoungestToAge": 95 },
+        "hdbLoan": { "maxPercent": 75, "leaseMustCoverYoungestToAge": 95, "leaseProRating": { "percentPerYearShort": 2 } },
         "bankLoan": {
           "maxPercent": 75,
           "reducedMaxPercent": 55,
@@ -91,7 +91,7 @@
     {
       "id": "A3-bank-30-years",
       "description": "Bank loan, 30 years: assessed at the 4% floor; IWAA 35.89 rounds up to 36; tenure 30 > 25 (and 36 + 30 > 65), so the reduced 55% LTV applies and binds.",
-      "_status": "maxLoanCents and limitingRule are final (LTV binds at any floor below ~9.2%). msrLoanCents and tdsrLoanCents assume the 4% bank floor; seat 2 to confirm a current MAS source.",
+      "_status": "Final. The 4% bank floor is sourced (MAS 'Calculating TDSR', added by seat 2 in #35).",
       "inputs": {
         "loanType": "BANK",
         "applicants": [
@@ -146,7 +146,7 @@
     {
       "id": "A5-hdb-short-lease",
       "description": "HDB loan, resale with 40 years left: the lease cap (40 - 20 = 20) sets tenure, and 30 + 40 = 70 < 95, so LTV is pro-rated. LTV binds under any pro-rating (unprorated LTV loan $262,500 < MSR loan $432,746.19).",
-      "_status": "Pending seat 2's pro-rating formula: ltvApplied, ltvLoanCents and maxLoanCents are not in expected yet (maxLoanCents = floor($262,500 x pro-rating factor)).",
+      "_status": "Pro-rating formula now in (seat 2, #35). ltvApplied, ltvLoanCents and maxLoanCents await seat 1's hand-worked figures (max-loan-template-v3, A5).",
       "inputs": {
         "loanType": "HDB",
         "applicants": [
