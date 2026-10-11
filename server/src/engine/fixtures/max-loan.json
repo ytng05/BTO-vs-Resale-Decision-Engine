@@ -1,5 +1,5 @@
 {
-  "_source": "Hand-worked in max-loan-template-v3.xlsx, case by case. Not derived from engine code.",
+  "_source": "Hand-worked in max-loan-template-v4.xlsx (A1-A4 from v3), case by case. Not derived from engine code.",
   "_workedBy": "seat 1",
   "_dateWorked": "2026-10-11",
   "_checkedBy": "Independent script recomputation of every MSR/TDSR loan, tenure and age (matches to the cent)",
@@ -146,7 +146,7 @@
     {
       "id": "A5-hdb-short-lease",
       "description": "HDB loan, resale with 40 years left: the lease cap (40 - 20 = 20) sets tenure, and 30 + 40 = 70 < 95, so LTV is pro-rated. LTV binds under any pro-rating (unprorated LTV loan $262,500 < MSR loan $432,746.19).",
-      "_status": "Pro-rating formula now in (seat 2, #35). ltvApplied, ltvLoanCents and maxLoanCents await seat 1's hand-worked figures (max-loan-template-v3, A5).",
+      "_provenance": "LTV rows worked by hand by seat 1 (25 years short: 75% x 50% = 37.5%; $350,000 x 37.5% = $131,250). Confirmed by sheet formulas in max-loan-template-v4 (column F, set up with Claude from the stated rules, not engine code) and by an independent exact recomputation.",
       "inputs": {
         "loanType": "HDB",
         "applicants": [
@@ -164,7 +164,38 @@
         "tenureYears": 20,
         "msrLoanCents": 43274619,
         "tdsrLoanCents": null,
+        "ltvApplied": 0.375,
         "ltvProrated": true,
+        "ltvLoanCents": 13125000,
+        "maxLoanCents": 13125000,
+        "limitingRule": "LTV"
+      }
+    },
+    {
+      "id": "A6-hdb-float-check",
+      "description": "HDB loan, resale with 49 years left (athirah's #32 review): 30 + 49 = 79, 16 years short of 95, LTV binds. The decimal factor 75 x (1 - 0.02 x 16) is 50.99999999999999 in floats; worked in whole numbers the LTV loan must not lose $1.",
+      "_provenance": "Worked by hand by seat 1 (16 years short: 75% x 68% = 51%; $350,000 x 51% = $178,500; MSR loan by the annuity formula). Confirmed by sheet formulas in max-loan-template-v4 (column G, set up with Claude from the stated rules, not engine code) and by an independent exact recomputation.",
+      "inputs": {
+        "loanType": "HDB",
+        "applicants": [
+          { "age": 30, "monthlyIncomeCents": 400000 },
+          { "age": 32, "monthlyIncomeCents": 400000 }
+        ],
+        "purchasePriceCents": 35000000,
+        "remainingLeaseYears": 49,
+        "tenureAskedYears": 25,
+        "loanRate": 0.026
+      },
+      "expected": {
+        "assessmentRate": 0.03,
+        "ageUsed": 31,
+        "tenureYears": 25,
+        "msrLoanCents": 50610349,
+        "tdsrLoanCents": null,
+        "ltvApplied": 0.51,
+        "ltvProrated": true,
+        "ltvLoanCents": 17850000,
+        "maxLoanCents": 17850000,
         "limitingRule": "LTV"
       }
     }

@@ -102,5 +102,45 @@ export async function grants(payload) {
   return (await http.post('/grants', payload)).data;
 }
 
-// TODO (seat 3): scenarios (GET/POST /api/scenarios). TODO (seat 5): timing() for /api/timing.
-// strategy() dropped (future work).
+// TODO (seat 5): timing() for /api/timing. strategy() dropped (future work).
+
+// ---- Saved scenarios (seat 3) ----
+// No mock versions: these always call the real API (run `npm run dev` with MONGODB_URI set).
+
+// Attach the logged-in user's token to every API request. stores/auth.js (seat 4) saves
+// { token, user } under this key; the server needs the token on /api/scenarios* and /api/auth/me.
+const AUTH_STORAGE_KEY = 'hdb-app:auth';
+function storedToken() {
+  try {
+    return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY))?.token ?? null;
+  } catch {
+    return null; // storage blocked or corrupt: send the request without a token
+  }
+}
+
+http.interceptors.request.use((config) => {
+  const token = storedToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+export async function getMe() {
+  return (await http.get('/auth/me')).data;
+}
+
+export async function listScenarios() {
+  return (await http.get('/scenarios')).data;
+}
+
+// payload: { name, profile, choiceA, choiceB, assumptions, result? }, in the store's shape
+export async function saveScenario(payload) {
+  return (await http.post('/scenarios', payload)).data;
+}
+
+export async function getScenario(id) {
+  return (await http.get(`/scenarios/${encodeURIComponent(id)}`)).data;
+}
+
+export async function deleteScenario(id) {
+  await http.delete(`/scenarios/${encodeURIComponent(id)}`);
+}

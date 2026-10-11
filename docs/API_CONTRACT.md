@@ -9,15 +9,16 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | GET | `/api/health` | seat 3 | liveness and feature flags | working |
 | GET | `/api/ruleset` | seat 2 | ruleset version, status, effective date | working (dated snapshot) |
 | POST | `/api/grants` | seat 2 | evaluate EHG, Family Grant, PHG, and eligibility explanations | working |
-| POST | `/api/auth/register` | seat 3 | create user (bcryptjs hash) | stub |
-| POST | `/api/auth/login` | seat 3 | returns JWT | stub |
-| GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | stub |
-| GET/DELETE | `/api/scenarios/:id` | seat 3 | load / delete | stub |
+| POST | `/api/auth/register` | seat 3 | create user (bcryptjs hash) | working |
+| POST | `/api/auth/login` | seat 3 | returns JWT | working |
+| GET | `/api/auth/me` | seat 3 | current user from the token (restores a session on page load) | working |
+| GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | working |
+| GET/DELETE | `/api/scenarios/:id` | seat 3 | load / delete (auth required) | working |
 | POST | `/api/compare` | seat 1 | break-even surface for path A vs B | stub |
 | POST | `/api/cpf/accrued-interest` | seat 1 | CPF refund owed at a date: principal + accrued interest (D2, D12) | working (needs verified CPF rate in ruleset) |
 | POST | `/api/stamp-duty` | seat 1 | buyer's stamp duty on a price (D20) | working |
 | POST | `/api/timing` | seat 1 | FEATURE 1: optimal timing search | stub |
-| POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | stub |
+| POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | future work: off by default (`FEATURE_STRATEGY_SEARCH`), returns 501 `FEATURE_DISABLED` |
 | POST | `/api/backtest` | seat 1 + 3 | FEATURE 3 (later): historical range | off (`FEATURE_BACKTEST`) |
 | GET | `/api/data/resale-price?town=&flatType=` | seat 3 | resale price basis from data.gov.sg (cents, cached daily) | working |
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached daily) | working |
@@ -33,7 +34,7 @@ Response: `{ version, status, effectiveDate, verifiedOn, verifiedBy, rules }`. `
 
 ## POST /api/grants
 
-Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/evaluate.contract.js`. Money is integer cents; applicants use `monthlyIncomeCents` and `cpfOaBalanceCents`. The route converts these to dollars only for `evaluateGrants()`. `profile.cashSavingsCents` (D19) is accepted but not read by this route. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to `${choice.purchaseYear}-01-01` (D13).
+Request: `{ profile, choice, assessmentDate? }` using `Profile` and `Choice` from `server/src/engine/evaluate.contract.js`. Money is integer cents; applicants use `monthlyIncomeCents` and `cpfOaBalanceCents`. The route converts these to dollars only for `evaluateGrants()`. `profile.cashSavingsCents` (D19) is accepted but not read by this route. `choice` may also include `livingArrangement?: "WITH"|"NEAR"|"NONE"` and `remainingLeaseYears?: number`. If omitted, `assessmentDate` defaults to `${choice.applicationYear}-01-01` (D13). `choice.applicationYear` is required (400 `VALIDATION_ERROR` if missing). At least one applicant must be a Singapore Citizen (D21): otherwise 400 "At least one buyer must be a Singapore Citizen (D21)." A single buyer returns 400 "Single-buyer purchases aren't modelled yet."
 
 Example request:
 ```json
@@ -47,7 +48,7 @@ Example request:
   },
   "choice": {
     "path": "RESALE",
-    "purchaseYear": 2026,
+    "applicationYear": 2026,
     "town": "ANG MO KIO",
     "flatType": "4 ROOM",
     "livingArrangement": "NEAR",
@@ -111,7 +112,7 @@ All money is integer cents. The client converts dollars to cents when it sends t
 | `choice.btoProjectId` → `btoWaitMonths` | Form (project), server lookup, form override | Chosen project's `waitMonths` (HDB's estimate, counted from flat selection, so keys are a few months early: stated limitation, D26); if no project is chosen, the town's newest project offering the flat type; else ruleset `btoWaiting.defaultMonths` (48, an assumption; warns `BTO_WAIT_ASSUMED`) (D7) |
 | `choice.btoPriceCents` → `purchasePriceCents` (BTO) | Form (slider), server default | v2.1. Within the project's `[priceMinCents, priceMaxCents]` for the flat type, else `400 VALIDATION_ERROR`; default the midpoint. Seed prices must be `priceBasis: 'BEFORE_GRANTS'`; the route refuses any other basis so grants are never subtracted twice (D26) |
 | `choice.marketValueAtKeysCents` | Server lookup | BTO: near-new resale comparables for the town and flat type at keys (fallback town for towns with no resale stock, e.g. Tengah); resale: the purchase price. Never sent by the client |
-| `choice.purchasePriceCents` | Server lookup | Resale: median from cached data.gov.sg transactions for town, flat type and lease band. BTO: `btoPriceCents` or the midpoint of the project's range, before grants (D26). Never sent by the client. Echoed as `Outcome.purchasePriceCents` |
+| `choice.purchasePriceCents` | Server lookup | Resale: median from cached data.gov.sg transactions for town, flat type and lease band. BTO: `btoPriceCents` or the midpoint of the project's range, before grants (D26). Never sent by the client. Returned as `Outcome.purchasePriceCents`, grown to the application date (D31) |
 | `assumptions.annualPriceGrowth`, `annualIncomeGrowth` | Form (sliders) | Growth as decimals (0.03) |
 | `assumptions.horizonYear` | Form, default | Horizon date = 31 Dec of this year; both paths' keys must be on or before it (400 otherwise). Default: later key year + 10 |
 | `assumptions.monthlyHousingCostWhileWaitingCents` | Form (slider) | Rent until keys, both paths. Default 0 (living with parents); show a sourced rental guide beside the slider |
@@ -142,6 +143,7 @@ Request: `{ profile, choiceBase, candidateYears, assumptions }`
 Response: `{ rulesetVersion, best: { year, outcome }, all: [{ year, outcome }], explanation: ["string"] }`
 
 ## POST /api/strategy
+Future work (dropped per the prof's feedback, contract v2). Off by default: returns `501 FEATURE_DISABLED`. Shape kept for reference.
 Request: `{ profile, constraints, assumptions }`
 Response: `{ rulesetVersion, top: [{ choice, outcome, reasons: ["string"] }] }` (max 3, ranked)
 
@@ -215,3 +217,44 @@ Request (both): `{ name?, email, password }` (`name` register only; `password` p
 Response (both): `{ token, user: { id, name, email } }`. `token` is a JWT the client sends as `Authorization: Bearer <token>` on `/api/scenarios*`.
 Errors: `400 VALIDATION_ERROR` (bad email / password too short / name missing on register), `409 EMAIL_TAKEN` (register, email already registered), `401 INVALID_CREDENTIALS` (login).
 Client: `client/src/stores/auth.js` persists `{ token, user }` to `localStorage` under `hdb-app:auth` and restores it on app load; `router/index.js` guards `/plan` and `/results` with `meta: { requiresAuth: true }`.
+## Auth
+
+Passwords are hashed with bcryptjs; the plain password is never stored. Tokens are JWTs (HS256, signed with `JWT_SECRET`), valid for 7 days.
+Routes marked "auth required" need the header `Authorization: Bearer <token>`. Without a valid token they return `401 UNAUTHORIZED`.
+Client: `client/src/stores/auth.js` (seat 4) persists `{ token, user }` to `localStorage` under `hdb-app:auth`; `client/src/api/client.js` attaches the token to every request.
+
+### POST /api/auth/register
+Request: `{ name, email, password }`. `name` 1 to 100 characters (trimmed). Email is trimmed and lowercased. Password: 8 to 72 characters (bcrypt ignores anything past 72 bytes).
+Response `201`: `{ token, user: { id, name, email } }`.
+Errors: `400 VALIDATION_ERROR`, `409 EMAIL_TAKEN`, `503 DB_UNAVAILABLE`.
+
+### POST /api/auth/login
+Request: `{ email, password }`.
+Response `200`: `{ token, user: { id, name, email } }`.
+Errors: `400 VALIDATION_ERROR`, `401 INVALID_CREDENTIALS` (same message for an unknown email and a wrong password), `503 DB_UNAVAILABLE`.
+
+### GET /api/auth/me (auth required)
+Response `200`: `{ user: { id, name, email } }`.
+Errors: `401 UNAUTHORIZED` (missing, invalid or expired token).
+
+## Saved scenarios (auth required)
+
+A user only ever sees their own scenarios. Someone else's scenario returns `404`, not `403`, so ids cannot be probed.
+Inputs are saved in the client store's shape (dollars, store field names), not the cents `CompareRequest`, so loading can refill the form directly.
+
+### GET /api/scenarios
+Response `200`: `{ scenarios: [{ id, name, rulesetVersion, createdAt, updatedAt }] }`, newest first. Inputs and result are left out to keep the list small.
+
+### POST /api/scenarios
+Request: `{ name, profile, choiceA, choiceB, assumptions, result? }`. `name` 1 to 100 characters; `profile`, `choiceA`, `choiceB`, `assumptions` (and `result` if given) must be objects.
+`rulesetVersion` and `evaluationStartYear` are set by the server: taken from `result.rulesetVersion` / `result.evaluationStartYear` when a result is saved, otherwise the current ruleset version and the current year. Recalculating a reopened scenario should reuse both
+Response `201`: `{ scenario: { id, name, profile, choiceA, choiceB, assumptions, result, rulesetVersion, createdAt, updatedAt } }`.
+Errors: `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `503 DB_UNAVAILABLE`.
+
+### GET /api/scenarios/:id
+Response `200`: `{ scenario }` with all inputs and the saved result.
+Errors: `401 UNAUTHORIZED`, `404 NOT_FOUND`, `503 DB_UNAVAILABLE`.
+
+### DELETE /api/scenarios/:id
+Response `204` (no body).
+Errors: `401 UNAUTHORIZED`, `404 NOT_FOUND`, `503 DB_UNAVAILABLE`.

@@ -257,9 +257,9 @@ export function mockRuleset() {
 export function mockGrants(payload) {
   const ruleset = mockRuleset();
   const testsByGrant = {
-    EHG: [{ id: 'EHG_INCOME_CEILING', passed: false, reason: 'MOCK: no grant calculation performed.' }],
-    FAMILY: [{ id: 'FAMILY_INCOME_LIMIT', passed: false, reason: 'MOCK: no grant calculation performed.' }],
-    PHG: [{ id: 'PHG_AMOUNT', passed: false, reason: 'MOCK: no grant calculation performed.' }],
+    EHG: [{ id: 'EHG_INCOME_CEILING', passed: false, reason: 'MOCK: no grant calculation performed.', sourceUrl: sourceUrlFor('EHG_INCOME_CEILING') }],
+    FAMILY: [{ id: 'FAMILY_INCOME_LIMIT', passed: false, reason: 'MOCK: no grant calculation performed.', sourceUrl: sourceUrlFor('FAMILY_INCOME_LIMIT') }],
+    PHG: [{ id: 'PHG_AMOUNT', passed: false, reason: 'MOCK: no grant calculation performed.', sourceUrl: sourceUrlFor('PHG_AMOUNT') }],
   };
   return {
     mock: true,

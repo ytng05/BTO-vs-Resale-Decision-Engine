@@ -12,6 +12,8 @@ const scenarioSchema = new mongoose.Schema(
     assumptions: { type: mongoose.Schema.Types.Mixed, required: true },
     result: { type: mongoose.Schema.Types.Mixed },
     rulesetVersion: { type: String, required: true },
+    evaluationStartYear: { type: Number, required: true }, // the "today" the result was calculated from
+
   },
   { timestamps: true },
 );
