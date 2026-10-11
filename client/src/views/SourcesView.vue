@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { getRuleset } from '../api/client.js';
-import { formatMinCashDownpayment, formatRuleValue, sourceTitle } from './sourcesFormatting.js';
+import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption, sourceTitle, statedAssumptionText } from './sourcesFormatting.js';
 
 const response = ref(null);
 const loading = ref(true);
@@ -28,6 +28,8 @@ const ruleLabels = {
   'grants.proximityHousingGrant.nearDistanceKm': 'PHG near-distance threshold',
   'cpf.oaInterestRate': 'CPF OA interest rate',
   'cpf.accruedInterestCompounding': 'Accrued interest method',
+  'cpf.housingUsageLeaseRule.leaseMustCoverYoungestToAge': 'CPF usage: lease must cover youngest buyer to age',
+  'cpf.housingUsageLeaseRule.leaseProRating.percentPerYearShort': 'CPF usage pro-rating: reduction per year short of 95',
   'loans.msrPercent': 'Mortgage Servicing Ratio (MSR)',
   'loans.tdsrPercent': 'Total Debt Servicing Ratio (TDSR)',
   'loans.ltv.hdbLoan.maxPercent': 'LTV: HDB loan maximum',
@@ -40,6 +42,23 @@ const ruleLabels = {
   'loans.hdbRatePremium': 'HDB concessionary loan rate',
   'loans.maxTenureYears.hdbLoan': 'Maximum tenure: HDB loan',
   'loans.maxTenureYears.bankLoanHdbFlats': 'Maximum tenure: bank loan for HDB flats',
+  'loans.hdbLoanTenure.ageLimit': 'HDB loan tenure: borrower age limit at loan end',
+  'loans.hdbLoanTenure.ageBasis': 'HDB loan tenure: age basis for joint borrowers',
+  'loans.hdbLoanTenure.leaseBufferYears': 'HDB loan tenure: remaining lease buffer',
+  'loans.ltv.hdbLoan.leaseMustCoverYoungestToAge': 'HDB loan LTV: lease must cover youngest buyer to age',
+  'loans.ltv.hdbLoan.leaseProRating.percentPerYearShort': 'HDB loan LTV pro-rating: reduction per year of lease short of 95',
+  'loans.stressTestRate.hdbLoanFloor': 'Stress-test rate floor: HDB loan',
+  'loans.stressTestRate.bankLoanFloor': 'Stress-test rate floor: bank loan',
+  'loans.hdbLoanOaRetentionPerBuyer': 'HDB loan: OA savings each buyer may keep',
+  'loans.btoDownpaymentStages.hdbLoan.atSigningPercent': 'BTO HDB loan: paid at signing',
+  'loans.btoDownpaymentStages.hdbLoan.atKeysPercent': 'BTO HDB loan: paid at keys',
+  'loans.btoDownpaymentStages.bankLoan.atReducedLtv.atSigningPercent': 'BTO bank loan (55% LTV): paid at signing',
+  'loans.btoDownpaymentStages.bankLoan.atReducedLtv.minCashAtSigningPercent': 'BTO bank loan (55% LTV): minimum cash at signing',
+  'loans.btoDownpaymentStages.bankLoan.atReducedLtv.atKeysPercent': 'BTO bank loan (55% LTV): paid at keys',
+  'loans.btoDownpaymentStages.bankLoan.atMaxLtv': 'BTO bank loan (75% LTV): staged payments',
+  'btoWaiting.shorterWaitingTimeThresholdMonths': 'BTO: shorter waiting time threshold',
+  'btoWaiting.defaultMonths': 'BTO: default waiting time (assumption)',
+  'btoWaiting.monthsToAgreementForLease': 'BTO: months from application to signing (assumption)',
   'classifications.STANDARD.mopYears': 'MOP: Standard BTO',
   'classifications.PLUS.mopYears': 'MOP: Plus BTO',
   'classifications.PRIME.mopYears': 'MOP: Prime BTO',
@@ -66,6 +85,7 @@ const navigationItems = [
   { id: 'loans', label: 'Loans' },
   { id: 'costs', label: 'Costs' },
   { id: 'flat-types', label: 'Flat types' },
+  { id: 'bto-waiting', label: 'BTO waiting' },
   { id: 'assumptions', label: 'Assumptions' },
   { id: 'data', label: 'Data' },
 ];
@@ -175,6 +195,12 @@ function sectionKeyFact(id, rules, activeRules) {
       ? `MOP ${standard} / ${plus} / ${prime} years (Standard / Plus / Prime)`
       : 'Classification rules not yet verified';
   }
+  if (id === 'bto-waiting') {
+    const threshold = rules?.shorterWaitingTimeThresholdMonths;
+    return typeof threshold === 'number'
+      ? `Shorter waiting time flats: under ${formatRuleValue('btoWaiting.shorterWaitingTimeThresholdMonths', threshold)}`
+      : 'BTO waiting rules not yet verified';
+  }
   return '';
 }
 
@@ -212,7 +238,16 @@ function collectRules(value, path, rows, tierTables, activeRules) {
       rows.push({ rule: ruleLabels[path] ?? fallbackLabel(path), value: 'Not yet verified' });
       return;
     }
-    entries.forEach(([key, nestedValue]) => collectRules(nestedValue, `${path}.${key}`, rows, tierTables, activeRules));
+    const firstRow = rows.length;
+    entries.forEach(([key, nestedValue]) => {
+      const rowsBefore = rows.length;
+      collectRules(nestedValue, `${path}.${key}`, rows, tierTables, activeRules);
+      const statedNote = statedAssumptionText(value[`_${key}Note`]);
+      if (statedNote) rows.slice(rowsBefore).forEach((row) => { row.note = `Stated assumption: ${statedNote}`; });
+    });
+    if (isDerivedAssumption(value._note)) {
+      rows.slice(firstRow).forEach((row) => { row.note = 'Derived assumption: not a published formula.'; });
+    }
     return;
   }
 
@@ -269,6 +304,7 @@ const ruleGroups = computed(() => {
     makeSection('loans', 'Loans', 'loans', rules.loans, rules),
     makeSection('costs', 'Transaction costs', 'transactionCosts', rules.transactionCosts, rules),
     makeSection('flat-types', 'Flat types', 'classifications', rules.classifications, rules),
+    makeSection('bto-waiting', 'BTO waiting', 'btoWaiting', rules.btoWaiting, rules),
   ].filter(Boolean);
 });
 
@@ -310,6 +346,7 @@ const assumptions = computed(() => [
   { title: 'Employment', description: '12-month employment condition is assumed for applicants.' },
   { title: 'Income averaging', description: 'Monthly income is treated as the 12-month average at assessment.' },
   { title: 'EHG lease pro-rating', description: 'Pro-rating is not applied; actual EHG may be lower when the lease does not cover the youngest buyer to age 95.' },
+  { title: 'HDB loan LTV lease pro-rating', description: 'HDB does not publish a formula. We assume LTV falls 2% for each year the lease is short of 95, using the 2019 MOM/CPF examples for CPF usage limits (two data points).' },
   { title: 'PHG near distance', description: 'Whether your home is near your parents or child is declared by you; no distance is measured.' },
   { title: 'Rules held constant', description: `Current rules (ruleset ${response.value?.version ?? 'not yet verified'}) are held constant in projections.` },
   { title: 'Legal & agent fees', description: 'Estimates; these are not verified policy values.' },
