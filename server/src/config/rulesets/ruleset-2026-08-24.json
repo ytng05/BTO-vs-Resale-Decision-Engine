@@ -167,6 +167,8 @@
       "bankLoanFloor": 0.04,
       "_note": "Assess with the higher of the floor and the actual rate"
     },
+    "hdbLoanOaRetentionPerBuyer": 20000,
+    "_hdbLoanOaRetentionNote": "Dollars. Each buyer taking an HDB loan may retain UP TO $20,000 of available OA savings (optional); the rest goes to the purchase. Per buyer, not per household.",
     "sources": [
       "https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/",
       "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers",
@@ -176,7 +178,8 @@
       "https://www.hdb.gov.sg/cs/infoweb/residential/buying-a-flat/understanding-your-eligibility-and-housing-loan-options/housing-loan-options/housing-loan-from-hdb",
       "https://www.mas.gov.sg/news/parliamentary-replies/2022/reply-to-parliamentary-question-on-setting-total-debt-servicing-ratio-medium-term-interest-rate-floor-at-4-per-cent-per-annum",
       "https://www.mas.gov.sg/regulation/explainers/tdsr-for-property-loans/calculating-tdsr",
-      "https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life"
+      "https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life",
+      "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-resale-flats/plan-source-and-contract/mode-of-financing"
     ]
   },
   "transactionCosts": {
@@ -208,8 +211,13 @@
   "btoWaiting": {
     "shorterWaitingTimeThresholdMonths": 36,
     "defaultMonths": 48,
+    "monthsToAgreementForLease": 9,
+    "_monthsToAgreementForLeaseNote": "STATED ASSUMPTION: months from application to signing the agreement for lease. HDB says signing is within 9 months after BOOKING an uncompleted flat; no published application-to-booking figure.",
     "_note": "Wait used = selected project's btoWaitMonths (seat 3 seed data) → else median of the town's seeded projects → else defaultMonths. defaultMonths is an ASSUMPTION: most Feb 2026 BTO flats had waits under four years. SWT flats have waits under three years.",
-    "sources": ["https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises"]
+    "sources": [
+      "https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises",
+      "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-new-flats/sign-agreement-for-lease"
+    ]
   },
   "notes": {
     "eip": {

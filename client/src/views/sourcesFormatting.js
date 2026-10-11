@@ -23,6 +23,7 @@ const unitByField = {
   reducedIfLoanEndsAfterAge: 'age',
   ageLimit: 'age',
   leaseBufferYears: 'years',
+  monthsToAgreementForLease: 'months',
   leaseMustCoverYoungestToAge: 'age',
 };
 
@@ -35,6 +36,8 @@ const sourceTitles = new Map([
   ['https://www.mof.gov.sg/news-resources/newsroom/buyer-s-stamp-duty-bsd-rates-to-be-raised-for-higher-value-properties/', 'MOF: BSD rates'],
   ['https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits', 'MAS: loan tenure and LTV limits'],
   ['https://www.mas.gov.sg/regulation/explainers/tdsr-for-property-loans/calculating-tdsr', 'MAS: Calculating TDSR'],
+  ['https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-resale-flats/plan-source-and-contract/mode-of-financing', 'HDB: Mode of Financing'],
+  ['https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-new-flats/sign-agreement-for-lease', 'HDB: Sign Agreement for Lease'],
   ['https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life', 'MOM: 2019 more flexibility to buy a home for life'],
   ['https://www.mas.gov.sg/news/parliamentary-replies/2022/reply-to-parliamentary-question-on-setting-total-debt-servicing-ratio-medium-term-interest-rate-floor-at-4-per-cent-per-annum', 'MAS: 2022 reply on the 4% interest rate floor'],
   ['https://www.hdb.gov.sg/cs/infoweb/residential/buying-a-flat/understanding-your-eligibility-and-housing-loan-options/housing-loan-options/housing-loan-from-hdb', 'HDB: Housing Loan from HDB'],
@@ -78,7 +81,7 @@ export function formatRuleValue(path, value) {
     if (path.endsWith('Percent') || path.endsWith('ratePercent')) {
       return formatPercent(value);
     }
-    if (/(incomeCeiling|grantAmount|amounts\.|buyerStampDutyTiers.*\.portion|legalFees|agentFees)/i.test(path)) {
+    if (/(incomeCeiling|grantAmount|amounts\.|buyerStampDutyTiers.*\.portion|legalFees|agentFees|OaRetention)/i.test(path)) {
       return currencyFormatter.format(value);
     }
 

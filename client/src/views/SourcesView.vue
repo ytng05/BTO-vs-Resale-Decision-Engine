@@ -47,6 +47,8 @@ const ruleLabels = {
   'loans.ltv.hdbLoan.leaseProRating.percentPerYearShort': 'HDB loan LTV pro-rating: reduction per year of lease short of 95',
   'loans.stressTestRate.hdbLoanFloor': 'Stress-test rate floor: HDB loan',
   'loans.stressTestRate.bankLoanFloor': 'Stress-test rate floor: bank loan',
+  'loans.hdbLoanOaRetentionPerBuyer': 'HDB loan: OA savings each buyer may keep',
+  'btoWaiting.monthsToAgreementForLease': 'BTO: months from application to signing (assumption)',
   'classifications.STANDARD.mopYears': 'MOP: Standard BTO',
   'classifications.PLUS.mopYears': 'MOP: Plus BTO',
   'classifications.PRIME.mopYears': 'MOP: Prime BTO',

@@ -25,6 +25,8 @@ describe('Sources view loan additions', () => {
     expect(formatRuleValue('loans.hdbLoanTenure.leaseBufferYears', 20)).toBe('20 years');
     expect(formatRuleValue('loans.ltv.hdbLoan.leaseMustCoverYoungestToAge', 95)).toBe('age 95');
     expect(formatRuleValue('loans.ltv.hdbLoan.leaseProRating.percentPerYearShort', 2)).toBe('2% per year');
+    expect(formatRuleValue('loans.hdbLoanOaRetentionPerBuyer', 20000)).toBe('$20,000');
+    expect(formatRuleValue('btoWaiting.monthsToAgreementForLease', 9)).toBe('9 months');
     expect(formatRuleValue('loans.stressTestRate.hdbLoanFloor', 0.03)).toBe('3%');
     expect(formatRuleValue('loans.stressTestRate.bankLoanFloor', 0.04)).toBe('4%');
   });

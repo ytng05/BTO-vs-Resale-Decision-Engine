@@ -70,11 +70,15 @@ DERIVED ASSUMPTION `loans.ltv.hdbLoan.leaseProRating.percentPerYearShort`: 2. HD
 ✅ `loans.btoDownpaymentStages`: BTO with an HDB loan (75% LTV): 10% at signing the agreement for lease, 15% at key collection. Bank loan (55% LTV): 20% at signing (at least 10% in cash), 25% at key collection. Source: <https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-new-flats/sign-agreement-for-lease>. Bank loan 75% LTV row to be confirmed on the page. (checked 2026-10-10: Claude + Har)
 ✅ `loans.ltv.bankLoan.ageBasis`: "IWAA" (income-weighted average age, used for joint borrowers). Source: <https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits> (checked 2026-10-08: Claude + Har)
 ✅ `loans.minCashDownpaymentPercent`: HDB loan 0 (can be fully CPF); bank loan 5 at maximum LTV, 10 at reduced LTV. Sources: <https://www.mas.gov.sg/regulation/explainers/new-housing-loans/loan-tenure-and-loan-to-value-limits>; <https://discover.nyc.gov.sg/finlit/Life-Hacks/Housing/How-to-save-for-your-first-home-and-use-housing-grants> (checked 2026-10-08: Claude + Har)
+✅ `loans.hdbLoanOaRetentionPerBuyer`: 20000 (dollars, per buyer, optional "up to"). Source: HDB Mode of Financing <https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-resale-flats/plan-source-and-contract/mode-of-financing> (checked 2026-10-11: Claude + Har)
+✅ CPF OA can pay stamp duty and legal fees in full; option fee cannot be paid with CPF. Source: <https://www.cpf.gov.sg/member/infohub/educational-resources/hdb-option-fee-and-housing-expenses-you-should-know> (checked 2026-10-11: Claude + Har)
+✅ BTO: the downpayment at signing the agreement for lease can be paid from cash/CPF OA including CPF housing grants. Source: HDB Sign Agreement for Lease <https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-new-flats/sign-agreement-for-lease> (checked 2026-10-11: Claude + Har)
 
 ## BTO Waiting and Resale Notes
 
 ✅ `btoWaiting.shorterWaitingTimeThresholdMonths`: 36. Shorter Waiting Time (SWT) flats have waits under three years. Source: <https://www.hdb.gov.sg/about-us/news-and-publications/press-releases/hdb-launches-9012-flats-in-february-2026-bto-and-sbf-exercises> (checked 2026-10-10: Claude + Har)
 ASSUMPTION `btoWaiting.defaultMonths`: 48. Fallback only when neither the selected project's `btoWaitMonths` nor a town median from seeded projects exists; most Feb 2026 BTO flats had waits under four years. Not a policy fact.
+STATED ASSUMPTION `btoWaiting.monthsToAgreementForLease`: 9 from application. HDB: signing within 9 months after booking (same source).
 ✅ `notes.eip`: Resale only: EIP and SPR quotas may limit which blocks can be bought; quotas update on the 1st of each month; check HDB's EIP/SPR quota e-Service. Source: <https://www.hdb.gov.sg/business/estate-agents-and-salespersons/buying-a-resale-flat/eligibility> (checked 2026-10-10: Claude + Har)
 
 ## Transaction Costs
