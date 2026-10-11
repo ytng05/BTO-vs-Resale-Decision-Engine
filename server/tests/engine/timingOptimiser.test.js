@@ -1,10 +1,14 @@
 // SEAT 1. Timing optimiser properties. No hand-worked values: every expectation is structural or checked against
 // evaluate() itself, which has its own hand-worked fixture (evaluate.json). Scenarios reuse that fixture's household.
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { evaluate } from '../../src/engine/index.js';
 import { loadRuleset } from '../../src/engine/rules/loadRuleset.js';
 import { optimiseTiming } from '../../src/engine/solvers/timingOptimiser.js';
+
+// The solver calls evaluate() hundreds of times; under a full parallel run on a busy machine that can pass
+// vitest's default 5 s test / 10 s hook limits (seat 2 saw it on #50), so allow up to a minute here.
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
 const fixture = JSON.parse(
   readFileSync(new URL('../../src/engine/fixtures/evaluate.json', import.meta.url), 'utf8'),

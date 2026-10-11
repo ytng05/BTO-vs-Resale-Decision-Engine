@@ -1,10 +1,14 @@
 // SEAT 1. Properties to test: determinism (same inputs, same output), no mutation of inputs,
 // and known small cases worked by hand.
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { evaluate } from '../../src/engine/index.js';
 import { loadRuleset } from '../../src/engine/rules/loadRuleset.js';
 import { solveBreakEven } from '../../src/engine/solvers/breakEven.js';
+
+// The solver calls evaluate() hundreds of times; under a full parallel run on a busy machine that can pass
+// vitest's default 5 s test / 10 s hook limits (seat 2 saw it on #50), so allow up to a minute here.
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
 // Timing optimiser tests: timingOptimiser.test.js and timingOptimiser.ranking.test.js
 
