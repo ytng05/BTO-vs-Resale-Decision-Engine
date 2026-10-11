@@ -47,7 +47,8 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
     }
     isTestDatabase = true;
     await clearDatabase();
-    await Promise.all(User.init()); // build unique indexes before relying on them
+    await User.init(); // build the unique email index before relying on it
+
   });
 
   afterAll(async () => {
@@ -57,7 +58,7 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
 
   it('registers, rejects a duplicate email, and logs in', async () => {
     await register('Alice@Example.com ');
-    const dup = await request(app).post('/api/auth/register').send({ email: 'alice@example.com', password: 'another-pass-1' });
+    const dup = await request(app).post('/api/auth/register').send({ name: 'Alice', email: 'alice@example.com', password: 'another-pass-1' });
     expect(dup.status).toBe(409);
 
     const wrong = await request(app).post('/api/auth/login').send({ email: 'alice@example.com', password: 'wrong-pass-1' });

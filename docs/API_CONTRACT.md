@@ -13,7 +13,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | POST | `/api/auth/login` | seat 3 | returns JWT | working |
 | GET | `/api/auth/me` | seat 3 | current user from the token (restores a session on page load) | working |
 | GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | working |
-| GET/DELETE | `/api/scenarios/:id` | seat 3 | load / delete | stub |
+| GET/DELETE | `/api/scenarios/:id` | seat 3 | load / delete (auth required) | working |
 | POST | `/api/compare` | seat 1 | break-even surface for path A vs B | stub |
 | POST | `/api/cpf/accrued-interest` | seat 1 | CPF refund owed at a date: principal + accrued interest (D2, D12) | working (needs verified CPF rate in ruleset) |
 | POST | `/api/stamp-duty` | seat 1 | buyer's stamp duty on a price (D20) | working |
