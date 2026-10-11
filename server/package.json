@@ -8,8 +8,9 @@
     "start": "node src/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "warm": "node src/seeds/warmCache.js",
     "demo": "node scripts/demo-engine.mjs",
-    "refresh-data": "node scripts/refresh-data.mjs"
+    "refresh-data": "node src/seeds/warmCache.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

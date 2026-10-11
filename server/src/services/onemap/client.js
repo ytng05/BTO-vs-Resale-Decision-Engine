@@ -1,4 +1,6 @@
-// SEAT 3. OneMap (free registration): geocode and distance for the PHG "near parents" test.
+// SEAT 3. OneMap (free registration): geocoding for the DISPLAY-ONLY PHG map (D15).
+// The map shows the parents' postal code and the chosen town with a 4 km circle. Nothing here decides
+// PHG eligibility: that is declared by the user (livingArrangement) and checked by the rules engine.
 // The token expires and must be refreshed server-side. Credentials in .env, never in git:
 //   ONEMAP_EMAIL, ONEMAP_PASSWORD (the account you registered on onemap.gov.sg)
 // Base URLs are read from .env with defaults so a change in OneMap's API docs is a config change.
@@ -34,7 +36,7 @@ export function haversineKm(a, b) {
  * Options exist for testing: fetchImpl, sleep, env, now, retries.
  */
 export function createOneMapClient({
-  fetchImpl = globalThis.fetch,
+  fetchImpl = (...args) => globalThis.fetch(...args), // looked up per call, so a stubbed fetch in tests is used
   sleep = sleepFor,
   env = process.env,
   now = () => Date.now(),
@@ -124,7 +126,16 @@ export function createOneMapClient({
     return { from, to, km: Math.round(haversineKm(from, to) * 100) / 100 };
   }
 
-  return { getToken, geocode, locateAndMeasure };
+  /**
+   * An approximate point for a town (users pick a town, not an address): OneMap's first search hit for the
+   * town name. Good enough to centre a map on; never used for any calculation.
+   */
+  async function townPoint(town) {
+    const place = await geocode(String(town ?? '').trim());
+    return { lat: place.lat, lng: place.lng, label: place.address, approximate: true };
+  }
+
+  return { getToken, geocode, townPoint, locateAndMeasure };
 }
 
 let defaultClient;
@@ -138,4 +149,14 @@ export async function distanceKm(fromAddress, toAddress) {
 /** Same as distanceKm, plus both points' coordinates and addresses (for the dashboard map). */
 export async function locateAndMeasure(fromAddress, toAddress) {
   return client().locateAndMeasure(fromAddress, toAddress);
+}
+
+/** Postal code -> { lat, lng, address, postal }. */
+export async function geocode(query) {
+  return client().geocode(query);
+}
+
+/** Town name -> an approximate { lat, lng, label } to centre the PHG map on. */
+export async function townPoint(town) {
+  return client().townPoint(town);
 }

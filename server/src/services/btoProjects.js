@@ -19,6 +19,17 @@ const toCents = (dollars) => Math.round(dollars * 100);
 
 /** One project in API shape: price ranges in cents, floor area as { min, max }. */
 export function toApiProject(project, flats = project.flats.filter(supported)) {
+  const apiFlats = flats.map((f) => ({
+    flatType: f.flatType,
+    ...(f.variant ? { variant: f.variant } : {}),
+    units: f.units,
+    floorAreaSqm: { min: f.floorAreaSqm[0], max: f.floorAreaSqm[1] },
+    priceMinCents: toCents(f.priceRange[0]),
+    priceMaxCents: toCents(f.priceRange[1]),
+  }));
+  // Asked for one flat type: also give its range at the top level, the btoProjectA/B shape in
+  // API_CONTRACT.md ({ id, name, launch, waitMonths, priceMinCents, priceMaxCents, sourceUrl }).
+  const single = apiFlats.length === 1 ? { priceMinCents: apiFlats[0].priceMinCents, priceMaxCents: apiFlats[0].priceMaxCents } : {};
   return {
     id: project.id,
     name: project.name,
@@ -28,15 +39,11 @@ export function toApiProject(project, flats = project.flats.filter(supported)) {
     waitMonths: project.waitMonths,
     priceBasis: project.priceBasis,
     totalUnits: project.totalUnits,
-    flats: flats.map((f) => ({
-      flatType: f.flatType,
-      ...(f.variant ? { variant: f.variant } : {}),
-      units: f.units,
-      floorAreaSqm: { min: f.floorAreaSqm[0], max: f.floorAreaSqm[1] },
-      priceMinCents: toCents(f.priceRange[0]),
-      priceMaxCents: toCents(f.priceRange[1]),
-    })),
+    subsidyRecoveryRate: project.subsidyRecoveryRate,
+    ...single,
+    flats: apiFlats,
     sourceUrl: project.sourceUrl,
+    sourceAccessed: project.sourceAccessed,
     verified: project.verified,
   };
 }
@@ -86,6 +93,10 @@ export function checkSeed(projects = BTO_PROJECTS) {
     if (!/^https:\/\//.test(p.sourceUrl ?? '')) problems.push(`${where}: needs a sourceUrl`);
     if (p.priceBasis !== PRICE_BASIS) problems.push(`${where}: priceBasis must be ${PRICE_BASIS} (prices before grants)`);
     if (!(p.flats ?? []).some(supported)) problems.push(`${where}: has no 3-, 4- or 5-room flats`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(p.sourceAccessed ?? '')) problems.push(`${where}: needs sourceAccessed as YYYY-MM-DD`);
+    const rate = p.subsidyRecoveryRate;
+    if (!(typeof rate === 'number' && rate >= 0 && rate < 0.3)) problems.push(`${where}: subsidyRecoveryRate must be a fraction, e.g. 0.12`);
+    else if ((p.classification === 'STANDARD') !== (rate === 0)) problems.push(`${where}: Standard projects have no subsidy recovery; Plus and Prime do`);
     const units = (p.flats ?? []).reduce((s, f) => s + f.units, 0) + (p.excludedUnits ?? 0);
     if (units !== p.totalUnits) problems.push(`${where}: flat units add up to ${units}, but totalUnits is ${p.totalUnits}`);
     for (const f of p.flats ?? []) {

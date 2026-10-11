@@ -102,3 +102,15 @@ describe('OneMap client', () => {
     await expect(om.geocode('  ')).rejects.toBeInstanceOf(OneMapError);
   });
 });
+
+describe('townPoint', () => {
+  it('gives an approximate point for a town from OneMap search', async () => {
+    const fetchImpl = async (url) => {
+      const u = new URL(url);
+      if (u.pathname.endsWith('/getToken')) return reply(200, { access_token: 't', expiry_timestamp: '2000000000' });
+      return reply(200, { found: 1, results: [{ LATITUDE: '1.3540', LONGITUDE: '103.9450', ADDRESS: 'TAMPINES', POSTAL: 'NIL' }] });
+    };
+    const client = createOneMapClient({ fetchImpl, env, sleep: noSleep });
+    expect(await client.townPoint('TAMPINES')).toEqual({ lat: 1.354, lng: 103.945, label: 'TAMPINES', approximate: true });
+  });
+});

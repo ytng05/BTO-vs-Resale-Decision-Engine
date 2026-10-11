@@ -1,117 +1,93 @@
 // SEAT 3. data.gov.sg client. Server-side only: never call it from the browser.
-// Rate limits and API keys apply: keep the key in .env (DATAGOV_API_KEY), cache results, and back off on HTTP 429.
-// The base URL and key header are read from .env with defaults, so a change in data.gov.sg's
-// developer guide is a config change, not a code change. Confirm both in the CURRENT guide.
-// Uses Node's built-in fetch (Node 20+), so no extra library is needed.
+// Rate limits and API keys now apply. Register a key, keep it in .env (DATAGOV_API_KEY), cache results,
+
+// Checked against guide.data.gov.sg on 2026-10-07: the key goes in the `x-api-key` header, and Datastore Search
+// allows 4 requests per 10 s without a key (8 with a dev key, 20 with prod). Over the limit returns HTTP 429.
+
+
+import { env } from '../../config/env.js';
 
 export const DATASETS = {
   resaleTransactions: 'd_8b84c4ee58e3cfc0ece0d773c8ca6abc',
   priceRangeOfFlatsOffered: 'd_2d493bdcc1d9a44828b6e71cb095b88d',
-  // TODO confirm this ID on data.gov.sg before relying on it (it appeared in a search result).
-  resalePriceIndex: 'd_14f63e595975691e7c24a27ae4c07c79',
+  resalePriceIndex: 'd_14f63e595975691e7c24a27ae4c07c79', // confirmed 2026-10-07: fields quarter, index
 };
 
-const DEFAULT_BASE_URL = 'https://data.gov.sg/api/action/datastore_search';
-const DEFAULT_KEY_HEADER = 'x-api-key';
-const DATASET_ID = /^d_[0-9a-f]{32}$/;
-const MAX_PAGE_SIZE = 10000;
+const BASE_URL = env.datagovBaseUrl || 'https://data.gov.sg/api/action';
+const MAX_RETRIES = 3;
+const TIMEOUT_MS = 15000;
 
-export class DataGovError extends Error {
-  constructor(message, { status = null, datasetId = null } = {}) {
+// status and code are picked up by middleware/errorHandler.js
+export class UpstreamError extends Error {
+  constructor(message, status = 502, code = 'UPSTREAM_ERROR') {
     super(message);
-    this.name = 'DataGovError';
     this.status = status;
-    this.datasetId = datasetId;
+    this.code = code;
   }
 }
 
-const sleepFor = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Retry-After can be seconds ("5") or an HTTP date. Fall back to exponential backoff: 1s, 2s, 4s, 8s.
-function retryDelayMs(response, attempt) {
-  const header = response.headers?.get?.('retry-after');
+// How long to wait before retrying. data.gov.sg may send Retry-After (seconds, or an HTTP date);
+// otherwise exponential backoff: base, 2x, 4x. Capped at 30 s.
+export function retryDelay(response, attempt, baseMs = 1000) {
+  const header = response?.headers?.get?.('retry-after');
   const seconds = Number(header);
   if (header && Number.isFinite(seconds)) return Math.min(seconds * 1000, 30000);
   const date = header ? Date.parse(header) : NaN;
   if (Number.isFinite(date)) return Math.min(Math.max(date - Date.now(), 0), 30000);
-  return 1000 * 2 ** attempt;
+  return baseMs * 2 ** attempt;
 }
 
 /**
- * Fetch one page of a dataset. Page with limit/offset, filter by town and flat type.
- * @param {{ datasetId: string, limit?: number, offset?: number, filters?: object }} params
- * @returns {Promise<{ records: object[], total: number }>}
- *
- * Options after the documented params exist for testing: fetchImpl, sleep, env, retries, timeoutMs.
+   Fetch one page of a dataset. Retries on 429 and 5xx: waits as long as Retry-After says, else backs off (1 s, 2 s, 4 s).
+   data.gov.sg returns most numbers as strings, e.g. resale_price: "653000".
+   @param {{ datasetId: string, limit?: number, offset?: number, filters?: object, sort?: string, retryDelayMs?: number }} params
+   @returns {Promise<{ records: object[], total: number }>}
  */
-export async function fetchDatastorePage(params) {
-  const {
-    datasetId,
-    limit = 1000,
-    offset = 0,
-    filters,
-    fetchImpl = globalThis.fetch,
-    sleep = sleepFor,
-    env = process.env,
-    retries = 4,
-    timeoutMs = 15000,
-  } = params ?? {};
 
-  if (!DATASET_ID.test(String(datasetId))) throw new DataGovError(`Unknown dataset id: ${datasetId}`, { datasetId });
-  if (!Number.isInteger(limit) || limit < 1 || limit > MAX_PAGE_SIZE) throw new DataGovError(`limit must be 1-${MAX_PAGE_SIZE}`, { datasetId });
-  if (!Number.isInteger(offset) || offset < 0) throw new DataGovError('offset must be a non-negative integer', { datasetId });
-
-  const url = new URL(env.DATAGOV_BASE_URL || DEFAULT_BASE_URL);
+export async function fetchDatastorePage({ datasetId, limit = 1000, offset = 0, filters, sort, retryDelayMs = 1000 }) {
+  const url = new URL(`${BASE_URL}/datastore_search`);
   url.searchParams.set('resource_id', datasetId);
   url.searchParams.set('limit', String(limit));
   url.searchParams.set('offset', String(offset));
-  if (filters && Object.keys(filters).length) url.searchParams.set('filters', JSON.stringify(filters));
-
-  const headers = { accept: 'application/json' };
-  if (env.DATAGOV_API_KEY) headers[env.DATAGOV_KEY_HEADER || DEFAULT_KEY_HEADER] = env.DATAGOV_API_KEY;
+  if (filters) url.searchParams.set('filters', JSON.stringify(filters)); // a value can be an array: { month: ['2026-09', '2026-10'] }
+  if (sort) url.searchParams.set('sort', sort);
+  const headers = env.datagovApiKey ? { 'x-api-key': env.datagovApiKey } : {};
 
   for (let attempt = 0; ; attempt++) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    let response;
+    let res;
     try {
-      response = await fetchImpl(url, { headers, signal: controller.signal });
+      res = await fetch(url, { headers, signal: AbortSignal.timeout(TIMEOUT_MS) });
     } catch (err) {
-      clearTimeout(timer);
-      if (attempt < retries) { await sleep(1000 * 2 ** attempt); continue; }
-      throw new DataGovError(`data.gov.sg request failed: ${err.message}`, { datasetId });
+      throw new UpstreamError(`data.gov.sg could not be reached (${err.name})`);
     }
-    clearTimeout(timer);
 
-    // 429 = rate limited, 5xx = their side: wait and retry. Other errors are ours: fail now.
-    if ((response.status === 429 || response.status >= 500) && attempt < retries) {
-      await sleep(retryDelayMs(response, attempt));
+    if (res.status === 429) {
+      if (attempt >= MAX_RETRIES) {
+        throw new UpstreamError('data.gov.sg rate limit reached. Try again in a few seconds.', 503, 'UPSTREAM_RATE_LIMITED');
+      }
+      await sleep(retryDelayMs === 0 ? 0 : retryDelay(res, attempt, retryDelayMs));
       continue;
     }
-    if (!response.ok) {
-      throw new DataGovError(`data.gov.sg returned HTTP ${response.status}`, { status: response.status, datasetId });
+    if (res.status >= 500 && attempt < MAX_RETRIES) {
+      await sleep(retryDelayMs === 0 ? 0 : retryDelay(res, attempt, retryDelayMs));
+      continue;
     }
 
-    const body = await response.json();
-    if (!body?.success || !Array.isArray(body?.result?.records)) {
-      throw new DataGovError('data.gov.sg returned an unexpected response shape', { status: response.status, datasetId });
-    }
-    return { records: body.result.records, total: Number(body.result.total ?? body.result.records.length) };
+    const body = await res.json().catch(() => null);
+    if (!res.ok || !body?.success) throw new UpstreamError(`data.gov.sg returned HTTP ${res.status}`);
+    return { records: body.result.records, total: body.result.total };
   }
 }
 
-/**
- * Fetch every record matching the filters, page by page.
- * Stops when a page comes back short or the reported total is reached; maxPages is a safety cap.
- */
-export async function fetchAllRecords({ datasetId, filters, pageSize = 1000, maxPages = 200, ...options }) {
-  const records = [];
-  for (let page = 0; page < maxPages; page++) {
-    const { records: batch, total } = await fetchDatastorePage({
-      datasetId, filters, limit: pageSize, offset: page * pageSize, ...options,
-    });
-    records.push(...batch);
-    if (batch.length < pageSize || records.length >= total) return records;
+/** Fetch every page of a query. maxRecords stops a too-broad filter from pulling the whole dataset. */
+export async function fetchAllRecords({ datasetId, filters, sort, pageSize = 2000, maxRecords = 20000 }) {
+  const all = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const { records, total } = await fetchDatastorePage({ datasetId, limit: pageSize, offset, filters, sort });
+    all.push(...records);
+    if (records.length < pageSize || all.length >= total) return all;
+    if (all.length >= maxRecords) throw new UpstreamError(`Query matched more than ${maxRecords} records`);
   }
-  throw new DataGovError(`Stopped after ${maxPages} pages; narrow the filters`, { datasetId });
 }

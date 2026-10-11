@@ -1,12 +1,11 @@
 // Tests for the BTO seed data and GET /api/data/bto-projects (Vitest + Supertest).
 import { describe, it, expect } from 'vitest';
-import express from 'express';
 import request from 'supertest';
 import { BTO_PROJECTS } from '../src/seeds/btoProjects.js';
 import { btoTowns, checkSeed, findBtoProjects, getBtoProject, latestLaunch } from '../src/services/btoProjects.js';
-import { createDataRouter } from '../src/routes/data.js';
+import { createApp } from '../src/app.js';
 
-const app = express().use('/api/data', createDataRouter());
+const app = createApp();
 
 describe('BTO seed data', () => {
   it('has the four launches and no problems (ids, towns, units add up, ranges, source links)', () => {
@@ -34,6 +33,28 @@ describe('launch totals match the totals HDB announced', () => {
   });
 });
 
+describe('subsidy recovery and source dates (D18)', () => {
+  it('has a subsidy recovery rate on every project: 0 for Standard, more for Plus and Prime', () => {
+    for (const p of findBtoProjects()) {
+      if (p.classification === 'STANDARD') expect(p.subsidyRecoveryRate).toBe(0);
+      else expect(p.subsidyRecoveryRate).toBeGreaterThan(0);
+    }
+    expect(getBtoProject('berlayar-rise').subsidyRecoveryRate).toBe(0.14);
+    expect(getBtoProject('oak-ville-amk').subsidyRecoveryRate).toBe(0.07);
+  });
+
+  it('date-stamps every project with when its figures were taken', () => {
+    expect(findBtoProjects().every((p) => /^\d{4}-\d{2}-\d{2}$/.test(p.sourceAccessed))).toBe(true);
+    const missingDate = [{ ...BTO_PROJECTS[0], sourceAccessed: undefined }];
+    expect(checkSeed(missingDate)[0]).toMatch(/sourceAccessed/);
+  });
+
+  it('flags a Standard project with a clawback, or a Prime one without', () => {
+    const std = BTO_PROJECTS.find((p) => p.classification === 'STANDARD');
+    expect(checkSeed([{ ...std, subsidyRecoveryRate: 0.06 }])[0]).toMatch(/Standard projects have no subsidy recovery/);
+  });
+});
+
 describe('scope and price basis (D26, D27)', () => {
   it('only serves 3-, 4- and 5-room flats, though the seed keeps every type HDB listed', () => {
     const served = findBtoProjects().flatMap((p) => p.flats.map((f) => f.flatType));
@@ -56,6 +77,13 @@ describe('findBtoProjects', () => {
     expect(found.map((p) => p.id)).toEqual(['chencharu-grove']); // Yishun Glade has no 5-room
     expect(found[0].flats.every((f) => f.flatType === '5 ROOM')).toBe(true);
     expect(findBtoProjects({ classification: 'PLUS' }).every((p) => p.classification === 'PLUS')).toBe(true);
+  });
+
+  it('gives the btoProjectA/B shape at the top level when one flat type is asked for', () => {
+    const [p] = findBtoProjects({ town: 'TAMPINES', flatType: '4 ROOM', classification: 'STANDARD' });
+    expect(p).toMatchObject({ id: 'tampines-bliss', name: 'Tampines Bliss', launch: '2026-02', waitMonths: 23,
+      priceMinCents: 48_100_000, priceMaxCents: 60_000_000 });
+    expect(p.sourceUrl).toMatch(/^https:\/\/www\.hdb\.gov\.sg/);
   });
 
   it('returns prices in cents and floor area as min/max', () => {

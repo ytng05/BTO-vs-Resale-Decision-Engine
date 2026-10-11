@@ -1,65 +1,69 @@
-// SEAT 3. Read-through cache for external API data.
-// Uses MongoDB (collection `dataCache`) when connected, otherwise an in-memory map, so the server
-// still works with no MONGODB_URI. Every refresh is logged, which is what the demo shows.
-//
-//   const { data, fetchedAt, fromCache, stale } = await cached('resale:TAMPINES:4 ROOM', ONE_DAY, loader);
+// Read-through cache for external data (data.gov.sg, OneMap), one model: models/ResaleCache.js.
+//   - fresh (fetched less than FRESH_MS ago)  -> served from the cache, no upstream call
+//   - older, or missing                        -> fetched again; every refresh is logged ("[cache] refreshed …")
+//   - upstream fails but an older copy exists  -> the old copy is served, marked stale: true (never an error)
+// Uses MongoDB when connected. Without MONGODB_URI it falls back to an in-memory Map, so the app and the
+// demo still work (the memory copy is lost on restart).
 import mongoose from 'mongoose';
-import { DataCache } from '../models/DataCache.js';
+import { ResaleCache } from '../models/ResaleCache.js';
 
-export const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+export const FRESH_MS = 24 * 60 * 60 * 1000; // data.gov.sg updates daily at most: refresh once a day
 
 const memory = new Map();
 
-/** Mongo when connected; in tests or with no database, an in-memory map. */
-export function createStore({ useDb = () => mongoose.connection.readyState === 1 } = {}) {
+/** Where entries live: Mongo if connected, else memory. Tests pass their own store. */
+export function defaultStore() {
+  if (mongoose.connection.readyState === 1) {
+    return {
+      get: (key) => ResaleCache.findOne({ key }).lean(),
+      set: ({ key, datasetId, payload, fetchedAt }) =>
+        ResaleCache.updateOne({ key }, { key, datasetId, payload, fetchedAt }, { upsert: true }),
+    };
+  }
   return {
-    async get(key) {
-      if (useDb()) return DataCache.findOne({ key }).lean();
-      return memory.get(key) ?? null;
-    },
-    async set(entry) {
-      if (useDb()) {
-        await DataCache.updateOne({ key: entry.key }, { $set: entry }, { upsert: true });
-        return;
-      }
-      memory.set(entry.key, entry);
-    },
-    clearMemory() { memory.clear(); },
+    get: async (key) => memory.get(key) ?? null,
+    set: async (entry) => { memory.set(entry.key, entry); },
   };
 }
 
 /**
- * Return cached data if fresh; otherwise call loader(), store the result and return it.
- * If the loader fails and an older copy exists, serve that copy with stale: true.
- * @param {string} key
- * @param {number} ttlMs how long a copy counts as fresh
- * @param {() => Promise<any>} loader fetches fresh data
- * @param {{ force?: boolean, store?: object, now?: () => number, log?: (msg: string) => void }} options
+ * @param {string} key cache key
+ * @param {string} datasetId data.gov.sg dataset id (or 'onemap'), stored with the entry
+ * @param {() => Promise<any>} fetcher fetches fresh data from upstream
+ * @param {{ force?: boolean, store?: object, now?: () => number, log?: (msg: string) => void, freshMs?: number }} options
+ * @returns {Promise<{ payload: any, fetchedAt: Date, cached: boolean, stale: boolean }>}
  */
-export async function cached(key, ttlMs, loader, {
+export async function cached(key, datasetId, fetcher, {
   force = false,
-  store = createStore(),
+  store = defaultStore(),
   now = () => Date.now(),
   log = (msg) => console.info(msg),
+  freshMs = FRESH_MS,
 } = {}) {
-  const existing = await store.get(key);
-  const fresh = existing && new Date(existing.expiresAt).getTime() > now();
-  if (fresh && !force) {
-    return { data: existing.data, fetchedAt: new Date(existing.fetchedAt).toISOString(), fromCache: true, stale: false };
+  const hit = await store.get(key);
+  const age = hit ? now() - new Date(hit.fetchedAt).getTime() : Infinity;
+  if (hit && !force && age < freshMs) {
+    return { payload: hit.payload, fetchedAt: new Date(hit.fetchedAt), cached: true, stale: false };
   }
 
   try {
     const started = now();
-    const data = await loader();
+    const payload = await fetcher();
     const fetchedAt = new Date(now());
-    await store.set({ key, data, fetchedAt, expiresAt: new Date(fetchedAt.getTime() + ttlMs) });
+    const isEmpty = Array.isArray(payload) && payload.length === 0;
+    if (!isEmpty) await store.set({ key, datasetId, payload, fetchedAt }); // never cache "no data"
     log(`[cache] refreshed ${key} at ${fetchedAt.toISOString()} (${now() - started} ms)`);
-    return { data, fetchedAt: fetchedAt.toISOString(), fromCache: false, stale: false };
+    return { payload, fetchedAt, cached: false, stale: false };
   } catch (err) {
-    if (existing) {
-      log(`[cache] refresh failed for ${key} (${err.message}); serving copy from ${new Date(existing.fetchedAt).toISOString()}`);
-      return { data: existing.data, fetchedAt: new Date(existing.fetchedAt).toISOString(), fromCache: true, stale: true };
+    if (hit) {
+      log(`[cache] refresh failed for ${key} (${err.message}); serving the copy from ${new Date(hit.fetchedAt).toISOString()}`);
+      return { payload: hit.payload, fetchedAt: new Date(hit.fetchedAt), cached: true, stale: true };
     }
     throw err;
   }
+}
+
+/** Tests only: empty the in-memory store. */
+export function clearMemoryCache() {
+  memory.clear();
 }
