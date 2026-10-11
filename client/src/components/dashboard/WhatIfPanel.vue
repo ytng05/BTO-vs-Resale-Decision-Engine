@@ -1,12 +1,14 @@
 <script setup>
 // What-if sliders for the dashboard. Emits a new copy of the values on every change; the
 // dashboard re-runs the comparison (debounced). Growth rates are fractions (0.03 = 3%) like the
-// store; the sliders show percent. Only inputs the API contract already accepts are here.
-// TODO (seats 1 + 4): add rent while waiting and renovation once they are in API_CONTRACT.md.
+// store; the sliders show percent. Money sliders are in dollars; client.js turns them into cents (D14).
+// Rent while waiting = contract v2's assumptions.monthlyHousingCostWhileWaitingCents (one figure for both
+// paths, paid until each path's keys); renovation = choiceA/choiceB.renovationCents (paid at keys).
 import { computed } from 'vue';
+import { formatMoney } from '../../utils/format.js';
 
 const props = defineProps({
-  // { purchaseYear, priceGrowth, incomeGrowth, holdingYears }
+  // { purchaseYear, priceGrowth, incomeGrowth, holdingYears, monthlyRent, renovationA, renovationB }
   modelValue: { type: Object, required: true },
 });
 const emit = defineEmits(['update:modelValue', 'reset']);
@@ -26,6 +28,9 @@ const sliders = computed(() => {
     { key: 'priceGrowth', id: 'whatif-price-growth', label: 'Flat price growth', min: -2, max: 8, step: 0.5, scale: 100, value: pct(v.priceGrowth), text: `${pct(v.priceGrowth)}% / yr` },
     { key: 'incomeGrowth', id: 'whatif-income-growth', label: 'Income growth', min: 0, max: 10, step: 0.5, scale: 100, value: pct(v.incomeGrowth), text: `${pct(v.incomeGrowth)}% / yr` },
     { key: 'holdingYears', id: 'whatif-holding', label: 'Compare after', min: 1, max: 30, step: 1, scale: 1, value: v.holdingYears, text: `${v.holdingYears} years` },
+    { key: 'monthlyRent', id: 'whatif-rent', label: 'Rent while waiting for keys', hint: '0 = living with parents', min: 0, max: 5000, step: 100, scale: 1, value: v.monthlyRent, text: `${formatMoney(v.monthlyRent)}/mo` },
+    { key: 'renovationA', id: 'whatif-reno-bto', label: 'Renovation, BTO', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationA, text: formatMoney(v.renovationA) },
+    { key: 'renovationB', id: 'whatif-reno-resale', label: 'Renovation, resale', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationB, text: formatMoney(v.renovationB) },
   ];
 });
 </script>
@@ -51,8 +56,10 @@ const sliders = computed(() => {
           :value="s.value"
           :aria-valuetext="s.text"
           :data-cy="`${s.id}-slider`"
+          :aria-describedby="s.hint ? `${s.id}-hint` : undefined"
           @input="set(s.key, $event.target.value, s.scale)"
         />
+        <div v-if="s.hint" :id="`${s.id}-hint`" class="form-text mt-0">{{ s.hint }}</div>
       </div>
 
       <button type="button" class="btn btn-outline-secondary w-100" data-cy="dashboard-whatif-reset" @click="emit('reset')">

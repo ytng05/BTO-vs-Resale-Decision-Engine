@@ -11,6 +11,12 @@ const toCents = (dollars) => (typeof dollars === 'number' ? Math.round(dollars *
 // Converts the store's shape (dollars, its own growth-rate field names) into the contract's
 // CompareRequest (cents, annualPriceGrowth/annualIncomeGrowth/holdingPeriodYears). This is the
 // one conversion boundary D14 describes — nothing else should hand-build a request.
+// A choice as the contract wants it: renovation in cents (renovationCents), paid at that choice's keys.
+function toChoice(choice) {
+  const { renovation, ...rest } = choice;
+  return { ...rest, renovationCents: toCents(renovation ?? 0) };
+}
+
 export function toCompareRequest(store) {
   return {
     profile: {
@@ -23,12 +29,14 @@ export function toCompareRequest(store) {
       })),
       cashSavingsCents: toCents(store.profile.cashSavings),
     },
-    choiceA: { ...store.choiceA },
-    choiceB: { ...store.choiceB },
+    choiceA: toChoice(store.choiceA),
+    choiceB: toChoice(store.choiceB),
     assumptions: {
       annualPriceGrowth: store.assumptions.priceGrowth,
       annualIncomeGrowth: store.assumptions.incomeGrowth,
       holdingPeriodYears: store.assumptions.horizonYears,
+      // Rent (or other housing cost) per month until each path's keys. Optional; 0 = living with parents (D22).
+      monthlyHousingCostWhileWaitingCents: toCents(store.assumptions.monthlyHousingCostWhileWaiting ?? 0),
     },
   };
 }
@@ -55,4 +63,5 @@ export async function getDistance(from, to) {
   return (await http.get('/data/distance', { params: { from, to } })).data;
 }
 
-// TODO (seats 3/4/5): timing(), strategy(), auth, scenarios, data endpoints. See docs/API_CONTRACT.md.
+// TODO: timing() for /api/timing (seat 5), login/register + scenarios (seats 3/4),
+// getResalePrice() and getBtoProjects() for /api/data (seat 3). strategy() dropped (future work).

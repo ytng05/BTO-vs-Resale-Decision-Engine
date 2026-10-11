@@ -1,6 +1,6 @@
 <script setup>
 // Feature 2: the financial dashboard. Both paths side by side: net position, what you pay upfront,
-// grants with every test's reason, money in and out, the PHG distance map and notes before deciding.
+// grants with every test's reason, money in and out, and notes before deciding.
 // What-if sliders re-run the comparison with changed assumptions. They are local only: the saved plan
 // in the store never changes, and "Reset" goes back to it.
 // All money from the API is integer cents (API_CONTRACT.md); it is divided by 100 only for display.
@@ -30,6 +30,10 @@ function fromPlan() {
     priceGrowth: store.assumptions.priceGrowth ?? 0.03,
     incomeGrowth: store.assumptions.incomeGrowth ?? 0.02,
     holdingYears: store.assumptions[HOLDING_KEY] ?? 10,
+    // Contract v2 defaults are 0: no rent (living with parents) and no renovation (D22).
+    monthlyRent: store.assumptions.monthlyHousingCostWhileWaiting ?? 0,
+    renovationA: store.choiceA.renovation ?? 0,
+    renovationB: store.choiceB.renovation ?? 0,
   };
 }
 const whatIf = reactive(fromPlan());
@@ -39,13 +43,14 @@ const reset = () => Object.assign(whatIf, fromPlan());
 // A copy of the plan with the what-if values swapped in. compare() turns it into the contract's request.
 const whatIfPlan = computed(() => ({
   profile: store.profile,
-  choiceA: { ...store.choiceA, purchaseYear: whatIf.purchaseYear },
-  choiceB: { ...store.choiceB, purchaseYear: whatIf.purchaseYear },
+  choiceA: { ...store.choiceA, purchaseYear: whatIf.purchaseYear, renovation: whatIf.renovationA },
+  choiceB: { ...store.choiceB, purchaseYear: whatIf.purchaseYear, renovation: whatIf.renovationB },
   assumptions: {
     ...store.assumptions,
     priceGrowth: whatIf.priceGrowth,
     incomeGrowth: whatIf.incomeGrowth,
     [HOLDING_KEY]: whatIf.holdingYears,
+    monthlyHousingCostWhileWaiting: whatIf.monthlyRent,
   },
 }));
 
@@ -120,7 +125,6 @@ const warnings = computed(() => [
   ...(B.value?.warnings ?? []).map((w) => ({ path: 'Resale', w })),
 ]);
 const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ?? '');
-
 </script>
 
 <template>
@@ -242,6 +246,7 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
         </div>
       </div>
 
+      <p class="text-caption mt-4 mb-0">Illustrative projection, not financial advice. Results depend on your assumptions and the ruleset version shown.</p>
     </template>
   </section>
 </template>
