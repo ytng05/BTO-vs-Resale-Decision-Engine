@@ -1,13 +1,20 @@
 /**
- * CONTRACT — do not change without team agreement.
+ * CONTRACT v2 — FROZEN once #23 merges. Change only by a PR approved by seat 1
+ * and every seat whose code reads the changed field.
  *
  * evaluate() is the single primitive the whole app is built on.
  * Every higher-level feature is a wrapper that calls it in a loop:
  *
- *   timing optimiser      → varies choice.purchaseYear
- *   strategy recommender  → varies every field of choice
- *   backtest              → varies assumptions (historical growth rates)
- *   break-even solver     → varies assumptions, solves for equality
+ *   timing optimiser      → varies choice.applicationYear
+ *   break-even solver     → varies assumptions, solves for equality (bisection)
+ *   what-if sliders       → vary assumptions and renovation, one call per change
+ *   backtest (later)      → varies assumptions (historical growth rates)
+ *   (strategy recommender: dropped to future work, per the prof's feedback)
+ *
+ * v2 changes (D1 proposal #16; work split of 10 Oct): compare both paths at
+ * the same calendar year (the horizon year) with no sale; BTO keys are worked
+ * out from the application year plus the wait; rent while waiting, renovation,
+ * affordability, MOP, a cost breakdown and a yearly cash flow are added.
  *
  * INVARIANTS — these are what make the wrappers cheap. Breaking any of
  * them breaks every feature above.
@@ -26,6 +33,9 @@
  *      is read from the ruleset. If you are about to type a number that
  *      came from HDB, CPF or IRAS, it belongs in the ruleset instead.
  *      Seat 2 owns those values; this file owns their shape.
+ *   7. FAST. The what-if sliders rerun evaluate() on every change, and the
+ *      solvers call it hundreds of times. No per-call setup that could be done
+ *      once (e.g. parsing the ruleset).
  *
  * Owner: seat 1. Consumers: seats 2, 3, 4, 5.
  */
@@ -39,6 +49,7 @@
  * your JSON, tell seat 1 rather than renaming — the engine reads these exactly.
  *
  * Kept as a constant so the dependency is visible in code, not just in chat.
+ * btoWaiting, notes.eip and grants.checkSources are added by seat 2 (names confirmed 11 Oct).
  */
 const RULESET_KEYS = Object.freeze({
   // CPF
@@ -46,19 +57,27 @@ const RULESET_KEYS = Object.freeze({
   ACCRUED_INTEREST_COMPOUNDING: 'cpf.accruedInterestCompounding', // 'ANNUAL' | 'MONTHLY' — see note below
   PARTIAL_MONTH_TREATMENT: 'cpf.partialMonthTreatment',           // 'EXCLUDE_BOTH' — see stub-period note
 
-  // Loans
+  // Loans and affordability
   HDB_RATE_PREMIUM: 'loans.hdbRatePremium',   // HDB concessionary rate = oaRate + this — see note below
   MSR: 'loans.msrPercent',                    // percent (30, not 0.30); applies to BOTH loan types
   TDSR: 'loans.tdsrPercent',                  // percent; applies to BANK loans ONLY
-  LTV: 'loans.ltv',                           // conditional — see note below
+  LTV: 'loans.ltv',                           // conditional — see note below (bankLoan.ageBasis: 'IWAA')
   MAX_TENURE_HDB: 'loans.maxTenureYears.hdbLoan',
   MAX_TENURE_BANK: 'loans.maxTenureYears.bankLoanHdbFlats',
+  MIN_CASH_DOWNPAYMENT: 'loans.minCashDownpaymentPercent', // { hdbLoan, bankLoan: { atMaxLtv, atReducedLtv } }
 
   // Duties and grants
   BSD_TIERS: 'transactionCosts.buyerStampDutyTiers',
   GRANT_EHG: 'grants.ehg',
   GRANT_FAMILY: 'grants.familyGrant',
   GRANT_PHG: 'grants.proximityHousingGrant',
+
+  // Flat rules
+  MOP_YEARS: 'classifications',               // classifications.<STANDARD|PLUS|PRIME>.mopYears
+  BTO_DEFAULT_WAIT_MONTHS: 'btoWaiting.defaultMonths', // 48, an assumption: fallback when no project or town wait applies
+  // btoWaiting.shorterWaitingTimeThresholdMonths (36) is read by the UI only, to label SWT projects.
+  // notes.eip = { text, sourceUrl } is shown by the UI only; the engine doesn't read it.
+  // grants.checkSources = { <test id>: <url> } is read by seat 2's grants.js to fill EligibilityTest.sourceUrl.
 
   // Provenance
   VERSION: 'version'
@@ -92,6 +111,10 @@ const RULESET_KEYS = Object.freeze({
 /**
  * NOTE ON PARTIAL MONTHS AND THE STUB PERIOD — stated assumption, seat 1.
  * Pending CPF Board confirmation.
+ *
+ * Contract v2: there is no sale (D1). Every rule below that says "sale" applies
+ * at the HORIZON date instead: computeAccruedInterest() is called with the
+ * horizon date as asOfDate.
  *
  * Accrued interest is pro-rated to the sale month, counting full calendar
  * months only. A month counts if the obligation existed for the whole of it,
@@ -135,26 +158,113 @@ const RULESET_KEYS = Object.freeze({
  */
 
 /**
+ * NOTE ON THE MEASURE (D1) — per the D1 proposal (#16).
+ * Both paths are measured at the SAME calendar year, assumptions.horizonYear.
+ * There is no sale. At the horizon:
+ *
+ *   netPositionCents =   marketValueAtHorizonCents
+ *                      − outstandingLoanAtHorizonCents
+ *                      − (cpfRefundPrincipalCents + cpfAccruedInterestCents)
+ *                      − clawbackCents
+ *                      − housingCashSpentCents
+ *
+ * - The CPF refund obligation ranks the paths identically to "total wealth
+ *   including the CPF OA balance": the two differ only by the OA balance the
+ *   household would have had without buying, which is the same on both paths.
+ *   It comes from computeAccruedInterest() called with the horizon date.
+ * - housingCashSpentCents counts only housing cash out, from
+ *   evaluationStartYear to the horizon: upfront cash, the cash part of
+ *   instalments, cash-paid stamp duty / fees / renovation, and rent while
+ *   waiting. CPF-paid costs are NOT cash spent (they are in the CPF obligation).
+ * - Market value: a BTO flat is worth market value at keys (near-new resale
+ *   comparables from seat 3), NOT its subsidised price; resale starts from its
+ *   purchase price. Both then grow at annualPriceGrowth to the horizon.
+ * - clawbackCents: Plus/Prime only, subsidyRecoveryRate × market value at the
+ *   horizon (D18 rate). With no sale it doesn't trigger, but it reduces what the
+ *   flat is worth to the owner.
+ */
+
+/**
+ * NOTE ON THE TIMELINE — per the D1 proposal (#16).
+ * - The household enters choice.applicationYear. Application date = 1 Jan of
+ *   that year (the same date grants are assessed on).
+ * - BTO keys = application date + btoWaitMonths, to the MONTH (the CPF ledger is
+ *   monthly). Wait source, chosen by the route: the chosen project's wait from
+ *   seat 3's seed; else the median across that town's seeded projects; else
+ *   ruleset btoWaiting.defaultMonths (seat 2: 48 months), flagged as an assumption.
+ * - Resale keys = the application (purchase) date; no wait.
+ * - BTO cash and CPF are paid in stages (signing the agreement for lease, then
+ *   keys); each stage is a dated ledger entry. Stage split: D5 / EDGE_CASES.md.
+ * - HORIZON DATE = 31 Dec of assumptions.horizonYear (end of that year). Every
+ *   month of horizonYear counts and December's CPF credit is included: the
+ *   engine calls computeAccruedInterest() with asOfDate = 1 Jan of
+ *   (horizonYear + 1). Each path's keys must be on or before the horizon date
+ *   (key month ≤ Dec of horizonYear); evaluate() throws otherwise and the route
+ *   returns 400. Default horizonYear: later key year + 10.
+ */
+
+/**
+ * NOTE ON THE INSTALMENT SPLIT — agreed on #16 (option a), stated limitation.
+ * Each monthly instalment is paid from CPF OA first, while the OA balance
+ * lasts, then in cash. OA available = the applicants' cpfOaBalanceCents minus
+ * CPF used at purchase. Ongoing monthly OA contributions are NOT modelled yet,
+ * so CPF runs out sooner than in reality and housing cash spent is overstated;
+ * the UI states this. CPF-paid instalments are ledger entries for
+ * computeAccruedInterest(); cash-paid ones count in housingCashSpentCents.
+ */
+
+/**
+ * NOTE ON RENT WHILE WAITING — per the D1 proposal (#16).
+ * Applies to BOTH paths: assumptions.monthlyHousingCostWhileWaitingCents for
+ * every month from evaluationStartYear until that path's keys. Default 0
+ * (living with parents), which leans towards BTO; the UI shows a prominent
+ * slider with a sourced rental guide.
+ */
+
+/**
+ * NOTE ON MOP — information, not a constraint (D1: there is no sale).
+ * timeline.earliestSaleDate = keys + mopYears (ruleset, by classification;
+ * resale buyers face the same MOP from their keys). Shown so users know when
+ * they could sell; not used in netPositionCents.
+ */
+
+/**
+ * NOTE ON AFFORDABILITY.
+ * affordability.maxLoanCents = the smallest of the loan limits that apply:
+ *   - MSR (both loan types): instalment ≤ msrPercent of monthly household income
+ *   - TDSR (bank loans only): all debt instalments ≤ tdsrPercent of income
+ *   - LTV: loan ≤ ltv × price (bank-loan reduction by tenure / IWAA age)
+ *   - tenure: ≤ maxTenureYears for the loan type
+ * Income is the household's projected 12-month average at the application
+ * date. limitingRule names the limit that binds. If the loan needed exceeds
+ * maxLoanCents, withinLimit is false, shortfallCents says by how much, and the
+ * warning LOAN_ABOVE_LIMIT is added.
+ */
+
+/**
  * NOTE ON GRANTS — agreed with seat 2.
  * Grants are computed by seat 2's evaluateGrants(profile, choice,
  * assessmentDate, ruleset) in rules/grants.js, which uses the same per-person
  * Profile shape as this contract but money in DOLLARS. evaluate() is the only
  * caller and converts at that boundary: applicant monthlyIncomeCents and
  * cpfOaBalanceCents → dollars going in, ehg / familyGrant / phg → cents coming
- * out. Each eligibility[] entry is { id, grant, grantGroup, passed, reason }:
- * grantGroup → GrantResult.id ('EHG' → 'EHG', 'Family Grant' → 'FAMILY',
- * 'PHG' → 'PHG'), and the entry's id → tests[].id unchanged. Test ids are
- * owned by seat 2 (e.g. EHG_INCOME_CEILING, EHG_MIN_LEASE, FAMILY_RESALE_ONLY,
- * PHG_LIVING_ARRANGEMENT); the full list is in rules/grants.js.
+ * out. Each eligibility[] entry is { id, grant, grantGroup, passed, reason,
+ * sourceUrl }: grantGroup → GrantResult.id ('EHG' → 'EHG', 'Family Grant' →
+ * 'FAMILY', 'PHG' → 'PHG'); id, passed, reason and sourceUrl → tests[] unchanged.
+ * Test ids are owned by seat 2 (e.g. EHG_INCOME_CEILING, EHG_MIN_LEASE,
+ * FAMILY_RESALE_ONLY, PHG_LIVING_ARRANGEMENT); the full list is in rules/grants.js.
+ * sourceUrl comes from the ruleset (grants.checkSources: { <test id>: <url> }, seat 2), never from code.
  *
- * assessmentDate is `${choice.purchaseYear}-01-01` (D13). evaluateGrants()
- * does not age anyone from that date: it treats the ages it is given as ages
- * at assessmentDate. So evaluate() passes each applicant's age projected to
- * the purchase year, age + (purchaseYear - evaluationStartYear).
+ * assessmentDate is `${choice.applicationYear}-01-01` (D13, v2: the APPLICATION
+ * year, because income ceilings are checked at application and income grows
+ * during a BTO wait). evaluateGrants() does not age anyone from that date: it
+ * treats the ages it is given as ages at assessmentDate. So evaluate() passes
+ * each applicant's age projected to the application year,
+ * age + (applicationYear - evaluationStartYear).
  * Income is treated the same way: evaluateGrants() reads monthlyIncome as
  * the 12-month average AT assessmentDate, so evaluate() passes each
- * applicant's monthlyIncomeCents projected to the purchase year,
- * monthlyIncome × (1 + annualIncomeGrowth) ^ (purchaseYear - evaluationStartYear),
+ * applicant's monthlyIncomeCents projected to the application year,
+ * monthlyIncome × (1 + annualIncomeGrowth) ^ (applicationYear - evaluationStartYear),
  * converted to dollars. The input is already a 12-month average, so growing
  * it by the same factor keeps it one.
  * choice.remainingLeaseYears is already the lease at purchase.
@@ -166,7 +276,10 @@ const WARNINGS = Object.freeze({
   LEASE_BELOW_95_PRORATION: 'LEASE_BELOW_95_PRORATION',
   INCOME_CEILING_BREACHED_AT_PURCHASE: 'INCOME_CEILING_BREACHED_AT_PURCHASE',
   CLASSIFICATION_CLAWBACK_ESTIMATED: 'CLASSIFICATION_CLAWBACK_ESTIMATED',
-  CASH_SHORTFALL_AT_PURCHASE: 'CASH_SHORTFALL_AT_PURCHASE' // cashRequiredAtPurchaseCents > cashSavingsCents (D19)
+  CASH_SHORTFALL_AT_PURCHASE: 'CASH_SHORTFALL_AT_PURCHASE', // cashRequiredAtPurchaseCents > cashSavingsCents (D19)
+  LOAN_ABOVE_LIMIT: 'LOAN_ABOVE_LIMIT',                     // loan needed > affordability.maxLoanCents
+  MOVE_IN_DEADLINE_MISSED: 'MOVE_IN_DEADLINE_MISSED',       // keys later than profile.constraints.moveInByYear
+  BTO_WAIT_ASSUMED: 'BTO_WAIT_ASSUMED'                      // wait came from btoWaiting.defaultMonths, not a project
 });
 
 // ---------------------------------------------------------------------------
@@ -175,9 +288,9 @@ const WARNINGS = Object.freeze({
 
 /**
  * One applicant. CPF accounts, grants, first-timer status and the CPF refund
- * on sale are all per person, so the household is a list of these.
+ * are all per person, so the household is a list of these.
  * @typedef {Object} Applicant
- * @property {number} age
+ * @property {number} age                     - at evaluationStartYear
  * @property {'SC'|'PR'} citizenship
  * @property {boolean} firstTimer
  * @property {number} monthlyIncomeCents      - gross, 12-month average basis
@@ -185,33 +298,46 @@ const WARNINGS = Object.freeze({
  */
 
 /**
+ * Household constraints. Used to prune or flag choices, never to change maths.
+ * @typedef {Object} Constraints
+ * @property {number|null} [moveInByYear]     - "must move in by"; a path with keys later than this
+ *                                              warns MOVE_IN_DEADLINE_MISSED and the timing optimiser
+ *                                              skips it
+ */
+
+/**
  * Who the household is. Fixed across every choice being compared.
- * Same shape as seat 2's types.js Profile, with money in cents.
+ * Scope: EXACTLY two applicants, at least one a Singapore Citizen. Singles and
+ * PR+PR households are not modelled yet; evaluate() throws and routes return 400.
  * @typedef {Object} Profile
- * @property {Applicant[]} applicants         - 1 or 2 people
+ * @property {Applicant[]} applicants         - exactly 2, at least one 'SC'
  * @property {number} cashSavingsCents        - household cash held TODAY, at evaluationStartYear (D19).
  *                                              No further saving is assumed until monthlySavings is
  *                                              defined. Checked against cashRequiredAtPurchaseCents:
- *                                              a shortfall for a purchase in evaluationStartYear lets the
- *                                              strategy search prune that choice; for a later purchase
+ *                                              a shortfall for an application in evaluationStartYear lets the
+ *                                              timing optimiser prune that choice; for a later purchase
  *                                              year it only warns (CASH_SHORTFALL_AT_PURCHASE), because
  *                                              saving in between may cover it. The UI shows this assumption.
+ * @property {Constraints} [constraints]
  */
 
 /**
  * The decision being evaluated. This is what the search wrappers vary.
  * @typedef {Object} Choice
  * @property {'BTO'|'RESALE'} path
- * @property {number} purchaseYear            - four-digit year
+ * @property {number} applicationYear         - BTO: year of application; resale: year of purchase (= keys)
  * @property {string} town                    - HDB town name, uppercase
  * @property {string} flatType                - e.g. '4 ROOM'
  * @property {'STANDARD'|'PLUS'|'PRIME'|null} classification - null for resale
  * @property {number} purchasePriceCents      - supplied by the caller, NOT fetched here
+ * @property {number} marketValueAtKeysCents  - BTO: near-new resale comparable at keys (seat 3);
+ *                                              resale: equal to purchasePriceCents
  * @property {number} remainingLeaseYears     - 99 for BTO; resale: lower bound of the user's lease band (D16)
- * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - with/near parents, for PHG; declared by the user,
+ * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - resale only, for PHG; declared by the user,
  *                                              not measured (D15); defaults to 'NONE'
- * @property {number} [btoWaitYears]          - BTO only: years from application to key collection (D7).
- *                                              Supplied by the caller (seeded project data or user override)
+ * @property {number} [btoWaitMonths]         - BTO only: months from application to keys (see timeline note)
+ * @property {boolean} [btoWaitAssumed]       - true when btoWaitMonths came from btoWaiting.defaultMonths
+ * @property {number} [renovationCents]       - renovation budget for this path, spent at keys; default 0
  * @property {number} [subsidyRecoveryRate]   - BTO Plus/Prime only: decimal, e.g. 0.06. Per project, from
  *                                              seat 3's BTO seed record, not the ruleset (D18). 0 / omitted for
  *                                              Standard and resale. Missing for Plus/Prime → warn
@@ -219,11 +345,13 @@ const WARNINGS = Object.freeze({
  */
 
 /**
- * The uncertain inputs. This is what the backtest and break-even solver vary.
+ * The uncertain inputs. This is what the sliders, solvers and backtest vary.
  * @typedef {Object} Assumptions
  * @property {number} annualPriceGrowth       - decimal, e.g. 0.024
  * @property {number} annualIncomeGrowth      - decimal
- * @property {number} holdingPeriodYears      - years from purchase to sale
+ * @property {number} horizonYear             - common measurement year; horizon date = 31 Dec of this year;
+ *                                              both paths' keys must be on or before it (D1, D22)
+ * @property {number} monthlyHousingCostWhileWaitingCents - rent until keys, both paths; default 0
  * @property {number} loanTenureYears
  * @property {'HDB'|'BANK'} loanType          - TDSR is checked for 'BANK' only
  * @property {number} evaluationStartYear
@@ -235,29 +363,34 @@ const WARNINGS = Object.freeze({
 // API REQUEST — what the client sends to POST /api/compare
 // ---------------------------------------------------------------------------
 // Not the engine's input. The route turns a CompareRequest into Profile /
-// Choice / Assumptions: it looks up purchasePriceCents, sets
-// remainingLeaseYears from leaseBand (D16), fills btoWaitYears and loan
-// defaults, and sets evaluationStartYear. The client store mirrors this
-// shape, except money, which the store keeps in dollars (monthlyIncome,
-// cpfOaBalance) and converts to …Cents when sending (D14).
+// Choice / Assumptions: it looks up purchasePriceCents and marketValueAtKeysCents,
+// sets remainingLeaseYears from leaseBand (D16), resolves btoWaitMonths (project
+// → town median → ruleset fallback), fills loan defaults and horizonYear if
+// omitted, and sets evaluationStartYear. The client store mirrors this shape,
+// except money, which the store keeps in dollars and converts to …Cents when
+// sending (D14).
 
 /**
  * @typedef {Object} RequestChoice
  * @property {'BTO'|'RESALE'} path
- * @property {number} purchaseYear
+ * @property {number} applicationYear
  * @property {string} town                    - HDB town name, uppercase
  * @property {string} flatType                - e.g. '4 ROOM'
  * @property {'STANDARD'|'PLUS'|'PRIME'|null} classification - null for resale
+ * @property {string} [btoProjectId]          - BTO only: id of a project from GET /api/data/bto-projects
+ *                                              (seat 3's seed); sets the wait. Picker filtered by town
+ * @property {number} [btoWaitMonths]         - BTO only, optional override
  * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - resale only (D15)
  * @property {string} [leaseBand]             - resale only, e.g. '80-89' (D16)
- * @property {number} [btoWaitYears]          - BTO only, optional override (D7)
+ * @property {number} [renovationCents]       - default 0
  */
 
 /**
  * @typedef {Object} RequestAssumptions
  * @property {number} annualPriceGrowth       - decimal
  * @property {number} annualIncomeGrowth      - decimal
- * @property {number} holdingPeriodYears
+ * @property {number} [horizonYear]           - default: later key year + 10
+ * @property {number} [monthlyHousingCostWhileWaitingCents] - default 0
  * @property {number} [loanTenureYears]       - server default if omitted
  * @property {'HDB'|'BANK'} [loanType]        - server default if omitted
  * @property {number} [legalFeesCents]        - server default if omitted (D17)
@@ -265,8 +398,9 @@ const WARNINGS = Object.freeze({
  */
 
 /**
- * No purchasePriceCents, remainingLeaseYears or evaluationStartYear: the
- * server sets those. Profile is the engine Profile (money in cents).
+ * No purchasePriceCents, marketValueAtKeysCents, remainingLeaseYears or
+ * evaluationStartYear: the server sets those. Profile is the engine Profile
+ * (money in cents).
  * @typedef {Object} CompareRequest
  * @property {Profile} profile
  * @property {RequestChoice} choiceA
@@ -283,6 +417,9 @@ const WARNINGS = Object.freeze({
  * @property {string} id                      - e.g. 'EHG_INCOME_CEILING'
  * @property {boolean} passed
  * @property {string} reason                  - human-readable; seat 2 renders this
+ * @property {string|null} sourceUrl          - official source for this check (seat 2), from the ruleset.
+ *                                              Lets each check link to its source; whether the standalone
+ *                                              Sources page stays is a UI choice with no contract impact
  */
 
 /**
@@ -307,23 +444,68 @@ const WARNINGS = Object.freeze({
  */
 
 /**
+ * Dates are 'YYYY-MM-DD' (1st of the month).
+ * @typedef {Object} Timeline
+ * @property {string} applicationDate
+ * @property {string} keyCollectionDate
+ * @property {number} monthsWaiting           - 0 for resale
+ * @property {string} earliestSaleDate        - keys + MOP; information only (no sale in D1)
+ */
+
+/**
+ * @typedef {Object} Affordability
+ * @property {number} maxLoanCents            - smallest applicable limit (see affordability note)
+ * @property {number} loanRequiredCents
+ * @property {boolean} withinLimit
+ * @property {number} shortfallCents          - 0 when within the limit
+ * @property {'MSR'|'TDSR'|'LTV'|'TENURE'} limitingRule
+ */
+
+/**
+ * One line of the cost breakdown. Lines are cumulative from evaluationStartYear
+ * to the horizon. id: 'BSD' | 'LEGAL' | 'AGENT' | 'RENOVATION' | 'RENT_WHILE_WAITING' |
+ * 'LOAN_INTEREST' | 'CPF_ACCRUED_INTEREST' | 'CLAWBACK'.
+ * @typedef {Object} CostLine
+ * @property {string} id
+ * @property {string} label                   - for display, e.g. "Buyer's stamp duty"
+ * @property {number} amountCents
+ * @property {'CASH'|'CPF'|'NONE'} paidFrom   - NONE for obligations not yet paid (CPF interest, clawback)
+ */
+
+/**
+ * One row per calendar year, evaluationStartYear to horizonYear inclusive.
+ * Balances are as at 31 Dec; the last row (horizonYear) is the horizon date itself.
+ * @typedef {Object} CashFlowYear
+ * @property {number} year
+ * @property {number} housingCashOutCents     - cash spent on housing that year (rent, cash instalments, fees)
+ * @property {number} cpfUsedCents            - CPF withdrawn for housing that year
+ * @property {number} loanBalanceEndCents
+ * @property {number} marketValueEndCents     - 0 before keys
+ * @property {number} cpfObligationEndCents   - CPF principal + accrued interest owed back to the OA
+ */
+
+/**
  * @typedef {Object} Outcome
+ * @property {number} horizonYear
+ * @property {Timeline} timeline
  * @property {number} totalGrantsCents
  * @property {GrantResult[]} grants
+ * @property {Affordability} affordability
  * @property {number} cashRequiredAtPurchaseCents - cash the household pays from its own savings at purchase,
  *                                              AFTER using the CPF OA balance and grants and after the loan
  *                                              (e.g. any minimum cash downpayment required for a bank loan,
  *                                              per the ruleset). BTO pays in stages; see EDGE_CASES.md.
  * @property {number} cpfUsedAtPurchaseCents
  * @property {number} loanPrincipalCents
- * @property {number} totalInterestPaidCents
- * @property {number} salePriceCents          - projected under assumptions
- * @property {number} cpfRefundPrincipalCents
- * @property {number} cpfAccruedInterestCents
- * @property {number} outstandingLoanAtSaleCents
- * @property {number} transactionCostsCents   - BSD, legal, agent, levy
+ * @property {number} marketValueAtHorizonCents
+ * @property {number} outstandingLoanAtHorizonCents
+ * @property {number} cpfRefundPrincipalCents  - CPF principal owed back at the horizon
+ * @property {number} cpfAccruedInterestCents  - accrued interest owed back at the horizon (D12 conventions)
  * @property {number} clawbackCents           - Plus/Prime only, else 0
- * @property {number} netPositionCents        - the headline figure
+ * @property {number} housingCashSpentCents   - sum of the CASH-paid cost lines and cash instalments
+ * @property {CostLine[]} costBreakdown
+ * @property {CashFlowYear[]} yearlyCashFlow
+ * @property {number} netPositionCents        - the headline figure (see the measure note)
  * @property {ResolvedRates} resolvedRates
  * @property {string} rulesetVersion          - stamped so saved scenarios are reproducible
  * @property {string[]} warnings              - values from WARNINGS
@@ -341,6 +523,8 @@ const WARNINGS = Object.freeze({
  * @param {Assumptions} assumptions
  * @param {Object} ruleset - the versioned policy config (seat 2 owns this)
  * @returns {Outcome}
+ * @throws if the profile is out of scope (not exactly two applicants, or no SC)
+ *         or horizonYear is before this choice's keys
  */
 function evaluate(profile, choice, assumptions, ruleset) {
   throw new Error('Not implemented — seat 1');
@@ -360,44 +544,80 @@ function evaluate(profile, choice, assumptions, ruleset) {
  */
 function stubEvaluate(profile, choice, assumptions) {
   const isResale = choice.path === 'RESALE';
+  const startYear = assumptions.evaluationStartYear ?? 2026;
+  const horizonYear = assumptions.horizonYear ?? startYear + 14;
+  const keysYear = isResale ? choice.applicationYear : choice.applicationYear + 4;
+  const yearlyCashFlow = [];
+  for (let year = startYear; year <= horizonYear; year += 1) {
+    const hasKeys = year >= keysYear;
+    yearlyCashFlow.push({
+      year,
+      housingCashOutCents: hasKeys ? 600_000 : 1_200_000,
+      cpfUsedCents: hasKeys ? 1_440_000 : 0,
+      loanBalanceEndCents: hasKeys ? Math.max(0, 45_000_000 - (year - keysYear) * 1_500_000) : 0,
+      marketValueEndCents: hasKeys ? 60_000_000 + (year - keysYear) * 1_500_000 : 0,
+      cpfObligationEndCents: hasKeys ? 8_000_000 + (year - keysYear) * 1_700_000 : 0
+    });
+  }
   return {
+    horizonYear,
+    timeline: {
+      applicationDate: `${choice.applicationYear}-01-01`,
+      keyCollectionDate: `${keysYear}-${isResale ? '01' : '05'}-01`,
+      monthsWaiting: isResale ? 0 : 52,
+      earliestSaleDate: `${keysYear + 5}-${isResale ? '01' : '05'}-01`
+    },
     totalGrantsCents: isResale ? 11_000_000 : 6_000_000,
     grants: [
       {
         id: 'EHG',
         amountCents: 6_000_000,
-        tests: [{ id: 'EHG_INCOME_CEILING', passed: true, reason: 'STUB — not computed' }]
+        tests: [{ id: 'EHG_INCOME_CEILING', passed: true, reason: 'STUB — not computed', sourceUrl: null }]
       },
       {
         id: 'FAMILY',
         amountCents: isResale ? 5_000_000 : 0,
-        tests: [{ id: 'FAMILY_RESALE_ONLY', passed: isResale, reason: 'STUB — not computed' }]
+        tests: [{ id: 'FAMILY_RESALE_ONLY', passed: isResale, reason: 'STUB — not computed', sourceUrl: null }]
       },
       {
         id: 'PHG',
         amountCents: 0,
-        tests: [{ id: 'PHG_LIVING_ARRANGEMENT', passed: false, reason: 'STUB — not computed' }]
+        tests: [{ id: 'PHG_LIVING_ARRANGEMENT', passed: false, reason: 'STUB — not computed', sourceUrl: null }]
       }
     ],
+    affordability: {
+      maxLoanCents: 48_000_000,
+      loanRequiredCents: 45_000_000,
+      withinLimit: true,
+      shortfallCents: 0,
+      limitingRule: 'MSR'
+    },
     cashRequiredAtPurchaseCents: 4_500_000,
     cpfUsedAtPurchaseCents: 8_000_000,
     loanPrincipalCents: 45_000_000,
-    totalInterestPaidCents: 12_000_000,
-    salePriceCents: 72_000_000,
+    marketValueAtHorizonCents: 72_000_000,
+    outstandingLoanAtHorizonCents: 30_000_000,
     cpfRefundPrincipalCents: 20_000_000,
     cpfAccruedInterestCents: 3_200_000,
-    outstandingLoanAtSaleCents: 30_000_000,
-    transactionCostsCents: 1_800_000,
     clawbackCents: 0,
-    netPositionCents: 17_000_000,
+    housingCashSpentCents: 6_300_000,
+    costBreakdown: [
+      { id: 'BSD', label: "Buyer's stamp duty", amountCents: 1_110_000, paidFrom: 'CPF' },
+      { id: 'RENOVATION', label: 'Renovation', amountCents: 3_000_000, paidFrom: 'CASH' },
+      { id: 'RENT_WHILE_WAITING', label: 'Rent while waiting', amountCents: isResale ? 0 : 3_300_000, paidFrom: 'CASH' },
+      { id: 'LOAN_INTEREST', label: 'Loan interest', amountCents: 8_000_000, paidFrom: 'CPF' },
+      { id: 'CPF_ACCRUED_INTEREST', label: 'CPF accrued interest owed', amountCents: 3_200_000, paidFrom: 'NONE' }
+    ],
+    yearlyCashFlow,
+    netPositionCents: 12_500_000,
     resolvedRates: {
       oaRate: 0.025,
-      hdbConcessionaryRate: null,
+      hdbConcessionaryRate: 0.026,
       accruedInterestCompounding: 'ANNUAL',
       ltvApplied: 0.75
     },
     rulesetVersion: 'STUB',
-    warnings: [WARNINGS.HDB_RATE_UNRESOLVED]
+    warnings: isResale ? [] : [WARNINGS.BTO_WAIT_ASSUMED]
   };
 }
 

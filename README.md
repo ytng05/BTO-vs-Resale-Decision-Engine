@@ -4,7 +4,7 @@ IS216 Web Application Development 2, group project (SMU).
 
 Every first-time buyer in Singapore faces the same fork: take a BTO now and wait, or keep saving and buy resale later.
 This app does not forecast prices. It solves for the assumptions at which the two paths are equal and shows the result
-as a decision surface (heatmap), plus an optimal-timing search and a ranked strategy recommendation.
+as a decision surface (heatmap), plus an optimal-timing search. A ranked strategy recommendation is future work (dropped after the prof's feedback).
 A historical backtest ("risk-based verdict") is planned for later, once the first two features work.
 
 > Illustrative projection, not financial advice. Policy figures come from the versioned ruleset and are only as good as
@@ -12,7 +12,7 @@ A historical backtest ("risk-based verdict") is planned for later, once the firs
 
 ## Scope
 - HDB BTO (Standard / Plus / Prime) versus HDB resale. Executive Condominiums are out of scope.
-- Features, in build order: (1) base break-even comparison, (2) optimal timing search, (3) strategy recommendation over the full space, (4) later: risk-based verdict (historical backtest).
+- Features, in build order: (1) base break-even comparison, (2) optimal timing search, (3) later: risk-based verdict (historical backtest). Future work: strategy recommendation over the full space.
 
 ## Tech stack
 Vue 3 (Composition API), Pinia, Vue Router, Bootstrap 5 (SCSS), Chart.js | Node.js, Express, MongoDB/Mongoose, JWT + bcryptjs | Vitest, Cypress.
