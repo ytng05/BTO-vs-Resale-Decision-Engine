@@ -31,12 +31,13 @@ export function historicalAnnualGrowth(series, years) {
 }
 
 /** The RPI series (optionally limited to from..to, inclusive) plus historical growth rates. */
-export async function getRpiSeries({ from, to } = {}) {
-  // One cache entry for the whole series (about 150 rows). The 7-day TTL picks up each new quarter.
-  const { payload: all, fetchedAt, cached: fromCache } = await cached(
+export async function getRpiSeries({ from, to, force = false } = {}) {
+  // One cache entry for the whole series (about 150 rows), refreshed daily like everything else in the cache.
+  const { payload: all, fetchedAt, cached: fromCache, stale } = await cached(
     `${DATASETS.resalePriceIndex}:all`,
     DATASETS.resalePriceIndex,
     async () => parseRpi(await fetchAllRecords({ datasetId: DATASETS.resalePriceIndex })),
+    { force },
   );
   if (all.length === 0) throw new UpstreamError('data.gov.sg returned an empty Resale Price Index');
 
@@ -54,6 +55,7 @@ export async function getRpiSeries({ from, to } = {}) {
     series,
     source: { datasetId: DATASETS.resalePriceIndex, name: 'Resale Price Index (HDB, data.gov.sg)' },
     cached: fromCache,
+    stale,
     fetchedAt,
   };
 }
