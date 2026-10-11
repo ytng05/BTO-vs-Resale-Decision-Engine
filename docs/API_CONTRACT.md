@@ -212,11 +212,6 @@ Request: `{ priceCents }` (positive integer). Response: `{ bsdCents, dutiableVal
 
 Errors: `400 VALIDATION_ERROR`; `503 RULESET_UNAVAILABLE` (no BSD tiers in the ruleset).
 
-## POST /api/auth/register, POST /api/auth/login (DRAFT — seat 4's expected shape; seat 3 to confirm/adjust when building the route)
-Request (both): `{ name?, email, password }` (`name` register only; `password` plaintext over HTTPS, hashed server-side with bcryptjs).
-Response (both): `{ token, user: { id, name, email } }`. `token` is a JWT the client sends as `Authorization: Bearer <token>` on `/api/scenarios*`.
-Errors: `400 VALIDATION_ERROR` (bad email / password too short / name missing on register), `409 EMAIL_TAKEN` (register, email already registered), `401 INVALID_CREDENTIALS` (login).
-Client: `client/src/stores/auth.js` persists `{ token, user }` to `localStorage` under `hdb-app:auth` and restores it on app load; `router/index.js` guards `/plan` and `/results` with `meta: { requiresAuth: true }`.
 ## Auth
 
 Passwords are hashed with bcryptjs; the plain password is never stored. Tokens are JWTs (HS256, signed with `JWT_SECRET`), valid for 7 days.
