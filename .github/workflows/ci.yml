@@ -21,6 +21,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+        env:
+          MONGODB_URI_TEST: mongodb://localhost:27017/bto_test
+          JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+
       # Build with mock data so the Cypress smoke test does not depend on unfinished engine routes.
       - run: npm run build
         env:

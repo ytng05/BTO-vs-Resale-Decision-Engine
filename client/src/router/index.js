@@ -4,8 +4,6 @@ import PlanView from '../views/PlanView.vue';
 import ResultsView from '../views/ResultsView.vue';
 import SourcesView from '../views/SourcesView.vue';
 import LoginView from '../views/LoginView.vue';
-import { useAuthStore } from '../stores/auth.js';
-
 
 const router = createRouter({
   history: createWebHistory(),
