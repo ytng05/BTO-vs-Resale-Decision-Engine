@@ -229,16 +229,25 @@ const RULESET_KEYS = Object.freeze({
  */
 
 /**
- * NOTE ON AFFORDABILITY.
- * affordability.maxLoanCents = the smallest of the loan limits that apply:
+ * NOTE ON AFFORDABILITY (method agreed 11 Oct; age rules for seat 2 to confirm).
+ * affordability.maxLoanCents = the smallest of the loan limits that apply,
+ * rounded DOWN to the whole dollar:
  *   - MSR (both loan types): instalment ≤ msrPercent of monthly household income
- *   - TDSR (bank loans only): all debt instalments ≤ tdsrPercent of income
- *   - LTV: loan ≤ ltv × price (bank-loan reduction by tenure / IWAA age)
- *   - tenure: ≤ maxTenureYears for the loan type
- * Income is the household's projected 12-month average at the application
- * date. limitingRule names the limit that binds. If the loan needed exceeds
- * maxLoanCents, withinLimit is false, shortfallCents says by how much, and the
- * warning LOAN_ABOVE_LIMIT is added.
+ *   - TDSR (bank loans only): all debt instalments ≤ tdsrPercent of income;
+ *     other debts are assumed to be 0 (stated limitation), so MSR decides
+ *   - LTV: loan ≤ ltv × price
+ * Instalment caps become loans with cap × (1 − (1 + r)^−n) ÷ r at the assessment
+ * rate (HDB loan: the HDB rate; bank loan: the regulated stress-test rate).
+ * Tenure n is whole years, with the age rounded UP to a whole year:
+ *   - HDB loan: shortest of the tenure asked for, maxTenureYears.hdbLoan and the
+ *     years until the age limit (a hard cap; age basis to confirm with seat 2)
+ *   - bank loan: shortest of the tenure asked for and maxTenureYears.bankLoanHdbFlats.
+ *     Age doesn't cap a bank loan; it lowers the LTV: the reduced LTV applies if
+ *     the tenure is over the threshold OR IWAA + tenure is over the age limit.
+ * Tenure is not a separate limit: it shortens the MSR/TDSR loan. limitingRule
+ * names the limit that binds. If the loan needed exceeds maxLoanCents,
+ * withinLimit is false, shortfallCents says by how much, and the warning
+ * LOAN_ABOVE_LIMIT is added.
  */
 
 /**
@@ -458,7 +467,7 @@ const WARNINGS = Object.freeze({
  * @property {number} loanRequiredCents
  * @property {boolean} withinLimit
  * @property {number} shortfallCents          - 0 when within the limit
- * @property {'MSR'|'TDSR'|'LTV'|'TENURE'} limitingRule
+ * @property {'MSR'|'TDSR'|'LTV'} limitingRule  - tenure is not a separate limit (it shortens MSR/TDSR)
  */
 
 /**
