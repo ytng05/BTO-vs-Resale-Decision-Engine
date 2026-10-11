@@ -64,6 +64,10 @@ const RULESET_KEYS = Object.freeze({
   LTV: 'loans.ltv',                           // conditional — see note below (bankLoan.ageBasis: 'IWAA')
   MAX_TENURE_HDB: 'loans.maxTenureYears.hdbLoan',
   MAX_TENURE_BANK: 'loans.maxTenureYears.bankLoanHdbFlats',
+  HDB_LOAN_TENURE: 'loans.hdbLoanTenure',     // { ageLimit: 65, ageBasis: 'AVERAGE', leaseBufferYears: 20 } (seat 2)
+  STRESS_TEST_RATE: 'loans.stressTestRate',   // { hdbLoanFloor: 0.03, bankLoanFloor: 0.04 } (seat 2)
+  // loans.ltv.hdbLoan.leaseMustCoverYoungestToAge (95) and loans.ltv.hdbLoan.leaseProRating.percentPerYearShort (2):
+  // HDB loan LTV pro-rating — see affordability note
   MIN_CASH_DOWNPAYMENT: 'loans.minCashDownpaymentPercent', // { hdbLoan, bankLoan: { atMaxLtv, atReducedLtv } }
 
   // Duties and grants
@@ -229,16 +233,41 @@ const RULESET_KEYS = Object.freeze({
  */
 
 /**
- * NOTE ON AFFORDABILITY.
- * affordability.maxLoanCents = the smallest of the loan limits that apply:
+ * NOTE ON AFFORDABILITY (method agreed 11 Oct; HDB rules from seat 2's review of #30,
+ * HDB "Housing loan from HDB" page; ruleset keys loans.hdbLoanTenure / loans.stressTestRate).
+ * affordability.maxLoanCents = the smallest of the loan limits that apply,
+ * rounded DOWN to the whole dollar:
  *   - MSR (both loan types): instalment ≤ msrPercent of monthly household income
- *   - TDSR (bank loans only): all debt instalments ≤ tdsrPercent of income
- *   - LTV: loan ≤ ltv × price (bank-loan reduction by tenure / IWAA age)
- *   - tenure: ≤ maxTenureYears for the loan type
- * Income is the household's projected 12-month average at the application
- * date. limitingRule names the limit that binds. If the loan needed exceeds
- * maxLoanCents, withinLimit is false, shortfallCents says by how much, and the
- * warning LOAN_ABOVE_LIMIT is added.
+ *   - TDSR (bank loans only): all debt instalments ≤ tdsrPercent of income;
+ *     other debts are assumed to be 0 (stated limitation), so MSR decides
+ *   - LTV: loan ≤ ltv × price (see the LTV rules below)
+ * Instalment caps become loans with cap × (1 − (1 + r)^−n) ÷ r, r = assessment
+ * rate ÷ 12. Assessment rate = the HIGHER of the floor and the loan's rate:
+ *   - HDB loan: max(stressTestRate.hdbLoanFloor, HDB rate) — 3.0% today, not 2.6%
+ *   - bank loan: max(stressTestRate.bankLoanFloor, the bank rate). The engine has
+ *     no bank rate, so it uses the floor (MAS medium-term rate floor, 4%)
+ * Tenure n is whole years, ages rounded UP to a whole year:
+ *   - HDB loan: shortest of the tenure asked for, maxTenureYears.hdbLoan,
+ *     hdbLoanTenure.ageLimit − the applicants' AVERAGE age (plain average, not
+ *     IWAA), and remainingLeaseYears − hdbLoanTenure.leaseBufferYears. Hard caps.
+ *   - bank loan: shortest of the tenure asked for and maxTenureYears.bankLoanHdbFlats.
+ *     Age doesn't cap a bank loan; it lowers the LTV (below).
+ * LTV:
+ *   - HDB loan: ltv.hdbLoan.maxPercent, pro-rated down when remainingLeaseYears
+ *     doesn't cover the YOUNGEST applicant to ltv.hdbLoan.leaseMustCoverYoungestToAge;
+ *     warns LEASE_BELOW_95_PRORATION. Seat 2's formula (a DERIVED assumption fitted to
+ *     the 2019 MOM/CPF lease examples; HDB doesn't publish one):
+ *       shortfall = max(0, leaseMustCoverYoungestToAge − youngest age − remainingLeaseYears)
+ *       factor    = max(0, 1 − leaseProRating.percentPerYearShort ÷ 100 × shortfall)
+ *       ltvApplied = maxPercent ÷ 100 × factor
+ *     e.g. youngest 25 with a 65-year lease: 5 years short, factor 90%
+ *   - bank loan: ltv.bankLoan.reducedMaxPercent if the tenure is over
+ *     reducedIfTenureYearsOver OR IWAA + tenure is over reducedIfLoanEndsAfterAge
+ * Tenure is not a separate limit: it shortens the MSR/TDSR loan. limitingRule
+ * names the limit that binds. If the loan needed exceeds maxLoanCents,
+ * withinLimit is false, shortfallCents says by how much, and the warning
+ * LOAN_ABOVE_LIMIT is added. resolvedRates.assessmentRate and ltvApplied
+ * report the rate and LTV used.
  */
 
 /**
@@ -273,7 +302,8 @@ const RULESET_KEYS = Object.freeze({
 /** Warning codes surfaced in Outcome.warnings. */
 const WARNINGS = Object.freeze({
   HDB_RATE_UNRESOLVED: 'HDB_RATE_UNRESOLVED',
-  LEASE_BELOW_95_PRORATION: 'LEASE_BELOW_95_PRORATION',
+  LEASE_BELOW_95_PRORATION: 'LEASE_BELOW_95_PRORATION',   // lease doesn't cover the youngest buyer to 95:
+                                                           // CPF use and the HDB loan LTV are pro-rated
   INCOME_CEILING_BREACHED_AT_PURCHASE: 'INCOME_CEILING_BREACHED_AT_PURCHASE',
   CLASSIFICATION_CLAWBACK_ESTIMATED: 'CLASSIFICATION_CLAWBACK_ESTIMATED',
   CASH_SHORTFALL_AT_PURCHASE: 'CASH_SHORTFALL_AT_PURCHASE', // cashRequiredAtPurchaseCents > cashSavingsCents (D19)
@@ -440,7 +470,8 @@ const WARNINGS = Object.freeze({
  * @property {number} oaRate                  - decimal, e.g. 0.025
  * @property {number|null} hdbConcessionaryRate - decimal, oaRate + hdbRatePremium; null if unresolved
  * @property {'ANNUAL'|'MONTHLY'} accruedInterestCompounding - enum, not a rate
- * @property {number} ltvApplied              - decimal, e.g. 0.75 (ruleset stores 75)
+ * @property {number} ltvApplied              - decimal, e.g. 0.75 (ruleset stores 75); after any pro-rating
+ * @property {number} assessmentRate          - decimal: the rate MSR/TDSR are assessed at (affordability note)
  */
 
 /**
@@ -458,7 +489,7 @@ const WARNINGS = Object.freeze({
  * @property {number} loanRequiredCents
  * @property {boolean} withinLimit
  * @property {number} shortfallCents          - 0 when within the limit
- * @property {'MSR'|'TDSR'|'LTV'|'TENURE'} limitingRule
+ * @property {'MSR'|'TDSR'|'LTV'} limitingRule  - tenure is not a separate limit (it shortens MSR/TDSR)
  */
 
 /**
@@ -614,7 +645,8 @@ function stubEvaluate(profile, choice, assumptions) {
       oaRate: 0.025,
       hdbConcessionaryRate: 0.026,
       accruedInterestCompounding: 'ANNUAL',
-      ltvApplied: 0.75
+      ltvApplied: 0.75,
+      assessmentRate: 0.03
     },
     rulesetVersion: 'STUB',
     warnings: isResale ? [] : [WARNINGS.BTO_WAIT_ASSUMED]
