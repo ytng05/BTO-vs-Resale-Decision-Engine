@@ -1,17 +1,36 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { summariseResale, monthWindow } from '../src/services/datagov/resalePrice.js';
-import { fetchDatastorePage } from '../src/services/datagov/client.js';
+import { summariseResale, monthWindow, parseRemainingLease } from '../src/services/datagov/resalePrice.js';
+import { fetchDatastorePage, retryDelay } from '../src/services/datagov/client.js';
 
 describe('summariseResale', () => {
-  it('computes median, quartiles and price per sqm from string values', () => {
-    const records = [400000, 500000, 600000, 700000].map((p) => ({ resale_price: String(p), floor_area_sqm: '100.00' }));
+  it('computes median, quartiles and price per sqm in cents (D14) from string values', () => {
+    const records = [400000, 500000, 600000, 700000].map((p) => ({
+      resale_price: String(p), floor_area_sqm: '100.00', remaining_lease: '61 years 06 months',
+    }));
     expect(summariseResale(records)).toEqual({
-      count: 4, median: 550000, p25: 475000, p75: 625000, medianPricePerSqm: 5500, lowSample: true,
+      count: 4,
+      medianPriceCents: 55_000_000,
+      p25PriceCents: 47_500_000,
+      p75PriceCents: 62_500_000,
+      medianPricePerSqmCents: 550_000,
+      medianFloorAreaSqm: 100,
+      medianRemainingLeaseYears: 61.5,
+      lowSample: true,
     });
   });
 
   it('returns count 0 when there are no records', () => {
     expect(summariseResale([])).toEqual({ count: 0 });
+  });
+});
+
+describe('parseRemainingLease', () => {
+  it('reads "61 years 04 months", "95 years", plain numbers, and gives null for nonsense', () => {
+    expect(parseRemainingLease('61 years 04 months')).toBeCloseTo(61.333, 2);
+    expect(parseRemainingLease('95 years')).toBe(95);
+    expect(parseRemainingLease('70')).toBe(70);
+    expect(parseRemainingLease(undefined)).toBeNull();
+    expect(parseRemainingLease('n/a')).toBeNull();
   });
 });
 
@@ -34,6 +53,23 @@ describe('fetchDatastorePage', () => {
     const page = await fetchDatastorePage({ datasetId: 'x', retryDelayMs: 0 });
     expect(page.total).toBe(1);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('also retries a 5xx before giving up', async () => {
+    const ok = { success: true, result: { records: [], total: 0 } };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('', { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(ok), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await fetchDatastorePage({ datasetId: 'x', retryDelayMs: 0 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('waits as long as Retry-After says, else backs off 1 s, 2 s, 4 s (capped at 30 s)', () => {
+    const withHeader = (v) => new Response('', { status: 429, headers: { 'retry-after': v } });
+    expect(retryDelay(withHeader('5'), 0)).toBe(5000);
+    expect(retryDelay(withHeader('120'), 0)).toBe(30000);
+    expect(retryDelay(new Response('', { status: 429 }), 2)).toBe(4000);
   });
 
   it('gives up with UPSTREAM_RATE_LIMITED after repeated 429s', async () => {

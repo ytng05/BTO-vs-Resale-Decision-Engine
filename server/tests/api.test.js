@@ -152,10 +152,10 @@ describe('API scaffold', () => {
     expect(res.body.error.code).toBe('BAD_REQUEST');
   });
 
-  it('GET /api/data/bto-projects returns 503 when no database is connected', async () => {
+  it('GET /api/data/bto-projects works without a database (projects come from the seed file)', async () => {
     const res = await request(app).get('/api/data/bto-projects');
-    expect(res.status).toBe(503);
-    expect(res.body.error.code).toBe('DB_UNAVAILABLE');
+    expect(res.status).toBe(200);
+    expect(res.body.count).toBeGreaterThan(0);
   });
 
     it('GET /api/data/resale-price requires a town', async () => {

@@ -28,8 +28,19 @@ export class UpstreamError extends Error {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// How long to wait before retrying. data.gov.sg may send Retry-After (seconds, or an HTTP date);
+// otherwise exponential backoff: base, 2x, 4x. Capped at 30 s.
+export function retryDelay(response, attempt, baseMs = 1000) {
+  const header = response?.headers?.get?.('retry-after');
+  const seconds = Number(header);
+  if (header && Number.isFinite(seconds)) return Math.min(seconds * 1000, 30000);
+  const date = header ? Date.parse(header) : NaN;
+  if (Number.isFinite(date)) return Math.min(Math.max(date - Date.now(), 0), 30000);
+  return baseMs * 2 ** attempt;
+}
+
 /**
-   Fetch one page of a dataset. Retries on 429 with backoff (1 s, 2 s, 4 s).
+   Fetch one page of a dataset. Retries on 429 and 5xx: waits as long as Retry-After says, else backs off (1 s, 2 s, 4 s).
    data.gov.sg returns most numbers as strings, e.g. resale_price: "653000".
    @param {{ datasetId: string, limit?: number, offset?: number, filters?: object, sort?: string, retryDelayMs?: number }} params
    @returns {Promise<{ records: object[], total: number }>}
@@ -56,7 +67,11 @@ export async function fetchDatastorePage({ datasetId, limit = 1000, offset = 0, 
       if (attempt >= MAX_RETRIES) {
         throw new UpstreamError('data.gov.sg rate limit reached. Try again in a few seconds.', 503, 'UPSTREAM_RATE_LIMITED');
       }
-      await sleep(retryDelayMs * 2 ** attempt);
+      await sleep(retryDelayMs === 0 ? 0 : retryDelay(res, attempt, retryDelayMs));
+      continue;
+    }
+    if (res.status >= 500 && attempt < MAX_RETRIES) {
+      await sleep(retryDelayMs === 0 ? 0 : retryDelay(res, attempt, retryDelayMs));
       continue;
     }
 
