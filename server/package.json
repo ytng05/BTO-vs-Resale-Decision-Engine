@@ -8,6 +8,8 @@
     "start": "node src/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "seed": "node src/seeds/seedBtoProjects.js",
+    "warm": "node src/seeds/warmCache.js",
     "demo": "node scripts/demo-engine.mjs"
   },
   "dependencies": {
