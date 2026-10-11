@@ -22,7 +22,7 @@ const ruleset = merge(loadRuleset().ruleset, fixture.rulesetOverrides);
 
 const run = (c) => evaluate(c.inputs.profile, c.inputs.choice, c.inputs.assumptions, ruleset);
 
-describe.skip.each(fixture.cases.map((c) => [c.id, c]))('evaluate: %s', (_id, c) => {
+describe.each(fixture.cases.map((c) => [c.id, c]))('evaluate: %s', (_id, c) => {
   it('headline figures, timeline, affordability and warnings', () => {
     expect(run(c)).toMatchObject(c.expected);
   });
