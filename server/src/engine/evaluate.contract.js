@@ -195,8 +195,12 @@ const RULESET_KEYS = Object.freeze({
  * - Resale keys = the application (purchase) date; no wait.
  * - BTO cash and CPF are paid in stages (signing the agreement for lease, then
  *   keys); each stage is a dated ledger entry. Stage split: D5 / EDGE_CASES.md.
- * - assumptions.horizonYear must be ≥ the later of the two key years. evaluate()
- *   throws otherwise; the route returns 400. Default: later key year + 10.
+ * - HORIZON DATE = 31 Dec of assumptions.horizonYear (end of that year). Every
+ *   month of horizonYear counts and December's CPF credit is included: the
+ *   engine calls computeAccruedInterest() with asOfDate = 1 Jan of
+ *   (horizonYear + 1). Each path's keys must be on or before the horizon date
+ *   (key month ≤ Dec of horizonYear); evaluate() throws otherwise and the route
+ *   returns 400. Default horizonYear: later key year + 10.
  */
 
 /**
@@ -310,7 +314,7 @@ const WARNINGS = Object.freeze({
  * @property {number} cashSavingsCents        - household cash held TODAY, at evaluationStartYear (D19).
  *                                              No further saving is assumed until monthlySavings is
  *                                              defined. Checked against cashRequiredAtPurchaseCents:
- *                                              a shortfall for a purchase in evaluationStartYear lets the
+ *                                              a shortfall for an application in evaluationStartYear lets the
  *                                              timing optimiser prune that choice; for a later purchase
  *                                              year it only warns (CASH_SHORTFALL_AT_PURCHASE), because
  *                                              saving in between may cover it. The UI shows this assumption.
@@ -345,7 +349,8 @@ const WARNINGS = Object.freeze({
  * @typedef {Object} Assumptions
  * @property {number} annualPriceGrowth       - decimal, e.g. 0.024
  * @property {number} annualIncomeGrowth      - decimal
- * @property {number} horizonYear             - common measurement year; ≥ the later key year (D1)
+ * @property {number} horizonYear             - common measurement year; horizon date = 31 Dec of this year;
+ *                                              both paths' keys must be on or before it (D1, D22)
  * @property {number} monthlyHousingCostWhileWaitingCents - rent until keys, both paths; default 0
  * @property {number} loanTenureYears
  * @property {'HDB'|'BANK'} loanType          - TDSR is checked for 'BANK' only
@@ -412,8 +417,9 @@ const WARNINGS = Object.freeze({
  * @property {string} id                      - e.g. 'EHG_INCOME_CEILING'
  * @property {boolean} passed
  * @property {string} reason                  - human-readable; seat 2 renders this
- * @property {string|null} sourceUrl          - official source for this check (seat 2); replaces the
- *                                              standalone Sources page
+ * @property {string|null} sourceUrl          - official source for this check (seat 2), from the ruleset.
+ *                                              Lets each check link to its source; whether the standalone
+ *                                              Sources page stays is a UI choice with no contract impact
  */
 
 /**
@@ -468,7 +474,7 @@ const WARNINGS = Object.freeze({
 
 /**
  * One row per calendar year, evaluationStartYear to horizonYear inclusive.
- * Balances are as at 31 Dec (or the horizon date in the last row).
+ * Balances are as at 31 Dec; the last row (horizonYear) is the horizon date itself.
  * @typedef {Object} CashFlowYear
  * @property {number} year
  * @property {number} housingCashOutCents     - cash spent on housing that year (rent, cash instalments, fees)

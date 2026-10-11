@@ -9,7 +9,7 @@
 
 ## Cash required at purchase (seat 1)
 - BTO cash is paid in stages (booking fee, downpayment and stamp duty at signing the agreement for lease, the rest at key collection); resale pays at completion. Each stage needs its own date for the cash check and for the CPF ledger (D5; see docs/D1_PROPOSAL.md). Confirmed on HDB's Sign Agreement for Lease page (D5): HDB loan 10% at signing + 15% at keys; bank loan at 55% LTV 20% at signing (at least 10% cash) + 25% at keys; bank loan at 75% LTV still to confirm.
-- Cash shortfall: prunes only for a purchase in evaluationStartYear; later purchase years warn only (D19).
+- Cash shortfall: prunes only for an application in evaluationStartYear; later application years warn only (D19).
 - Minimum cash downpayment (confirmed by seat 2): HDB loan 0% (the 25% downpayment can be fully CPF OA); bank loan 5% at the maximum LTV, 10% at the reduced LTV. Read from `loans.minCashDownpaymentPercent` (`{ hdbLoan, bankLoan: { atMaxLtv, atReducedLtv } }`), added to the ruleset in #13.
 - Cash over valuation (COV) on resale must be paid in cash. We price at the median and assume COV = 0 (price = valuation); state this in the UI (D20).
 

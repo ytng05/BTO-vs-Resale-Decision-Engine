@@ -109,7 +109,7 @@ All money is integer cents. The client converts dollars to cents when it sends t
 | `choice.marketValueAtKeysCents` | Server lookup | BTO: near-new resale comparables for the town and flat type at keys (fallback town for towns with no resale stock, e.g. Tengah); resale: the purchase price. Never sent by the client |
 | `choice.purchasePriceCents` | Server lookup | Median from cached data.gov.sg transactions for town, flat type and lease band; seeded launch price for BTO. Never sent by the client |
 | `assumptions.annualPriceGrowth`, `annualIncomeGrowth` | Form (sliders) | Growth as decimals (0.03) |
-| `assumptions.horizonYear` | Form, default | Must be ≥ the later key year (400 otherwise). Default: later key year + 10 |
+| `assumptions.horizonYear` | Form, default | Horizon date = 31 Dec of this year; both paths' keys must be on or before it (400 otherwise). Default: later key year + 10 |
 | `assumptions.monthlyHousingCostWhileWaitingCents` | Form (slider) | Rent until keys, both paths. Default 0 (living with parents); show a sourced rental guide beside the slider |
 | `assumptions.loanTenureYears`, `loanType` | Default | Optional in the request; the server fills defaults and echoes them |
 | `assumptions.legalFeesCents`, `agentFeesCents` | Default, form override | Estimates, not policy. Server defaults owned by seat 1 (D17) |
