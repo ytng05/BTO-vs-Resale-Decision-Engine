@@ -19,9 +19,9 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | POST | `/api/timing` | seat 1 | FEATURE 1: optimal timing search | stub |
 | POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | stub |
 | POST | `/api/backtest` | seat 1 + 3 | FEATURE 3 (later): historical range | off (`FEATURE_BACKTEST`) |
-| GET | `/api/data/resale-price?town=&flatType=` | seat 3 | price basis from data.gov.sg (cached) | stub |
-| GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached) | stub |
-| GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects | stub |
+| GET | `/api/data/resale-price?town=&flatType=` | seat 3 | price basis from data.gov.sg (cached) | working |
+| GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached) | working |
+| GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects | working |
 | GET | `/api/data/distance?from=&to=` | seat 3 | OneMap distance for the PHG test | not needed: PHG is declared (D15) |
 
 ### GET /api/ruleset
@@ -150,6 +150,21 @@ Response: `{ rulesetVersion, range: { min, median, max }, windows: [], caveats: 
 "net financial position after N years" (never "profit"), "historical range" (never "probability"),
 never present the break-even as a prediction, and always show the ruleset version.
 
+## GET /api/data/bto-projects
+Query (all optional): `town`, `classification` (STANDARD|PLUS|PRIME), `flatType` (e.g. `4 ROOM`).
+Response: `{ count, projects: [BtoProject] }`, sorted by town then name.
+Errors: 400 BAD_REQUEST (bad classification), 503 DB_UNAVAILABLE (no database).
+
+## GET /api/data/resale-price
+Query: `town` (required, e.g. TAMPINES), `flatType` (required: 1 ROOM … 5 ROOM, EXECUTIVE, MULTI-GENERATION), `months` (1–60, default 12).
+Response: `{ town, flatType, window: { from, to, months }, count, median, p25, p75, medianPricePerSqm, lowSample, source, cached, fetchedAt }`
+Errors: 400 BAD_REQUEST, 404 NO_DATA, 502 UPSTREAM_ERROR, 503 UPSTREAM_RATE_LIMITED.
+
+## GET /api/data/rpi
+Query (optional): `from`, `to` as `YYYY-Qn`, inclusive.
+Response: `{ base, latest: { quarter, index }, historicalAnnualGrowth: { 5y, 10y, 20y }, count, series: [{ quarter, index }], source, cached, fetchedAt }`
+`historicalAnnualGrowth` is always measured back from the latest quarter (fraction, 0.03 = 3%). Historical only, not a forecast.
+Errors: 400 BAD_REQUEST, 502 UPSTREAM_ERROR, 503 UPSTREAM_RATE_LIMITED.
 ## POST /api/cpf/accrued-interest
 Request: `{ withdrawals: [{ date: "YYYY-MM-DD", amountCents, kind? }], asOfDate: "YYYY-MM-DD" }`. `kind` is free text (e.g. `LUMP_SUM`, `INSTALMENT`, `GRANT`, `STAMP_DUTY`).
 Response: `{ principalCents, accruedInterestCents, totalCents, asOfDate, oaRate, accruedInterestCompounding, rulesetVersion, rulesetStatus }`.
