@@ -1,0 +1,393 @@
+{
+  "_source": "Hand-worked in evaluate-template.xlsx (E1 and E2, summary and month-by-month sheets). Not derived from engine code.",
+  "_workedBy": "seat 1",
+  "_dateWorked": "2026-10-11",
+  "_checkedBy": "Independent script recomputation of every summary figure and yearly row (matches to the cent); CPF interest also matches computeAccruedInterest() on the same ledgers",
+  "_conventions": {
+    "decisions": "Contract v2 notes plus D28–D32 (#34)",
+    "prices": "choice.purchasePriceCents and choice.marketValueAtKeysCents are TODAY's values (evaluationStartYear); evaluate() grows them month-precisely (D31): value x (1 + g)^(months / 12), rounded to the cent at each step (BTO market value is rounded at keys, then grown to the horizon)",
+    "horizon": "Growth and CPF are measured to 1 Jan of horizonYear + 1",
+    "funding": "D28: grants, then OA above the retention, then the loan, then cash; stamp duty then legal fees from the OA left (whole fee or none), else cash; agent fees and renovation in cash",
+    "btoStages": "D30: signing = application + monthsToAgreementForLease; 10% + stamp duty + legal fees at signing; the rest at keys",
+    "cpfUsedCents": "Yearly cash flow counts OA savings withdrawn (lump sums, fees, instalments), EXCLUDING grants; grants are still CPF refund principal",
+    "cashRequiredAtPurchaseCents": "Cash paid on the purchase date(s), excluding renovation and rent",
+    "warnings": "Contract WARNINGS codes only; the OA running out is visible in yearlyCashFlow, not a warning"
+  },
+  "_units": "All money in integer cents.",
+  "_rulesetNote": "Tests use the live ruleset with these overrides merged in. The first four are seat 2's keys from #35 (remove once merged); the last two are D28/D30 assumptions pending seat 2's answers on #34.",
+  "rulesetOverrides": {
+    "loans": {
+      "hdbLoanTenure": {
+        "ageLimit": 65,
+        "ageBasis": "AVERAGE",
+        "leaseBufferYears": 20
+      },
+      "stressTestRate": {
+        "hdbLoanFloor": 0.03,
+        "bankLoanFloor": 0.04
+      },
+      "ltv": {
+        "hdbLoan": {
+          "leaseMustCoverYoungestToAge": 95,
+          "leaseProRating": {
+            "percentPerYearShort": 2
+          }
+        }
+      },
+      "hdbLoanOaRetention": 20000
+    },
+    "btoWaiting": {
+      "monthsToAgreementForLease": 9
+    }
+  },
+  "cases": [
+    {
+      "id": "E1-resale-hdb-loan",
+      "description": "Resale 4-room bought Jan 2027 (a year after today), HDB loan, horizon 2031: price growth to purchase, income projection (D13), EHG + Family + PHG, OA retention, OA-first instalments running out in payment 4.",
+      "inputs": {
+        "profile": {
+          "applicants": [
+            {
+              "age": 30,
+              "citizenship": "SC",
+              "firstTimer": true,
+              "monthlyIncomeCents": 350000,
+              "cpfOaBalanceCents": 6000000
+            },
+            {
+              "age": 31,
+              "citizenship": "SC",
+              "firstTimer": true,
+              "monthlyIncomeCents": 350000,
+              "cpfOaBalanceCents": 5000000
+            }
+          ],
+          "cashSavingsCents": 5000000
+        },
+        "choice": {
+          "path": "RESALE",
+          "applicationYear": 2027,
+          "town": "TAMPINES",
+          "flatType": "4 ROOM",
+          "classification": null,
+          "purchasePriceCents": 55000000,
+          "marketValueAtKeysCents": 55000000,
+          "remainingLeaseYears": 80,
+          "livingArrangement": "NEAR",
+          "renovationCents": 3000000
+        },
+        "assumptions": {
+          "annualPriceGrowth": 0.03,
+          "annualIncomeGrowth": 0.03,
+          "horizonYear": 2031,
+          "monthlyHousingCostWhileWaitingCents": 150000,
+          "loanTenureYears": 25,
+          "loanType": "HDB",
+          "evaluationStartYear": 2026,
+          "legalFeesCents": 250000,
+          "agentFeesCents": 500000
+        }
+      },
+      "expected": {
+        "horizonYear": 2031,
+        "timeline": {
+          "applicationDate": "2027-01-01",
+          "keyCollectionDate": "2027-01-01",
+          "monthsWaiting": 0,
+          "earliestSaleDate": "2032-01-01"
+        },
+        "totalGrantsCents": 12500000,
+        "affordability": {
+          "maxLoanCents": 42487500,
+          "loanRequiredCents": 35150000,
+          "withinLimit": true,
+          "shortfallCents": 0,
+          "limitingRule": "LTV"
+        },
+        "cashRequiredAtPurchaseCents": 500000,
+        "cpfUsedAtPurchaseCents": 10409500,
+        "loanPrincipalCents": 35150000,
+        "marketValueAtHorizonCents": 65672876,
+        "outstandingLoanAtHorizonCents": 29912966,
+        "cpfRefundPrincipalCents": 23500000,
+        "cpfAccruedInterestCents": 3030820,
+        "clawbackCents": 0,
+        "housingCashSpentCents": 14117935,
+        "netPositionCents": -4888845,
+        "warnings": []
+      },
+      "expectedGrants": {
+        "EHG": 2500000,
+        "FAMILY": 8000000,
+        "PHG": 2000000
+      },
+      "expectedCostLines": [
+        {
+          "id": "BSD",
+          "amountCents": 1159500,
+          "paidFrom": "CPF"
+        },
+        {
+          "id": "LEGAL",
+          "amountCents": 250000,
+          "paidFrom": "CPF"
+        },
+        {
+          "id": "AGENT",
+          "amountCents": 500000,
+          "paidFrom": "CASH"
+        },
+        {
+          "id": "RENOVATION",
+          "amountCents": 3000000,
+          "paidFrom": "CASH"
+        },
+        {
+          "id": "RENT_WHILE_WAITING",
+          "amountCents": 1800000,
+          "paidFrom": "CASH"
+        },
+        {
+          "id": "LOAN_INTEREST",
+          "amountCents": 4171401
+        },
+        {
+          "id": "CPF_ACCRUED_INTEREST",
+          "amountCents": 3030820,
+          "paidFrom": "NONE"
+        }
+      ],
+      "expectedYearlyCashFlow": [
+        {
+          "year": 2026,
+          "housingCashOutCents": 1800000,
+          "cpfUsedCents": 0,
+          "loanBalanceEndCents": 0,
+          "marketValueEndCents": 0,
+          "cpfObligationEndCents": 0
+        },
+        {
+          "year": 2027,
+          "housingCashOutCents": 4663615,
+          "cpfUsedCents": 11000000,
+          "loanBalanceEndCents": 34223635,
+          "marketValueEndCents": 58349500,
+          "cpfObligationEndCents": 24035614
+        },
+        {
+          "year": 2028,
+          "housingCashOutCents": 1913580,
+          "cpfUsedCents": 0,
+          "loanBalanceEndCents": 33187580,
+          "marketValueEndCents": 60099985,
+          "cpfObligationEndCents": 24636504
+        },
+        {
+          "year": 2029,
+          "housingCashOutCents": 1913580,
+          "cpfUsedCents": 0,
+          "loanBalanceEndCents": 32124266,
+          "marketValueEndCents": 61902985,
+          "cpfObligationEndCents": 25252417
+        },
+        {
+          "year": 2030,
+          "housingCashOutCents": 1913580,
+          "cpfUsedCents": 0,
+          "loanBalanceEndCents": 31032974,
+          "marketValueEndCents": 63760074,
+          "cpfObligationEndCents": 25883727
+        },
+        {
+          "year": 2031,
+          "housingCashOutCents": 1913580,
+          "cpfUsedCents": 0,
+          "loanBalanceEndCents": 29912966,
+          "marketValueEndCents": 65672876,
+          "cpfObligationEndCents": 26530820
+        }
+      ]
+    },
+    {
+      "id": "E2-bto-standard-hdb-loan",
+      "description": "BTO Standard 4-room applied Jan 2026, 31-month wait (keys Aug 2028), HDB loan, horizon 2033: signing stage (Oct 2026), 31 months of rent, launch price vs market value at keys, OA running out in payment 16.",
+      "inputs": {
+        "profile": {
+          "applicants": [
+            {
+              "age": 30,
+              "citizenship": "SC",
+              "firstTimer": true,
+              "monthlyIncomeCents": 350000,
+              "cpfOaBalanceCents": 6000000
+            },
+            {
+              "age": 31,
+              "citizenship": "SC",
+              "firstTimer": true,
+              "monthlyIncomeCents": 350000,
+              "cpfOaBalanceCents": 5000000
+            }
+          ],
+          "cashSavingsCents": 5000000
+        },
+        "choice": {
+          "path": "BTO",
+          "applicationYear": 2026,
+          "town": "SEMBAWANG",
+          "flatType": "4 ROOM",
+          "classification": "STANDARD",
+          "purchasePriceCents": 40000000,
+          "marketValueAtKeysCents": 60000000,
+          "remainingLeaseYears": 99,
+          "livingArrangement": "NONE",
+          "btoWaitMonths": 31,
+          "btoWaitAssumed": false,
+          "renovationCents": 4000000,
+          "subsidyRecoveryRate": 0
+        },
+        "assumptions": {
+          "annualPriceGrowth": 0.03,
+          "annualIncomeGrowth": 0.03,
+          "horizonYear": 2033,
+          "monthlyHousingCostWhileWaitingCents": 150000,
+          "loanTenureYears": 25,
+          "loanType": "HDB",
+          "evaluationStartYear": 2026,
+          "legalFeesCents": 200000,
+          "agentFeesCents": 0
+        }
+      },
+      "expected": {
+        "horizonYear": 2033,
+        "timeline": {
+          "applicationDate": "2026-01-01",
+          "keyCollectionDate": "2028-08-01",
+          "monthsWaiting": 31,
+          "earliestSaleDate": "2033-08-01"
+        },
+        "totalGrantsCents": 3000000,
+        "affordability": {
+          "maxLoanCents": 30000000,
+          "loanRequiredCents": 28860000,
+          "withinLimit": true,
+          "shortfallCents": 0,
+          "limitingRule": "LTV"
+        },
+        "cashRequiredAtPurchaseCents": 0,
+        "cpfUsedAtPurchaseCents": 9000000,
+        "loanPrincipalCents": 28860000,
+        "marketValueAtHorizonCents": 76006205,
+        "outstandingLoanAtHorizonCents": 24169865,
+        "cpfRefundPrincipalCents": 14000000,
+        "cpfAccruedInterestCents": 2190458,
+        "clawbackCents": 0,
+        "housingCashSpentCents": 15029456,
+        "netPositionCents": 20616426,
+        "warnings": []
+      },
+      "expectedGrants": {
+        "EHG": 3000000,
+        "FAMILY": 0,
+        "PHG": 0
+      },
+      "expectedCostLines": [
+        {
+          "id": "BSD",
+          "amountCents": 660000,
+          "paidFrom": "CPF"
+        },
+        {
+          "id": "LEGAL",
+          "amountCents": 200000,
+          "paidFrom": "CPF"
+        },
+        {
+          "id": "RENOVATION",
+          "amountCents": 4000000,
+          "paidFrom": "CASH"
+        },
+        {
+          "id": "RENT_WHILE_WAITING",
+          "amountCents": 4650000,
+          "paidFrom": "CASH"
+        },
+        {
+          "id": "LOAN_INTEREST",
+          "amountCents": 3689321
+        },
+        {
+          "id": "CPF_ACCRUED_INTEREST",
+          "amountCents": 2190458,
+          "paidFrom": "NONE"
+        }
+      ],
+      "expectedYearlyCashFlow": [
+        {
+          "year": 2026,
+          "housingCashOutCents": 1800000,
+          "cpfUsedCents": 4860000,
+          "loanBalanceEndCents": 0,
+          "marketValueEndCents": 0,
+          "cpfObligationEndCents": 4880250
+        },
+        {
+          "year": 2027,
+          "housingCashOutCents": 1800000,
+          "cpfUsedCents": 0,
+          "loanBalanceEndCents": 0,
+          "marketValueEndCents": 0,
+          "cpfObligationEndCents": 5002256
+        },
+        {
+          "year": 2028,
+          "housingCashOutCents": 5050000,
+          "cpfUsedCents": 4663716,
+          "loanBalanceEndCents": 28585513,
+          "marketValueEndCents": 65563620,
+          "cpfObligationEndCents": 12852165
+        },
+        {
+          "year": 2029,
+          "housingCashOutCents": 94864,
+          "cpfUsedCents": 1476284,
+          "loanBalanceEndCents": 27747650,
+          "marketValueEndCents": 67530529,
+          "cpfObligationEndCents": 14667756
+        },
+        {
+          "year": 2030,
+          "housingCashOutCents": 1571148,
+          "cpfUsedCents": 0,
+          "loanBalanceEndCents": 26887741,
+          "marketValueEndCents": 69556445,
+          "cpfObligationEndCents": 15034450
+        },
+        {
+          "year": 2031,
+          "housingCashOutCents": 1571148,
+          "cpfUsedCents": 0,
+          "loanBalanceEndCents": 26005207,
+          "marketValueEndCents": 71643138,
+          "cpfObligationEndCents": 15410311
+        },
+        {
+          "year": 2032,
+          "housingCashOutCents": 1571148,
+          "cpfUsedCents": 0,
+          "loanBalanceEndCents": 25099453,
+          "marketValueEndCents": 73792432,
+          "cpfObligationEndCents": 15795569
+        },
+        {
+          "year": 2033,
+          "housingCashOutCents": 1571148,
+          "cpfUsedCents": 0,
+          "loanBalanceEndCents": 24169865,
+          "marketValueEndCents": 76006205,
+          "cpfObligationEndCents": 16190458
+        }
+      ]
+    }
+  ]
+}
