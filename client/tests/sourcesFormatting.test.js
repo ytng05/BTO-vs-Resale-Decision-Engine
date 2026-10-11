@@ -1,5 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { formatMinCashDownpayment, formatRuleValue } from '../src/views/sourcesFormatting.js';
+import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption, statedAssumptionText } from '../src/views/sourcesFormatting.js';
+
+describe('Sources view BTO waiting rules', () => {
+  it('formats BTO waiting values as months', () => {
+    expect(formatRuleValue('btoWaiting.shorterWaitingTimeThresholdMonths', 36)).toBe('36 months');
+    expect(formatRuleValue('btoWaiting.defaultMonths', 48)).toBe('48 months');
+    expect(formatRuleValue('btoWaiting.monthsToAgreementForLease', 9)).toBe('9 months');
+  });
+
+  it('extracts the text of a STATED ASSUMPTION note', () => {
+    expect(statedAssumptionText('STATED ASSUMPTION: months from application.')).toBe('months from application.');
+    expect(statedAssumptionText('Wait used = project wait')).toBeNull();
+    expect(statedAssumptionText(undefined)).toBeNull();
+  });
+
+  it('extracts the average-age rounding assumption text', () => {
+    expect(statedAssumptionText('STATED ASSUMPTION: the average applicant age is rounded UP to a whole year (HDB does not publish its rounding).'))
+      .toBe('the average applicant age is rounded UP to a whole year (HDB does not publish its rounding).');
+  });
+});
+
+describe('Sources view derived assumptions', () => {
+  it('recognises ruleset notes that flag a derived assumption', () => {
+    expect(isDerivedAssumption('DERIVED ASSUMPTION: no published formula.')).toBe(true);
+    expect(isDerivedAssumption('DERIVED: fitted to the 2019 MOM/CPF examples.')).toBe(true);
+    expect(isDerivedAssumption('Assess with the higher of the floor and the actual rate')).toBe(false);
+    expect(isDerivedAssumption(undefined)).toBe(false);
+  });
+});
 
 describe('Sources view loan additions', () => {
   it('formats the IWAA age basis', () => {
@@ -9,6 +37,23 @@ describe('Sources view loan additions', () => {
   it('formats minimum cash downpayment percents without scaling', () => {
     expect(formatMinCashDownpayment({ hdbLoan: 0, bankLoan: { atMaxLtv: 5, atReducedLtv: 10 } }))
       .toBe('HDB loan 0% (can be fully CPF), bank loan 5% (10% at reduced LTV)');
+  });
+
+  it('formats HDB loan tenure, lease rule and stress-test floors', () => {
+    expect(formatRuleValue('loans.hdbLoanTenure.ageLimit', 65)).toBe('age 65');
+    expect(formatRuleValue('loans.hdbLoanTenure.ageBasis', 'AVERAGE')).toBe('average applicant age');
+    expect(formatRuleValue('loans.hdbLoanTenure.leaseBufferYears', 20)).toBe('20 years');
+    expect(formatRuleValue('loans.ltv.hdbLoan.leaseMustCoverYoungestToAge', 95)).toBe('age 95');
+    expect(formatRuleValue('loans.ltv.hdbLoan.leaseProRating.percentPerYearShort', 2)).toBe('2% per year');
+    expect(formatRuleValue('cpf.housingUsageLeaseRule.leaseMustCoverYoungestToAge', 95)).toBe('age 95');
+    expect(formatRuleValue('cpf.housingUsageLeaseRule.leaseProRating.percentPerYearShort', 2)).toBe('2% per year');
+    expect(formatRuleValue('loans.hdbLoanOaRetentionPerBuyer', 20000)).toBe('$20,000');
+    expect(formatRuleValue('loans.btoDownpaymentStages.hdbLoan.atSigningPercent', 10)).toBe('10%');
+    expect(formatRuleValue('loans.btoDownpaymentStages.bankLoan.atReducedLtv.minCashAtSigningPercent', 10)).toBe('10%');
+    expect(formatRuleValue('loans.btoDownpaymentStages.bankLoan.atMaxLtv', null)).toBe('Not yet verified');
+    expect(formatRuleValue('btoWaiting.monthsToAgreementForLease', 9)).toBe('9 months');
+    expect(formatRuleValue('loans.stressTestRate.hdbLoanFloor', 0.03)).toBe('3%');
+    expect(formatRuleValue('loans.stressTestRate.bankLoanFloor', 0.04)).toBe('4%');
   });
 });
 
