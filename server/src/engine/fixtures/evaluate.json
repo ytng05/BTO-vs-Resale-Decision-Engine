@@ -1,17 +1,17 @@
 {
-  "_source": "Hand-worked in evaluate-template-v2 (E1 and E2, summary and month-by-month sheets), redone from evaluate-template.xlsx (v1) for seat 2's answers on #34 (D28-D30 v2). Not derived from engine code.",
+  "_source": "Hand-worked in evaluate-template-v3 (E1 and E2, summary and month-by-month sheets): v2 (seat 2's answers on #34) plus D28 v3 (retained OA before cash; ytng on #46). Not derived from engine code.",
   "_workedBy": "seat 1",
   "_dateWorked": "2026-10-11",
-  "_checkedBy": "Independent script recomputation from the written rules of every summary figure and yearly row (106 figures, matches to the cent); figures transcribed from the sheet by script",
+  "_checkedBy": "Independent script recomputation from the written rules of every summary figure and yearly row (107 figures, matches to the cent); figures transcribed from the sheet by script",
   "_conventions": {
     "decisions": "Contract v2.1 notes plus D28-D32 as updated on #34 (v2)",
     "prices": "choice.purchasePriceCents and choice.marketValueAtKeysCents are TODAY's values (evaluationStartYear); evaluate() grows them month-precisely (D31): value x (1 + g)^(months / 12), rounded to the cent at each step (BTO market value is rounded at keys, then grown to the horizon)",
     "horizon": "Growth and CPF are measured to 1 Jan of horizonYear + 1",
-    "funding": "D28 v2: grants, then OA above the retention, then the loan, then cash. Retention: each buyer keeps up to loans.hdbLoanOaRetentionPerBuyer of their own OA (stated assumption: the full amount, or their whole OA if less); the household keeps the sum. Stamp duty then legal fees from the OA left (whole fee or none), else cash; agent fees and renovation in cash. A grant left over after the price goes to the CPF Special/Retirement and MediSave accounts (HDB; seat 2 on #46), so it never reaches the OA and isn't refund principal",
+    "funding": "D28 v2: grants, then OA above the retention, then the loan, then cash. Retention: each buyer keeps up to loans.hdbLoanOaRetentionPerBuyer of their own OA (stated assumption: the full amount, or their whole OA if less); the household keeps the sum. The retention is a ceiling (D28 v3): the OA kept back pays before cash at BTO signing and at keys when the loan is capped. Stamp duty then legal fees from the OA left (whole fee or none), else cash; agent fees and renovation in cash. A grant left over after the price goes to the CPF Special/Retirement and MediSave accounts (HDB; seat 2 on #46), so it never reaches the OA and isn't refund principal",
     "btoStages": "D30 v2: signing = application + monthsToAgreementForLease (a stated assumption); at signing, loans.btoDownpaymentStages.hdbLoan.atSigningPercent of the price from grants first (D29 v2), then OA above the retention, then cash, plus stamp duty and legal fees; the rest at keys. Each grant part is a GRANT ledger entry dated when used",
     "cpfUsedCents": "Yearly cash flow counts OA savings withdrawn (lump sums, fees, instalments), EXCLUDING grants; grants are still CPF refund principal",
     "cashRequiredAtPurchaseCents": "Cash paid on the purchase date(s), excluding renovation and rent",
-    "warnings": "Contract WARNINGS codes only; the OA running out is visible in yearlyCashFlow, not a warning. E2 warns LOAN_ABOVE_LIMIT: the loan needed ($308,600) is above the max loan ($300,000)"
+    "warnings": "Contract WARNINGS codes only; the OA running out is visible in yearlyCashFlow, not a warning. E2 warns LOAN_ABOVE_LIMIT: the loan needed ($308,600) is above the max loan ($300,000); the gap comes from the retained OA (D28 v3), so no cash at purchase"
   },
   "_units": "All money in integer cents.",
   "_rulesetNote": "Tests use the live ruleset (#35 merged); no overrides are needed. The keys evaluate() v2 reads were checked against the live ruleset when these figures were worked.",
@@ -187,7 +187,7 @@
     },
     {
       "id": "E2-bto-standard-hdb-loan",
-      "description": "BTO Standard 4-room applied Jan 2026, 31-month wait (keys Aug 2028), HDB loan, horizon 2033: grants pay the 10% at signing (Oct 2026), per-buyer OA retention, loan needed above the max loan (LOAN_ABOVE_LIMIT, $8,600 in cash), 31 months of rent, launch price vs market value at keys, OA running out in payment 30.",
+      "description": "BTO Standard 4-room applied Jan 2026, 31-month wait (keys Aug 2028), HDB loan, horizon 2033: grants pay the 10% at signing (Oct 2026), per-buyer OA retention, loan needed above the max loan (LOAN_ABOVE_LIMIT; the $8,600 gap paid from the retained OA, D28 v3), 31 months of rent, launch price vs market value at keys, OA running out in payment 24.",
       "inputs": {
         "profile": {
           "applicants": [
@@ -251,16 +251,16 @@
           "shortfallCents": 860000,
           "limitingRule": "LTV"
         },
-        "cashRequiredAtPurchaseCents": 860000,
-        "cpfUsedAtPurchaseCents": 7000000,
+        "cashRequiredAtPurchaseCents": 0,
+        "cpfUsedAtPurchaseCents": 7860000,
         "loanPrincipalCents": 30000000,
         "marketValueAtHorizonCents": 76006205,
         "outstandingLoanAtHorizonCents": 25124588,
         "cpfRefundPrincipalCents": 14000000,
-        "cpfAccruedInterestCents": 2088399,
+        "cpfAccruedInterestCents": 2140957,
         "clawbackCents": 0,
         "housingCashSpentCents": 14220464,
-        "netPositionCents": 20572754,
+        "netPositionCents": 20520196,
         "warnings": [
           "LOAN_ABOVE_LIMIT"
         ],
@@ -298,7 +298,7 @@
         },
         {
           "id": "CPF_ACCRUED_INTEREST",
-          "amountCents": 2088399,
+          "amountCents": 2140957,
           "paidFrom": "NONE"
         }
       ],
@@ -321,11 +321,11 @@
         },
         {
           "year": 2028,
-          "housingCashOutCents": 5910000,
-          "cpfUsedCents": 5684404,
+          "housingCashOutCents": 5050000,
+          "cpfUsedCents": 6544404,
           "loanBalanceEndCents": 29714671,
           "marketValueEndCents": 65563620,
-          "cpfObligationEndCents": 10856251
+          "cpfObligationEndCents": 11723418
         },
         {
           "year": 2029,
@@ -333,23 +333,23 @@
           "cpfUsedCents": 1633212,
           "loanBalanceEndCents": 28843710,
           "marketValueEndCents": 67530529,
-          "cpfObligationEndCents": 12779583
+          "cpfObligationEndCents": 13668429
         },
         {
           "year": 2030,
-          "housingCashOutCents": 0,
-          "cpfUsedCents": 1633212,
+          "housingCashOutCents": 670828,
+          "cpfUsedCents": 962384,
           "loanBalanceEndCents": 27949832,
           "marketValueEndCents": 69556445,
-          "cpfObligationEndCents": 14750998
+          "cpfObligationEndCents": 14988483
         },
         {
           "year": 2031,
-          "housingCashOutCents": 1444040,
-          "cpfUsedCents": 189172,
+          "housingCashOutCents": 1633212,
+          "cpfUsedCents": 0,
           "loanBalanceEndCents": 27032435,
           "marketValueEndCents": 71643138,
-          "cpfObligationEndCents": 15313170
+          "cpfObligationEndCents": 15363195
         },
         {
           "year": 2032,
@@ -357,7 +357,7 @@
           "cpfUsedCents": 0,
           "loanBalanceEndCents": 26090898,
           "marketValueEndCents": 73792432,
-          "cpfObligationEndCents": 15695999
+          "cpfObligationEndCents": 15747275
         },
         {
           "year": 2033,
@@ -365,7 +365,7 @@
           "cpfUsedCents": 0,
           "loanBalanceEndCents": 25124588,
           "marketValueEndCents": 76006205,
-          "cpfObligationEndCents": 16088399
+          "cpfObligationEndCents": 16140957
         }
       ]
     }
