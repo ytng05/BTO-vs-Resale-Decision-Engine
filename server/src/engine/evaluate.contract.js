@@ -7,7 +7,7 @@
  *
  *   timing optimiser      → varies choice.applicationYear
  *   break-even solver     → varies assumptions, solves for equality (bisection)
- *   what-if sliders       → vary assumptions and renovation, one call per change
+ *   what-if sliders       → vary assumptions, renovation and the BTO price, one call per change
  *   backtest (later)      → varies assumptions (historical growth rates)
  *   (strategy recommender: dropped to future work, per the prof's feedback)
  *
@@ -15,6 +15,10 @@
  * the same calendar year (the horizon year) with no sale; BTO keys are worked
  * out from the application year plus the wait; rent while waiting, renovation,
  * affordability, MOP, a cost breakdown and a yearly cash flow are added.
+ *
+ * v2.1 (additive, D25 change PR): optional requestChoice.btoPriceCents (BTO
+ * price slider), Outcome.purchasePriceCents, the before-grants price basis
+ * (D26) and the 3–5 ROOM flat-type scope (D27).
  *
  * INVARIANTS — these are what make the wrappers cheap. Breaking any of
  * them breaks every feature above.
@@ -226,6 +230,21 @@ const RULESET_KEYS = Object.freeze({
  */
 
 /**
+ * NOTE ON THE BTO PRICE — D26, seat 1 with seat 3 (v2.1).
+ * purchasePriceCents is always BEFORE grants; evaluate() subtracts grants
+ * itself, exactly once. Seat 3's seed records this as priceBasis:
+ * 'BEFORE_GRANTS' (HDB's launch tables), and the route refuses any other basis.
+ * HDB publishes a price RANGE per project and flat type, not a distribution,
+ * so the route uses requestChoice.btoPriceCents when given (it must lie inside
+ * the range) and otherwise the range's midpoint. Stated limitation: resale is
+ * priced at a transaction median, BTO at the midpoint of two extremes, so the
+ * two paths' prices come from different statistics, and the range (e.g. $119k
+ * for a Tampines Bliss 4-room, $481k–$600k) is as large as the grants being compared. The
+ * dashboard therefore shows the price used next to HDB's range and gives the
+ * user a slider. Flat types are 3 ROOM, 4 ROOM and 5 ROOM on both paths (D27).
+ */
+
+/**
  * NOTE ON MOP — information, not a constraint (D1: there is no sale).
  * timeline.earliestSaleDate = keys + mopYears (ruleset, by classification;
  * resale buyers face the same MOP from their keys). Shown so users know when
@@ -359,7 +378,7 @@ const WARNINGS = Object.freeze({
  * @property {string} town                    - HDB town name, uppercase
  * @property {string} flatType                - e.g. '4 ROOM'
  * @property {'STANDARD'|'PLUS'|'PRIME'|null} classification - null for resale
- * @property {number} purchasePriceCents      - supplied by the caller, NOT fetched here
+ * @property {number} purchasePriceCents      - supplied by the caller, NOT fetched here; BEFORE grants (D26)
  * @property {number} marketValueAtKeysCents  - BTO: near-new resale comparable at keys (seat 3);
  *                                              resale: equal to purchasePriceCents
  * @property {number} remainingLeaseYears     - 99 for BTO; resale: lower bound of the user's lease band (D16)
@@ -393,9 +412,10 @@ const WARNINGS = Object.freeze({
 // API REQUEST — what the client sends to POST /api/compare
 // ---------------------------------------------------------------------------
 // Not the engine's input. The route turns a CompareRequest into Profile /
-// Choice / Assumptions: it looks up purchasePriceCents and marketValueAtKeysCents,
+// Choice / Assumptions: it looks up purchasePriceCents (BTO: btoPriceCents or the
+// midpoint of the project's range, D26) and marketValueAtKeysCents,
 // sets remainingLeaseYears from leaseBand (D16), resolves btoWaitMonths (project
-// → town median → ruleset fallback), fills loan defaults and horizonYear if
+// → town's newest project → ruleset fallback), fills loan defaults and horizonYear if
 // omitted, and sets evaluationStartYear. The client store mirrors this shape,
 // except money, which the store keeps in dollars and converts to …Cents when
 // sending (D14).
@@ -405,10 +425,15 @@ const WARNINGS = Object.freeze({
  * @property {'BTO'|'RESALE'} path
  * @property {number} applicationYear
  * @property {string} town                    - HDB town name, uppercase
- * @property {string} flatType                - e.g. '4 ROOM'
+ * @property {string} flatType                - '3 ROOM' | '4 ROOM' | '5 ROOM' (D27); anything else → 400
  * @property {'STANDARD'|'PLUS'|'PRIME'|null} classification - null for resale
  * @property {string} [btoProjectId]          - BTO only: id of a project from GET /api/data/bto-projects
- *                                              (seat 3's seed); sets the wait. Picker filtered by town
+ *                                              (seat 3's seed); sets the price range and the wait. Picker
+ *                                              filtered by town and flat type. If omitted, the route uses
+ *                                              the town's newest project offering the flat type
+ * @property {number} [btoPriceCents]         - BTO only, v2.1: price slider. Must lie within the project's
+ *                                              [priceMinCents, priceMaxCents] for the flat type, else 400.
+ *                                              Default: the midpoint of that range (D26)
  * @property {number} [btoWaitMonths]         - BTO only, optional override
  * @property {'WITH'|'NEAR'|'NONE'} [livingArrangement] - resale only (D15)
  * @property {string} [leaseBand]             - resale only, e.g. '80-89' (D16)
@@ -521,6 +546,7 @@ const WARNINGS = Object.freeze({
  * @property {Timeline} timeline
  * @property {number} totalGrantsCents
  * @property {GrantResult[]} grants
+ * @property {number} purchasePriceCents      - v2.1: the price used, before grants (echo of choice.purchasePriceCents)
  * @property {Affordability} affordability
  * @property {number} cashRequiredAtPurchaseCents - cash the household pays from its own savings at purchase,
  *                                              AFTER using the CPF OA balance and grants and after the loan
@@ -616,6 +642,7 @@ function stubEvaluate(profile, choice, assumptions) {
         tests: [{ id: 'PHG_LIVING_ARRANGEMENT', passed: false, reason: 'STUB — not computed', sourceUrl: null }]
       }
     ],
+    purchasePriceCents: choice.purchasePriceCents ?? (isResale ? 55_000_000 : 37_850_000),
     affordability: {
       maxLoanCents: 48_000_000,
       loanRequiredCents: 45_000_000,
