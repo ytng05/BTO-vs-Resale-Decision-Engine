@@ -1,7 +1,7 @@
 // SEAT 1. Expected values come from the hand-worked fixture (engine/fixtures/evaluate.json, worked in
 // evaluate-template-v2 under the contract v2 notes and D28–D32 as updated on #34), NOT from the code under test or from
 // AI-generated output.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { evaluate } from '../../src/engine/index.js';
 import { loadRuleset } from '../../src/engine/rules/loadRuleset.js';
@@ -70,5 +70,33 @@ describe('evaluate: out of scope and missing ruleset keys', () => {
     const last = keys.pop();
     delete keys.reduce((node, k) => node[k], broken)[last];
     expect(() => evaluate(e1.profile, e1.choice, e1.assumptions, broken)).toThrow(path);
+  });
+});
+
+// Grants left over after the price go to SA/RA and MediSave, not the OA (HDB, seat 2 on #46). No hand-worked values:
+// the expectations come from the outcome's own fields. E1's household with an empty OA and a flat cheaper than its
+// $125,000 of grants, so the only money the OA could ever hold is a leftover grant.
+describe('evaluate: grants above the price', () => {
+  const e1 = fixture.cases[0].inputs;
+  const profile = { ...e1.profile, applicants: e1.profile.applicants.map((a) => ({ ...a, cpfOaBalanceCents: 0 })) };
+  const choice = { ...e1.choice, purchasePriceCents: 10_000_000, marketValueAtKeysCents: 10_000_000 };
+  let o;
+  beforeAll(() => {
+    o = evaluate(profile, choice, e1.assumptions, ruleset);
+  });
+
+  it('the setup really has grants left over', () => {
+    expect(o.totalGrantsCents).toBeGreaterThan(o.purchasePriceCents);
+  });
+
+  it('only the grant used against the price is refund principal, and no loan is needed', () => {
+    expect(o.loanPrincipalCents).toBe(0);
+    expect(o.cpfRefundPrincipalCents).toBe(o.purchasePriceCents);
+  });
+
+  it('the leftover never reaches the OA, so stamp duty and legal fees are paid in cash', () => {
+    const paidFrom = Object.fromEntries(o.costBreakdown.map((l) => [l.id, l.paidFrom]));
+    expect(paidFrom.BSD).toBe('CASH');
+    expect(paidFrom.LEGAL).toBe('CASH');
   });
 });
