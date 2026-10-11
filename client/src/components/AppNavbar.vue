@@ -1,9 +1,22 @@
 <script setup>
-// TODO (seat 4): final navigation per the UI rulebook. Keep data-cy attributes stable.
+// UI.md §8 Navigation / top bar: sticky top bar, $bg-page background, border-subtle
+// bottom border on scroll only, active nav item in $primary / inactive in $text-secondary
+// (styled via .app-navbar in _components.scss). Keep data-cy attributes stable.
+import { onMounted, onUnmounted, ref } from 'vue';
+
+const scrolled = ref(false);
+function onScroll() {
+  scrolled.value = window.scrollY > 0;
+}
+onMounted(() => {
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+});
+onUnmounted(() => window.removeEventListener('scroll', onScroll));
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-md bg-white border-bottom" data-cy="nav-bar">
+  <nav class="navbar navbar-expand-md app-navbar" :class="{ 'app-navbar--scrolled': scrolled }" data-cy="nav-bar">
     <div class="container">
       <router-link class="navbar-brand fw-semibold" to="/" data-cy="nav-brand-home">BTO vs resale</router-link>
       <button

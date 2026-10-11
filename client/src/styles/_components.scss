@@ -104,6 +104,34 @@
   }
 }
 
+// ---- Navigation / top bar (UI.md §8 Navigation / top bar) --------------------------
+.app-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1020; // Bootstrap's sticky z-index layer
+  background-color: $bg-page;
+  border-bottom: 1px solid transparent;
+  transition: border-color $duration-base $ease-out;
+
+  &--scrolled {
+    border-bottom-color: $border-subtle;
+  }
+
+  .nav-link {
+    color: $text-secondary;
+
+    &.router-link-active {
+      color: $primary;
+    }
+  }
+
+  // UI.md §8/§11: 44x44px minimum touch target.
+  .navbar-toggler {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 // ---- Cards (UI.md §8 Cards and summary tiles) ------------------------------------
 // Bootstrap's .card already gets $card-bg / $card-border-color / $card-box-shadow
 // from _bootstrap-overrides.scss. This adds the required hover step-up and the
