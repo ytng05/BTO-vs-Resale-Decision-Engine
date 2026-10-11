@@ -24,6 +24,8 @@ const unitByField = {
   ageLimit: 'age',
   leaseBufferYears: 'years',
   monthsToAgreementForLease: 'months',
+  defaultMonths: 'months',
+  shorterWaitingTimeThresholdMonths: 'months',
   leaseMustCoverYoungestToAge: 'age',
 };
 
@@ -96,6 +98,11 @@ export function formatRuleValue(path, value) {
 
 export function isDerivedAssumption(note) {
   return typeof note === 'string' && note.startsWith('DERIVED ASSUMPTION');
+}
+
+export function statedAssumptionText(note) {
+  if (typeof note !== 'string' || !note.startsWith('STATED ASSUMPTION')) return null;
+  return note.replace(/^STATED ASSUMPTION:?\s*/, '');
 }
 
 export function sourceTitle(url) {

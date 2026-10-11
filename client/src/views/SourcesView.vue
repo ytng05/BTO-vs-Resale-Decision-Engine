@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { getRuleset } from '../api/client.js';
-import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption, sourceTitle } from './sourcesFormatting.js';
+import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption, sourceTitle, statedAssumptionText } from './sourcesFormatting.js';
 
 const response = ref(null);
 const loading = ref(true);
@@ -48,6 +48,8 @@ const ruleLabels = {
   'loans.stressTestRate.hdbLoanFloor': 'Stress-test rate floor: HDB loan',
   'loans.stressTestRate.bankLoanFloor': 'Stress-test rate floor: bank loan',
   'loans.hdbLoanOaRetentionPerBuyer': 'HDB loan: OA savings each buyer may keep',
+  'btoWaiting.shorterWaitingTimeThresholdMonths': 'BTO: shorter waiting time threshold',
+  'btoWaiting.defaultMonths': 'BTO: default waiting time (assumption)',
   'btoWaiting.monthsToAgreementForLease': 'BTO: months from application to signing (assumption)',
   'classifications.STANDARD.mopYears': 'MOP: Standard BTO',
   'classifications.PLUS.mopYears': 'MOP: Plus BTO',
@@ -75,6 +77,7 @@ const navigationItems = [
   { id: 'loans', label: 'Loans' },
   { id: 'costs', label: 'Costs' },
   { id: 'flat-types', label: 'Flat types' },
+  { id: 'bto-waiting', label: 'BTO waiting' },
   { id: 'assumptions', label: 'Assumptions' },
   { id: 'data', label: 'Data' },
 ];
@@ -184,6 +187,12 @@ function sectionKeyFact(id, rules, activeRules) {
       ? `MOP ${standard} / ${plus} / ${prime} years (Standard / Plus / Prime)`
       : 'Classification rules not yet verified';
   }
+  if (id === 'bto-waiting') {
+    const threshold = rules?.shorterWaitingTimeThresholdMonths;
+    return typeof threshold === 'number'
+      ? `Shorter waiting time flats: under ${formatRuleValue('btoWaiting.shorterWaitingTimeThresholdMonths', threshold)}`
+      : 'BTO waiting rules not yet verified';
+  }
   return '';
 }
 
@@ -222,7 +231,12 @@ function collectRules(value, path, rows, tierTables, activeRules) {
       return;
     }
     const firstRow = rows.length;
-    entries.forEach(([key, nestedValue]) => collectRules(nestedValue, `${path}.${key}`, rows, tierTables, activeRules));
+    entries.forEach(([key, nestedValue]) => {
+      const rowsBefore = rows.length;
+      collectRules(nestedValue, `${path}.${key}`, rows, tierTables, activeRules);
+      const statedNote = statedAssumptionText(value[`_${key}Note`]);
+      if (statedNote) rows.slice(rowsBefore).forEach((row) => { row.note = `Stated assumption: ${statedNote}`; });
+    });
     if (isDerivedAssumption(value._note)) {
       rows.slice(firstRow).forEach((row) => { row.note = 'Derived assumption: HDB does not publish this formula.'; });
     }
@@ -282,6 +296,7 @@ const ruleGroups = computed(() => {
     makeSection('loans', 'Loans', 'loans', rules.loans, rules),
     makeSection('costs', 'Transaction costs', 'transactionCosts', rules.transactionCosts, rules),
     makeSection('flat-types', 'Flat types', 'classifications', rules.classifications, rules),
+    makeSection('bto-waiting', 'BTO waiting', 'btoWaiting', rules.btoWaiting, rules),
   ].filter(Boolean);
 });
 

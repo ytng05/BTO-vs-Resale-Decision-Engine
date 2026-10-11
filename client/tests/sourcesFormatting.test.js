@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption } from '../src/views/sourcesFormatting.js';
+import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption, statedAssumptionText } from '../src/views/sourcesFormatting.js';
+
+describe('Sources view BTO waiting rules', () => {
+  it('formats BTO waiting values as months', () => {
+    expect(formatRuleValue('btoWaiting.shorterWaitingTimeThresholdMonths', 36)).toBe('36 months');
+    expect(formatRuleValue('btoWaiting.defaultMonths', 48)).toBe('48 months');
+    expect(formatRuleValue('btoWaiting.monthsToAgreementForLease', 9)).toBe('9 months');
+  });
+
+  it('extracts the text of a STATED ASSUMPTION note', () => {
+    expect(statedAssumptionText('STATED ASSUMPTION: months from application.')).toBe('months from application.');
+    expect(statedAssumptionText('Wait used = project wait')).toBeNull();
+    expect(statedAssumptionText(undefined)).toBeNull();
+  });
+});
 
 describe('Sources view derived assumptions', () => {
   it('recognises ruleset notes that flag a derived assumption', () => {
