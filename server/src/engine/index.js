@@ -34,10 +34,6 @@ const grow = (cents, g, months) => Math.round(cents * (1 + g) ** (months / 12));
 // Grant group (seat 2's eligibility[].grantGroup) → GrantResult.id
 const GRANT_GROUP_TO_ID = Object.freeze({ EHG: 'EHG', 'Family Grant': 'FAMILY', PHG: 'PHG' });
 
-// BTO payment at signing the agreement for lease, as a whole-number percent of the price (D30).
-// TODO(#41): read loans.btoDownpaymentStages.hdbLoan.atSigningPercent (#35) instead (invariant 6).
-const BTO_SIGNING_PERCENT = 10;
-
 // ---------------------------------------------------------------------------
 // evaluate()
 // ---------------------------------------------------------------------------
@@ -71,10 +67,10 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   }
 
   // Ruleset keys not in RULESET_KEYS yet: fail loudly, naming the key, rather than guess a value.
-  // TODO(#41): replace loans.hdbLoanOaRetention with the per-buyer key (D28).
   for (const [key, value] of [
     ['btoWaiting.monthsToAgreementForLease', ruleset.btoWaiting?.monthsToAgreementForLease],
-    ['loans.hdbLoanOaRetention', ruleset.loans?.hdbLoanOaRetention]
+    ['loans.hdbLoanOaRetentionPerBuyer', ruleset.loans?.hdbLoanOaRetentionPerBuyer],
+    ['loans.btoDownpaymentStages.hdbLoan.atSigningPercent', ruleset.loans?.btoDownpaymentStages?.hdbLoan?.atSigningPercent]
   ]) {
     if (typeof value !== 'number') throw new Error(`Ruleset key ${key} is missing or not a number`);
   }
@@ -184,8 +180,13 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   // -------------------------------------------------------------------------
   // 6. Funding plan (D28 / D30). Every OA withdrawal and grant is a dated CPF ledger entry.
   // -------------------------------------------------------------------------
-  // hdbLoanOaRetention is in DOLLARS in the ruleset (checked to be a number above)
-  const retentionCents = Math.round(ruleset.loans.hdbLoanOaRetention * 100);
+  // D28 v2: each buyer keeps their own OA up to hdbLoanOaRetentionPerBuyer (DOLLARS in the ruleset), or
+  // their whole OA if less; the household retention is the sum. Stated assumption: the full amount is kept.
+  const perBuyerRetentionCents = Math.round(ruleset.loans.hdbLoanOaRetentionPerBuyer * 100);
+  const retentionCents = applicants.reduce(
+    (sum, a) => sum + Math.min(a.cpfOaBalanceCents, perBuyerRetentionCents),
+    0
+  );
   let oaLeftCents = applicants.reduce((sum, a) => sum + a.cpfOaBalanceCents, 0);
 
   const ledger = [];          // { date, amountCents, kind } for computeAccruedInterest()
@@ -227,11 +228,25 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   let bsdPaidFrom;
   let legalPaidFrom;
 
-  // BTO signing: 10% of the price, then stamp duty, then legal fees
+  // Grants are credited when used, each part a GRANT ledger entry dated then (D29 v2)
+  let grantsLeftCents = totalGrantsCents;
+  const useGrants = (month, dueCents) => {
+    const used = Math.min(grantsLeftCents, dueCents);
+    if (used > 0) {
+      ledger.push({ date: toDate(month), amountCents: used, kind: 'GRANT' });
+      grantsLeftCents -= used;
+    }
+    return used;
+  };
+
+  // BTO signing (D30 v2): the signing percent of the price from grants first, then OA above the
+  // retention, then cash; then stamp duty, then legal fees
   let priceDueAtKeysCents = priceCents;
   if (isBto) {
-    const signingCents = Math.round((priceCents * BTO_SIGNING_PERCENT) / 100);
-    payOaAboveRetentionThenCash(signingMonth, signingCents);
+    const atSigningPercent = ruleset.loans.btoDownpaymentStages.hdbLoan.atSigningPercent;
+    const signingCents = Math.round((priceCents * atSigningPercent) / 100);
+    const grantAtSigningCents = useGrants(signingMonth, signingCents);
+    payOaAboveRetentionThenCash(signingMonth, signingCents - grantAtSigningCents);
     priceDueAtKeysCents -= signingCents;
     bsdPaidFrom = payFee(signingMonth, bsdCents);
     legalPaidFrom = payFee(signingMonth, legalCents);
@@ -239,11 +254,11 @@ export function evaluate(profile, choice, assumptions, ruleset) {
 
   // At keys: grants, then OA above the retention, then the loan, then cash
   let remainingCents = priceDueAtKeysCents;
-  const grantUsedCents = Math.min(totalGrantsCents, remainingCents);
-  if (grantUsedCents > 0) {
-    ledger.push({ date: toDate(keyMonth), amountCents: grantUsedCents, kind: 'GRANT' });
-    remainingCents -= grantUsedCents;
-  }
+  remainingCents -= useGrants(keyMonth, remainingCents);
+  // Grants above the remaining price stay in the OA (#36 review, point 5). They are not refund
+  // principal yet: they become ledger entries only when the OA later pays fees or instalments.
+  oaLeftCents += grantsLeftCents;
+  grantsLeftCents = 0;
   const oaAtKeysCents = Math.min(remainingCents, Math.max(0, oaLeftCents - retentionCents));
   payOa(keyMonth, oaAtKeysCents, 'LUMP_SUM');
   remainingCents -= oaAtKeysCents;
