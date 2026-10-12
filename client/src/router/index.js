@@ -14,6 +14,8 @@ const router = createRouter({
     { path: '/dashboard', component: () => import('../views/DashboardView.vue') },
     { path: '/sources', name: 'sources', component: SourcesView },
     { path: '/login', name: 'login', component: LoginView },
+    // Logged-out visitors see a "Log in" prompt in the view itself (no guard: see the note below).
+    { path: '/scenarios', name: 'scenarios', component: () => import('../views/ScenariosView.vue') },
   ],
 });
 

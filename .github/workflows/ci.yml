@@ -36,3 +36,6 @@ jobs:
           wait-on: 'http://localhost:3000/api/health'
         env:
           PORT: 3000
+          # The same throwaway mongo service, so cypress/e2e/scenarios.cy.js can register and save.
+          MONGODB_URI: mongodb://localhost:27017/bto_e2e
+          JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
