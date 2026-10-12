@@ -146,7 +146,8 @@ onMounted(() => {
             </div>
           </div>
 
-          <template v-if="confirmingId === s.id">
+          <!-- One group, so the buttons wrap together under the name on a phone, never one beside it and one below. -->
+          <div v-if="confirmingId === s.id" class="d-flex flex-wrap align-items-center gap-2">
             <span class="me-1">Delete this scenario?</span>
             <button
               type="button"
@@ -165,8 +166,8 @@ onMounted(() => {
             >
               Keep
             </button>
-          </template>
-          <template v-else>
+          </div>
+          <div v-else class="d-flex gap-2">
             <button
               type="button"
               class="btn btn-outline-secondary btn-sm"
@@ -185,7 +186,7 @@ onMounted(() => {
             >
               Delete
             </button>
-          </template>
+          </div>
         </li>
       </ul>
     </template>
