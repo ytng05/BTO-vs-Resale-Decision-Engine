@@ -1,6 +1,6 @@
 // Unit tests for results-page formatting and heatmap helpers (Vitest).
 import { describe, it, expect } from 'vitest';
-import { formatMoney, formatPercent } from '../src/utils/format.js';
+import { formatDate, formatMoney, formatPercent } from '../src/utils/format.js';
 import { axes, nearestCell } from '../src/utils/heatmap.js';
 import { mockCompare } from '../src/api/mock/mockData.js';
 
@@ -67,5 +67,23 @@ describe('mock compare response', () => {
       const allTests = o.grants.flatMap((g) => g.tests);
       expect(allTests.length).toBeGreaterThan(0);
     }
+  });
+});
+describe('formatDate', () => {
+  it('prints D Mon YYYY (UI.md §10), with Sep not Sept', () => {
+    expect(formatDate('2026-09-21T04:00:00.000Z')).toBe('21 Sep 2026');
+    expect(formatDate('2026-10-12T11:34:52.019Z')).toBe('12 Oct 2026');
+  });
+
+  it('uses the Singapore calendar day, UTC+8', () => {
+    // 20 Sep 17:30 UTC is already 21 Sep 01:30 in Singapore.
+    expect(formatDate('2026-09-20T17:30:00.000Z')).toBe('21 Sep 2026');
+    expect(formatDate('2026-12-31T15:59:59.000Z')).toBe('31 Dec 2026');
+    expect(formatDate('2026-12-31T16:00:00.000Z')).toBe('1 Jan 2027');
+  });
+
+  it('shows a dash for a missing or bad date', () => {
+    expect(formatDate(undefined)).toBe('—');
+    expect(formatDate('not a date')).toBe('—');
   });
 });
