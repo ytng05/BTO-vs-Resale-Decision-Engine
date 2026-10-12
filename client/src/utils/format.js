@@ -18,3 +18,14 @@ export function formatPercent(fraction) {
   const text = `${Math.abs(pct)}%`;
   return pct < 0 ? `−${text}` : text;
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const SGT_OFFSET_MS = 8 * 60 * 60 * 1000; // Singapore is UTC+8 all year (no daylight saving)
+
+// ISO timestamp -> "21 Sep 2026" (UI.md §10), on the Singapore calendar day whatever the browser's zone.
+export function formatDate(iso) {
+  const ms = new Date(iso).getTime();
+  if (Number.isNaN(ms)) return '—';
+  const sg = new Date(ms + SGT_OFFSET_MS);
+  return `${sg.getUTCDate()} ${MONTHS[sg.getUTCMonth()]} ${sg.getUTCFullYear()}`;
+}

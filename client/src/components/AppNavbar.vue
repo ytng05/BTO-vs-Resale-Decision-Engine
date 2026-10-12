@@ -45,6 +45,9 @@ function logout() {
         <ul class="navbar-nav ms-auto">
           <li class="nav-item"><router-link class="nav-link" to="/plan" data-cy="nav-plan-link">Plan</router-link></li>
           <li class="nav-item"><router-link class="nav-link" to="/sources" data-cy="nav-sources-link">Sources</router-link></li>
+          <li v-if="auth.isLoggedIn" class="nav-item">
+            <router-link class="nav-link" to="/scenarios" data-cy="nav-scenarios-link">My scenarios</router-link>
+          </li>
           <li v-if="!auth.isLoggedIn" class="nav-item">
             <router-link class="nav-link" to="/login" data-cy="nav-login-link">Log in</router-link>
           </li>
