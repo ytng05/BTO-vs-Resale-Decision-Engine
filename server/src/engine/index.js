@@ -259,7 +259,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   // Grants left over after the price (grantsLeftCents) go to the CPF Special/Retirement and MediSave
   // accounts (HDB Sign Agreement for Lease page; seat 2 on #46), so they never reach the OA: they can't pay
   // fees or instalments and aren't refund principal. D1 doesn't count CPF balances, so they drop out here;
-  // they never make a grant lower net position, and counting them is still open (D1).
+  // they never make a grant lower net position. Not counted in v1 (stated limitation, D32; seat 2 on #54).
   const oaAtKeysCents = Math.min(remainingCents, Math.max(0, oaLeftCents - retentionCents));
   payOa(keyMonth, oaAtKeysCents, 'LUMP_SUM');
   remainingCents -= oaAtKeysCents;

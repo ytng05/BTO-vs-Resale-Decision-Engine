@@ -155,6 +155,10 @@ deprecated, until the client stops reading them.
 
 This is seat 2's option (a), the wealth view: the whole refund returns to the household's CPF, and their own OA used
 (plus the interest it would have earned) is the cost. Option (b), leaving CPF out on both sides, was not taken: it
-would make anything paid from the OA free and drop the CPF interest cost. Grants left over after the price go to
-SA/RA and MediSave (#46) and are still not counted.
+would make anything paid from the OA free and drop the CPF interest cost.
+
+Seat 2 confirmed the CPF rule on #54 (CPF FAQ on refunds on sale): the refund, grants included, goes back to the
+household's CPF, usually the OA; with over $30,000 of grants part may go to SA/RA and MediSave instead, still their own
+CPF. Grants left over after the price go to SA/RA and MediSave (#46) and are not counted in v1, a stated limitation in
+D32: strictly they are household CPF wealth, but leaving them out only understates a grant's benefit.
 
