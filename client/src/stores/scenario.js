@@ -88,5 +88,41 @@ export const useScenarioStore = defineStore('scenario', {
     reset() {
       Object.assign(this, blank());
     },
+    // Body for POST /api/scenarios: the inputs in this store's own shape (dollars), so loading one
+    // refills the forms directly (docs/API_CONTRACT.md "Saved scenarios"). `step` is UI state, not saved.
+    savePayload(name, result = null) {
+      const copy = (v) => JSON.parse(JSON.stringify(v));
+      const payload = {
+        name,
+        profile: copy(this.profile),
+        choiceA: copy(this.choiceA),
+        choiceB: copy(this.choiceB),
+        assumptions: copy(this.assumptions),
+      };
+      if (result) payload.result = result;
+      return payload;
+    },
+    // Refills the store from a saved scenario. Each part is laid over the blank one, so a scenario saved
+    // before a field existed still loads, with that field's default. Lands on the last input step, as
+    // after "See results", so "Change inputs" opens Path B.
+    loadSaved(saved) {
+      const fresh = blank();
+      Object.assign(this, {
+        step: STEPS.length - 2,
+        profile: {
+          ...fresh.profile,
+          ...saved.profile,
+          // New ids: a saved id came from another session's counter and could clash with one added now.
+          applicants: (saved.profile?.applicants ?? fresh.profile.applicants).map((a) => {
+            const b = blankApplicant();
+            return { ...b, ...a, id: b.id };
+          }),
+          constraints: { ...fresh.profile.constraints, ...saved.profile?.constraints },
+        },
+        choiceA: { ...fresh.choiceA, ...saved.choiceA },
+        choiceB: { ...fresh.choiceB, ...saved.choiceB },
+        assumptions: { ...fresh.assumptions, ...saved.assumptions },
+      });
+    },
   },
 });
