@@ -62,6 +62,25 @@ if (cpf.status !== 200) {
   console.log(`  ruleset ${cpf.body.rulesetVersion} (${cpf.body.rulesetStatus}), OA rate ${cpf.body.oaRate * 100}%, ${cpf.body.accruedInterestCompounding} compounding`);
 }
 
+// 1b. Why month by month (proposal, "Why this is challenging"): Case 2's CPF, each instalment dated, against the
+// common shortcut of the same total withdrawn on day one. Same API, same rules; only the dates differ.
+const c2 = fixture('accrued-interest.json').cases.find((c) => c.id === 'lump-sum-plus-instalments');
+const c2Sale = monthDate(c2.inputs, c2.inputs.saleMonth);
+const dated = await post('/api/cpf/accrued-interest', { withdrawals: withdrawalsFor(c2.inputs), asOfDate: c2Sale });
+const dayOne = await post('/api/cpf/accrued-interest', {
+  withdrawals: [{ date: monthDate(c2.inputs, 1), amountCents: c2.expected.principalCents, kind: 'LUMP_SUM' }],
+  asOfDate: c2Sale,
+});
+console.log(`\nWhy month by month: ${dollars(c2.expected.principalCents)} of CPF used over ${c2.inputs.saleMonth} months`);
+if (dated.status !== 200 || dayOne.status !== 200) {
+  console.log(`  API returned ${dated.status} / ${dayOne.status}: ${(dated.body.error ?? dayOne.body.error)?.message}`);
+} else {
+  line('Each instalment dated', c2.expected.accruedInterestCents, dated.body.accruedInterestCents);
+  const over = dayOne.body.accruedInterestCents - dated.body.accruedInterestCents;
+  const pct = Math.round((over / dated.body.accruedInterestCents) * 100);
+  console.log(`  ${'All on day one'.padEnd(22)} API ${dollars(dayOne.body.accruedInterestCents).padStart(15)}   overstates by ${dollars(over)} (${pct}%)`);
+}
+
 // 2. Buyer's stamp duty: a typical resale price and a price with cents.
 console.log("\nBuyer's stamp duty");
 for (const id of ['bsd-typical-resale', 'bsd-non-whole-dollar']) {
