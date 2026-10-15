@@ -2,7 +2,7 @@
 // My scenarios: the logged-in user's saved scenarios, newest first (GET /api/scenarios). Open refills the
 // plan from the saved inputs (GET /api/scenarios/:id) and recalculates on Results; Delete asks first
 // (DELETE /api/scenarios/:id). docs/API_CONTRACT.md "Saved scenarios".
-// Compare mode: tick two scenarios, then Compare opens /scenarios/compare?a=&b= (side-by-side view).
+// Compare mode (styles in styles/_components.scss): tick two scenarios, then Compare opens /scenarios/compare?a=&b= (side-by-side view).
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteScenario, getScenario, listScenarios } from '../api/client.js';
@@ -119,7 +119,7 @@ onMounted(() => {
       <button
         v-if="auth.isLoggedIn && !loading && scenarios.length >= 2 && !compareMode"
         type="button"
-        class="btn btn-outline-primary btn-sm"
+        class="btn btn-outline-secondary btn-sm"
         data-cy="scenarios-compare-mode-button"
         @click="startCompare"
       >
@@ -259,12 +259,3 @@ onMounted(() => {
     </template>
   </section>
 </template>
-
-<style scoped lang="scss">
-.scenarios-pick-label {
-  cursor: pointer;
-}
-.scenarios-row--picked {
-  border-color: var(--bs-primary);
-}
-</style>

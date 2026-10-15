@@ -13,7 +13,7 @@ describe('Compare saved scenarios', () => {
     cy.get('[data-cy=compare-card-a] [data-cy=compare-path-pathA] [data-cy=compare-ahead-badge]').should('exist')
     cy.get('[data-cy=compare-card-b] [data-cy=compare-path-pathB] [data-cy=compare-ahead-badge]').should('exist')
 
-    cy.get('[data-cy=compare-headline]').should(
+    cy.get('[data-cy=compare-headline-sentence]').should(
       'contain',
       'Scenario A (Path A: BTO) ends S$13,000 ahead of Scenario B.',
     )
@@ -22,7 +22,7 @@ describe('Compare saved scenarios', () => {
 
   it('opens a scenario on Results', () => {
     cy.visit('/scenarios/compare?a=mock-a&b=mock-b')
-    cy.get('[data-cy=compare-card-b] [data-cy=compare-open-results]').click()
+    cy.get('[data-cy=compare-card-b] [data-cy=compare-open-results-button]').click()
     cy.location('pathname').should('eq', '/results')
   })
 
@@ -54,7 +54,7 @@ describe('Compare saved scenarios', () => {
     cy.get('[data-cy=scenarios-compare-checkbox]').eq(0).check()
     cy.get('[data-cy=scenarios-compare-checkbox]').eq(1).check()
     cy.get('[data-cy=scenarios-compare-checkbox]').eq(2).should('be.disabled')
-    cy.get('[data-cy=compare-bar-button]').click()
+    cy.get('[data-cy=compare-bar-compare-button]').click()
     cy.location('pathname').should('eq', '/scenarios/compare')
   })
 })
