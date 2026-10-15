@@ -49,10 +49,11 @@ describe('Compare saved scenarios', () => {
   // TODO: enable once compare mode is wired into My scenarios and the mock list has 2+ scenarios.
   it.skip('picks two scenarios on My scenarios and opens the compare page', () => {
     cy.visit('/scenarios')
-    cy.get('[data-cy=compare-mode-toggle]').click()
-    cy.get('[data-cy=scenario-compare-checkbox]').eq(0).check()
-    cy.get('[data-cy=scenario-compare-checkbox]').eq(1).check()
-    cy.get('[data-cy=scenario-compare-checkbox]').eq(2).should('be.disabled')
+    cy.get('[data-cy=scenarios-compare-mode-button]').click()
+    cy.get('[data-cy=scenarios-open-button]').should('not.exist')
+    cy.get('[data-cy=scenarios-compare-checkbox]').eq(0).check()
+    cy.get('[data-cy=scenarios-compare-checkbox]').eq(1).check()
+    cy.get('[data-cy=scenarios-compare-checkbox]').eq(2).should('be.disabled')
     cy.get('[data-cy=compare-bar-button]').click()
     cy.location('pathname').should('eq', '/scenarios/compare')
   })

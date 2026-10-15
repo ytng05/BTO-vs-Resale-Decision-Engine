@@ -2,9 +2,12 @@
 // My scenarios: the logged-in user's saved scenarios, newest first (GET /api/scenarios). Open refills the
 // plan from the saved inputs (GET /api/scenarios/:id) and recalculates on Results; Delete asks first
 // (DELETE /api/scenarios/:id). docs/API_CONTRACT.md "Saved scenarios".
+// Compare mode: tick two scenarios, then Compare opens /scenarios/compare?a=&b= (side-by-side view).
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteScenario, getScenario, listScenarios } from '../api/client.js';
+import CompareBar from '../components/CompareBar.vue';
+import { useComparePicker } from '../composables/useComparePicker.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import { formatDate } from '../utils/format.js';
@@ -18,6 +21,24 @@ const loading = ref(false);
 const error = ref(null);
 const confirmingId = ref(null); // the row asking "Delete this scenario?"
 const busyId = ref(null); // the row being opened or deleted
+
+// Compare mode: Open and Delete are hidden so a tap cannot delete by accident.
+const compareMode = ref(false);
+const picker = useComparePicker();
+
+function startCompare() {
+  confirmingId.value = null;
+  compareMode.value = true;
+}
+
+function exitCompare() {
+  compareMode.value = false;
+  picker.clear();
+}
+
+function goCompare() {
+  if (picker.compareRoute.value) router.push(picker.compareRoute.value);
+}
 
 // Login expired (tokens last 7 days): sign out here too and come back after logging in.
 function handledAuthError(e) {
@@ -92,7 +113,19 @@ onMounted(() => {
 
 <template>
   <section data-cy="scenarios-view">
-    <h1 class="h4 mb-3">My scenarios</h1>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <h1 class="h4 mb-0">My scenarios</h1>
+      <!-- Compare needs at least two saved scenarios -->
+      <button
+        v-if="auth.isLoggedIn && !loading && scenarios.length >= 2 && !compareMode"
+        type="button"
+        class="btn btn-outline-primary btn-sm"
+        data-cy="scenarios-compare-mode-button"
+        @click="startCompare"
+      >
+        Compare two
+      </button>
+    </div>
 
     <!-- Logged out -->
     <div v-if="!auth.isLoggedIn" class="card" data-cy="scenarios-logged-out">
@@ -132,63 +165,106 @@ onMounted(() => {
         </div>
       </div>
 
+      <p v-if="compareMode" class="text-secondary mb-2" data-cy="scenarios-compare-hint">
+        Tick two scenarios to see them side by side.
+      </p>
+
       <ul v-if="scenarios.length" class="list-unstyled d-grid gap-2 mb-0" data-cy="scenarios-list">
         <li
           v-for="s in scenarios"
           :key="s.id"
           class="card card-body d-flex flex-row flex-wrap align-items-center gap-2"
+          :class="{ 'scenarios-row--picked': compareMode && picker.isSelected(s.id) }"
           :data-cy="`scenarios-row-${s.id}`"
         >
-          <div class="flex-grow-1 me-2">
+          <!-- Compare mode: the whole name area is the label, so the tap target is large on a phone -->
+          <input
+            v-if="compareMode"
+            :id="`compare-${s.id}`"
+            type="checkbox"
+            class="form-check-input mt-0 flex-shrink-0"
+            :checked="picker.isSelected(s.id)"
+            :disabled="picker.isDisabled(s.id)"
+            :aria-label="`Select ${s.name} to compare`"
+            data-cy="scenarios-compare-checkbox"
+            @change="picker.toggle(s.id)"
+          />
+
+          <component
+            :is="compareMode ? 'label' : 'div'"
+            :for="compareMode ? `compare-${s.id}` : undefined"
+            class="flex-grow-1 me-2"
+            :class="{ 'scenarios-pick-label': compareMode }"
+          >
             <div class="fw-semibold" data-cy="scenarios-row-name">{{ s.name }}</div>
             <div class="text-caption">
               Saved {{ formatDate(s.createdAt) }} · Ruleset {{ s.rulesetVersion }}
             </div>
-          </div>
+          </component>
 
-          <!-- One group, so the buttons wrap together under the name on a phone, never one beside it and one below. -->
-          <div v-if="confirmingId === s.id" class="d-flex flex-wrap align-items-center gap-2">
-            <span class="me-1">Delete this scenario?</span>
-            <button
-              type="button"
-              class="btn btn-danger btn-sm"
-              :disabled="busyId === s.id"
-              data-cy="scenarios-delete-confirm"
-              @click="remove(s.id)"
-            >
-              Delete
-            </button>
-            <button
-              type="button"
-              class="btn btn-outline-secondary btn-sm"
-              data-cy="scenarios-delete-cancel"
-              @click="confirmingId = null"
-            >
-              Keep
-            </button>
-          </div>
-          <div v-else class="d-flex gap-2">
-            <button
-              type="button"
-              class="btn btn-outline-secondary btn-sm"
-              :disabled="busyId === s.id"
-              data-cy="scenarios-open-button"
-              @click="open(s.id)"
-            >
-              Open
-            </button>
-            <button
-              type="button"
-              class="btn btn-link btn-sm text-danger"
-              :disabled="busyId === s.id"
-              data-cy="scenarios-delete-button"
-              @click="confirmingId = s.id"
-            >
-              Delete
-            </button>
-          </div>
+          <template v-if="!compareMode">
+            <!-- One group, so the buttons wrap together under the name on a phone, never one beside it and one below. -->
+            <div v-if="confirmingId === s.id" class="d-flex flex-wrap align-items-center gap-2">
+              <span class="me-1">Delete this scenario?</span>
+              <button
+                type="button"
+                class="btn btn-danger btn-sm"
+                :disabled="busyId === s.id"
+                data-cy="scenarios-delete-confirm"
+                @click="remove(s.id)"
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+                data-cy="scenarios-delete-cancel"
+                @click="confirmingId = null"
+              >
+                Keep
+              </button>
+            </div>
+            <div v-else class="d-flex gap-2">
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm"
+                :disabled="busyId === s.id"
+                data-cy="scenarios-open-button"
+                @click="open(s.id)"
+              >
+                Open
+              </button>
+              <button
+                type="button"
+                class="btn btn-link btn-sm text-danger"
+                :disabled="busyId === s.id"
+                data-cy="scenarios-delete-button"
+                @click="confirmingId = s.id"
+              >
+                Delete
+              </button>
+            </div>
+          </template>
         </li>
       </ul>
+
+      <CompareBar
+        v-if="compareMode"
+        class="mt-3"
+        :count="picker.selected.value.length"
+        :can-compare="picker.canCompare.value"
+        @compare="goCompare"
+        @cancel="exitCompare"
+      />
     </template>
   </section>
 </template>
+
+<style scoped lang="scss">
+.scenarios-pick-label {
+  cursor: pointer;
+}
+.scenarios-row--picked {
+  border-color: var(--bs-primary);
+}
+</style>
