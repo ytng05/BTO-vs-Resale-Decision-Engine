@@ -1,6 +1,6 @@
 // SEAT 1 (D34). These tests check explainGap()'s rules: the lines sum to the margin, follow the documented order
 // and signs, and flip when the paths swap. They use evaluate() outputs only as inputs and contain no expected
-// money figures; those come from a hand-worked pair at one horizon (the todo at the end).
+// money figures; those come from the hand-worked pair in the last block.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { evaluate } from '../../src/engine/index.js';
@@ -88,5 +88,35 @@ describe('explainGap (D34)', () => {
     expect(() => explainGap(bto, at(caseById('E1-resale-hdb-loan'), HORIZON + 1))).toThrow(RangeError);
   });
 
-  it.todo('hand-worked pair at one horizon: every line matches the worked figure (seat 1)');
+});
+
+// Expected values hand-worked by seat 1 (engine/fixtures/gap-breakdown.json), not from the code under test.
+describe('explainGap (D34): hand-worked pair', () => {
+  const worked = JSON.parse(
+    readFileSync(new URL('../../src/engine/fixtures/gap-breakdown.json', import.meta.url), 'utf8'),
+  );
+  const { pair, expected } = worked;
+  const withOa = (c, cents) => ({
+    ...c,
+    inputs: {
+      ...c.inputs,
+      profile: { ...c.inputs.profile, applicants: c.inputs.profile.applicants.map((a) => ({ ...a, cpfOaBalanceCents: cents })) },
+    },
+  });
+  const gap = explainGap(
+    at(caseById(pair.pathA.caseId), pair.horizonYear),
+    at(withOa(caseById(pair.pathB.caseId), pair.pathB.cpfOaBalanceCentsEach), pair.horizonYear),
+  );
+
+  it('margin', () => {
+    expect(gap.marginCents).toBe(expected.marginCents);
+  });
+
+  it('every line matches the worked figure', () => {
+    expect(Object.fromEntries(gap.lines.map((l) => [l.id, l.amountCents]))).toEqual(expected.lines);
+  });
+
+  it('total grants', () => {
+    expect(gap.totalGrants).toEqual(expected.totalGrants);
+  });
 });
