@@ -388,6 +388,9 @@ const WARNINGS = Object.freeze({
  * @property {number} [btoWaitMonths]         - BTO only: months from application to keys (see timeline note)
  * @property {boolean} [btoWaitAssumed]       - true when btoWaitMonths came from btoWaiting.defaultMonths
  * @property {number} [renovationCents]       - renovation budget for this path, spent at keys; default 0
+ * @property {number} [legalFeesCents]        - this path's legal fees; overrides assumptions.legalFeesCents. The route
+ *                                              sets it per path (D33), since resale and BTO defaults differ
+ * @property {number} [agentFeesCents]        - this path's agent fees; overrides assumptions.agentFeesCents (D33)
  * @property {number} [subsidyRecoveryRate]   - BTO Plus/Prime only: decimal, e.g. 0.06. Per project, from
  *                                              seat 3's BTO seed record, not the ruleset (D18). 0 / omitted for
  *                                              Standard and resale. Missing for Plus/Prime → warn

@@ -45,6 +45,20 @@ export function parseRemainingLease(value) {
   return Number.isFinite(plain) ? plain : null;
 }
 
+/**
+ * Keep the records whose remaining lease falls in a band of whole years, e.g. { minLeaseYears: 80, maxLeaseYears: 89 }
+ * keeps 80 years 0 months up to 89 years 11 months (D16). Either bound may be omitted; records with an unreadable
+ * lease are dropped only when a bound is given.
+ */
+export function filterByLease(records, { minLeaseYears, maxLeaseYears } = {}) {
+  if (minLeaseYears === undefined && maxLeaseYears === undefined) return records;
+  return records.filter((r) => {
+    const lease = parseRemainingLease(r.remaining_lease);
+    if (lease === null) return false;
+    return (minLeaseYears === undefined || lease >= minLeaseYears) && (maxLeaseYears === undefined || lease < maxLeaseYears + 1);
+  });
+}
+
 const ascending = (values) => values.filter(Number.isFinite).sort((a, b) => a - b);
 const toCents = (dollars) => Math.round(dollars * 100);
 
@@ -70,8 +84,12 @@ export function summariseResale(records) {
   };
 }
 
-/** Median resale price (and spread) for a town + flat type over the last `months` months. */
-export async function getResalePriceBasis({ town, flatType, months, asOf = new Date(), force = false }) {
+/**
+ * Median resale price (and spread) for a town + flat type over the last `months` months. Optional
+ * minLeaseYears / maxLeaseYears narrow it to a remaining-lease band (filterByLease); the cache holds the
+ * whole town + flat type, so a band never needs its own fetch.
+ */
+export async function getResalePriceBasis({ town, flatType, months, minLeaseYears, maxLeaseYears, asOf = new Date(), force = false }) {
     // End at the last full month: the current month is still being reported.
   const lastFullMonth = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() - 1, 1));
   const window = monthWindow(lastFullMonth, months);
@@ -93,7 +111,8 @@ export async function getResalePriceBasis({ town, flatType, months, asOf = new D
     town,
     flatType,
     window: { from, to, months },
-    ...summariseResale(records),
+    ...(minLeaseYears !== undefined || maxLeaseYears !== undefined ? { leaseFilter: { minLeaseYears, maxLeaseYears } } : {}),
+    ...summariseResale(filterByLease(records, { minLeaseYears, maxLeaseYears })),
     source: { datasetId: DATASETS.resaleTransactions, name: 'Resale flat prices (HDB, data.gov.sg)' },
     cached: fromCache,
     stale, // true = data.gov.sg was unreachable and this is the last good copy
