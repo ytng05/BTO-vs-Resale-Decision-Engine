@@ -9,10 +9,11 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | GET | `/api/health` | seat 3 | liveness and feature flags | working |
 | GET | `/api/ruleset` | seat 2 | ruleset version, status, effective date | working (dated snapshot) |
 | POST | `/api/grants` | seat 2 | evaluate EHG, Family Grant, PHG, and eligibility explanations | working |
-| POST | `/api/auth/register` | seat 3 | create user (bcryptjs hash) | stub |
-| POST | `/api/auth/login` | seat 3 | returns JWT | stub |
-| GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | stub |
-| GET/DELETE | `/api/scenarios/:id` | seat 3 | load / delete | stub |
+| POST | `/api/auth/register` | seat 3 | create user (bcryptjs hash) | working |
+| POST | `/api/auth/login` | seat 3 | returns JWT | working |
+| GET | `/api/auth/me` | seat 3 | current user from the token (restores a session on page load) | working |
+| GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | working |
+| GET/DELETE | `/api/scenarios/:id` | seat 3 | load / delete (auth required) | working |
 | POST | `/api/compare` | seat 1 | break-even surface for path A vs B | stub |
 | POST | `/api/cpf/accrued-interest` | seat 1 | CPF refund owed at a date: principal + accrued interest (D2, D12) | working (needs verified CPF rate in ruleset) |
 | POST | `/api/stamp-duty` | seat 1 | buyer's stamp duty on a price (D20) | working |
@@ -211,8 +212,44 @@ Request: `{ priceCents }` (positive integer). Response: `{ bsdCents, dutiableVal
 
 Errors: `400 VALIDATION_ERROR`; `503 RULESET_UNAVAILABLE` (no BSD tiers in the ruleset).
 
-## POST /api/auth/register, POST /api/auth/login (DRAFT — seat 4's expected shape; seat 3 to confirm/adjust when building the route)
-Request (both): `{ name?, email, password }` (`name` register only; `password` plaintext over HTTPS, hashed server-side with bcryptjs).
-Response (both): `{ token, user: { id, name, email } }`. `token` is a JWT the client sends as `Authorization: Bearer <token>` on `/api/scenarios*`.
-Errors: `400 VALIDATION_ERROR` (bad email / password too short / name missing on register), `409 EMAIL_TAKEN` (register, email already registered), `401 INVALID_CREDENTIALS` (login).
-Client: `client/src/stores/auth.js` persists `{ token, user }` to `localStorage` under `hdb-app:auth` and restores it on app load; `router/index.js` guards `/plan` and `/results` with `meta: { requiresAuth: true }`.
+## Auth
+
+Passwords are hashed with bcryptjs; the plain password is never stored. Tokens are JWTs (HS256, signed with `JWT_SECRET`), valid for 7 days.
+Routes marked "auth required" need the header `Authorization: Bearer <token>`. Without a valid token they return `401 UNAUTHORIZED`.
+Client: `client/src/stores/auth.js` (seat 4) persists `{ token, user }` to `localStorage` under `hdb-app:auth`; `client/src/api/client.js` attaches the token to every request.
+
+### POST /api/auth/register
+Request: `{ name, email, password }`. `name` 1 to 100 characters (trimmed). Email is trimmed and lowercased. Password: 8 to 72 characters (bcrypt ignores anything past 72 bytes).
+Response `201`: `{ token, user: { id, name, email } }`.
+Errors: `400 VALIDATION_ERROR`, `409 EMAIL_TAKEN`, `503 DB_UNAVAILABLE`.
+
+### POST /api/auth/login
+Request: `{ email, password }`.
+Response `200`: `{ token, user: { id, name, email } }`.
+Errors: `400 VALIDATION_ERROR`, `401 INVALID_CREDENTIALS` (same message for an unknown email and a wrong password), `503 DB_UNAVAILABLE`.
+
+### GET /api/auth/me (auth required)
+Response `200`: `{ user: { id, name, email } }`.
+Errors: `401 UNAUTHORIZED` (missing, invalid or expired token).
+
+## Saved scenarios (auth required)
+
+A user only ever sees their own scenarios. Someone else's scenario returns `404`, not `403`, so ids cannot be probed.
+Inputs are saved in the client store's shape (dollars, store field names), not the cents `CompareRequest`, so loading can refill the form directly.
+
+### GET /api/scenarios
+Response `200`: `{ scenarios: [{ id, name, rulesetVersion, createdAt, updatedAt }] }`, newest first. Inputs and result are left out to keep the list small.
+
+### POST /api/scenarios
+Request: `{ name, profile, choiceA, choiceB, assumptions, result? }`. `name` 1 to 100 characters; `profile`, `choiceA`, `choiceB`, `assumptions` (and `result` if given) must be objects.
+`rulesetVersion` and `evaluationStartYear` are set by the server: taken from `result.rulesetVersion` / `result.evaluationStartYear` when a result is saved, otherwise the current ruleset version and the current year. Recalculating a reopened scenario should reuse both
+Response `201`: `{ scenario: { id, name, profile, choiceA, choiceB, assumptions, result, rulesetVersion, createdAt, updatedAt } }`.
+Errors: `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `503 DB_UNAVAILABLE`.
+
+### GET /api/scenarios/:id
+Response `200`: `{ scenario }` with all inputs and the saved result.
+Errors: `401 UNAUTHORIZED`, `404 NOT_FOUND`, `503 DB_UNAVAILABLE`.
+
+### DELETE /api/scenarios/:id
+Response `204` (no body).
+Errors: `401 UNAUTHORIZED`, `404 NOT_FOUND`, `503 DB_UNAVAILABLE`.

@@ -5,6 +5,8 @@ import { useScenarioStore } from '../stores/scenario.js';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
 import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
+import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
+import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
 import { validateStep } from '../validation/planValidation.js';
@@ -116,10 +118,11 @@ onMounted(load);
           <span v-if="result.mock" data-cy="results-mock-notice">Showing mock data.</span>
         </span>
       </p>
-      <div class="d-flex flex-wrap gap-2 mb-4">
+      <div class="d-flex flex-wrap gap-2 mb-3">
         <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="results-edit-button">Change inputs</RouterLink>
         <RouterLink to="/dashboard" class="btn btn-outline-primary" data-cy="results-dashboard-button">See the financial dashboard</RouterLink>
       </div>
+      <SaveScenarioPanel :result="result" />
 
       <div v-if="result.outcomeA && result.outcomeB" class="row g-3 mb-3">
         <div class="col-12 col-lg-6">
@@ -154,7 +157,7 @@ onMounted(load);
         </div>
       </div>
 
-      <div class="card">
+      <div class="card mb-3">
         <div class="card-body">
           <h2 class="h5">Where each path ends ahead</h2>
           <p class="text-secondary">Select a square to see the difference. "You" marks your own assumptions.</p>
@@ -167,6 +170,9 @@ onMounted(load);
           />
         </div>
       </div>
+
+      <!-- Background market context, not part of the comparison itself: fetches independently of /compare. -->
+      <HistoricalRpiChart />
       <!-- TODO (seat 5): timing optimiser panel and strategy top 3 once /api/timing and /api/strategy exist. -->
     </template>
   </section>
