@@ -1,77 +1,87 @@
-// Adding and removing a second buyer on the Situation step (mock data).
+// The two buyers on the Situation step (mock data). The app models exactly two buyers, at least one a
+// Singapore Citizen (D21), so both are always shown and there are no add/remove buttons.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 import { fillSituation, fillPath } from './helpers/plan.js';
 
-function fillBuyer2({ age = '32' } = {}) {
-  cy.get('[data-cy=situation-buyer-2-age-input]').type(age);
-  cy.get('[data-cy=situation-buyer-2-income-input]').type('4000');
-  cy.get('[data-cy=situation-buyer-2-cpf-input]').type('30000');
-}
+const next = () => cy.get('[data-cy=plan-step-next]').click();
+const back = () => cy.get('[data-cy=plan-step-back]').click();
+const citizenship = (n) => cy.get(`[data-cy=situation-buyer-${n}-citizenship-select]`);
+// The error message shown under one buyer's field.
+const fieldError = (n, field) => cy.get(`[data-cy=situation-buyer-${n}-${field}]`).parent().find('.invalid-feedback');
 
 describe('buyers on the Situation step', () => {
   beforeEach(() => {
-    cy.visit('/plan', { timeout: 10000 });
-    // Wait for the situation buyer form to be ready
-    cy.get('[data-cy=situation-buyer-1]', { timeout: 10000 }).should('exist');
+    cy.visit('/plan');
+    // The form can take a moment to appear on a slow CI machine: wait longer for this one element only.
+    cy.get('[data-cy=situation-buyer-2]', { timeout: 10000 }).should('exist');
   });
 
-  it('starts with one buyer who cannot be removed', () => {
-    cy.get('[data-cy=situation-buyer-1]').should('exist');
-    cy.get('[data-cy=situation-buyer-2]').should('not.exist');
-    cy.get('[data-cy=situation-buyer-1-remove-button]').should('not.exist');
-  });
-
-  it('adds a second buyer, then hides the add button at the maximum of two', () => {
-    cy.get('[data-cy=situation-add-buyer-button]').click();
-    cy.get('[data-cy=situation-buyer-2]').should('be.visible');
+  it('always shows exactly two buyers, both Singapore Citizens by default, with no add or remove buttons', () => {
+    cy.get('[data-cy^=situation-buyer-][data-cy$=-age-input]').should('have.length', 2);
+    cy.get('[data-cy=situation-buyer-3]').should('not.exist');
     cy.get('[data-cy=situation-add-buyer-button]').should('not.exist');
-    cy.get('[data-cy=situation-buyer-1-remove-button]').should('be.visible');
-    cy.get('[data-cy=situation-buyer-2-remove-button]').should('be.visible');
+    cy.get('[data-cy$=-remove-button]').should('not.exist');
+    citizenship(1).should('have.value', 'SC');
+    citizenship(2).should('have.value', 'SC');
   });
 
-  it('validates the second buyer before moving on', () => {
+  it('blocks two Permanent Residents with a message, then lets the user continue once one is a citizen', () => {
     fillSituation();
-    cy.get('[data-cy=situation-add-buyer-button]').click();
-    cy.get('[data-cy=plan-step-next]').click();
-    cy.get('[data-cy=plan-step-errors]').should('be.visible');
+    citizenship(1).select('PR');
+    citizenship(2).select('PR');
+    next();
+    cy.get('[data-cy=situation-applicants-error]').should('contain', 'At least one buyer must be a Singapore Citizen.');
     cy.get('[data-cy=plan-step-1-panel]').should('exist'); // still on Situation
+
+    citizenship(1).select('SC');
+    next();
+    cy.get('[data-cy=plan-step-2-panel]').should('exist');
   });
 
-  it('removing the second buyer brings back the add button', () => {
-    cy.get('[data-cy=situation-add-buyer-button]').click();
-    cy.get('[data-cy=situation-buyer-2-remove-button]').click();
-    cy.get('[data-cy=situation-buyer-2]').should('not.exist');
-    cy.get('[data-cy=situation-add-buyer-button]').should('be.visible');
-    cy.get('[data-cy=situation-buyer-1-remove-button]').should('not.exist');
-  });
-
-  it('removing the first buyer keeps the second buyer’s answers', () => {
-    fillSituation(); // buyer 1 is 30
-    cy.get('[data-cy=situation-add-buyer-button]').click();
-    fillBuyer2({ age: '45' });
-    cy.get('[data-cy=situation-buyer-1-remove-button]').click();
-    // The remaining buyer is now "Buyer 1" and still has buyer 2's answers.
-    cy.get('[data-cy=situation-buyer-2]').should('not.exist');
-    cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '45');
-    cy.get('[data-cy=situation-buyer-1-income-input]').should('have.value', '4000');
-  });
-
-  it('completes the plan with two buyers and keeps both after going back', () => {
+  it('accepts a citizen with a Permanent Resident', () => {
     fillSituation();
-    cy.get('[data-cy=situation-add-buyer-button]').click();
-    fillBuyer2();
-    cy.get('[data-cy=plan-step-next]').click();
+    citizenship(2).select('PR');
+    next();
+    cy.get('[data-cy=plan-step-2-panel]').should('exist');
+  });
+
+  it('checks each buyer separately and says which field is wrong', () => {
+    fillSituation();
+    cy.get('[data-cy=situation-buyer-2-age-input]').clear();           // buyer 2: age missing
+    cy.get('[data-cy=situation-buyer-1-income-input]').clear().type('120000'); // buyer 1: a yearly figure
+    next();
+
+    cy.get('[data-cy=plan-step-errors]').should('be.visible');
+    cy.get('[data-cy=plan-step-1-panel]').should('exist');
+    cy.get('[data-cy=situation-buyer-2-age-input]').should('have.class', 'is-invalid');
+    fieldError(2, 'age-input').should('contain', 'Enter an age.');
+    cy.get('[data-cy=situation-buyer-1-age-input]').should('not.have.class', 'is-invalid');
+    cy.get('[data-cy=situation-buyer-1-income-input]').should('have.class', 'is-invalid');
+    fieldError(1, 'income-input').should('contain', 'yearly figure');
+    cy.get('[data-cy=situation-buyer-2-income-input]').should('not.have.class', 'is-invalid');
+  });
+
+  it('keeps both buyers’ answers when going back, including from Results', () => {
+    fillSituation(); // buyer 1 is 30, buyer 2 is 29
+    citizenship(2).select('PR');
+    next();
+    back();
+    cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
+    cy.get('[data-cy=situation-buyer-2-age-input]').should('have.value', '29');
+    citizenship(2).should('have.value', 'PR');
+
+    next();
     fillPath('patha');
-    cy.get('[data-cy=plan-step-next]').click();
-    fillPath('pathb', { town: 'BEDOK', leaseBand: '80-89' });
-    cy.get('[data-cy=plan-step-next]').click();
+    next();
+    fillPath('pathb', { town: 'BEDOK' });
+    next();
     cy.location('pathname').should('eq', '/results');
-    cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
 
     cy.get('[data-cy=results-edit-button]').click();
-    cy.get('[data-cy=plan-step-back]').click();
-    cy.get('[data-cy=plan-step-back]').click();
+    back();
+    back();
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
-    cy.get('[data-cy=situation-buyer-2-age-input]').should('have.value', '32');
+    cy.get('[data-cy=situation-buyer-2-age-input]').should('have.value', '29');
+    citizenship(2).should('have.value', 'PR');
   });
 });
