@@ -1,7 +1,6 @@
 // SEAT 1 (D34). These tests check explainGap()'s rules: the lines sum to the margin, follow the documented order
 // and signs, and flip when the paths swap. They use evaluate() outputs only as inputs and contain no expected
 // money figures; those come from a hand-worked pair at one horizon (the todo at the end).
-// Skipped until engine/explainGap.js is written.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { evaluate } from '../../src/engine/index.js';
@@ -39,7 +38,7 @@ const cashPart = (o, id) => {
   return l.paidFrom === 'CASH' ? l.amountCents : 0;
 };
 
-describe.skip('explainGap (D34)', () => {
+describe('explainGap (D34)', () => {
   it('lists every line once, in the documented order', () => {
     expect(explainGap(bto, resale).lines.map((l) => l.id)).toEqual(IDS);
   });
@@ -55,7 +54,8 @@ describe.skip('explainGap (D34)', () => {
     const ab = explainGap(bto, resale);
     const ba = explainGap(resale, bto);
     expect(ba.marginCents).toBe(-ab.marginCents);
-    for (const id of IDS) expect(line(ba, id)).toBe(-line(ab, id));
+    // Each pair sums to 0 (comparing to -x would fail on 0 vs -0).
+    for (const id of IDS) expect(line(ba, id) + line(ab, id)).toBe(0);
   });
 
   it('a path against itself: every line is 0', () => {
