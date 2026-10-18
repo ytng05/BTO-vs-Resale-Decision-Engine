@@ -173,14 +173,29 @@ const RULESET_KEYS = Object.freeze({
  *
  *   netPositionCents =   marketValueAtHorizonCents
  *                      − outstandingLoanAtHorizonCents
- *                      − (cpfRefundPrincipalCents + cpfAccruedInterestCents)
+ *                      − (cpfSavingsRefundPrincipalCents + cpfSavingsAccruedInterestCents)
  *                      − clawbackCents
  *                      − housingCashSpentCents
  *
- * - The CPF refund obligation ranks the paths identically to "total wealth
- *   including the CPF OA balance": the two differ only by the OA balance the
- *   household would have had without buying, which is the same on both paths.
- *   It comes from computeAccruedInterest() called with the horizon date.
+ * - CPF SAVINGS refund: the household's own OA money used for housing (every
+ *   ledger entry except GRANT) plus its accrued interest. It stands in for OA
+ *   money they no longer have, so it ranks the paths the same way as "total
+ *   wealth including the CPF OA balance": the two differ only by the OA balance
+ *   they'd have had without buying, the same on both paths.
+ * - GRANT refund (D1; seat 2 on #49, ytng on #47): information only, NOT in
+ *   net position. A grant was never in that OA, and on sale its refund (with
+ *   accrued interest) goes back into the buyers' own OA (CPF: refund on sale),
+ *   so it is not a debt. Counting it as one made every grant lower net position.
+ * - Which figure is canonical: the savings refund is its own D12 run
+ *   (computeAccruedInterest() on the non-GRANT entries, horizon date) and is
+ *   the one in net position. grantRefundPrincipalCents is the exact sum of the
+ *   GRANT entries; grantRefundAccruedInterestCents is the combined D12 run's
+ *   interest less the savings interest, so savings + grants equal one combined
+ *   run to the cent (D12 rounds totals, so two separate runs could differ by a
+ *   cent; any such cent falls in the grant interest).
+ * - Deprecated: cpfRefundPrincipalCents and cpfAccruedInterestCents are still
+ *   returned as the combined totals (savings + grants) until the client stops
+ *   reading them; they are not in net position. Remove in a follow-up.
  * - housingCashSpentCents counts only housing cash out, from
  *   evaluationStartYear to the horizon: upfront cash, the cash part of
  *   instalments, cash-paid stamp duty / fees / renovation, and rent while
@@ -388,6 +403,9 @@ const WARNINGS = Object.freeze({
  * @property {number} [btoWaitMonths]         - BTO only: months from application to keys (see timeline note)
  * @property {boolean} [btoWaitAssumed]       - true when btoWaitMonths came from btoWaiting.defaultMonths
  * @property {number} [renovationCents]       - renovation budget for this path, spent at keys; default 0
+ * @property {number} [legalFeesCents]        - this path's legal fees; overrides assumptions.legalFeesCents. The route
+ *                                              sets it per path (D33), since resale and BTO defaults differ
+ * @property {number} [agentFeesCents]        - this path's agent fees; overrides assumptions.agentFeesCents (D33)
  * @property {number} [subsidyRecoveryRate]   - BTO Plus/Prime only: decimal, e.g. 0.06. Per project, from
  *                                              seat 3's BTO seed record, not the ruleset (D18). 0 / omitted for
  *                                              Standard and resale. Missing for Plus/Prime → warn
@@ -538,7 +556,11 @@ const WARNINGS = Object.freeze({
  * @property {number} cpfUsedCents            - CPF withdrawn for housing that year
  * @property {number} loanBalanceEndCents
  * @property {number} marketValueEndCents     - 0 before keys
- * @property {number} cpfObligationEndCents   - CPF principal + accrued interest owed back to the OA
+ * @property {number} cpfSavingsObligationEndCents - CPF SAVINGS refund (own OA used + its accrued interest) at
+ *                                              31 Dec, the D1 figure; the horizonYear row equals
+ *                                              cpfSavingsRefundPrincipalCents + cpfSavingsAccruedInterestCents
+ * @property {number} cpfObligationEndCents   - DEPRECATED: combined refund (savings + grants) at 31 Dec. Use
+ *                                              cpfSavingsObligationEndCents; remove in a follow-up
  */
 
 /**
@@ -559,8 +581,14 @@ const WARNINGS = Object.freeze({
  * @property {number} loanPrincipalCents
  * @property {number} marketValueAtHorizonCents
  * @property {number} outstandingLoanAtHorizonCents
- * @property {number} cpfRefundPrincipalCents  - CPF principal owed back at the horizon
- * @property {number} cpfAccruedInterestCents  - accrued interest owed back at the horizon (D12 conventions)
+ * @property {number} cpfSavingsRefundPrincipalCents  - own OA used for housing to the horizon (D1, in net position)
+ * @property {number} cpfSavingsAccruedInterestCents  - its accrued interest at the horizon, own D12 run (canonical)
+ * @property {number} grantRefundPrincipalCents       - grants used against the price (information only)
+ * @property {number} grantRefundAccruedInterestCents - their accrued interest: combined D12 interest less the
+ *                                                      savings interest (information only; see the measure note)
+ * @property {number} cpfRefundPrincipalCents  - DEPRECATED: savings + grant principal. Not in net position
+ * @property {number} cpfAccruedInterestCents  - DEPRECATED: savings + grant interest (one combined D12 run).
+ *                                              Not in net position
  * @property {number} clawbackCents           - Plus/Prime only, else 0
  * @property {number} housingCashSpentCents   - sum of the CASH-paid cost lines and cash instalments
  * @property {CostLine[]} costBreakdown
@@ -569,6 +597,43 @@ const WARNINGS = Object.freeze({
  * @property {ResolvedRates} resolvedRates
  * @property {string} rulesetVersion          - stamped so saved scenarios are reproducible
  * @property {string[]} warnings              - values from WARNINGS
+ */
+
+/**
+ * GAP BREAKDOWN (D34): why one path ends ahead, line by line. explainGap(outcomeA, outcomeB) in
+ * engine/explainGap.js. Pure arithmetic on two Outcomes measured at the same horizonYear.
+ *
+ * marginCents = outcomeA.netPositionCents − outcomeB.netPositionCents (positive: Path A ahead).
+ * Every line is signed the same way, so a positive line helps Path A, and the lines sum EXACTLY to marginCents:
+ *   MARKET_VALUE        A − B   flat value at the horizon
+ *   LOAN_OWED           B − A   loan still owed at the horizon
+ *   CPF_PRINCIPAL       B − A   CPF savings owed back (cpfSavingsRefundPrincipalCents: the household's own OA used,
+ *                               including any stamp duty or legal fees paid from CPF; grants excluded, D1)
+ *   CPF_INTEREST        B − A   interest on those savings (cpfSavingsAccruedInterestCents)
+ *   CLAWBACK            B − A   Plus/Prime subsidy clawback
+ *   RENT_WHILE_WAITING  B − A   cash
+ *   RENOVATION          B − A   cash
+ *   BSD                 B − A   the cash-paid part only (0 when paid from CPF)
+ *   LEGAL               B − A   the cash-paid part only (0 when paid from CPF)
+ *   AGENT               B − A   cash
+ *   CASH_PURCHASE       B − A   every other housing cash: downpayment, staged payments and the cash part of
+ *                               instalments (= housingCashSpentCents − the cash lines above)
+ * Loan interest has no line of its own: it sits inside the instalments (CASH_PURCHASE, CPF_PRINCIPAL) and the
+ * loan still owed. Grants have no line either: under D1 a grant's refund is not in net position, and grants
+ * lower the cash, savings and loan a path needs, so they are reported beside the lines as information. All lines are always present, in this order; the UI may hide zeros.
+ *
+ * @typedef {Object} GapLine
+ * @property {string} id                      - one of the ids above
+ * @property {string} label                   - plain-English name for the UI
+ * @property {number} amountCents             - signed; positive helps Path A
+ *
+ * @typedef {Object} GapBreakdown
+ * @property {number} horizonYear
+ * @property {number} marginCents             - outcomeA.netPositionCents − outcomeB.netPositionCents
+ * @property {GapLine[]} lines                - sum to marginCents exactly
+ * @property {{ aCents: number, bCents: number }} totalGrants - each path's totalGrantsCents, for information
+ *
+ * @throws {RangeError} when the two outcomes have different horizonYears
  */
 
 // ---------------------------------------------------------------------------
