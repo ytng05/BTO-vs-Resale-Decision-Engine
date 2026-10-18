@@ -604,8 +604,9 @@ const WARNINGS = Object.freeze({
  * Every line is signed the same way, so a positive line helps Path A, and the lines sum EXACTLY to marginCents:
  *   MARKET_VALUE        A − B   flat value at the horizon
  *   LOAN_OWED           B − A   loan still owed at the horizon
- *   CPF_PRINCIPAL       B − A   CPF principal owed back (includes any stamp duty or legal fees paid from CPF)
- *   CPF_INTEREST        B − A   CPF accrued interest owed back
+ *   CPF_PRINCIPAL       B − A   CPF savings owed back (cpfSavingsRefundPrincipalCents: the household's own OA used,
+ *                               including any stamp duty or legal fees paid from CPF; grants excluded, D1)
+ *   CPF_INTEREST        B − A   interest on those savings (cpfSavingsAccruedInterestCents)
  *   CLAWBACK            B − A   Plus/Prime subsidy clawback
  *   RENT_WHILE_WAITING  B − A   cash
  *   RENOVATION          B − A   cash
@@ -615,8 +616,8 @@ const WARNINGS = Object.freeze({
  *   CASH_PURCHASE       B − A   every other housing cash: downpayment, staged payments and the cash part of
  *                               instalments (= housingCashSpentCents − the cash lines above)
  * Loan interest has no line of its own: it sits inside the instalments (CASH_PURCHASE, CPF_PRINCIPAL) and the
- * loan still owed. Grants have no line either: they lower the cash, CPF and loan a path needs, so they are
- * reported beside the lines as information. All lines are always present, in this order; the UI may hide zeros.
+ * loan still owed. Grants have no line either: under D1 a grant's refund is not in net position, and grants
+ * lower the cash, savings and loan a path needs, so they are reported beside the lines as information. All lines are always present, in this order; the UI may hide zeros.
  *
  * @typedef {Object} GapLine
  * @property {string} id                      - one of the ids above

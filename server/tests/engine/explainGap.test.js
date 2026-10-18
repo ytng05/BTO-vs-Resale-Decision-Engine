@@ -68,8 +68,8 @@ describe('explainGap (D34)', () => {
     const gap = explainGap(bto, resale);
     expect(line(gap, 'MARKET_VALUE')).toBe(bto.marketValueAtHorizonCents - resale.marketValueAtHorizonCents);
     expect(line(gap, 'LOAN_OWED')).toBe(resale.outstandingLoanAtHorizonCents - bto.outstandingLoanAtHorizonCents);
-    expect(line(gap, 'CPF_PRINCIPAL')).toBe(resale.cpfRefundPrincipalCents - bto.cpfRefundPrincipalCents);
-    expect(line(gap, 'CPF_INTEREST')).toBe(resale.cpfAccruedInterestCents - bto.cpfAccruedInterestCents);
+    expect(line(gap, 'CPF_PRINCIPAL')).toBe(resale.cpfSavingsRefundPrincipalCents - bto.cpfSavingsRefundPrincipalCents);
+    expect(line(gap, 'CPF_INTEREST')).toBe(resale.cpfSavingsAccruedInterestCents - bto.cpfSavingsAccruedInterestCents);
     expect(line(gap, 'CLAWBACK')).toBe(resale.clawbackCents - bto.clawbackCents);
   });
 

@@ -56,8 +56,8 @@ export function explainGap(outcomeA, outcomeB) {
   const lines = [
     { id: 'MARKET_VALUE',  label: 'Flat value',                    amountCents: aMinusB(a.marketValueAtHorizonCents,     b.marketValueAtHorizonCents) },
     { id: 'LOAN_OWED',     label: 'Loan still owed',               amountCents: bMinusA(a.outstandingLoanAtHorizonCents, b.outstandingLoanAtHorizonCents) },
-    { id: 'CPF_PRINCIPAL', label: 'CPF used (principal)',          amountCents: bMinusA(a.cpfRefundPrincipalCents,       b.cpfRefundPrincipalCents) },
-    { id: 'CPF_INTEREST',  label: 'CPF accrued interest',          amountCents: bMinusA(a.cpfAccruedInterestCents,       b.cpfAccruedInterestCents) },
+    { id: 'CPF_PRINCIPAL', label: 'CPF savings used (principal)',  amountCents: bMinusA(a.cpfSavingsRefundPrincipalCents, b.cpfSavingsRefundPrincipalCents) },
+    { id: 'CPF_INTEREST',  label: 'Interest on CPF savings used',  amountCents: bMinusA(a.cpfSavingsAccruedInterestCents, b.cpfSavingsAccruedInterestCents) },
     { id: 'CLAWBACK',      label: 'Subsidy clawback (Plus/Prime)', amountCents: bMinusA(a.clawbackCents,                 b.clawbackCents) },
     ...CASH_COST_IDS.map((id) => ({
       id,
