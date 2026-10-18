@@ -12,7 +12,8 @@ import { solveBreakEven } from '../engine/solvers/breakEven.js';
 import { optimiseTiming } from '../engine/solvers/timingOptimiser.js';
 import { getResalePriceBasis } from '../services/datagov/resalePrice.js';
 import {
-  validateProfile, resolveChoice, resolveAssumptions, InputError, DataUnavailableError, GROWTH_STEPS,
+  validateProfile, resolveChoice, resolveAssumptions, InputError, DataUnavailableError,
+  PRICE_GROWTH_STEPS, INCOME_GROWTH_STEPS, MAX_YEARS_AHEAD, stepsCovering,
 } from '../services/engineInputs.js';
 
 const router = Router();
@@ -111,13 +112,25 @@ const pathName = (label, choice) => `Path ${label} (${choice.path === 'BTO' ? 'B
 
 /**
  * One plain sentence for the heatmap (wording rules in API_CONTRACT.md: net financial position, never a
- * prediction). Uses the income-growth row nearest the user's own assumption.
+ * prediction). userRow is solveBreakEven() run on one row at the user's EXACT income growth (seat 5 on #61),
+ * so the sentence is about their own rate, not the nearest grid row.
  */
-export function breakEvenSentence({ grid, frontier }, { horizonYear, annualIncomeGrowth, nameA, nameB }) {
+export function breakEvenSentence({ grid, frontier }, userRow, { horizonYear, annualIncomeGrowth, nameA, nameB }) {
   const cells = grid.flat();
   const name = (w) => (w === 'A' ? nameA : nameB);
   const end = `at the end of ${horizonYear}`;
-  if (frontier.length === 0) {
+  const row = userRow.grid[0];
+  if (userRow.frontier.length === 0 && frontier.length > 0) {
+    // The break-even line exists, but not at the user's income growth: one path wins across their row.
+    const winners = new Set(row.map((c) => c.winner).filter((w) => w !== 'TIE'));
+    const prices = `price growth of ${pct(row[0].annualPriceGrowth)} to ${pct(row.at(-1).annualPriceGrowth)} a year`;
+    const lead = winners.size === 1
+      ? `With income growing ${pct(annualIncomeGrowth)} a year, ${name([...winners][0])} leaves the household with the higher net financial position ${end} at every ${prices} tested.`
+      : `With income growing ${pct(annualIncomeGrowth)} a year, the two paths are level ${end} across ${prices}.`;
+    return `${lead} The break-even line on the heatmap lies at other income growth rates. This is not a price forecast.`;
+  }
+  if (userRow.frontier.length === 0) {
+    // No break-even line anywhere tested.
     const winners = new Set(cells.map((c) => c.winner));
     const range = `price growth of ${pct(cells[0].annualPriceGrowth)} to ${pct(cells.at(-1).annualPriceGrowth)} and income growth of ${pct(cells[0].annualIncomeGrowth)} to ${pct(cells.at(-1).annualIncomeGrowth)} a year`;
     if (winners.size === 1 && !winners.has('TIE')) {
@@ -125,17 +138,13 @@ export function breakEvenSentence({ grid, frontier }, { horizonYear, annualIncom
     }
     return `Under the combinations tested (${range}), the two paths are level ${end}. This is not a price forecast.`;
   }
-  const rowGrowth = grid.map((row) => row[0].annualIncomeGrowth);
-  const nearest = rowGrowth.reduce((a, b) => (Math.abs(b - annualIncomeGrowth) < Math.abs(a - annualIncomeGrowth) ? b : a));
-  const rowFrontier = frontier.filter((p) => p.annualIncomeGrowth === nearest);
-  const point = rowFrontier[0] ?? frontier[0];
-  const row = grid[rowGrowth.indexOf(point.annualIncomeGrowth)];
+  const point = userRow.frontier[0];
   const above = row.find((c) => c.annualPriceGrowth > point.annualPriceGrowth && c.winner !== 'TIE')?.winner;
   const below = [...row].reverse().find((c) => c.annualPriceGrowth < point.annualPriceGrowth && c.winner !== 'TIE')?.winner;
   const sides = above && below && above !== below
     ? ` Above that, ${name(above)} comes out ahead; below it, ${name(below)} does.`
     : '';
-  return `The two paths leave the household with the same net financial position ${end} along a break-even line. With income growing ${pct(point.annualIncomeGrowth)} a year, they are level at about ${pct(point.annualPriceGrowth)} price growth a year.${sides} This is not a price forecast.`;
+  return `The two paths leave the household with the same net financial position ${end} along a break-even line. With income growing ${pct(annualIncomeGrowth)} a year, they are level at about ${pct(point.annualPriceGrowth)} price growth a year.${sides} This is not a price forecast.`;
 }
 
 // Seat 1. POST /api/compare: the whole break-even grid in one call, plus both paths' outcomes at the
@@ -153,15 +162,22 @@ router.post('/compare', async (req, res, next) => {
 
     const outcomeA = evaluate(profile, a.choice, engineAssumptions, ruleset);
     const outcomeB = evaluate(profile, b.choice, engineAssumptions, ruleset);
-    const surface = solveBreakEven({
-      profile, choiceA: a.choice, choiceB: b.choice, assumptionsBase: engineAssumptions,
-      priceGrowthSteps: GROWTH_STEPS, incomeGrowthSteps: GROWTH_STEPS, ruleset,
-    });
+    // Axes always include the user's own rates (D33), so their point is on the heatmap.
+    const priceGrowthSteps = stepsCovering(PRICE_GROWTH_STEPS, engineAssumptions.annualPriceGrowth);
+    const incomeGrowthSteps = stepsCovering(INCOME_GROWTH_STEPS, engineAssumptions.annualIncomeGrowth);
+    const pair = { profile, choiceA: a.choice, choiceB: b.choice, assumptionsBase: engineAssumptions, ruleset };
+    const surface = solveBreakEven({ ...pair, priceGrowthSteps, incomeGrowthSteps });
+    // The sentence bisects at the user's exact income growth: reuse the grid row when it is one, else solve one more row.
+    const userIncome = engineAssumptions.annualIncomeGrowth;
+    const rowIndex = incomeGrowthSteps.indexOf(userIncome);
+    const userRow = rowIndex >= 0
+      ? { grid: [surface.grid[rowIndex]], frontier: surface.frontier.filter((p) => p.annualIncomeGrowth === userIncome) }
+      : solveBreakEven({ ...pair, priceGrowthSteps, incomeGrowthSteps: [userIncome] });
 
     return res.json({
       rulesetVersion: version,
       horizonYear: engineAssumptions.horizonYear,
-      breakEvenSentence: breakEvenSentence(surface, {
+      breakEvenSentence: breakEvenSentence(surface, userRow, {
         horizonYear: engineAssumptions.horizonYear,
         annualIncomeGrowth: engineAssumptions.annualIncomeGrowth,
         nameA: pathName('A', a.choice),
@@ -220,6 +236,10 @@ const timing = async (req, res, next) => {
     const candidateYears = req.body?.candidateYears ?? Array.from({ length: 6 }, (_, i) => startYear + i);
     if (!Array.isArray(candidateYears) || candidateYears.length === 0 || candidateYears.length > 21 || !candidateYears.every(Number.isInteger)) {
       return badRequest(res, 'candidateYears must list from 1 to 21 whole years.');
+    }
+    const outOfRange = candidateYears.find((y) => y < startYear || y > startYear + MAX_YEARS_AHEAD);
+    if (outOfRange !== undefined) {
+      return badRequest(res, `candidateYears must be years from ${startYear} to ${startYear + MAX_YEARS_AHEAD}; ${outOfRange} is not.`);
     }
     // Prices are today's (D31), so one lookup serves every year; the year itself is validated per candidate.
     const base = await resolveChoice(

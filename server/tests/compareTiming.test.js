@@ -29,9 +29,10 @@ vi.mock('../src/services/datagov/resalePrice.js', async (importOriginal) => {
 });
 
 const { createApp } = await import('../src/app.js');
+const { breakEvenSentence } = await import('../src/routes/analysis.js');
 const { evaluate } = await import('../src/engine/index.js');
 const { loadRuleset } = await import('../src/engine/rules/loadRuleset.js');
-const { FEE_DEFAULTS, GROWTH_STEPS } = await import('../src/services/engineInputs.js');
+const { FEE_DEFAULTS, PRICE_GROWTH_STEPS, INCOME_GROWTH_STEPS, MAX_YEARS_AHEAD } = await import('../src/services/engineInputs.js');
 const app = createApp();
 const YEAR = new Date().getFullYear();
 
@@ -56,8 +57,9 @@ describe('POST /api/compare', () => {
 
   it('returns the whole grid, the frontier and both outcomes in one call', () => {
     expect(res.status).toBe(200);
-    expect(res.body.grid).toHaveLength(GROWTH_STEPS.length);
-    res.body.grid.forEach((row) => expect(row).toHaveLength(GROWTH_STEPS.length));
+    expect(res.body.grid).toHaveLength(INCOME_GROWTH_STEPS.length);
+    res.body.grid.forEach((row) => expect(row).toHaveLength(PRICE_GROWTH_STEPS.length));
+    expect(res.body.grid[0].map((c) => c.annualPriceGrowth)).toEqual(PRICE_GROWTH_STEPS); // includes falling prices
     expect(Array.isArray(res.body.frontier)).toBe(true);
     expect(typeof res.body.outcomeA.netPositionCents).toBe('number');
     expect(typeof res.body.outcomeB.netPositionCents).toBe('number');
@@ -67,8 +69,31 @@ describe('POST /api/compare', () => {
   });
 
   it("the grid cell at the user's own growth rates is outcomeA minus outcomeB", () => {
-    const cell = res.body.grid[GROWTH_STEPS.indexOf(0.02)][GROWTH_STEPS.indexOf(0.03)];
+    const cell = res.body.grid[INCOME_GROWTH_STEPS.indexOf(0.02)][PRICE_GROWTH_STEPS.indexOf(0.03)];
     expect(cell.marginCents).toBe(res.body.outcomeA.netPositionCents - res.body.outcomeB.netPositionCents);
+  });
+
+  it("widens the axes in 1-point steps so the user's own growth rates are on the heatmap (D33)", async () => {
+    const r = await compare(body({ assumptions: { ...assumptions, annualPriceGrowth: -0.045, annualIncomeGrowth: 0.071 } }));
+    expect(r.status).toBe(200);
+    const prices = r.body.grid[0].map((c) => c.annualPriceGrowth);
+    const incomes = r.body.grid.map((row) => row[0].annualIncomeGrowth);
+    expect(prices).toEqual([-0.05, -0.04, -0.03, ...PRICE_GROWTH_STEPS]);
+    expect(incomes).toEqual([...INCOME_GROWTH_STEPS, 0.06, 0.07, 0.08]);
+  });
+
+  it.each([
+    ['a break-even line at the user\'s exact income growth', true, true, /With income growing 2\.5% a year, they are level at about 1\.5% price growth/],
+    ['a line elsewhere on the heatmap, but not at the user\'s income growth', true, false, /With income growing 2\.5% a year, Path A .* every price growth .* lies at other income growth rates/],
+    ['no line anywhere tested', false, false, /Under every combination tested/],
+  ])('the sentence (unit): %s', (_name, gridHasLine, userRowHasLine, expected) => {
+    const cell = (p, i, winner) => ({ annualPriceGrowth: p, annualIncomeGrowth: i, winner, marginCents: winner === 'A' ? 1 : -1 });
+    const row = (i, crossing) => [cell(0.01, i, crossing ? 'B' : 'A'), cell(0.02, i, 'A')];
+    const surface = { grid: [row(0.02, gridHasLine), row(0.03, false)], frontier: gridHasLine ? [{ annualPriceGrowth: 0.012, annualIncomeGrowth: 0.02 }] : [] };
+    const userRow = { grid: [row(0.025, userRowHasLine)], frontier: userRowHasLine ? [{ annualPriceGrowth: 0.015, annualIncomeGrowth: 0.025 }] : [] };
+    const sentence = breakEvenSentence(surface, userRow, { horizonYear: 2040, annualIncomeGrowth: 0.025, nameA: 'Path A (BTO)', nameB: 'Path B (resale)' });
+    expect(sentence).toMatch(expected);
+    expect(sentence).toMatch(/not a price forecast/);
   });
 
   it('BTO: newest Tampines project with 4-room flats, midpoint price, its wait, lease 99, near-new market value (D7, D16, D26, D33)', () => {
@@ -141,6 +166,7 @@ describe('POST /api/compare', () => {
     ['a 2-room flat', { choiceA: { ...bto, flatType: '2 ROOM' } }, /flatType/],
     ['an unknown town', { choiceB: { ...resale, town: 'ATLANTIS' } }, /HDB town/],
     ['a town with no BTO launch', { choiceA: { ...bto, town: 'PUNGGOL' } }, /No recent BTO launch/],
+    ['a BTO town not in the seed (checked against the seed, not resale towns)', { choiceA: { ...bto, town: 'TENGAH' } }, /No recent BTO launch in TENGAH/],
     ['an unknown project', { choiceA: { ...bto, btoProjectId: 'nope' } }, /not a seeded BTO project/],
     ['a project in another town', { choiceA: { ...bto, btoProjectId: 'sembawang-brook' } }, /not TAMPINES/],
     ['a price outside the range', { choiceA: { ...bto, btoPriceCents: 1 } }, /within/],
@@ -206,6 +232,7 @@ describe('POST /api/timing', () => {
   it.each([
     ['years out of order', { candidateYears: [YEAR + 1, YEAR] }, /candidateYears/],
     ['no years', { candidateYears: [] }, /candidateYears/],
+    ['a later year out of range', { candidateYears: [YEAR, YEAR + MAX_YEARS_AHEAD + 1] }, new RegExp(`${YEAR + MAX_YEARS_AHEAD + 1} is not`)],
     ['a bad choice', { choiceBase: { ...bto, flatType: 'EXECUTIVE' } }, /flatType/],
   ])('400 for %s', async (_name, over, message) => {
     const r = await timing({ profile, choiceBase: bto, candidateYears: years, assumptions, ...over });

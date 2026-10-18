@@ -136,14 +136,14 @@ Response (one call returns the WHOLE grid, never one request per cell):
   "btoProjectB": null
 }
 ```
-`btoProjectA/B` (v2.1) is the BTO project the route used for that choice (`null` for resale), so the dashboard can show "priced at $540,500, HDB range $481,000–$600,000" and bound the price slider (D26). `outcomeA/B` are `Outcome` objects (see `evaluate.contract.js`, v2: timeline, affordability, `costBreakdown`, `yearlyCashFlow`, net position at the horizon). `marginCents` is the difference in net position at `horizonYear`, in cents. The grid steps are 0% to 5% a year in 1-point steps for both growth rates (D33).
+`btoProjectA/B` (v2.1) is the BTO project the route used for that choice (`null` for resale), so the dashboard can show "priced at $540,500, HDB range $481,000–$600,000" and bound the price slider (D26). `outcomeA/B` are `Outcome` objects (see `evaluate.contract.js`, v2: timeline, affordability, `costBreakdown`, `yearlyCashFlow`, net position at the horizon). `marginCents` is the difference in net position at `horizonYear`, in cents. Grid axes: price growth −2% to +6% a year and income growth 0% to 5%, in 1-point steps, widened in 1-point steps when the user's own rates fall outside them, so their point is always on the heatmap (D33). `breakEvenSentence` is worked at the user's exact income growth, not the nearest grid row.
 
 Also returned (additive): `assumptions`, the engine assumptions with the server's defaults filled in (D17, D22, D33), and `resolvedA` / `resolvedB`, what the route looked up for each choice: `purchasePriceCents`, `marketValueAtKeysCents`, `remainingLeaseYears`, `legalFeesCents`, `agentFeesCents`, and for BTO `btoWaitMonths`, `btoWaitAssumed`, `subsidyRecoveryRate`. `priceData` (resale) or `marketValueData` (BTO) says which data.gov.sg median was used: `{ source, window, transactions, leaseFilter, fellBackToAllLeases, lowSample, stale, fetchedAt }`, for a "data as of" line.
 
 Errors: `400 VALIDATION_ERROR` for an out-of-scope household, a bad field, a town with no BTO launch or no resale sales, or a `horizonYear` before either path's keys; `503 DATA_UNAVAILABLE` when data.gov.sg is down and nothing is cached.
 
 ## POST /api/timing
-Request: `{ profile, choiceBase, candidateYears?, assumptions }`. `choiceBase` is a `RequestChoice` (its `applicationYear` is ignored); `candidateYears` are whole, strictly ascending years, default this year and the next 5 (D33).
+Request: `{ profile, choiceBase, candidateYears?, assumptions }`. `choiceBase` is a `RequestChoice` (its `applicationYear` is ignored); `candidateYears` are whole, strictly ascending years from this year to 20 years ahead, default this year and the next 5 (D33).
 Response: `{ rulesetVersion, horizonYear, best: { year, outcome } | null, all: [{ year, outcome }], skipped: [{ year, reason }], explanation: ["string"], btoProject, assumptions, resolved }`. One horizon for every year: the last candidate's key year + 10 unless given. `skipped` lists years not ranked (`MOVE_IN_DEADLINE_MISSED`, or `CASH_SHORTFALL_AT_PURCHASE` for this year only); `best` is null when every year is skipped; ties go to the earlier year. Errors as for `/api/compare`.
 
 ## POST /api/strategy

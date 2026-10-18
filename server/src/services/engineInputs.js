@@ -3,7 +3,7 @@
 // BTO price, wait and clawback rate from seat 3's project seed (D7, D18, D26); resale price and BTO market
 // value from data.gov.sg medians (D16, D33); loan, fee and horizon defaults (D17, D22, D33).
 // Money is integer cents throughout (D14).
-import { findBtoProjects, getBtoProject } from './btoProjects.js';
+import { btoTowns, findBtoProjects, getBtoProject } from './btoProjects.js';
 import { getResalePriceBasis, TOWNS, SUPPORTED_FLAT_TYPES } from './datagov/resalePrice.js';
 
 // D33 defaults. Estimates, not policy, so not in the ruleset (D17); echoed in the response.
@@ -16,8 +16,24 @@ export const DEFAULT_LOAN_TYPE = 'HDB';
 export const PRICE_WINDOW_MONTHS = 12;
 export const NEAR_NEW_MIN_LEASE_YEARS = 90;
 export const HORIZON_YEARS_AFTER_KEYS = 10;
-export const GROWTH_STEPS = [0, 0.01, 0.02, 0.03, 0.04, 0.05];
-const MAX_YEARS_AHEAD = 20;
+// Heatmap axes (D33, agreed on #45): price growth −2% to +6% a year (prices can fall), income growth 0% to 5%,
+// in 1-point steps. stepsCovering() widens an axis so the user's own rate always falls inside it.
+export const PRICE_GROWTH_STEPS = [-0.02, -0.01, 0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06];
+export const INCOME_GROWTH_STEPS = [0, 0.01, 0.02, 0.03, 0.04, 0.05];
+export const MAX_YEARS_AHEAD = 20;
+
+/**
+ * steps, extended in 1-point steps until value lies between the first and last step. Works in whole
+ * percentage points so added steps are exact (0.07, not 0.07000000000000001).
+ */
+export function stepsCovering(steps, value) {
+  const points = steps.map((s) => Math.round(s * 100));
+  const lowest = Math.floor(value * 100 + 1e-9);
+  const highest = Math.ceil(value * 100 - 1e-9);
+  for (let p = points[0] - 1; p >= lowest; p -= 1) points.unshift(p);
+  for (let p = points.at(-1) + 1; p <= highest; p += 1) points.push(p);
+  return points.map((p) => p / 100);
+}
 
 /** A request the engine can't take: the route answers 400 VALIDATION_ERROR with this message. */
 export class InputError extends Error {}
@@ -115,7 +131,11 @@ export async function resolveChoice(req, { startYear, assumptions = {}, ruleset,
   if (!isYear(applicationYear) || applicationYear < startYear || applicationYear > startYear + MAX_YEARS_AHEAD) {
     fail(`${label}.applicationYear must be a year from ${startYear} to ${startYear + MAX_YEARS_AHEAD}.`);
   }
-  if (!TOWNS.includes(town)) fail(`${label}.town must be an HDB town, e.g. TAMPINES.`);
+  // BTO towns come from the project seed (a launch can be in a town with no resale data); resale towns from data.gov.sg.
+  if (path === 'BTO' && !btoTowns().includes(town)) {
+    fail(`${label}.town: No recent BTO launch in ${town}. BTO towns: ${btoTowns().join(', ')}.`);
+  }
+  if (path === 'RESALE' && !TOWNS.includes(town)) fail(`${label}.town must be an HDB town, e.g. TAMPINES.`);
   if (!SUPPORTED_FLAT_TYPES.includes(flatType)) fail(`${label}.flatType must be one of ${SUPPORTED_FLAT_TYPES.join(', ')} (D27).`);
   const renovationCents = req.renovationCents ?? 0;
   if (!isCents(renovationCents)) fail(`${label}.renovationCents must be a non-negative integer number of cents.`);
