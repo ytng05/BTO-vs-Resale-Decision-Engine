@@ -98,7 +98,34 @@ describe('timing optimiser', () => {
     expect(resale).toEqual(resaleBefore);
   });
 
-  // Needs D1 settled first: under the current measure, a year with FEWER grants can come out best,
-  // because a grant counts as a CPF refund debt with no matching OA asset. See the D1 note.
-  it.todo('returns a non-endpoint year when the grant tier steps make the objective non-monotonic (hand-picked case)');
+  // Hand-picked (needs D1: a grant's refund goes back to the buyers' own OA, so it no longer counts as a debt).
+  // E1's household and resale flat, flat prices, living with parents (no rent), 3% income growth, measured at
+  // 2040. Each year of waiting helps (less loan and CPF interest builds up by the horizon) until 2031, when
+  // rising income cuts the EHG from $20,000 to $10,000, so the best year is 2030. Before D1, 2031 (the year with
+  // the fewest grants) came out best. Expectations are structural, not hand-worked.
+  it('returns a non-endpoint year when an EHG tier step makes the objective non-monotonic (hand-picked case)', () => {
+    const args = {
+      profile: E1.inputs.profile,
+      choiceBase: E1.inputs.choice,
+      candidateYears: [2026, 2027, 2028, 2029, 2030, 2031],
+      assumptions: {
+        ...E1.inputs.assumptions,
+        annualIncomeGrowth: 0.03,
+        annualPriceGrowth: 0,
+        monthlyHousingCostWhileWaitingCents: 0,
+        horizonYear: 2040,
+      },
+      ruleset,
+    };
+    const { best, all, skipped } = optimiseTiming(args);
+    const net = (year) => all.find((r) => r.year === year).outcome.netPositionCents;
+    const grants = (year) => all.find((r) => r.year === year).outcome.totalGrantsCents;
+
+    expect(skipped).toEqual([]);
+    expect(best.year).toBe(2030); // neither end of 2026-2031
+    expect(net(2029)).toBeLessThan(net(2030)); // waiting another year still helped
+    expect(grants(2031)).toBeLessThan(grants(2030)); // the EHG step...
+    expect(net(2031)).toBeLessThan(net(2030)); // ...outweighs one more year of waiting
+    expect(best.outcome).toEqual(outcomeFor(args, 2030));
+  });
 });
