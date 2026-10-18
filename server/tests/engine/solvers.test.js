@@ -15,8 +15,9 @@ vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 // Break-even properties. No hand-worked values: every expectation is either structural or checked
 // against evaluate() itself, which has its own hand-worked fixture (evaluate.json).
 // Scenario: the evaluate fixture's household, A = E2's BTO, B = E1's resale, one horizon. E2's BTO
-// market value is lowered to $420,000 so the winner changes inside the grid (with E2's $600,000, A
-// wins every cell); B applies a year after A.
+// market value is lowered to $495,000 so the winner changes inside every row of the grid (with E2's
+// $600,000, A wins every cell); B applies a year after A. Re-picked when D1 stopped counting the grant
+// part of the CPF refund as a debt (seat 2 on #49); it was $420,000 before.
 const fixture = JSON.parse(
   readFileSync(new URL('../../src/engine/fixtures/evaluate.json', import.meta.url), 'utf8'),
 );
@@ -33,7 +34,7 @@ const [E1, E2] = fixture.cases;
 const STEPS = [0, 0.01, 0.02, 0.03, 0.04, 0.05];
 const crossing = {
   profile: E1.inputs.profile,
-  choiceA: { ...E2.inputs.choice, applicationYear: 2028, marketValueAtKeysCents: 42_000_000 },
+  choiceA: { ...E2.inputs.choice, applicationYear: 2028, marketValueAtKeysCents: 49_500_000 },
   choiceB: { ...E1.inputs.choice, applicationYear: 2029 },
   assumptionsBase: { ...E1.inputs.assumptions, horizonYear: 2036 },
   priceGrowthSteps: STEPS,
@@ -51,8 +52,8 @@ const marginAt = (args, annualPriceGrowth, annualIncomeGrowth) => {
 };
 const winnerOf = (marginCents) => (marginCents > 0 ? 'A' : marginCents < 0 ? 'B' : 'TIE');
 
-// Close to 0 on the frontier: $100. Near it the margin moves about $10,000 per percentage point of
-// price growth, and the grid cells either side of it are thousands of dollars apart.
+// Close to 0 on the frontier: $100. Near it the margin moves about $3,000 to $5,000 per percentage point
+// of price growth, so the grid cells either side of it are over $3,000 apart.
 const FRONTIER_TOLERANCE_CENTS = 10_000;
 
 describe('break-even solver', () => {

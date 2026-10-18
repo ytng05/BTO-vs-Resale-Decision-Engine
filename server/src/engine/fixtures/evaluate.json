@@ -1,12 +1,13 @@
 {
-  "_source": "Hand-worked in evaluate-template-v3 (E1 and E2, summary and month-by-month sheets): v2 (seat 2's answers on #34) plus D28 v3 (retained OA before cash; ytng on #46). Not derived from engine code.",
+  "_source": "Hand-worked in evaluate-template-v3 (E1 and E2, summary and month-by-month sheets): v2 (seat 2's answers on #34) plus D28 v3 (retained OA before cash; ytng on #46). Not derived from engine code. D1 grant rework (seat 2 on #49) in the V3 REWORK block of evaluate-template-v2-d1.xlsx (a copy of evaluate-template-v2): the D12 refund redone without the GRANT rows (own-CPF refund), the grant part, and net position with it added back; then the savings/grant principal and interest split and the year-end savings refunds (ytng on #47). E2's D1 figures redone on D28 v3 funding in the D1 REWORK block of evaluate-template-v3-d1.xlsx (a copy of evaluate-template-v3); E1's are unchanged.",
   "_workedBy": "seat 1",
   "_dateWorked": "2026-10-11",
-  "_checkedBy": "Independent script recomputation from the written rules of every summary figure and yearly row (107 figures, matches to the cent); figures transcribed from the sheet by script",
+  "_checkedBy": "Independent script recomputation from the written rules of every summary figure and yearly row (107 figures, matches to the cent); figures transcribed from the sheet by script; D1 grant rework: own-CPF refund, grant part and net position for E1 and E2 recomputed independently from the D12 rules (6 figures, match to the cent); savings/grant split and year-end savings refunds (22 figures) recomputed the same way, match to the cent, transcribed by script.; E2's D1 figures on v3 funding (14 figures) recomputed the same way, match to the cent, transcribed by script",
   "_conventions": {
     "decisions": "Contract v2.1 notes plus D28-D32 as updated on #34 (v2)",
     "prices": "choice.purchasePriceCents and choice.marketValueAtKeysCents are TODAY's values (evaluationStartYear); evaluate() grows them month-precisely (D31): value x (1 + g)^(months / 12), rounded to the cent at each step (BTO market value is rounded at keys, then grown to the horizon)",
     "horizon": "Growth and CPF are measured to 1 Jan of horizonYear + 1",
+    "netPosition": "D1 with grants (seat 2 on #49, ytng on #47): market value - loan - CPF SAVINGS refund (cpfSavingsRefundPrincipalCents + cpfSavingsAccruedInterestCents, D12 run without the GRANT rows) - clawback - housing cash. Grant refund (grantRefundPrincipalCents = grants used; grantRefundAccruedInterestCents = combined D12 interest less savings interest) is information only. cpfRefundPrincipalCents, cpfAccruedInterestCents and yearly cpfObligationEndCents stay as combined totals (deprecated); yearly cpfSavingsObligationEndCents and the CPF_ACCRUED_INTEREST cost line are savings only",
     "funding": "D28 v2: grants, then OA above the retention, then the loan, then cash. Retention: each buyer keeps up to loans.hdbLoanOaRetentionPerBuyer of their own OA (stated assumption: the full amount, or their whole OA if less); the household keeps the sum. The retention is a ceiling (D28 v3): the OA kept back pays before cash at BTO signing and at keys when the loan is capped. Stamp duty then legal fees from the OA left (whole fee or none), else cash; agent fees and renovation in cash. A grant left over after the price goes to the CPF Special/Retirement and MediSave accounts (HDB; seat 2 on #46), so it never reaches the OA and isn't refund principal",
     "btoStages": "D30 v2: signing = application + monthsToAgreementForLease (a stated assumption); at signing, loans.btoDownpaymentStages.hdbLoan.atSigningPercent of the price from grants first (D29 v2), then OA above the retention, then cash, plus stamp duty and legal fees; the rest at keys. Each grant part is a GRANT ledger entry dated when used",
     "cpfUsedCents": "Yearly cash flow counts OA savings withdrawn (lump sums, fees, instalments), EXCLUDING grants; grants are still CPF refund principal",
@@ -87,9 +88,13 @@
         "outstandingLoanAtHorizonCents": 31615011,
         "cpfRefundPrincipalCents": 23500000,
         "cpfAccruedInterestCents": 2985359,
+        "cpfSavingsRefundPrincipalCents": 11000000,
+        "cpfSavingsAccruedInterestCents": 1371500,
+        "grantRefundPrincipalCents": 12500000,
+        "grantRefundAccruedInterestCents": 1613859,
         "clawbackCents": 0,
         "housingCashSpentCents": 12653242,
-        "netPositionCents": -5080736,
+        "netPositionCents": 9033123,
         "warnings": [],
         "purchasePriceCents": 56650000
       },
@@ -130,7 +135,7 @@
         },
         {
           "id": "CPF_ACCRUED_INTEREST",
-          "amountCents": 2985359,
+          "amountCents": 1371500,
           "paidFrom": "NONE"
         }
       ],
@@ -141,7 +146,8 @@
           "cpfUsedCents": 0,
           "loanBalanceEndCents": 0,
           "marketValueEndCents": 0,
-          "cpfObligationEndCents": 0
+          "cpfObligationEndCents": 0,
+          "cpfSavingsObligationEndCents": 0
         },
         {
           "year": 2027,
@@ -149,7 +155,8 @@
           "cpfUsedCents": 10263418,
           "loanBalanceEndCents": 36170931,
           "marketValueEndCents": 58349500,
-          "cpfObligationEndCents": 23261906
+          "cpfObligationEndCents": 23261906,
+          "cpfSavingsObligationEndCents": 10475447
         },
         {
           "year": 2028,
@@ -157,7 +164,8 @@
           "cpfUsedCents": 736582,
           "loanBalanceEndCents": 35075932,
           "marketValueEndCents": 60099985,
-          "cpfObligationEndCents": 24594289
+          "cpfObligationEndCents": 24594289,
+          "cpfSavingsObligationEndCents": 11488168
         },
         {
           "year": 2029,
@@ -165,7 +173,8 @@
           "cpfUsedCents": 0,
           "loanBalanceEndCents": 33952120,
           "marketValueEndCents": 61902985,
-          "cpfObligationEndCents": 25209146
+          "cpfObligationEndCents": 25209146,
+          "cpfSavingsObligationEndCents": 11775372
         },
         {
           "year": 2030,
@@ -173,7 +182,8 @@
           "cpfUsedCents": 0,
           "loanBalanceEndCents": 32798740,
           "marketValueEndCents": 63760074,
-          "cpfObligationEndCents": 25839375
+          "cpfObligationEndCents": 25839375,
+          "cpfSavingsObligationEndCents": 12069756
         },
         {
           "year": 2031,
@@ -181,7 +191,8 @@
           "cpfUsedCents": 0,
           "loanBalanceEndCents": 31615011,
           "marketValueEndCents": 65672876,
-          "cpfObligationEndCents": 26485359
+          "cpfObligationEndCents": 26485359,
+          "cpfSavingsObligationEndCents": 12371500
         }
       ]
     },
@@ -258,9 +269,13 @@
         "outstandingLoanAtHorizonCents": 25124588,
         "cpfRefundPrincipalCents": 14000000,
         "cpfAccruedInterestCents": 2140957,
+        "cpfSavingsRefundPrincipalCents": 11000000,
+        "cpfSavingsAccruedInterestCents": 1560040,
+        "grantRefundPrincipalCents": 3000000,
+        "grantRefundAccruedInterestCents": 580917,
         "clawbackCents": 0,
         "housingCashSpentCents": 14220464,
-        "netPositionCents": 20520196,
+        "netPositionCents": 24101113,
         "warnings": [
           "LOAN_ABOVE_LIMIT"
         ],
@@ -298,7 +313,7 @@
         },
         {
           "id": "CPF_ACCRUED_INTEREST",
-          "amountCents": 2140957,
+          "amountCents": 1560040,
           "paidFrom": "NONE"
         }
       ],
@@ -309,7 +324,8 @@
           "cpfUsedCents": 1860000,
           "loanBalanceEndCents": 0,
           "marketValueEndCents": 0,
-          "cpfObligationEndCents": 4880250
+          "cpfObligationEndCents": 4880250,
+          "cpfSavingsObligationEndCents": 1867750
         },
         {
           "year": 2027,
@@ -317,7 +333,8 @@
           "cpfUsedCents": 0,
           "loanBalanceEndCents": 0,
           "marketValueEndCents": 0,
-          "cpfObligationEndCents": 5002256
+          "cpfObligationEndCents": 5002256,
+          "cpfSavingsObligationEndCents": 1914444
         },
         {
           "year": 2028,
@@ -325,7 +342,8 @@
           "cpfUsedCents": 6544404,
           "loanBalanceEndCents": 29714671,
           "marketValueEndCents": 65563620,
-          "cpfObligationEndCents": 11723418
+          "cpfObligationEndCents": 11723418,
+          "cpfSavingsObligationEndCents": 8558410
         },
         {
           "year": 2029,
@@ -333,7 +351,8 @@
           "cpfUsedCents": 1633212,
           "loanBalanceEndCents": 28843710,
           "marketValueEndCents": 67530529,
-          "cpfObligationEndCents": 13668429
+          "cpfObligationEndCents": 13668429,
+          "cpfSavingsObligationEndCents": 10424296
         },
         {
           "year": 2030,
@@ -341,7 +360,8 @@
           "cpfUsedCents": 962384,
           "loanBalanceEndCents": 27949832,
           "marketValueEndCents": 69556445,
-          "cpfObligationEndCents": 14988483
+          "cpfObligationEndCents": 14988483,
+          "cpfSavingsObligationEndCents": 11663246
         },
         {
           "year": 2031,
@@ -349,7 +369,8 @@
           "cpfUsedCents": 0,
           "loanBalanceEndCents": 27032435,
           "marketValueEndCents": 71643138,
-          "cpfObligationEndCents": 15363195
+          "cpfObligationEndCents": 15363195,
+          "cpfSavingsObligationEndCents": 11954827
         },
         {
           "year": 2032,
@@ -357,7 +378,8 @@
           "cpfUsedCents": 0,
           "loanBalanceEndCents": 26090898,
           "marketValueEndCents": 73792432,
-          "cpfObligationEndCents": 15747275
+          "cpfObligationEndCents": 15747275,
+          "cpfSavingsObligationEndCents": 12253698
         },
         {
           "year": 2033,
@@ -365,7 +387,8 @@
           "cpfUsedCents": 0,
           "loanBalanceEndCents": 25124588,
           "marketValueEndCents": 76006205,
-          "cpfObligationEndCents": 16140957
+          "cpfObligationEndCents": 16140957,
+          "cpfSavingsObligationEndCents": 12560040
         }
       ]
     }
