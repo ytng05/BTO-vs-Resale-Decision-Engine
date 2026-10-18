@@ -30,11 +30,13 @@ net position at horizon =   market value of the flat at the horizon year
                           − cumulative housing cash spent from the start year to the horizon year
 ```
 
-- **Why the CPF refund obligation, and why it's fair.** Every dollar of CPF used for housing lowers the household's
-  OA by that dollar plus the interest it would have earned, which is exactly the refund obligation. So this measure
-  ranks the two paths **identically** to "total wealth including the CPF OA balance": the two differ only by the OA
-  balance the household would have had without buying, which is the same on both paths. Using the obligation means
-  no CPF contribution model is needed, and it comes straight from `computeAccruedInterest()`.
+- **Why the CPF refund obligation, and why it's fair.** Every dollar of the household's **own OA savings** used for
+  housing lowers their OA by that dollar plus the interest it would have earned, which is exactly the refund
+  obligation on those savings. So the measure ranks the two paths the same way as "total wealth including the CPF OA
+  balance": the two differ only by the OA balance the household would have had without buying, which is the same on
+  both paths. Using the obligation means no CPF contribution model is needed, and it comes straight from
+  `computeAccruedInterest()`. *Corrected 2026-10-11 (seat 2 on #49, ytng on #47): this holds for OA savings only, not
+  for grants, which were never in that OA; see "Amendment: grants" below.*
 - **Housing cash spent, not "cash accumulated".** D19 defers a savings model. Income and other spending are the
   same on both paths, so they cancel out. Counting only housing cash out (upfront cash, the cash part of
   instalments, the cash-paid part of stamp duty and fees, rent while waiting) gives the same comparison without
@@ -127,3 +129,36 @@ sale date, and its result is the CPF refund obligation in the measure.
 
 - **ABSD:** out of scope for Singapore citizens on a first property (0%). A PR+PR household does pay ABSD on a
   first property: please confirm the rate against IRAS and say whether PR+PR stays in scope.
+
+## Amendment: grants (seat 2 on #49, 2026-10-11)
+
+"Why the CPF refund obligation" above holds for the household's own OA, not for grants. A grant was never in the OA
+they'd have had without buying, and on sale its refund (with accrued interest) goes back into their own OA (CPF:
+refund on sale), not to the government. Subtracting it as a debt with no matching asset made every grant lower net
+position (E1's $125,000 of grants: about $9,300 lower; E2's $30,000: about $3,400 lower, with D28 v3 funding).
+
+The measure now counts only the refund of the household's own OA savings; the grant refund is reported as
+information (ytng on #47, as contract reviewer):
+
+```
+net position at horizon =   market value − outstanding loan
+                          − CPF savings refund (own OA used + accrued interest)
+                          − clawback − cumulative housing cash spent
+```
+
+Contract: `cpfSavingsRefundPrincipalCents` and `cpfSavingsAccruedInterestCents` are in net position;
+`grantRefundPrincipalCents` and `grantRefundAccruedInterestCents` are information only; the yearly
+`cpfSavingsObligationEndCents` is the savings refund at each 31 Dec. The savings refund is its own D12 run and is
+canonical; grant interest is the combined run's interest less it, so the parts add up to one combined run to the cent.
+`cpfRefundPrincipalCents`, `cpfAccruedInterestCents` and the yearly `cpfObligationEndCents` stay as combined totals,
+deprecated, until the client stops reading them.
+
+This is seat 2's option (a), the wealth view: the whole refund returns to the household's CPF, and their own OA used
+(plus the interest it would have earned) is the cost. Option (b), leaving CPF out on both sides, was not taken: it
+would make anything paid from the OA free and drop the CPF interest cost.
+
+Seat 2 confirmed the CPF rule on #54 (CPF FAQ on refunds on sale): the refund, grants included, goes back to the
+household's CPF, usually the OA; with over $30,000 of grants part may go to SA/RA and MediSave instead, still their own
+CPF. Grants left over after the price go to SA/RA and MediSave (#46) and are not counted in v1, a stated limitation in
+D32: strictly they are household CPF wealth, but leaving them out only understates a grant's benefit.
+

@@ -173,14 +173,29 @@ const RULESET_KEYS = Object.freeze({
  *
  *   netPositionCents =   marketValueAtHorizonCents
  *                      − outstandingLoanAtHorizonCents
- *                      − (cpfRefundPrincipalCents + cpfAccruedInterestCents)
+ *                      − (cpfSavingsRefundPrincipalCents + cpfSavingsAccruedInterestCents)
  *                      − clawbackCents
  *                      − housingCashSpentCents
  *
- * - The CPF refund obligation ranks the paths identically to "total wealth
- *   including the CPF OA balance": the two differ only by the OA balance the
- *   household would have had without buying, which is the same on both paths.
- *   It comes from computeAccruedInterest() called with the horizon date.
+ * - CPF SAVINGS refund: the household's own OA money used for housing (every
+ *   ledger entry except GRANT) plus its accrued interest. It stands in for OA
+ *   money they no longer have, so it ranks the paths the same way as "total
+ *   wealth including the CPF OA balance": the two differ only by the OA balance
+ *   they'd have had without buying, the same on both paths.
+ * - GRANT refund (D1; seat 2 on #49, ytng on #47): information only, NOT in
+ *   net position. A grant was never in that OA, and on sale its refund (with
+ *   accrued interest) goes back into the buyers' own OA (CPF: refund on sale),
+ *   so it is not a debt. Counting it as one made every grant lower net position.
+ * - Which figure is canonical: the savings refund is its own D12 run
+ *   (computeAccruedInterest() on the non-GRANT entries, horizon date) and is
+ *   the one in net position. grantRefundPrincipalCents is the exact sum of the
+ *   GRANT entries; grantRefundAccruedInterestCents is the combined D12 run's
+ *   interest less the savings interest, so savings + grants equal one combined
+ *   run to the cent (D12 rounds totals, so two separate runs could differ by a
+ *   cent; any such cent falls in the grant interest).
+ * - Deprecated: cpfRefundPrincipalCents and cpfAccruedInterestCents are still
+ *   returned as the combined totals (savings + grants) until the client stops
+ *   reading them; they are not in net position. Remove in a follow-up.
  * - housingCashSpentCents counts only housing cash out, from
  *   evaluationStartYear to the horizon: upfront cash, the cash part of
  *   instalments, cash-paid stamp duty / fees / renovation, and rent while
@@ -538,7 +553,11 @@ const WARNINGS = Object.freeze({
  * @property {number} cpfUsedCents            - CPF withdrawn for housing that year
  * @property {number} loanBalanceEndCents
  * @property {number} marketValueEndCents     - 0 before keys
- * @property {number} cpfObligationEndCents   - CPF principal + accrued interest owed back to the OA
+ * @property {number} cpfSavingsObligationEndCents - CPF SAVINGS refund (own OA used + its accrued interest) at
+ *                                              31 Dec, the D1 figure; the horizonYear row equals
+ *                                              cpfSavingsRefundPrincipalCents + cpfSavingsAccruedInterestCents
+ * @property {number} cpfObligationEndCents   - DEPRECATED: combined refund (savings + grants) at 31 Dec. Use
+ *                                              cpfSavingsObligationEndCents; remove in a follow-up
  */
 
 /**
@@ -559,8 +578,14 @@ const WARNINGS = Object.freeze({
  * @property {number} loanPrincipalCents
  * @property {number} marketValueAtHorizonCents
  * @property {number} outstandingLoanAtHorizonCents
- * @property {number} cpfRefundPrincipalCents  - CPF principal owed back at the horizon
- * @property {number} cpfAccruedInterestCents  - accrued interest owed back at the horizon (D12 conventions)
+ * @property {number} cpfSavingsRefundPrincipalCents  - own OA used for housing to the horizon (D1, in net position)
+ * @property {number} cpfSavingsAccruedInterestCents  - its accrued interest at the horizon, own D12 run (canonical)
+ * @property {number} grantRefundPrincipalCents       - grants used against the price (information only)
+ * @property {number} grantRefundAccruedInterestCents - their accrued interest: combined D12 interest less the
+ *                                                      savings interest (information only; see the measure note)
+ * @property {number} cpfRefundPrincipalCents  - DEPRECATED: savings + grant principal. Not in net position
+ * @property {number} cpfAccruedInterestCents  - DEPRECATED: savings + grant interest (one combined D12 run).
+ *                                              Not in net position
  * @property {number} clawbackCents           - Plus/Prime only, else 0
  * @property {number} housingCashSpentCents   - sum of the CASH-paid cost lines and cash instalments
  * @property {CostLine[]} costBreakdown
