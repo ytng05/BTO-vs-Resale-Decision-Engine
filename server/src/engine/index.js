@@ -260,7 +260,8 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   remainingCents -= useGrants(keyMonth, remainingCents);
   // Grants left over after the price (grantsLeftCents) go to the CPF Special/Retirement and MediSave
   // accounts (HDB Sign Agreement for Lease page; seat 2 on #46), so they never reach the OA: they can't pay
-  // fees or instalments and aren't refund principal. D1 doesn't count CPF balances, so they drop out here.
+  // fees or instalments and aren't refund principal. D1 doesn't count CPF balances, so they drop out here;
+  // they never make a grant lower net position. Not counted in v1 (stated limitation, D32; seat 2 on #54).
   const oaAtKeysCents = Math.min(remainingCents, Math.max(0, oaLeftCents - retentionCents));
   payOa(keyMonth, oaAtKeysCents, 'LUMP_SUM');
   remainingCents -= oaAtKeysCents;
@@ -336,13 +337,21 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   // 9. CPF refund obligation (D2, D12) at the horizon and at each year end
   // -------------------------------------------------------------------------
   // computeAccruedInterest() throws on entries after asOfDate, so pass only entries before it.
-  const cpfAt = (asOfMonth) =>
+  const cpfAt = (asOfMonth, include = () => true) =>
     computeAccruedInterest(
-      ledger.filter((e) => toMonthNumber(e.date) < asOfMonth),
+      ledger.filter((e) => toMonthNumber(e.date) < asOfMonth && include(e)),
       toDate(asOfMonth),
       ruleset
     );
+  // Savings only: the household's own CPF, leaving out the GRANT entries.
+  const cpfSavingsAt = (asOfMonth) => cpfAt(asOfMonth, (e) => e.kind !== 'GRANT');
+
   const cpfHorizon = cpfAt(horizonMonth);
+  const ownRefund = cpfSavingsAt(horizonMonth);
+  // Grant parts are differences, not a separate run, so savings + grant parts sum to the full
+  // refund exactly to the cent despite D12's rounding.
+  const grantRefundPrincipalCents = cpfHorizon.principalCents - ownRefund.principalCents;
+  const grantRefundAccruedInterestCents = cpfHorizon.accruedInterestCents - ownRefund.accruedInterestCents;
 
   const yearlyCashFlow = [];
   for (let year = startYear; year <= horizonYear; year += 1) {
@@ -356,7 +365,8 @@ export function evaluate(profile, choice, assumptions, ruleset) {
         .reduce((s, e) => s + e.amountCents, 0),
       loanBalanceEndCents: loanBalanceAt(nextJan - 1),
       marketValueEndCents: marketValueAt(nextJan),
-      cpfObligationEndCents: cpfAt(nextJan).totalCents
+      cpfObligationEndCents: cpfAt(nextJan).totalCents,
+      cpfSavingsObligationEndCents: cpfSavingsAt(nextJan).totalCents
     });
   }
 
@@ -380,8 +390,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   const netPositionCents =
     marketValueAtHorizonCents
     - outstandingLoanAtHorizonCents
-    - cpfHorizon.principalCents
-    - cpfHorizon.accruedInterestCents
+    - ownRefund.totalCents
     - clawbackCents
     - housingCashSpentCents;
 
@@ -411,7 +420,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     {
       id: 'CPF_ACCRUED_INTEREST',
       label: 'CPF accrued interest owed',
-      amountCents: cpfHorizon.accruedInterestCents,
+      amountCents: ownRefund.accruedInterestCents, // savings only, as in netPositionCents
       paidFrom: 'NONE'
     },
     { id: 'CLAWBACK', label: 'Subsidy clawback (Plus/Prime)', amountCents: clawbackCents, paidFrom: 'NONE' }
@@ -437,6 +446,10 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     outstandingLoanAtHorizonCents,
     cpfRefundPrincipalCents: cpfHorizon.principalCents,
     cpfAccruedInterestCents: cpfHorizon.accruedInterestCents,
+    cpfSavingsRefundPrincipalCents: ownRefund.principalCents,
+    cpfSavingsAccruedInterestCents: ownRefund.accruedInterestCents,
+    grantRefundPrincipalCents,
+    grantRefundAccruedInterestCents,
     clawbackCents,
     housingCashSpentCents,
     costBreakdown,
