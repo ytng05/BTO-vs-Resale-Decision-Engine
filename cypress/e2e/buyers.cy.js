@@ -1,10 +1,8 @@
 // The two buyers on the Situation step (mock data). The app models exactly two buyers, at least one a
 // Singapore Citizen (D21), so both are always shown and there are no add/remove buttons.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
-import { fillSituation, fillPath } from './helpers/plan.js';
+import { back, fillPath, fillSituation, next } from './helpers/plan.js';
 
-const next = () => cy.get('[data-cy=plan-step-next]').click();
-const back = () => cy.get('[data-cy=plan-step-back]').click();
 const citizenship = (n) => cy.get(`[data-cy=situation-buyer-${n}-citizenship-select]`);
 // The error message shown under one buyer's field.
 const fieldError = (n, field) => cy.get(`[data-cy=situation-buyer-${n}-${field}]`).parent().find('.invalid-feedback');
@@ -31,11 +29,11 @@ describe('buyers on the Situation step', () => {
     citizenship(2).select('PR');
     next();
     cy.get('[data-cy=situation-applicants-error]').should('contain', 'At least one buyer must be a Singapore Citizen.');
-    cy.get('[data-cy=plan-step-1-panel]').should('exist'); // still on Situation
+    cy.get('[data-cy=plan-step-2-panel]').should('not.exist'); // did not move on
 
     citizenship(1).select('SC');
     next();
-    cy.get('[data-cy=plan-step-2-panel]').should('exist');
+    cy.get('[data-cy=plan-step-2-panel]').should('exist'); // moved on to Path A
   });
 
   it('accepts a citizen with a Permanent Resident', () => {
@@ -78,6 +76,7 @@ describe('buyers on the Situation step', () => {
     cy.location('pathname').should('eq', '/results');
 
     cy.get('[data-cy=results-edit-button]').click();
+    cy.get('[data-cy=plan-step-3-panel]').should('exist'); // back on Path B
     back();
     back();
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');

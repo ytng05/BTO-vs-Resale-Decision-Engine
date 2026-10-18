@@ -34,16 +34,6 @@ jobs:
           install: false
           start: npm start
           wait-on: 'http://localhost:3000/api/health'
-          wait-on-timeout: 120
-      - uses: cypress-io/github-action@v6
-        with:
-          install: false
-          start: npm start
-          wait-on: 'http://localhost:3000/api/health'
-          wait-on-timeout: 120
-        env:
-          PORT: 3000
-
         env:
           PORT: 3000
           # The same throwaway mongo service, so cypress/e2e/scenarios.cy.js can register and save.
