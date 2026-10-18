@@ -32,7 +32,7 @@ describe('Compare saved scenarios', () => {
   })
 
   it('explains when a scenario has been deleted', () => {
-    cy.visit('/scenarios/compare?a=mock-a&b=deleted-id')
+    cy.visit('/scenarios/compare?a=mock-a&b=mock-deleted')
     cy.get('[data-cy=compare-not-found]').should('be.visible')
   })
 
