@@ -54,6 +54,59 @@ describe('smoke', () => {
     cy.get('[data-cy^=heatmap-cell-]').should('have.length.greaterThan', 0);
   });
 
-  // TODO (seat 5): register / login / save scenario / reload and confirm it restores identically
-  it.skip('register, log in, build both paths, save, reload', () => {});
+  // Needs the server connected to a database
+  // pointing at a TEST database, never the real one). The mock build's login form is mocked, so the
+  // account registers and logs in through the real API, and the token is stored where stores/auth.js
+  // keeps it (the same approach as scenarios.cy.js).
+  it('register, log in, build both paths, save, reload', () => {
+    const account = { name: 'Smoke tester', email: `smoke-${Date.now()}@example.com`, password: 'smoke-password-1' };
+    cy.request('POST', '/api/auth/register', account).its('status').should('eq', 201);
+    cy.request('POST', '/api/auth/login', { email: account.email, password: account.password })
+      .its('body')
+      .then(({ token, user }) => {
+        window.localStorage.setItem('hdb-app:auth', JSON.stringify({ token, user }));
+      });
+
+    // Build both paths and save the result.
+    cy.visit('/plan');
+    fillSituation();
+    cy.get('[data-cy=plan-step-next]').click();
+    fillPath('patha', '4 ROOM');
+    cy.get('[data-cy=plan-step-next]').click();
+    fillPath('pathb', '4 ROOM', '80-89');
+    cy.get('[data-cy=plan-step-next]').click();
+    cy.location('pathname').should('eq', '/results');
+    cy.get('[data-cy=results-save-button]').click();
+    cy.get('[data-cy=results-save-name-input]').clear().type('Smoke scenario');
+    cy.get('[data-cy=results-save-submit]').click();
+    cy.get('[data-cy=results-save-success]').should('contain', 'Smoke scenario');
+
+    // Reload: still logged in, and the scenario is still saved.
+    cy.reload();
+    cy.get('[data-cy=nav-account-toggle]').should('contain', 'Smoke tester');
+    cy.get('[data-cy=nav-scenarios-link]').click();
+    cy.get('[data-cy=scenarios-list]').should('contain', 'Smoke scenario');
+    cy.reload();
+    cy.get('[data-cy=scenarios-list]').should('contain', 'Smoke scenario');
+
+    // Opening it restores the same inputs.
+    cy.get('[data-cy=scenarios-open-button]').click();
+    cy.location('pathname').should('eq', '/results');
+    cy.get('[data-cy=results-edit-button]').click();
+    cy.get('[data-cy=plan-step-3-panel]').should('exist');
+    cy.get('[data-cy=pathb-town-select]').should('have.value', 'TAMPINES');
+    cy.get('[data-cy=pathb-flat-type-select]').should('have.value', '4 ROOM');
+    cy.get('[data-cy=pathb-lease-band-select]').should('have.value', '80-89');
+    cy.get('[data-cy=plan-step-back]').click();
+    cy.get('[data-cy=plan-step-back]').click();
+    cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
+    cy.get('[data-cy=situation-buyer-2-age-input]').should('have.value', '29');
+
+    // Clean up, so local runs do not pile up scenarios.
+    cy.get('[data-cy=nav-scenarios-link]').click();
+    cy.get('[data-cy=scenarios-delete-button]').click();
+    cy.get('[data-cy=scenarios-delete-confirm]').click();
+    cy.get('[data-cy=scenarios-empty]').should('be.visible');
+  });
+
 });

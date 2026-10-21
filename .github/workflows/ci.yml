@@ -20,6 +20,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run lint
       - run: npm test
         env:
           MONGODB_URI_TEST: mongodb://localhost:27017/bto_test
