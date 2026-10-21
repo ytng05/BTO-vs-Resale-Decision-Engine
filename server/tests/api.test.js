@@ -162,10 +162,16 @@ describe('API scaffold', () => {
     expect(res.body.error.message).toMatch(/choice\.path/);
   });
 
-  it('unimplemented routes return the documented 501 shape', async () => {
-    const res = await request(app).post('/api/compare').send({});
+  it('switched-off features return the documented 501 shape', async () => {
+    const res = await request(app).post('/api/strategy').send({});
     expect(res.status).toBe(501);
-    expect(res.body.error.code).toBe('NOT_IMPLEMENTED');
+    expect(res.body.error.code).toBe('FEATURE_DISABLED');
+  });
+
+  it('POST /api/compare with an empty body is a 400, not a crash (full tests: compareTiming.test.js)', async () => {
+    const res = await request(app).post('/api/compare').send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 
   it('unknown API routes return a JSON 404', async () => {

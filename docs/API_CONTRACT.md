@@ -14,10 +14,10 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | GET | `/api/auth/me` | seat 3 | current user from the token (restores a session on page load) | working |
 | GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | working |
 | GET/DELETE | `/api/scenarios/:id` | seat 3 | load / delete (auth required) | working |
-| POST | `/api/compare` | seat 1 | break-even surface for path A vs B | stub |
+| POST | `/api/compare` | seat 1 | break-even surface for path A vs B | working |
 | POST | `/api/cpf/accrued-interest` | seat 1 | CPF refund owed at a date: principal + accrued interest (D2, D12) | working (needs verified CPF rate in ruleset) |
 | POST | `/api/stamp-duty` | seat 1 | buyer's stamp duty on a price (D20) | working |
-| POST | `/api/timing` | seat 1 | FEATURE 1: optimal timing search | stub |
+| POST | `/api/timing` | seat 1 | FEATURE 1: optimal timing search | working |
 | POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | future work: off by default (`FEATURE_STRATEGY_SEARCH`), returns 501 `FEATURE_DISABLED` |
 | POST | `/api/backtest` | seat 1 + 3 | FEATURE 3 (later): historical range | off (`FEATURE_BACKTEST`) |
 | GET | `/api/data/resale-price?town=&flatType=` | seat 3 | resale price basis from data.gov.sg (cents, cached daily) | working |
@@ -136,11 +136,15 @@ Response (one call returns the WHOLE grid, never one request per cell):
   "btoProjectB": null
 }
 ```
-`btoProjectA/B` (v2.1) is the BTO project the route used for that choice (`null` for resale), so the dashboard can show "priced at $540,500, HDB range $481,000–$600,000" and bound the price slider (D26). `outcomeA/B` are `Outcome` objects (see `evaluate.contract.js`, v2: timeline, affordability, `costBreakdown`, `yearlyCashFlow`, net position at the horizon). `marginCents` is the difference in net position at `horizonYear`, in cents. Errors: `400 VALIDATION_ERROR` for an out-of-scope household or a `horizonYear` before either path's keys.
+`btoProjectA/B` (v2.1) is the BTO project the route used for that choice (`null` for resale), so the dashboard can show "priced at $540,500, HDB range $481,000–$600,000" and bound the price slider (D26). `outcomeA/B` are `Outcome` objects (see `evaluate.contract.js`, v2: timeline, affordability, `costBreakdown`, `yearlyCashFlow`, net position at the horizon). `marginCents` is the difference in net position at `horizonYear`, in cents. Grid axes: price growth −2% to +6% a year and income growth 0% to 5%, in 1-point steps, widened in 1-point steps when the user's own rates fall outside them, so their point is always on the heatmap (D33). `breakEvenSentence` is worked at the user's exact income growth, not the nearest grid row.
+
+Also returned (additive): `assumptions`, the engine assumptions with the server's defaults filled in (D17, D22, D33), and `resolvedA` / `resolvedB`, what the route looked up for each choice: `purchasePriceCents`, `marketValueAtKeysCents`, `remainingLeaseYears`, `legalFeesCents`, `agentFeesCents`, and for BTO `btoWaitMonths`, `btoWaitAssumed`, `subsidyRecoveryRate`. `priceData` (resale) or `marketValueData` (BTO) says which data.gov.sg median was used: `{ source, window, transactions, leaseFilter, fellBackToAllLeases, lowSample, stale, fetchedAt }`, for a "data as of" line.
+
+Errors: `400 VALIDATION_ERROR` for an out-of-scope household, a bad field, a town with no BTO launch or no resale sales, or a `horizonYear` before either path's keys; `503 DATA_UNAVAILABLE` when data.gov.sg is down and nothing is cached.
 
 ## POST /api/timing
-Request: `{ profile, choiceBase, candidateYears, assumptions }`
-Response: `{ rulesetVersion, best: { year, outcome }, all: [{ year, outcome }], explanation: ["string"] }`
+Request: `{ profile, choiceBase, candidateYears?, assumptions }`. `choiceBase` is a `RequestChoice` (its `applicationYear` is ignored); `candidateYears` are whole, strictly ascending years from this year to 20 years ahead, default this year and the next 5 (D33).
+Response: `{ rulesetVersion, horizonYear, best: { year, outcome } | null, all: [{ year, outcome }], skipped: [{ year, reason }], explanation: ["string"], btoProject, assumptions, resolved }`. One horizon for every year: the last candidate's key year + 10 unless given. `skipped` lists years not ranked (`MOVE_IN_DEADLINE_MISSED`, or `CASH_SHORTFALL_AT_PURCHASE` for this year only); `best` is null when every year is skipped; ties go to the earlier year. Errors as for `/api/compare`.
 
 ## POST /api/strategy
 Future work (dropped per the prof's feedback, contract v2). Off by default: returns `501 FEATURE_DISABLED`. Shape kept for reference.

@@ -223,8 +223,10 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   };
 
   const bsdCents = computeBuyerStampDuty(priceCents, ruleset);
-  const legalCents = assumptions.legalFeesCents ?? 0;
-  const agentCents = assumptions.agentFeesCents ?? 0;
+  // A path's own fees override the shared assumption: the route sets them per path, since resale and BTO
+  // defaults differ, and the solvers pass one assumptions object to both paths (D17, D33).
+  const legalCents = choice.legalFeesCents ?? assumptions.legalFeesCents ?? 0;
+  const agentCents = choice.agentFeesCents ?? assumptions.agentFeesCents ?? 0;
   const renovationCents = choice.renovationCents ?? 0;
   let bsdPaidFrom;
   let legalPaidFrom;

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { summariseResale, monthWindow, parseRemainingLease } from '../src/services/datagov/resalePrice.js';
+import { summariseResale, monthWindow, parseRemainingLease, filterByLease } from '../src/services/datagov/resalePrice.js';
 import { fetchDatastorePage, retryDelay } from '../src/services/datagov/client.js';
 
 describe('summariseResale', () => {
@@ -76,5 +76,20 @@ describe('fetchDatastorePage', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 429 })));
     await expect(fetchDatastorePage({ datasetId: 'x', retryDelayMs: 0 }))
       .rejects.toMatchObject({ status: 503, code: 'UPSTREAM_RATE_LIMITED' });
+  });
+});
+
+describe('filterByLease (D16 lease bands)', () => {
+  const r = (lease) => ({ remaining_lease: lease });
+  const records = [r('89 years 11 months'), r('90 years'), r('80 years'), r('79 years 11 months'), r('n/a')];
+  it('keeps a band of whole years, top year included up to 11 months', () => {
+    expect(filterByLease(records, { minLeaseYears: 80, maxLeaseYears: 89 }).map((x) => x.remaining_lease))
+      .toEqual(['89 years 11 months', '80 years']);
+  });
+  it('a lower bound alone keeps everything from it up', () => {
+    expect(filterByLease(records, { minLeaseYears: 90 }).map((x) => x.remaining_lease)).toEqual(['90 years']);
+  });
+  it('no bounds keeps every record, unreadable leases included', () => {
+    expect(filterByLease(records)).toHaveLength(5);
   });
 });
