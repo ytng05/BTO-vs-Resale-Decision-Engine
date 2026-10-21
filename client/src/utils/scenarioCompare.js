@@ -4,13 +4,13 @@
 // Scenario shape (built by toCompareScenario() in api/scenarioCompare.js):
 // {
 //   id, name, savedAt, rulesetVersion, horizonYear,
-//   pathA: { label: 'BTO',    netPosition: number | null },
-//   pathB: { label: 'Resale', netPosition: number | null },
+//   pathA: { label: 'BTO',    netPosition: number | null, reason?, loanShortfall? },
+//   pathB: { label: 'Resale', netPosition: number | null, reason?, loanShortfall? },
 //   inputs: { ... }
 // }
 // netPosition is in DOLLARS (the API stores cents; the mapper divides by 100).
-// netPosition is null when no result was saved for that path. It does NOT mean
-// "not fundable": evaluate() still returns a figure when the loan is capped (it only warns).
+// netPosition is null only with a reason: 'NOT_FUNDABLE' (cash shortfall at signing) or
+// 'NO_RESULT' (nothing usable saved). A capped loan still has a figure (loanShortfall is set).
 
 import { formatMoney } from './format.js'
 
@@ -99,13 +99,13 @@ export function compareHeadline(scenarioA, scenarioB) {
   const bestB = bestPath(scenarioB)
 
   if (!bestA && !bestB) {
-    return { text: 'Neither scenario has a saved result to compare.', winner: null }
+    return { text: 'Neither scenario has a net position to compare.', winner: null }
   }
   if (!bestA) {
-    return { text: 'Only Scenario B has a saved result; Scenario A has none to compare.', winner: null }
+    return { text: 'Only Scenario B has a net position, so the two cannot be compared.', winner: null }
   }
   if (!bestB) {
-    return { text: 'Only Scenario A has a saved result; Scenario B has none to compare.', winner: null }
+    return { text: 'Only Scenario A has a net position, so the two cannot be compared.', winner: null }
   }
 
   const diff = Math.round(bestA.netPosition) - Math.round(bestB.netPosition)

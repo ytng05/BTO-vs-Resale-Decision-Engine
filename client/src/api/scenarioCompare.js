@@ -1,34 +1,31 @@
 // Data side of /scenarios/compare. OWNER: Yu Qing.
 //
-// The compare page only calls these two functions.
+// Kaashvi's page only calls these two functions.
 //
 // Contract:
-//   loadComparePair(idA, idB) -> Promise<[scenarioA, scenarioB]> in the compare shape below.
+//   loadComparePair(idA, idB) -> Promise<[scenarioA, scenarioB]>
 //     Rejects with an Error whose .code is 'NOT_FOUND' when either scenario
-//     does not exist (deleted, or not owned by this user).
+//     does not exist (deleted, or not owned by this user). Any other error
+//     (e.g. a 401 when logged out) is rethrown unchanged for the page to handle.
 //   openScenarioInResults(scenario) -> Promise<void>
-//     Loads the saved scenario into the plan store (same as Open on My scenarios, #58).
-//     The page then routes to /results.
+//     Loads scenario.inputs into the plan store. The page then routes to /results.
 //
-// Compare shape (what ScenarioCompareCard reads):
-//   {
-//     id, name,
-//     savedAt,          // ISO date string (from the saved scenario's createdAt)
-//     rulesetVersion,   // e.g. '2026-08-24'
-//     horizonYear,      // e.g. 2036, or null if no result was saved
-//     pathA: { label, netPosition },  // netPosition is in DOLLARS, or null if no result was saved
-//     pathB: { label, netPosition },
-//     inputs,           // the saved plan inputs
-//     saved,            // the original saved scenario from the API (used by openScenarioInResults)
-//   }
-// The API stores money in cents (result.outcomeA.netPositionCents); toCompareScenario() divides by 100.
+// Scenario shape:
+//   { id, name, savedAt, rulesetVersion, horizonYear,
+//     pathA: { label, netPosition: number | null, reason?: 'NOT_FUNDABLE' | 'NO_RESULT', loanShortfall?: number },
+//     pathB: { ...same as pathA },
+//     inputs: { profile, choiceA, choiceB, assumptions } }
+//   Money is in DOLLARS here (the API's cents divided by 100 once, below).
+//   netPosition is null only together with a reason:
+//     NOT_FUNDABLE  cash plus retained OA can't cover the signing payment (CASH_SHORTFALL_AT_PURCHASE)
+//     NO_RESULT     nothing saved, a mock result, or a result saved under an older contract shape
+//   loanShortfall is set when the loan is over the MSR/LTV limit: the net position is still real,
+//   so the card shows it with "short by $X" rather than hiding it.
 //
-// Mock mode (VITE_USE_MOCK=true): mock-a and mock-b below, used by cypress/e2e compare tests.
-
+// Ids starting with "mock-" come from MOCK_SCENARIOS, so the page and its Cypress spec work on the
+// mock build. Every other id is a real saved scenario (GET /api/scenarios/:id, docs/API_CONTRACT.md).
 import { getScenario } from './client.js'
 import { useScenarioStore } from '../stores/scenario.js'
-
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 export const MOCK_SCENARIOS = {
   'mock-a': {
@@ -59,61 +56,75 @@ function notFound(id) {
   return err
 }
 
-// Cents (API) -> dollars (compare shape). A missing figure stays null: "no result saved".
-function centsToDollars(cents) {
-  return typeof cents === 'number' ? cents / 100 : null
+const LABELS = { BTO: 'BTO', RESALE: 'Resale' }
+// WARNINGS.CASH_SHORTFALL_AT_PURCHASE in server/src/engine/evaluate.contract.js
+const CASH_SHORTFALL_AT_PURCHASE = 'CASH_SHORTFALL_AT_PURCHASE'
+
+// The current result shape: horizon-based measure (common horizonYear, D1) with an integer-cents
+// netPositionCents and a warnings list. Results saved under older contract versions lack one of these,
+// or used a field that no longer means the same thing, so they are not read at all.
+function isCurrentShape(result, outcome) {
+  return (
+    typeof result.horizonYear === 'number' &&
+    Number.isInteger(outcome?.netPositionCents) &&
+    Array.isArray(outcome?.warnings)
+  )
 }
 
-// Saved scenario from GET /api/scenarios/:id -> compare shape.
+// One path's figure from the result saved with the scenario (#58 saves the whole /api/compare response).
+function pathFigure(choice, result, outcomeKey) {
+  const label = LABELS[choice?.path] ?? choice?.path ?? ''
+  // No result, or a mock one saved before /api/compare was live: nothing real to show.
+  if (!result || result.mock) return { label, netPosition: null, reason: 'NO_RESULT' }
+  const outcome = result[outcomeKey]
+  if (!isCurrentShape(result, outcome)) return { label, netPosition: null, reason: 'NO_RESULT' }
+  if (outcome.warnings.includes(CASH_SHORTFALL_AT_PURCHASE)) return { label, netPosition: null, reason: 'NOT_FUNDABLE' }
+
+  const figure = { label, netPosition: outcome.netPositionCents / 100 } // API money is cents (D14)
+  const shortfallCents = outcome.affordability?.shortfallCents
+  if (outcome.affordability?.withinLimit === false && Number.isInteger(shortfallCents)) {
+    figure.loanShortfall = shortfallCents / 100
+  }
+  return figure
+}
+
+/** Pure: one saved scenario from GET /api/scenarios/:id -> the compare page's shape. */
 export function toCompareScenario(saved) {
-  const result = saved.result ?? {}
+  const { result } = saved
+  const resultHorizon = typeof result?.horizonYear === 'number' && !result.mock ? result.horizonYear : null
   return {
-    id: saved.id ?? saved._id,
+    id: saved.id,
     name: saved.name,
     savedAt: saved.createdAt,
-    rulesetVersion: saved.rulesetVersion ?? result.rulesetVersion ?? null,
-    horizonYear: result.horizonYear ?? null,
-    pathA: {
-      label: result.outcomeA?.label ?? 'BTO',
-      netPosition: centsToDollars(result.outcomeA?.netPositionCents),
-    },
-    pathB: {
-      label: result.outcomeB?.label ?? 'Resale',
-      netPosition: centsToDollars(result.outcomeB?.netPositionCents),
-    },
-    inputs: saved.inputs,
-    saved,
+    rulesetVersion: saved.rulesetVersion, // shown per card; the page flags when the two differ
+    horizonYear: resultHorizon ?? saved.assumptions?.horizonYear ?? null,
+    pathA: pathFigure(saved.choiceA, result, 'outcomeA'),
+    pathB: pathFigure(saved.choiceB, result, 'outcomeB'),
+    inputs: { profile: saved.profile, choiceA: saved.choiceA, choiceB: saved.choiceB, assumptions: saved.assumptions },
   }
 }
 
-async function fetchOne(id) {
+async function loadOne(id) {
+  if (String(id).startsWith('mock-')) {
+    const mock = MOCK_SCENARIOS[id]
+    if (!mock) throw notFound(id)
+    return mock
+  }
   try {
     const { scenario } = await getScenario(id)
     return toCompareScenario(scenario)
-  } catch (e) {
-    const status = e?.response?.status
-    // 404: deleted or not this user's. 400: malformed id (e.g. a hand-edited link). Both mean "not found".
-    if (status === 404 || status === 400) throw notFound(id)
-    throw e // 401 and network errors go to the page as-is
+  } catch (err) {
+    // The server answers 404 both for a deleted scenario and for someone else's (#28).
+    if (err?.response?.status === 404) throw notFound(id)
+    throw err
   }
 }
 
-async function loadMockPair(idA, idB) {
-  await new Promise((r) => setTimeout(r, 300))
-  const a = MOCK_SCENARIOS[idA]
-  const b = MOCK_SCENARIOS[idB]
-  if (!a) throw notFound(idA)
-  if (!b) throw notFound(idB)
-  return [a, b]
-}
-
 export async function loadComparePair(idA, idB) {
-  if (USE_MOCK) return loadMockPair(idA, idB)
-  return Promise.all([fetchOne(idA), fetchOne(idB)])
+  return Promise.all([loadOne(idA), loadOne(idB)])
 }
 
 export async function openScenarioInResults(scenario) {
-  // Mock scenarios have no saved plan behind them, so Results keeps the current plan.
-  if (USE_MOCK || !scenario?.saved) return
-  useScenarioStore().loadSaved(scenario.saved)
+  // Same refill as My scenarios' Open (#58): saved parts laid over the blank scenario.
+  useScenarioStore().loadSaved(scenario.inputs)
 }

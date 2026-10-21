@@ -1,24 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { aheadPathKey, bestPath, compareHeadline, formatSGD, horizonsDiffer } from '../src/utils/scenarioCompare'
+import {
+  aheadPathKey,
+  bestPath,
+  compareHeadline,
+  horizonsDiffer,
+  rulesetsDiffer,
+} from '../src/utils/scenarioCompare'
 import { useComparePicker } from '../src/composables/useComparePicker'
 
-const make = (a, b, horizonYear = 2036) => ({
+const make = (a, b, horizonYear = 2036, rulesetVersion = '2026-08-24') => ({
   horizonYear,
+  rulesetVersion,
   pathA: { label: 'BTO', netPosition: a },
   pathB: { label: 'Resale', netPosition: b },
-})
-
-describe('formatSGD', () => {
-  it('formats whole dollars with S$ and commas', () => {
-    expect(formatSGD(13000)).toBe('S$13,000')
-    expect(formatSGD(412000.4)).toBe('S$412,000')
-  })
-  it('shows a minus sign for negatives', () => {
-    expect(formatSGD(-5000)).toBe('−S$5,000')
-  })
-  it('shows a dash when there is no number', () => {
-    expect(formatSGD(null)).toBe('—')
-  })
 })
 
 describe('aheadPathKey', () => {
@@ -29,7 +23,7 @@ describe('aheadPathKey', () => {
   it('reports a tie', () => {
     expect(aheadPathKey(make(400000, 400000))).toBe('tie')
   })
-  it('picks the only fundable path', () => {
+  it('picks the only path with a figure', () => {
     expect(aheadPathKey(make(null, 300000))).toBe('pathB')
   })
   it('returns null when neither path has a figure', () => {
@@ -44,7 +38,7 @@ describe('bestPath', () => {
 })
 
 describe('compareHeadline', () => {
-  it('compares each scenario’s own best path', () => {
+  it('compares each scenario’s own best path at a common horizon', () => {
     // A's best: BTO 412,000. B's best: Resale 399,000. Gap 13,000.
     const h = compareHeadline(make(412000, 398000), make(371000, 399000))
     expect(h.winner).toBe('A')
@@ -58,9 +52,30 @@ describe('compareHeadline', () => {
   it('handles a level result', () => {
     expect(compareHeadline(make(400000, 1), make(2, 400000)).winner).toBe('tie')
   })
-  it('handles a scenario with no fundable path', () => {
-    expect(compareHeadline(make(null, null), make(1, 2)).winner).toBe('B')
+  it('names no winner when only one scenario has a figure', () => {
+    const h = compareHeadline(make(null, null), make(1, 2))
+    expect(h.winner).toBeNull()
+    expect(h.text).toContain('cannot be compared')
     expect(compareHeadline(make(null, null), make(null, null)).winner).toBeNull()
+  })
+  it('names no winner and no dollar gap when horizon years differ (D1)', () => {
+    const h = compareHeadline(make(412000, 398000, 2036), make(371000, 399000, 2037))
+    expect(h.winner).toBeNull()
+    expect(h.text).toContain("can't be compared directly")
+    expect(h.text).toContain('different horizon years')
+    expect(h.text).not.toContain('S$')
+  })
+  it('names no winner when ruleset versions differ', () => {
+    const h = compareHeadline(
+      make(412000, 398000, 2036, '2026-08-24'),
+      make(371000, 399000, 2036, '2025-08-01'),
+    )
+    expect(h.winner).toBeNull()
+    expect(h.text).toContain('different rulesets')
+  })
+  it('mentions both when horizon and ruleset differ', () => {
+    const h = compareHeadline(make(1, 2, 2036, '2026-08-24'), make(1, 2, 2037, '2025-08-01'))
+    expect(h.text).toContain('different horizon years and rulesets')
   })
 })
 
@@ -68,6 +83,13 @@ describe('horizonsDiffer', () => {
   it('is true only when horizon years differ', () => {
     expect(horizonsDiffer(make(1, 2, 2036), make(1, 2, 2037))).toBe(true)
     expect(horizonsDiffer(make(1, 2, 2036), make(1, 2, 2036))).toBe(false)
+  })
+})
+
+describe('rulesetsDiffer', () => {
+  it('is true only when ruleset versions differ', () => {
+    expect(rulesetsDiffer(make(1, 2, 2036, '2026-08-24'), make(1, 2, 2036, '2025-08-01'))).toBe(true)
+    expect(rulesetsDiffer(make(1, 2), make(1, 2))).toBe(false)
   })
 })
 
