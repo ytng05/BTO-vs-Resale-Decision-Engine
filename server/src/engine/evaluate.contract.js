@@ -403,6 +403,9 @@ const WARNINGS = Object.freeze({
  * @property {number} [btoWaitMonths]         - BTO only: months from application to keys (see timeline note)
  * @property {boolean} [btoWaitAssumed]       - true when btoWaitMonths came from btoWaiting.defaultMonths
  * @property {number} [renovationCents]       - renovation budget for this path, spent at keys; default 0
+ * @property {number} [legalFeesCents]        - this path's legal fees; overrides assumptions.legalFeesCents. The route
+ *                                              sets it per path (D33), since resale and BTO defaults differ
+ * @property {number} [agentFeesCents]        - this path's agent fees; overrides assumptions.agentFeesCents (D33)
  * @property {number} [subsidyRecoveryRate]   - BTO Plus/Prime only: decimal, e.g. 0.06. Per project, from
  *                                              seat 3's BTO seed record, not the ruleset (D18). 0 / omitted for
  *                                              Standard and resale. Missing for Plus/Prime → warn
@@ -594,6 +597,43 @@ const WARNINGS = Object.freeze({
  * @property {ResolvedRates} resolvedRates
  * @property {string} rulesetVersion          - stamped so saved scenarios are reproducible
  * @property {string[]} warnings              - values from WARNINGS
+ */
+
+/**
+ * GAP BREAKDOWN (D34): why one path ends ahead, line by line. explainGap(outcomeA, outcomeB) in
+ * engine/explainGap.js. Pure arithmetic on two Outcomes measured at the same horizonYear.
+ *
+ * marginCents = outcomeA.netPositionCents − outcomeB.netPositionCents (positive: Path A ahead).
+ * Every line is signed the same way, so a positive line helps Path A, and the lines sum EXACTLY to marginCents:
+ *   MARKET_VALUE        A − B   flat value at the horizon
+ *   LOAN_OWED           B − A   loan still owed at the horizon
+ *   CPF_PRINCIPAL       B − A   CPF savings owed back (cpfSavingsRefundPrincipalCents: the household's own OA used,
+ *                               including any stamp duty or legal fees paid from CPF; grants excluded, D1)
+ *   CPF_INTEREST        B − A   interest on those savings (cpfSavingsAccruedInterestCents)
+ *   CLAWBACK            B − A   Plus/Prime subsidy clawback
+ *   RENT_WHILE_WAITING  B − A   cash
+ *   RENOVATION          B − A   cash
+ *   BSD                 B − A   the cash-paid part only (0 when paid from CPF)
+ *   LEGAL               B − A   the cash-paid part only (0 when paid from CPF)
+ *   AGENT               B − A   cash
+ *   CASH_PURCHASE       B − A   every other housing cash: downpayment, staged payments and the cash part of
+ *                               instalments (= housingCashSpentCents − the cash lines above)
+ * Loan interest has no line of its own: it sits inside the instalments (CASH_PURCHASE, CPF_PRINCIPAL) and the
+ * loan still owed. Grants have no line either: under D1 a grant's refund is not in net position, and grants
+ * lower the cash, savings and loan a path needs, so they are reported beside the lines as information. All lines are always present, in this order; the UI may hide zeros.
+ *
+ * @typedef {Object} GapLine
+ * @property {string} id                      - one of the ids above
+ * @property {string} label                   - plain-English name for the UI
+ * @property {number} amountCents             - signed; positive helps Path A
+ *
+ * @typedef {Object} GapBreakdown
+ * @property {number} horizonYear
+ * @property {number} marginCents             - outcomeA.netPositionCents − outcomeB.netPositionCents
+ * @property {GapLine[]} lines                - sum to marginCents exactly
+ * @property {{ aCents: number, bCents: number }} totalGrants - each path's totalGrantsCents, for information
+ *
+ * @throws {RangeError} when the two outcomes have different horizonYears
  */
 
 // ---------------------------------------------------------------------------
