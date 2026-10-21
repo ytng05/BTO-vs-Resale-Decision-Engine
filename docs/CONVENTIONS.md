@@ -5,6 +5,27 @@
 Examples: `plan-step-next`, `plan-step-back`, `stepper-step-2`, `results-breakeven-sentence`,
 `heatmap-cell-r0-c3`, `disclaimer-banner`, `ruleset-badge`, `login-email-input`, `login-submit-button`.
 
+### Selectors in use (keep in sync; the Cypress specs depend on them)
+Rename one only in the same PR that updates the specs. `{n}` = buyer 1/2, `{prefix}` = `patha`/`pathb`, `{i}` = row index.
+
+| Screen | Selectors |
+|---|---|
+| Navbar | `nav-bar`, `nav-brand-home`, `nav-plan-link`, `nav-sources-link`, `nav-login-link`, `nav-scenarios-link`, `nav-account-toggle`, `nav-logout-button`, `nav-toggler-toggle` |
+| Home | `home-title`, `home-start-button`, `ruleset-badge`, `disclaimer-banner` |
+| Stepper / plan | `stepper`, `stepper-step-{i}`, `stepper-mobile-label`, `stepper-mobile-track`, `plan-form`, `plan-step-{1-3}-panel`, `plan-step-next`, `plan-step-back`, `plan-step-errors` |
+| Situation | `situation-form`, `situation-buyer-{n}`, `situation-buyer-{n}-age-input`, `-citizenship-select`, `-first-timer-switch`, `-income-input`, `-cpf-input`, `situation-applicants-error`, `situation-cash-savings-input`, `situation-price-growth-input`, `situation-income-growth-input`, `situation-horizon-year-input`, `situation-move-in-by-input`, `situation-rent-input` |
+| Path A / B | `{prefix}-form`, `{prefix}-year-input`, `{prefix}-town-select`, `{prefix}-flat-type-select`, `{prefix}-classification-select`, `{prefix}-living-select`, `{prefix}-lease-band-select`, `{prefix}-renovation-input`, `{prefix}-project-section`, `{prefix}-project-select`, `{prefix}-project-error`, `{prefix}-price-section`, `{prefix}-price-slider`, `{prefix}-price-value` |
+| Results | `results-breakeven-sentence`, `results-gap-sentence`, `results-ruleset-version`, `results-mock-notice`, `results-loading`, `results-error`, `results-retry-button`, `results-empty`, `results-start-plan-button`, `results-edit-button`, `results-dashboard-button`, `results-cashflow-trend`, `results-cashflow-dashboard-link`, `results-patha-card` / `results-pathb-card` (+ `-net-position`, `-grants-total`, `-cpf-refund`, `-clawback`, `-eligibility`, `-eligibility-item-{i}`, `-eligibility-status-{i}`, `-eligibility-reason-{i}`, `-eligibility-source-{i}`) |
+| Heatmap | `heatmap`, `heatmap-legend`, `heatmap-cell-r{r}-c{c}`, `heatmap-button-r{r}-c{c}`, `heatmap-user-marker`, `heatmap-selected-detail`, `heatmap-outside-note` |
+| RPI chart | `results-rpi-card`, `results-rpi-era-filter`, `results-rpi-era-{value}`, `results-rpi-growth`, `results-rpi-loading`, `results-rpi-error`, `results-rpi-retry-button`, `results-rpi-mock-notice` |
+| Save scenario | `results-save`, `results-save-button`, `results-save-form`, `results-save-name-input`, `results-save-submit`, `results-save-cancel`, `results-save-success`, `results-save-error`, `results-save-login-link`, `results-save-scenarios-link` |
+| Dashboard | `dashboard-headline`, `dashboard-subtitle`, `dashboard-summary-{key}` (+ `-net`, `-price`, `-grants`, `-affordability`), `dashboard-whatif`, `dashboard-whatif-reset`, `{id}-slider`, `{id}-value`, `dashboard-grants`, `dashboard-grant-{id}`, `dashboard-costs`, `dashboard-cost-{id}`, `dashboard-cashflow`, `dashboard-warnings`, `dashboard-loading`, `dashboard-error`, `dashboard-empty`, `dashboard-mock-notice`, `dashboard-ruleset-version`, `dashboard-edit-button`, `dashboard-results-button` |
+| Login | `login-view`, `login-title`, `login-form`, `login-mode-toggle`, `login-mode-login-tab`, `login-mode-register-tab`, `login-name-input`, `login-email-input`, `login-password-input`, `login-submit-button`, `login-error`, `login-skip-link` |
+| My scenarios | `scenarios-view`, `scenarios-list`, `scenarios-row-{id}`, `scenarios-row-name`, `scenarios-open-button`, `scenarios-delete-button`, `scenarios-delete-confirm`, `scenarios-delete-cancel`, `scenarios-empty`, `scenarios-loading`, `scenarios-error`, `scenarios-retry-button`, `scenarios-logged-out`, `scenarios-login-link`, `scenarios-start-plan-button`, `scenarios-compare-mode-button`, `scenarios-compare-checkbox`, `scenarios-compare-hint` |
+| Compare | `compare-view`, `compare-card-a` / `compare-card-b`, `compare-card-name`, `compare-card-meta`, `compare-card-ruleset-badge`, `compare-path-pathA` / `-pathB`, `compare-ahead-badge`, `compare-card-tie`, `compare-open-results-button`, `compare-headline-sentence`, `compare-horizon-note`, `compare-loading`, `compare-error`, `compare-retry-button`, `compare-not-found`, `compare-invalid`, `compare-logged-out`, `compare-login-link`, `compare-back-link`, `compare-pick-link`, `compare-repick-link` |
+| Sources | `sources-title`, `sources-ruleset-version`, `sources-template-badge`, `sources-rules-table`, `sources-assumptions`, `sources-datasets`, `sources-source-link`, `sources-expand-all` |
+
+
 ## Git
 - `main` is always deployable. Work on `feature/<seat>-<short-name>` branches and merge by pull request with one review.
 - Seats 1 and 2 review each other's maths.
