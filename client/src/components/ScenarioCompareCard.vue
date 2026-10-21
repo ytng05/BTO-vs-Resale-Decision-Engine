@@ -1,10 +1,16 @@
 <script setup>
 // One saved scenario on the compare page: name, save date, ruleset badge, both paths' net position
 // with the higher one flagged "Ahead", and a button to reopen it on /results.
-// Styles: .compare-card in styles/_components.scss (UI.md §8 cards and badges).
+// Styles: Bootstrap .card plus .compare-* in styles/_components.scss.
+//
+// Expects the compare shape produced by toCompareScenario() in api/scenarioCompare.js:
+//   { id, name, savedAt, horizonYear, rulesetVersion,
+//     pathA: { label, netPosition }, pathB: { label, netPosition } }
+// netPosition is in DOLLARS (the mapper divides result.outcomeX.netPositionCents by 100),
+// or null when the scenario has no saved result.
 import { computed } from 'vue';
-import { aheadPathKey, formatSGD, PATH_KEYS, PATH_NAMES } from '../utils/scenarioCompare.js';
-import { formatDate } from '../utils/format.js';
+import { aheadPathKey, PATH_KEYS, PATH_NAMES } from '../utils/scenarioCompare.js';
+import { formatDate, formatMoney } from '../utils/format.js';
 
 const props = defineProps({
   scenario: { type: Object, required: true },
@@ -23,7 +29,9 @@ const rows = computed(() =>
     return {
       key,
       title: `${PATH_NAMES[key]}: ${path.label ?? '—'}`,
-      value: hasValue ? formatSGD(path.netPosition) : 'Not fundable',
+      // A missing figure means no result was saved, not "not fundable":
+      // evaluate() still returns a figure when the loan is capped (it only warns).
+      value: hasValue ? formatMoney(path.netPosition) : 'No result saved',
       hasValue,
       isAhead: ahead.value === key,
     };
@@ -33,51 +41,53 @@ const rows = computed(() =>
 
 <template>
   <article
-    class="compare-card h-100 d-flex flex-column p-4"
+    class="card h-100"
     :class="{ 'compare-card--winner': isWinner }"
     :data-cy="`compare-card-${letter.toLowerCase()}`"
   >
-    <p class="text-caption text-secondary text-uppercase fw-semibold mb-1">Scenario {{ letter }}</p>
-    <h2 class="h4 mb-2" data-cy="compare-card-name">{{ scenario.name }}</h2>
-    <p class="d-flex flex-wrap align-items-center gap-2 mb-3" data-cy="compare-card-meta">
-      <span class="text-caption text-secondary">
-        Saved {{ formatDate(scenario.savedAt) }} · Horizon {{ scenario.horizonYear }}
-      </span>
-      <span class="compare-badge compare-badge--version text-caption" data-cy="compare-card-ruleset-badge">
-        Ruleset {{ scenario.rulesetVersion }}
-      </span>
-    </p>
-
-    <ul class="list-unstyled mb-3">
-      <li
-        v-for="row in rows"
-        :key="row.key"
-        class="compare-card__path"
-        :class="{ 'compare-card__path--ahead': row.isAhead }"
-        :data-cy="`compare-path-${row.key}`"
-      >
-        <span class="d-flex flex-wrap align-items-center gap-2">
-          {{ row.title }}
-          <span v-if="row.isAhead" class="compare-badge compare-badge--success text-caption" data-cy="compare-ahead-badge">
-            Ahead
-          </span>
+    <div class="card-body d-flex flex-column">
+      <p class="text-caption text-uppercase fw-semibold mb-1">Scenario {{ letter }}</p>
+      <h2 class="h4 mb-2" data-cy="compare-card-name">{{ scenario.name }}</h2>
+      <p class="d-flex flex-wrap align-items-center gap-2 mb-3" data-cy="compare-card-meta">
+        <span class="text-caption">
+          Saved {{ formatDate(scenario.savedAt) }} · Horizon {{ scenario.horizonYear ?? '—' }}
         </span>
-        <span class="compare-card__value" :class="{ 'text-secondary': !row.hasValue }">{{ row.value }}</span>
-      </li>
-    </ul>
+        <span class="badge-version" data-cy="compare-card-ruleset-badge">
+          Ruleset {{ scenario.rulesetVersion ?? '—' }}
+        </span>
+      </p>
 
-    <p v-if="ahead === 'tie'" class="text-caption text-secondary mb-3" data-cy="compare-card-tie">
-      Both paths end level.
-    </p>
+      <ul class="list-unstyled mb-3">
+        <li
+          v-for="row in rows"
+          :key="row.key"
+          class="compare-path"
+          :class="{ 'compare-path--ahead': row.isAhead }"
+          :data-cy="`compare-path-${row.key}`"
+        >
+          <span class="d-flex flex-wrap align-items-center gap-2">
+            {{ row.title }}
+            <span v-if="row.isAhead" class="badge-status--success" data-cy="compare-ahead-badge">
+              Ahead
+            </span>
+          </span>
+          <span class="compare-path__value" :class="{ 'text-secondary': !row.hasValue }">{{ row.value }}</span>
+        </li>
+      </ul>
 
-    <button
-      type="button"
-      class="btn btn-outline-secondary mt-auto"
-      :disabled="opening"
-      data-cy="compare-open-results-button"
-      @click="emit('open', scenario)"
-    >
-      {{ opening ? 'Opening…' : 'Open full results' }}
-    </button>
+      <p v-if="ahead === 'tie'" class="text-caption mb-3" data-cy="compare-card-tie">
+        Both paths end level.
+      </p>
+
+      <button
+        type="button"
+        class="btn btn-outline-secondary mt-auto"
+        :disabled="opening"
+        data-cy="compare-open-results-button"
+        @click="emit('open', scenario)"
+      >
+        {{ opening ? 'Opening…' : 'Open full results' }}
+      </button>
+    </div>
   </article>
 </template>

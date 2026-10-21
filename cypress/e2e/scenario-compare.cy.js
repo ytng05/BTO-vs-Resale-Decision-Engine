@@ -1,6 +1,6 @@
 // Side-by-side scenario view (/scenarios/compare).
-// Runs against the mock build (VITE_USE_MOCK=true): mock-a and mock-b come
-// from client/src/api/scenarioCompare.js until Yu Qing's real loader lands.
+// Runs against the mock build (VITE_USE_MOCK=true): mock-a and mock-b come from
+// client/src/api/scenarioCompare.js, which only uses them in mock mode.
 
 describe('Compare saved scenarios', () => {
   it('shows both scenarios, the Ahead badges and the headline', () => {
@@ -13,10 +13,10 @@ describe('Compare saved scenarios', () => {
     cy.get('[data-cy=compare-card-a] [data-cy=compare-path-pathA] [data-cy=compare-ahead-badge]').should('exist')
     cy.get('[data-cy=compare-card-b] [data-cy=compare-path-pathB] [data-cy=compare-ahead-badge]').should('exist')
 
-    cy.get('[data-cy=compare-headline-sentence]').should(
-      'contain',
-      'Scenario A (Path A: BTO) ends S$13,000 ahead of Scenario B.',
-    )
+    // mock-a (2036) and mock-b (2037) have different horizons, so no winner or dollar gap is named.
+    cy.get('[data-cy=compare-headline-sentence]')
+      .should('contain', "can't be compared directly")
+      .and('not.contain', 'ahead of')
     cy.get('[data-cy=compare-horizon-note]').should('contain', '2036').and('contain', '2037')
   })
 
@@ -46,7 +46,8 @@ describe('Compare saved scenarios', () => {
     })
   })
 
-  // TODO: enable once compare mode is wired into My scenarios and the mock list has 2+ scenarios.
+  // TODO: enable once the mock build has a logged-in user and 2+ saved scenarios on My scenarios.
+  // Compare mode and CompareBar are wired in; this test checks the bar's Compare button.
   it.skip('picks two scenarios on My scenarios and opens the compare page', () => {
     cy.visit('/scenarios')
     cy.get('[data-cy=scenarios-compare-mode-button]').click()
