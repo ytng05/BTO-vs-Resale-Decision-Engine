@@ -1,6 +1,6 @@
 // Side-by-side scenario view (/scenarios/compare).
-// Runs against the mock build (VITE_USE_MOCK=true): mock-a and mock-b come from
-// client/src/api/scenarioCompare.js, which only uses them in mock mode.
+// Runs against the mock build (VITE_USE_MOCK=true). Ids starting with "mock-" come from
+// MOCK_SCENARIOS in client/src/api/scenarioCompare.js; an unknown mock- id is "not found".
 
 describe('Compare saved scenarios', () => {
   it('shows both scenarios, the Ahead badges and the headline', () => {
@@ -32,11 +32,7 @@ describe('Compare saved scenarios', () => {
   })
 
   it('explains when a scenario has been deleted', () => {
-feature/scenario-compare-ui
-    cy.visit('/scenarios/compare?a=mock-a&b=deleted-id')
-
     cy.visit('/scenarios/compare?a=mock-a&b=mock-deleted')
-main
     cy.get('[data-cy=compare-not-found]').should('be.visible')
   })
 
