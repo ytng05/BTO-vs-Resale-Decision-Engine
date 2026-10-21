@@ -4,8 +4,8 @@
 import { back, fillPath, fillSituation, next } from './helpers/plan.js';
 
 const citizenship = (n) => cy.get(`[data-cy=situation-buyer-${n}-citizenship-select]`);
-// The error message shown under one buyer's field.
-const fieldError = (n, field) => cy.get(`[data-cy=situation-buyer-${n}-${field}]`).parent().find('.invalid-feedback');
+// The error message shown under one buyer's field (field: age, citizenship, income or cpf).
+const fieldError = (n, field) => cy.get(`[data-cy=situation-buyer-${n}-${field}-error]`);
 
 describe('buyers on the Situation step', () => {
   beforeEach(() => {

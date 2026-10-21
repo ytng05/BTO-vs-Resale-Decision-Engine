@@ -84,7 +84,8 @@ const err = (key) => props.errors[key];
             :class="{ 'is-invalid': err(`applicants.${i}.age`) }"
             :data-cy="`situation-buyer-${i + 1}-age-input`"
           />
-          <div class="invalid-feedback">{{ err(`applicants.${i}.age`) }}</div>
+          <div class="invalid-feedback" :data-cy="`situation-buyer-${i + 1}-age-error`">{{ err(`applicants.${i}.age`) }}</div>
+
         </div>
 
         <div class="col-12 col-sm-6 col-lg-3">
@@ -99,7 +100,8 @@ const err = (key) => props.errors[key];
           >
             <option v-for="c in CITIZENSHIPS" :key="c.value" :value="c.value">{{ c.label }}</option>
           </select>
-          <div class="invalid-feedback">{{ err(`applicants.${i}.citizenship`) }}</div>
+          <div class="invalid-feedback" :data-cy="`situation-buyer-${i + 1}-citizenship-error`">{{ err(`applicants.${i}.citizenship`) }}</div>
+
         </div>
 
         <div class="col-12 col-sm-6 col-lg-3">
@@ -119,7 +121,7 @@ const err = (key) => props.errors[key];
               :class="{ 'is-invalid': err(`applicants.${i}.monthlyIncome`) }"
               :data-cy="`situation-buyer-${i + 1}-income-input`"
             />
-            <div class="invalid-feedback">{{ err(`applicants.${i}.monthlyIncome`) }}</div>
+              <div class="invalid-feedback" :data-cy="`situation-buyer-${i + 1}-income-error`">{{ err(`applicants.${i}.monthlyIncome`) }}</div>
           </div>
         </div>
 
@@ -140,7 +142,7 @@ const err = (key) => props.errors[key];
               :class="{ 'is-invalid': err(`applicants.${i}.cpfOaBalance`) }"
               :data-cy="`situation-buyer-${i + 1}-cpf-input`"
             />
-            <div class="invalid-feedback">{{ err(`applicants.${i}.cpfOaBalance`) }}</div>
+            <div class="invalid-feedback" :data-cy="`situation-buyer-${i + 1}-cpf-error`">{{ err(`applicants.${i}.cpfOaBalance`) }}</div>
           </div>
         </div>
 
