@@ -374,3 +374,57 @@ a:focus-visible,
     top: $space-5;
   }
 }
+
+// ---- Scenario compare (/scenarios/compare) + compare mode on My scenarios ----------------
+// Kaashvi. Cards use Bootstrap .card (border + shadow come from the overrides), the lead
+// sentence uses .hero-statement and the ruleset uses .badge-version. Only the extras live here.
+
+// The scenario whose best path is ahead overall
+.compare-card--winner {
+  border-color: $primary;
+  box-shadow: 0 0 0 1px $primary, $shadow-sm;
+}
+
+.compare-path {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-3;
+  border-radius: $radius-sm;
+
+  & + & { margin-top: $space-1; }
+
+  // Selected-row tint (UI.md §2.6); the "Ahead" badge carries the meaning, not the colour
+  &--ahead { background: $accent-fill-3; }
+
+  &__value {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}
+
+// Status badge, success (UI.md §8 Badges: semantic fill + matching text)
+.badge-status--success {
+  background: $success-fill;
+  color: $success;
+  @include type('caption');
+  border-radius: $radius-pill;
+  padding: 0.25em 0.65em;
+}
+
+.compare-skeleton { height: 20rem; border-radius: $radius-md; }
+
+// Sticky bar while picking two scenarios; clears the iPhone home indicator (UI.md §5)
+.compare-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  padding: $space-3 0 calc(#{$space-3} + env(safe-area-inset-bottom, 0px));
+  background: $bg-page;
+  border-top: 1px solid $border-subtle;
+}
+
+.scenarios-pick-label { cursor: pointer; }
+.scenarios-row--picked { border-color: $primary; }
