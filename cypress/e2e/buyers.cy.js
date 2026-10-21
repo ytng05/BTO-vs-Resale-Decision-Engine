@@ -52,10 +52,10 @@ describe('buyers on the Situation step', () => {
     cy.get('[data-cy=plan-step-errors]').should('be.visible');
     cy.get('[data-cy=plan-step-1-panel]').should('exist');
     cy.get('[data-cy=situation-buyer-2-age-input]').should('have.class', 'is-invalid');
-    fieldError(2, 'age-input').should('contain', 'Enter an age.');
+    fieldError(2, 'age').should('contain', 'Enter an age.');
     cy.get('[data-cy=situation-buyer-1-age-input]').should('not.have.class', 'is-invalid');
     cy.get('[data-cy=situation-buyer-1-income-input]').should('have.class', 'is-invalid');
-    fieldError(1, 'income-input').should('contain', 'yearly figure');
+    fieldError(1, 'income').should('contain', 'yearly figure');
     cy.get('[data-cy=situation-buyer-2-income-input]').should('not.have.class', 'is-invalid');
   });
 
