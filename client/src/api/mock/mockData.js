@@ -136,7 +136,7 @@ export function mockCompare(payload = {}) {
             {
               id: 'PHG_LIVING_ARRANGEMENT',
               passed: true,
-              reason: 'MOCK: you said you\u2019ll live near your parents.',
+              reason: 'MOCK: you said you’ll live near your parents.',
               sourceUrl: sourceUrlFor('PHG_LIVING_ARRANGEMENT'),
             },
           ],
@@ -144,6 +144,69 @@ export function mockCompare(payload = {}) {
       ],
       clawbackCents: 0,
     }),
+  };
+}
+
+// MOCK: /api/timing — builds an Outcome per candidate year via mockOutcome(), the same helper
+// mockCompare() uses, so the timing panel can be built before the real search exists.
+// CONTRACT v2: see docs/API_CONTRACT.md "POST /api/timing".
+export function mockTiming(payload = {}) {
+  const assumptions = payload.assumptions ?? {};
+  const choiceBase = payload.choiceBase ?? { path: 'BTO' };
+  const isResale = choiceBase.path === 'RESALE';
+  const evaluationStartYear = assumptions.evaluationStartYear ?? 2026;
+  const thisYear = new Date().getFullYear();
+  const candidateYears = payload.candidateYears
+    ?? [thisYear, thisYear + 1, thisYear + 2, thisYear + 3, thisYear + 4, thisYear + 5];
+  const moveInByYear = payload.profile?.constraints?.moveInByYear;
+
+  const horizonYear = assumptions.horizonYear
+    ?? keysYearFor({ ...choiceBase, applicationYear: candidateYears[candidateYears.length - 1] }, evaluationStartYear) + 10;
+
+  const all = [];
+  const skipped = [];
+
+  candidateYears.forEach((year, i) => {
+    const choice = { ...choiceBase, applicationYear: year };
+    const keysYear = keysYearFor(choice, evaluationStartYear);
+
+    if (moveInByYear && keysYear > moveInByYear) {
+      skipped.push({ year, reason: 'MOVE_IN_DEADLINE_MISSED' });
+      return;
+    }
+
+    const outcome = mockOutcome({
+      choice,
+      evaluationStartYear,
+      horizonYear,
+      netPositionCents: 15_000_000 + i * 700_000, // MOCK: arbitrary upward trend across candidate years
+      cpfRefundPrincipalCents: isResale ? 21_000_000 : 14_000_000,
+      cpfAccruedInterestCents: isResale ? 5_200_000 : 3_800_000,
+      grants: [],
+      clawbackCents: 0,
+    });
+
+    all.push({ year, outcome });
+  });
+
+  const best = all.length
+    ? all.reduce((top, row) => (row.outcome.netPositionCents > top.outcome.netPositionCents ? row : top))
+    : null;
+
+  return {
+    mock: true,
+    rulesetVersion: rulesetSnapshot.version,
+    horizonYear,
+    best,
+    all,
+    skipped,
+    explanation: [
+      'MOCK: net financial position improves the later you apply, under these assumptions.',
+      ...(skipped.length ? [`MOCK: ${skipped.length} candidate year(s) skipped (move-in deadline).`] : []),
+    ],
+    btoProject: null, // MOCK: fill in once seat 3's BTO project lookup is wired for a single choice
+    assumptions,
+    resolved: null, // MOCK: fill in once a single-choice resolved-lookup exists (compare() has resolvedA/B)
   };
 }
 
