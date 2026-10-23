@@ -2,6 +2,10 @@
 // Not a spec file (no .cy.js), so Cypress does not run it on its own.
 
 export const nextYear = new Date().getFullYear() + 1;
+// The stepper's Next and Back buttons.
+export const next = () => cy.get('[data-cy=plan-step-next]').click();
+export const back = () => cy.get('[data-cy=plan-step-back]').click();
+
 
 // Two buyers (the contract models exactly two; at least one SC, which is the default).
 export function fillSituation({ priceGrowth = '3', incomeGrowth = '2', horizonYear } = {}) {
