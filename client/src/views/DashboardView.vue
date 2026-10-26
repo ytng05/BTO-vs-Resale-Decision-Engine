@@ -16,6 +16,7 @@ import WhatIfPanel from '../components/dashboard/WhatIfPanel.vue';
 import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
 import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
+import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
 
 const store = useScenarioStore();
 const thisYear = new Date().getFullYear();
@@ -280,6 +281,12 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
               <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
             </div>
           </section>
+
+          <PhgMapCard
+            :bto-town="store.choiceA.town"
+            :resale-town="store.choiceB.town"
+            :living-arrangement="store.choiceB.livingArrangement"
+          />
 
           <section class="card" aria-labelledby="notes-heading">
             <div class="card-body">
