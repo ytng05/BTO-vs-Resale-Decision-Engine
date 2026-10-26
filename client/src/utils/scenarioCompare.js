@@ -5,12 +5,12 @@
 // {
 //   id, name, savedAt, rulesetVersion, horizonYear,
 //   pathA: { label: 'BTO',    netPosition: number | null, reason?, loanShortfall? },
-//   pathB: { label: 'Resale', netPosition: number | null, reason?, loanShortfall? },
+//   pathB: { label: 'Resale', netPosition: number | null, reason?, loanShortfall?, cashShortfall? },
 //   inputs: { ... }
 // }
 // netPosition is in DOLLARS (the API stores cents; the mapper divides by 100).
-// netPosition is null only with a reason: 'NOT_FUNDABLE' (cash shortfall at signing) or
-// 'NO_RESULT' (nothing usable saved). A capped loan still has a figure (loanShortfall is set).
+// netPosition is null only with reason 'NO_RESULT' (nothing usable saved). A capped loan or a cash
+// shortfall at signing still has a figure (loanShortfall / cashShortfall is set).
 
 import { formatMoney } from './format.js'
 

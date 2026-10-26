@@ -12,15 +12,16 @@
 //
 // Scenario shape:
 //   { id, name, savedAt, rulesetVersion, horizonYear,
-//     pathA: { label, netPosition: number | null, reason?: 'NOT_FUNDABLE' | 'NO_RESULT', loanShortfall?: number },
+//     pathA: { label, netPosition: number | null, reason?: 'NO_RESULT', loanShortfall?: number, cashShortfall?: true },
 //     pathB: { ...same as pathA },
 //     inputs: { profile, choiceA, choiceB, assumptions } }
 //   Money is in DOLLARS here (the API's cents divided by 100 once, below).
-//   netPosition is null only together with a reason:
-//     NOT_FUNDABLE  cash plus retained OA can't cover the signing payment (CASH_SHORTFALL_AT_PURCHASE)
-//     NO_RESULT     nothing saved, a mock result, or a result saved under an older contract shape
-//   loanShortfall is set when the loan is over the MSR/LTV limit: the net position is still real,
-//   so the card shows it with "short by $X" rather than hiding it.
+//   netPosition is null only together with reason NO_RESULT: nothing saved, a mock result, or a
+//   result saved under an older contract shape.
+//   evaluate() always returns a net position, so a shortfall never hides it; the card adds a note:
+//     loanShortfall  the loan is over the MSR/LTV limit (dollars short): "short by $X"
+//     cashShortfall  cash plus retained OA can't cover the payment at purchase
+//                    (the CASH_SHORTFALL_AT_PURCHASE warning)
 //
 // Ids starting with "mock-" come from MOCK_SCENARIOS, so the page and its Cypress spec work on the
 // mock build. Every other id is a real saved scenario (GET /api/scenarios/:id, docs/API_CONTRACT.md).
@@ -78,13 +79,13 @@ function pathFigure(choice, result, outcomeKey) {
   if (!result || result.mock) return { label, netPosition: null, reason: 'NO_RESULT' }
   const outcome = result[outcomeKey]
   if (!isCurrentShape(result, outcome)) return { label, netPosition: null, reason: 'NO_RESULT' }
-  if (outcome.warnings.includes(CASH_SHORTFALL_AT_PURCHASE)) return { label, netPosition: null, reason: 'NOT_FUNDABLE' }
-
   const figure = { label, netPosition: outcome.netPositionCents / 100 } // API money is cents (D14)
   const shortfallCents = outcome.affordability?.shortfallCents
   if (outcome.affordability?.withinLimit === false && Number.isInteger(shortfallCents)) {
     figure.loanShortfall = shortfallCents / 100
   }
+  // A cash shortfall is only a warning: keep the figure and let the card add a note.
+  if (outcome.warnings.includes(CASH_SHORTFALL_AT_PURCHASE)) figure.cashShortfall = true
   return figure
 }
 

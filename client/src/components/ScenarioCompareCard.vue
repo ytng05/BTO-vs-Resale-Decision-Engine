@@ -5,11 +5,13 @@
 //
 // Expects the compare shape produced by toCompareScenario() in api/scenarioCompare.js:
 //   { id, name, savedAt, horizonYear, rulesetVersion,
-//     pathA: { label, netPosition, reason?, loanShortfall? }, pathB: { ...same } }
-// Money is in DOLLARS. netPosition is null only together with a reason:
-//   NOT_FUNDABLE  cash plus retained OA can't cover the signing payment
-//   NO_RESULT     nothing saved, a mock result, or an older contract shape
-// loanShortfall: the loan is over the limit; the net position is still real, so it is shown with a note.
+//     pathA: { label, netPosition, reason?, loanShortfall?, cashShortfall? }, pathB: { ...same } }
+// Money is in DOLLARS. netPosition is null only together with reason NO_RESULT
+// (nothing saved, a mock result, or an older contract shape).
+// evaluate() always returns a net position, so shortfalls never hide the figure; they add a note:
+//   loanShortfall  the loan is over the limit (dollars short)
+//   cashShortfall  cash plus retained OA can't cover the payment at purchase
+//                  (CASH_SHORTFALL_AT_PURCHASE): dollars short if known, or true
 import { computed } from 'vue';
 import { aheadPathKey, PATH_KEYS, PATH_NAMES } from '../utils/scenarioCompare.js';
 import { formatDate, formatMoney } from '../utils/format.js';
@@ -24,21 +26,27 @@ const emit = defineEmits(['open']);
 
 const ahead = computed(() => aheadPathKey(props.scenario));
 
+function cashNote(cashShortfall) {
+  if (typeof cashShortfall === 'number') return `Not enough cash at purchase, short by ${formatMoney(cashShortfall)}`;
+  if (cashShortfall === true) return 'Not enough cash at purchase';
+  return null;
+}
+
 const rows = computed(() =>
   PATH_KEYS.map((key) => {
     const path = props.scenario[key] || {};
     const hasValue = typeof path.netPosition === 'number';
-    let value;
-    if (hasValue) value = formatMoney(path.netPosition);
-    else if (path.reason === 'NOT_FUNDABLE') value = 'Not fundable';
-    else value = 'No result saved';
     return {
       key,
       title: `${PATH_NAMES[key]}: ${path.label ?? '—'}`,
-      value,
+      value: hasValue ? formatMoney(path.netPosition) : 'No result saved',
       hasValue,
-      // A capped loan still has a real figure (evaluate() only warns), so show it with the gap.
-      shortfall: typeof path.loanShortfall === 'number' ? formatMoney(path.loanShortfall) : null,
+      // A capped loan or a cash shortfall still has a real figure (evaluate() only warns),
+      // so the figure is shown with a note.
+      loanNote: typeof path.loanShortfall === 'number'
+        ? `Loan over the limit, short by ${formatMoney(path.loanShortfall)}`
+        : null,
+      cashNote: cashNote(path.cashShortfall),
       isAhead: ahead.value === key,
     };
   }),
@@ -78,8 +86,11 @@ const rows = computed(() =>
             </span>
           </span>
           <span class="compare-path__value" :class="{ 'text-secondary': !row.hasValue }">{{ row.value }}</span>
-          <span v-if="row.shortfall" class="text-caption text-secondary d-block" data-cy="compare-loan-shortfall">
-            Loan over the limit, short by {{ row.shortfall }}
+          <span v-if="row.loanNote" class="text-caption text-secondary d-block" data-cy="compare-loan-shortfall">
+            {{ row.loanNote }}
+          </span>
+          <span v-if="row.cashNote" class="text-caption text-secondary d-block" data-cy="compare-cash-shortfall">
+            {{ row.cashNote }}
           </span>
         </li>
       </ul>

@@ -78,10 +78,10 @@ describe('toCompareScenario', () => {
     expect(s.horizonYear).toBe(2040) // a mock horizon is not used either
   })
 
-  it('says NOT_FUNDABLE when cash plus retained OA cannot cover the signing payment, and keeps the other path', () => {
-    const s = toCompareScenario(withOutcomes(outcome(41_200_000), outcome(1, { warnings: ['CASH_SHORTFALL_AT_PURCHASE'] })))
-    expect(s.pathA.netPosition).toBe(412000)
-    expect(s.pathB).toEqual({ label: 'Resale', netPosition: null, reason: 'NOT_FUNDABLE' })
+  it('keeps the net position and flags cashShortfall when cash plus retained OA cannot cover the signing payment', () => {
+    const s = toCompareScenario(withOutcomes(outcome(41_200_000), outcome(39_800_000, { warnings: ['CASH_SHORTFALL_AT_PURCHASE'] })))
+    expect(s.pathA).not.toHaveProperty('cashShortfall')
+    expect(s.pathB).toEqual({ label: 'Resale', netPosition: 398000, cashShortfall: true })
   })
 
   it('keeps the net position when only the loan is over the limit, and reports the shortfall in dollars', () => {
