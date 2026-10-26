@@ -57,12 +57,32 @@ With no `MONGODB_URI` the server still starts (health, ruleset and stubs work). 
 
 ## Testing
 ```bash
-npm test                    # Vitest: server (API scaffold + engine todos) and client (store)
-VITE_USE_MOCK=true npm run build && npm start     # terminal 1
-npm run test:e2e                                  # terminal 2: Cypress smoke test (or npm run cy:open)
+npm test          # Vitest, server + client (no database needed)
+npm run lint      # ESLint: unused variables, undefined names, Vue template errors
 ```
-Selectors use `data-cy` attributes (see `docs/CONVENTIONS.md`). Engine test expectations must come from hand-worked
-examples in official material, recorded in `docs/SOURCES.md`.
+Real-database tests (`server/tests/db.test.js`) run only when `MONGODB_URI_TEST` points at a throwaway database whose
+name contains `test`. CI starts one automatically. Never point it at the app database.
+
+End-to-end (Cypress), two terminals:
+```bash
+VITE_USE_MOCK=true npm run build && npm start     # terminal 1  (PowerShell: $env:VITE_USE_MOCK='true'; npm run build; npm start)
+npm run test:e2e                                  # terminal 2  (or npm run cy:open to watch it run)
+```
+| Spec | Covers |
+|---|---|
+| `smoke.cy.js` | home page, step validation, full journey, register → save → reload (needs a database) |
+| `buyers.cy.js` | two buyers, PR + PR blocked, per-buyer validation, answers kept when going back |
+| `results.cy.js` | results content, heatmap, phone width, Back keeps inputs |
+| `dashboard.cy.js` | financial dashboard |
+| `scenarios.cy.js` | save, list, open and delete a scenario (needs a database) |
+| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios) |
+| `responsive.cy.js` | every page at 375 / 768 / 1280 px with no sideways scrolling |
+
+Specs marked "needs a database" register real users: run them locally only with the server's `MONGODB_URI` pointing at
+a **test** database. If Cypress fails to start with `bad option: --smoke-test`, run `Remove-Item Env:ELECTRON_RUN_AS_NODE`
+(PowerShell) in that terminal first. Selectors use `data-cy` attributes (see `docs/CONVENTIONS.md`). Engine test
+expectations must come from hand-worked examples in official material, recorded in `docs/SOURCES.md`.
+
 
 ## Test accounts
 TODO: list demo credentials here once auth is implemented.
