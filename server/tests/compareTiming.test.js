@@ -31,6 +31,7 @@ vi.mock('../src/services/datagov/resalePrice.js', async (importOriginal) => {
 const { createApp } = await import('../src/app.js');
 const { breakEvenSentence } = await import('../src/routes/analysis.js');
 const { evaluate } = await import('../src/engine/index.js');
+const { explainGap } = await import('../src/engine/explainGap.js');
 const { loadRuleset } = await import('../src/engine/rules/loadRuleset.js');
 const { FEE_DEFAULTS, PRICE_GROWTH_STEPS, INCOME_GROWTH_STEPS, MAX_YEARS_AHEAD } = await import('../src/services/engineInputs.js');
 const app = createApp();
@@ -134,6 +135,19 @@ describe('POST /api/compare', () => {
     expect(own.body.resolvedA).toMatchObject({ legalFeesCents: 300000, agentFeesCents: 100000 });
     expect(own.body.resolvedB).toMatchObject({ legalFeesCents: 300000, agentFeesCents: 100000 });
     expect(fee(own.body.outcomeA, 'LEGAL')).toBe(300000);
+  });
+
+  it('returns the gap breakdown of the two outcomes (D34): 11 lines that sum to outcomeA minus outcomeB', () => {
+    const gap = res.body.gapBreakdown;
+    expect(gap).toEqual(explainGap(res.body.outcomeA, res.body.outcomeB));
+    expect(gap.horizonYear).toBe(res.body.horizonYear);
+    expect(gap.marginCents).toBe(res.body.outcomeA.netPositionCents - res.body.outcomeB.netPositionCents);
+    expect(gap.lines.map((l) => l.id)).toEqual([
+      'MARKET_VALUE', 'LOAN_OWED', 'CPF_PRINCIPAL', 'CPF_INTEREST', 'CLAWBACK',
+      'RENT_WHILE_WAITING', 'RENOVATION', 'BSD', 'LEGAL', 'AGENT', 'CASH_PURCHASE',
+    ]);
+    expect(gap.lines.reduce((s, l) => s + l.amountCents, 0)).toBe(gap.marginCents);
+    expect(gap.totalGrants).toEqual({ aCents: res.body.outcomeA.totalGrantsCents, bCents: res.body.outcomeB.totalGrantsCents });
   });
 
   it('the outcomes are exactly what evaluate() gives for the resolved inputs', () => {
