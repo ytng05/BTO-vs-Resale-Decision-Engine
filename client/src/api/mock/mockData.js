@@ -41,7 +41,7 @@ export function mockCompare(payload = {}) {
     }),
   );
 
-  return {
+  const result = {
     mock: true,
     rulesetVersion: rulesetSnapshot.version,
     horizonYear,
@@ -144,6 +144,37 @@ export function mockCompare(payload = {}) {
       ],
       clawbackCents: 0,
     }),
+  };
+
+  // D34: the real route adds gapBreakdown next to the outcomes (docs/API_CONTRACT.md "POST /api/compare").
+  result.gapBreakdown = mockGapBreakdown(result.outcomeA, result.outcomeB);
+  return result;
+}
+
+// MOCK: /api/compare gapBreakdown (D34). Same shape as explainGap() in the server: 11 lines in a fixed order,
+// signed so positive helps Path A, summing exactly to marginCents (= outcomeA minus outcomeB). The figures are
+// invented for the mock (loosely modelled on server/src/engine/fixtures/gap-breakdown.json); the last line is
+// worked out as the remainder, so the sum stays exact whatever the mock outcomes' net positions are.
+function mockGapBreakdown(outcomeA, outcomeB) {
+  const marginCents = outcomeA.netPositionCents - outcomeB.netPositionCents;
+  const fixed = [
+    { id: 'MARKET_VALUE', label: 'MOCK: Flat value at the horizon', amountCents: 6_300_000 },
+    { id: 'LOAN_OWED', label: 'MOCK: Loan still owed', amountCents: 8_200_000 },
+    { id: 'CPF_PRINCIPAL', label: 'MOCK: CPF savings to pay back', amountCents: -9_000_000 },
+    { id: 'CPF_INTEREST', label: 'MOCK: CPF interest to pay back', amountCents: -1_200_000 },
+    { id: 'CLAWBACK', label: 'MOCK: Subsidy clawback', amountCents: 0 },
+    { id: 'RENT_WHILE_WAITING', label: 'MOCK: Rent while waiting for keys', amountCents: -2_850_000 },
+    { id: 'RENOVATION', label: 'MOCK: Renovation', amountCents: -1_000_000 },
+    { id: 'BSD', label: "MOCK: Buyer's stamp duty paid in cash", amountCents: 1_150_000 },
+    { id: 'LEGAL', label: 'MOCK: Legal fees paid in cash', amountCents: 0 },
+    { id: 'AGENT', label: "MOCK: Agent's fees", amountCents: 500_000 },
+  ];
+  const rest = marginCents - fixed.reduce((sum, line) => sum + line.amountCents, 0);
+  return {
+    horizonYear: outcomeA.horizonYear,
+    marginCents,
+    lines: [...fixed, { id: 'CASH_PURCHASE', label: 'MOCK: Other cash paid for the flat', amountCents: rest }],
+    totalGrants: { aCents: outcomeA.totalGrantsCents, bCents: outcomeB.totalGrantsCents },
   };
 }
 
