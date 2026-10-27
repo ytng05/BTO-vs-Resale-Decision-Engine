@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
+import GapBreakdownPanel from '../components/GapBreakdownPanel.vue';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
 import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
@@ -145,6 +146,9 @@ onMounted(load);
           />
         </div>
       </div>
+
+      <!-- Why one path ends ahead, line by line (D34). Arrives with /compare; hidden if an older server omits it. -->
+      <GapBreakdownPanel v-if="result.gapBreakdown" :gap="result.gapBreakdown" />
 
       <div v-if="result.outcomeA && result.outcomeB" class="card mb-3">
         <div class="card-body">
