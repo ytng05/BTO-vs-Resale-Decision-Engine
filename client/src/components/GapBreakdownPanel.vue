@@ -34,11 +34,12 @@ const grants = computed(() => grantsText(props.gap, labels.value));
         <li
           v-for="row in rows"
           :key="row.id"
-          class="d-flex flex-wrap align-items-center gap-2 py-2 border-bottom"
+          class="d-flex align-items-center gap-3 py-2 border-bottom"
           :data-cy="`results-gap-line-${row.id}`"
         >
+          <!-- No wrapping of the amount under the label: on a phone a long label wraps inside its own column. -->
           <div class="flex-grow-1">{{ row.label }}</div>
-          <div class="text-end">
+          <div class="text-end flex-shrink-0">
             <div>{{ formatMoney(row.absCents / 100) }}</div>
             <div class="text-caption">{{ row.sideText }}</div>
           </div>
@@ -48,7 +49,7 @@ const grants = computed(() => grantsText(props.gap, labels.value));
 
       <div
         v-if="total.text"
-        class="d-flex flex-wrap align-items-center gap-2 py-2 fw-semibold"
+        class="d-flex align-items-center gap-3 py-2 fw-semibold"
         data-cy="results-gap-total"
       >
         <div class="flex-grow-1">Total gap</div>
