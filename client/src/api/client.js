@@ -1,7 +1,7 @@
 // Axios (MIT) — HTTP client for the Express API.
 import axios from 'axios';
 import {
-  mockBtoProjects, mockCompare, mockGrants, mockLogin, mockRegister, mockResalePrice, mockRpi, mockRuleset,
+  mockBtoProjects, mockCompare, mockGrants, mockLogin, mockRegister, mockResalePrice, mockRpi, mockRuleset, mockTiming,
 } from './mock/mockData.js';
 
 // VITE_USE_MOCK=true serves clearly-labelled MOCK data so the UI can be built before the backend exists.
@@ -102,7 +102,44 @@ export async function grants(payload) {
   return (await http.post('/grants', payload)).data;
 }
 
-// TODO (seat 5): timing() for /api/timing. strategy() dropped .
+// Converts the store's shape into the /api/timing TimingRequest (contract "POST /api/timing").
+// choiceKey picks which stored choice ('choiceA' | 'choiceB') to search timing for — its
+// applicationYear is ignored server-side since candidateYears sweeps that instead.
+export function toTimingRequest(store, choiceKey = 'choiceA', candidateYears) {
+  const a = store.assumptions;
+  return withoutUnset({
+    profile: {
+      applicants: store.profile.applicants.map((p) => ({
+        age: p.age,
+        citizenship: p.citizenship,
+        firstTimer: p.firstTimer,
+        monthlyIncomeCents: toCents(p.monthlyIncome),
+        cpfOaBalanceCents: toCents(p.cpfOaBalance),
+      })),
+      cashSavingsCents: toCents(store.profile.cashSavings),
+      constraints: withoutUnset({ moveInByYear: store.profile.constraints?.moveInByYear }),
+    },
+    choiceBase: toRequestChoice(store[choiceKey]),
+    candidateYears,
+    assumptions: withoutUnset({
+      annualPriceGrowth: a.annualPriceGrowth,
+      annualIncomeGrowth: a.annualIncomeGrowth,
+      horizonYear: a.horizonYear,
+      monthlyHousingCostWhileWaitingCents: toCents(a.monthlyHousingCostWhileWaiting ?? 0),
+      loanTenureYears: a.loanTenureYears,
+      loanType: a.loanType,
+      legalFeesCents: isSet(a.legalFees) ? toCents(a.legalFees) : null,
+      agentFeesCents: isSet(a.agentFees) ? toCents(a.agentFees) : null,
+    }),
+  });
+}
+
+// (store, 'choiceA' | 'choiceB', candidateYears?) -> TimingResponse. See docs/API_CONTRACT.md "POST /api/timing".
+export async function timing(store, choiceKey = 'choiceA', candidateYears) {
+  const payload = toTimingRequest(store, choiceKey, candidateYears);
+  if (USE_MOCK) return mockTiming(payload);
+  return (await http.post('/timing', payload)).data;
+}
 
 // ---- Saved scenarios (seat 3) ----
 // No mock versions: these always call the real API (run `npm run dev` with MONGODB_URI set).
@@ -144,4 +181,3 @@ export async function getScenario(id) {
 export async function deleteScenario(id) {
   await http.delete(`/scenarios/${encodeURIComponent(id)}`);
 }
-

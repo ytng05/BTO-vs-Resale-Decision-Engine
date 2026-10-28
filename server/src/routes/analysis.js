@@ -8,6 +8,7 @@ import { loadRuleset } from '../engine/rules/loadRuleset.js';
 import { computeAccruedInterest } from '../engine/cpf/accruedInterest.js';
 import { computeBuyerStampDuty } from '../engine/costs/transactionCosts.js';
 import { evaluate } from '../engine/index.js';
+import { explainGap } from '../engine/explainGap.js';
 import { solveBreakEven } from '../engine/solvers/breakEven.js';
 import { optimiseTiming } from '../engine/solvers/timingOptimiser.js';
 import { getResalePriceBasis } from '../services/datagov/resalePrice.js';
@@ -187,6 +188,8 @@ router.post('/compare', async (req, res, next) => {
       frontier: surface.frontier,
       outcomeA,
       outcomeB,
+      // Why one path ends ahead, line by line (D34). Both outcomes share one horizon, so this never throws.
+      gapBreakdown: explainGap(outcomeA, outcomeB),
       btoProjectA: a.btoProject,
       btoProjectB: b.btoProject,
       assumptions: engineAssumptions, // with the server's defaults filled in (D17, D22)
