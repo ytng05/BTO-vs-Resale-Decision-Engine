@@ -16,6 +16,7 @@ import WhatIfPanel from '../components/dashboard/WhatIfPanel.vue';
 import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
 import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
+import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
 
 const store = useScenarioStore();
 const thisYear = new Date().getFullYear();
@@ -191,7 +192,7 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
         </div>
         <div class="d-flex gap-2">
           <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="dashboard-edit-button">Edit inputs</RouterLink>
-          <RouterLink to="/results" class="btn btn-primary" data-cy="dashboard-results-button">See break-even map</RouterLink>
+          <RouterLink to="/results" class="btn btn-primary" data-cy="dashboard-results-button">Back to results</RouterLink>
         </div>
       </div>
 
@@ -253,6 +254,10 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
               <li v-for="(x, i) in warnings" :key="i"><strong>{{ x.path }}:</strong> {{ warningText(x.w) }}</li>
             </ul>
           </div>
+
+          <!-- Beside the sliders (D35): the historical range informs the price growth slider. In this column, not
+               under the sticky what-if panel, which would slide over it on scroll. Fetches on its own. -->
+          <HistoricalRpiChart />
 
           <section class="card" aria-labelledby="grants-heading">
             <div class="card-body">
