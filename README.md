@@ -80,6 +80,10 @@ npm run test:e2e                                  # terminal 2  (or npm run cy:o
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, safe https source links, assumptions and datasets |
 
 
+Demo user journeys (five households, one per presenter) live in `cypress/journeys/` and run against a **live**
+build: `VITE_USE_MOCK=false npm run build && npm start`, then `npm run journeys` (each recorded to `cypress/videos/`).
+Inputs, steps and what each shows: `docs/JOURNEYS.md`.
+
 Specs marked "needs a database" register real users: run them locally only with the server's `MONGODB_URI` pointing at
 a **test** database. If Cypress fails to start with `bad option: --smoke-test`, run `Remove-Item Env:ELECTRON_RUN_AS_NODE`
 (PowerShell) in that terminal first. Selectors use `data-cy` attributes (see `docs/CONVENTIONS.md`). Engine test
