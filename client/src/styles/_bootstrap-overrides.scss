@@ -10,6 +10,8 @@
 @import 'tokens';
 
 // ---- Colour ------------------------------------------------------------------
+$color-contrast-dark: $color-ink;
+$color-contrast-light: $color-white;
 $primary:   $primary;
 $secondary: $text-secondary;
 $success:   $success;
@@ -27,7 +29,7 @@ $border-color: $border;
 // ---- Typography ----------------------------------------------------------------
 $font-family-sans-serif: $font-body;
 $headings-font-family: $font-heading;
-$headings-font-weight: 600;
+$headings-font-weight: 500;
 $headings-color: $text-primary;
 
 $font-size-base: 1rem;      // 16px — matches $type-scale body
@@ -66,7 +68,9 @@ $box-shadow:    $shadow-md;
 $box-shadow-lg: $shadow-lg;
 
 // ---- Buttons (UI.md §8 Buttons) -------------------------------------------------------
-$btn-border-radius: $radius-sm;
+$btn-border-radius: $radius-pill; // pill buttons (design system, 29 Oct 2026)
+$btn-border-radius-sm: $radius-pill;
+$btn-border-radius-lg: $radius-pill;
 $btn-font-weight: 500;
 $btn-padding-y: $space-3;
 $btn-padding-x: $space-5;
@@ -75,13 +79,13 @@ $btn-padding-x-sm: $space-4;
 // 44px minimum touch target (UI.md §8/§11): with $font-size-base 1rem and the
 // padding above, computed button height clears 44px; verify in StyleGuide.vue
 // if $font-size-base or padding is ever changed.
-$btn-focus-box-shadow: 0 0 0 2px $bg-page, 0 0 0 4px $primary; // 2px ring, 2px offset
+$btn-focus-box-shadow: 0 0 0 2px $bg-page, 0 0 0 4px $focus-ring; // 2px ring, 2px offset
 $btn-focus-width: 0; // disable Bootstrap's default blurred focus ring; use the box-shadow ring above instead
 $btn-disabled-opacity: 0.5;
 $btn-hover-bg-shade-amount: 10%; // UI.md: hover darkens fill ~10%
 
-$link-color: $primary;
-$link-hover-color: $primary-hover;
+$link-color: $universe-text;
+$link-hover-color: $text-primary;
 $link-decoration: none;
 $link-hover-decoration: underline;
 
@@ -91,8 +95,8 @@ $input-border-color: $border;
 $input-bg: $color-white;
 $input-disabled-bg: $surface-disabled;
 $input-placeholder-color: $text-tertiary;
-$input-focus-border-color: $primary;
-$input-focus-box-shadow: 0 0 0 2px $bg-page, 0 0 0 4px $primary;
+$input-focus-border-color: $focus-ring;
+$input-focus-box-shadow: 0 0 0 2px $bg-page, 0 0 0 4px $focus-ring;
 $form-label-font-size: 0.8125rem;   // matches $type-scale label
 $form-label-font-weight: 500;
 $form-label-color: $text-primary;
@@ -109,8 +113,8 @@ $card-box-shadow: $shadow-sm; // "at rest"; components.scss adds the hover step-
 
 // ---- Navbar (UI.md §8 Navigation) -----------------------------------------------------
 $navbar-light-color: $text-secondary;
-$navbar-light-hover-color: $primary;
-$navbar-light-active-color: $primary;
+$navbar-light-hover-color: $universe-text;
+$navbar-light-active-color: $universe-text;
 $navbar-light-brand-color: $text-primary;
 
 // ---- Modals (UI.md §8 Modals) -------------------------------------------------------
