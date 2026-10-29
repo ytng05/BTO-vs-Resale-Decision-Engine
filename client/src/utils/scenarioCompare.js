@@ -4,13 +4,16 @@
 // Scenario shape (built by toCompareScenario() in api/scenarioCompare.js):
 // {
 //   id, name, savedAt, rulesetVersion, horizonYear,
-//   pathA: { label: 'BTO',    netPosition: number | null, reason?, loanShortfall? },
+//   pathA: { label: 'BTO',    netPosition: number | null, reason?, loanShortfall?, cashShortfall? },
 //   pathB: { label: 'Resale', netPosition: number | null, reason?, loanShortfall?, cashShortfall? },
 //   inputs: { ... }
 // }
 // netPosition is in DOLLARS (the API stores cents; the mapper divides by 100).
-// netPosition is null only with reason 'NO_RESULT' (nothing usable saved). A capped loan or a cash
-// shortfall at signing still has a figure (loanShortfall / cashShortfall is set).
+// netPosition is null only together with a reason:
+//   'NO_RESULT'     nothing usable saved
+//   'NOT_FUNDABLE'  a cash shortfall on a purchase in the evaluation start year (D19)
+// A path with no figure is never "Ahead" and never wins the headline. A capped loan, or a cash
+// shortfall in a later year, still has a figure (loanShortfall / cashShortfall is set).
 
 import { formatMoney } from './format.js'
 

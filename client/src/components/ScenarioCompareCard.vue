@@ -6,12 +6,14 @@
 // Expects the compare shape produced by toCompareScenario() in api/scenarioCompare.js:
 //   { id, name, savedAt, horizonYear, rulesetVersion,
 //     pathA: { label, netPosition, reason?, loanShortfall?, cashShortfall? }, pathB: { ...same } }
-// Money is in DOLLARS. netPosition is null only together with reason NO_RESULT
-// (nothing saved, a mock result, or an older contract shape).
-// evaluate() always returns a net position, so shortfalls never hide the figure; they add a note:
+// Money is in DOLLARS. netPosition is null only together with a reason:
+//   NO_RESULT     nothing saved, a mock result, or an older contract shape
+//   NOT_FUNDABLE  bought in the evaluation start year and today's cash can't cover the payment at
+//                 purchase (D19). No figure, so the path can't be "Ahead" or win the headline.
+// Otherwise a shortfall never hides the figure; it adds a note:
 //   loanShortfall  the loan is over the limit (dollars short)
-//   cashShortfall  cash plus retained OA can't cover the payment at purchase
-//                  (CASH_SHORTFALL_AT_PURCHASE): dollars short if known, or true
+//   cashShortfall  CASH_SHORTFALL_AT_PURCHASE on a purchase in a later year (only a warning, D19):
+//                  dollars short if known, or true
 import { computed } from 'vue';
 import { aheadPathKey, PATH_KEYS, PATH_NAMES } from '../utils/scenarioCompare.js';
 import { formatDate, formatMoney } from '../utils/format.js';
@@ -26,10 +28,19 @@ const emit = defineEmits(['open']);
 
 const ahead = computed(() => aheadPathKey(props.scenario));
 
-function cashNote(cashShortfall) {
-  if (typeof cashShortfall === 'number') return `Not enough cash at purchase, short by ${formatMoney(cashShortfall)}`;
-  if (cashShortfall === true) return 'Not enough cash at purchase';
+const NOT_FUNDABLE_NOTE = "Today's cash doesn't cover the cash needed at purchase";
+
+function cashNote(path) {
+  if (path.reason === 'NOT_FUNDABLE') return NOT_FUNDABLE_NOTE;
+  if (typeof path.cashShortfall === 'number') return `Not enough cash at purchase, short by ${formatMoney(path.cashShortfall)}`;
+  if (path.cashShortfall === true) return 'Not enough cash at purchase';
   return null;
+}
+
+function valueText(path, hasValue) {
+  if (hasValue) return formatMoney(path.netPosition);
+  if (path.reason === 'NOT_FUNDABLE') return 'Not fundable this year';
+  return 'No result saved';
 }
 
 const rows = computed(() =>
@@ -39,14 +50,14 @@ const rows = computed(() =>
     return {
       key,
       title: `${PATH_NAMES[key]}: ${path.label ?? '—'}`,
-      value: hasValue ? formatMoney(path.netPosition) : 'No result saved',
+      value: valueText(path, hasValue),
       hasValue,
-      // A capped loan or a cash shortfall still has a real figure (evaluate() only warns),
-      // so the figure is shown with a note.
+      // A capped loan, or a cash shortfall in a later year, still has a real figure (evaluate()
+      // only warns), so the figure is shown with a note.
       loanNote: typeof path.loanShortfall === 'number'
         ? `Loan over the limit, short by ${formatMoney(path.loanShortfall)}`
         : null,
-      cashNote: cashNote(path.cashShortfall),
+      cashNote: cashNote(path),
       isAhead: ahead.value === key,
     };
   }),

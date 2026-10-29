@@ -12,16 +12,17 @@
 //
 // Scenario shape:
 //   { id, name, savedAt, rulesetVersion, horizonYear,
-//     pathA: { label, netPosition: number | null, reason?: 'NO_RESULT', loanShortfall?: number, cashShortfall?: true },
+//     pathA: { label, netPosition: number | null, reason?: 'NO_RESULT' | 'NOT_FUNDABLE', loanShortfall?: number, cashShortfall?: true },
 //     pathB: { ...same as pathA },
 //     inputs: { profile, choiceA, choiceB, assumptions } }
 //   Money is in DOLLARS here (the API's cents divided by 100 once, below).
-//   netPosition is null only together with reason NO_RESULT: nothing saved, a mock result, or a
-//   result saved under an older contract shape.
-//   evaluate() always returns a net position, so a shortfall never hides it; the card adds a note:
+//   netPosition is null only together with a reason:
+//     NO_RESULT     nothing saved, a mock result, or a result saved under an older contract shape
+//     NOT_FUNDABLE  CASH_SHORTFALL_AT_PURCHASE on a path bought in the evaluation start year: today's
+//                   cash is all they have, so it can't be paid for (D19)
+//   Otherwise a shortfall never hides the figure; the card adds a note:
 //     loanShortfall  the loan is over the MSR/LTV limit (dollars short): "short by $X"
-//     cashShortfall  cash plus retained OA can't cover the payment at purchase
-//                    (the CASH_SHORTFALL_AT_PURCHASE warning)
+//     cashShortfall  CASH_SHORTFALL_AT_PURCHASE on a purchase in a later year (only a warning, D19)
 //
 // Ids starting with "mock-" come from MOCK_SCENARIOS, so the page and its Cypress spec work on the
 // mock build. Every other id is a real saved scenario (GET /api/scenarios/:id, docs/API_CONTRACT.md).
@@ -84,8 +85,16 @@ function pathFigure(choice, result, outcomeKey) {
   if (outcome.affordability?.withinLimit === false && Number.isInteger(shortfallCents)) {
     figure.loanShortfall = shortfallCents / 100
   }
-  // A cash shortfall is only a warning: keep the figure and let the card add a note.
-  if (outcome.warnings.includes(CASH_SHORTFALL_AT_PURCHASE)) figure.cashShortfall = true
+  // D19 splits a cash shortfall by year. Buying in the evaluation start year, today's cash is all
+  // they have, so the path can't be paid for (the timing optimiser skips those years too): no figure.
+  // Buying in a later year it is only a warning: keep the figure and let the card add a note.
+  if (outcome.warnings.includes(CASH_SHORTFALL_AT_PURCHASE)) {
+    const startYear = result.assumptions?.evaluationStartYear
+    if (Number.isInteger(startYear) && choice?.applicationYear === startYear) {
+      return { label, netPosition: null, reason: 'NOT_FUNDABLE' }
+    }
+    figure.cashShortfall = true
+  }
   return figure
 }
 

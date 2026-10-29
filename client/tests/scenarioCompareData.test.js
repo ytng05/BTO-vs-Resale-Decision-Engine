@@ -7,6 +7,7 @@ vi.mock('../src/api/client.js', () => ({ getScenario: vi.fn() }))
 
 import { getScenario } from '../src/api/client.js'
 import { loadComparePair, openScenarioInResults, toCompareScenario } from '../src/api/scenarioCompare.js'
+import { aheadPathKey, compareHeadline } from '../src/utils/scenarioCompare.js'
 import { formatMoney } from '../src/utils/format.js'
 import { useScenarioStore } from '../src/stores/scenario.js'
 
@@ -32,6 +33,20 @@ const saved = (overrides = {}) => ({
   ...overrides,
 })
 const withOutcomes = (outcomeA, outcomeB) => saved({ result: { horizonYear: 2038, outcomeA, outcomeB } })
+
+// D19: a resale path (B) with a cash shortfall at purchase, bought in `applicationYear`,
+// evaluated from 2026. Path A is fine either way.
+const START_YEAR = 2026
+const cashShortB = (applicationYear, outcomeACents = 41_200_000, outcomeBCents = 39_800_000) =>
+  saved({
+    choiceB: { ...saved().choiceB, applicationYear },
+    result: {
+      horizonYear: 2038,
+      assumptions: { evaluationStartYear: START_YEAR },
+      outcomeA: outcome(outcomeACents),
+      outcomeB: outcome(outcomeBCents, { warnings: ['CASH_SHORTFALL_AT_PURCHASE'] }),
+    },
+  })
 
 const httpError = (status) => Object.assign(new Error(`HTTP ${status}`), { response: { status } })
 
@@ -78,10 +93,37 @@ describe('toCompareScenario', () => {
     expect(s.horizonYear).toBe(2040) // a mock horizon is not used either
   })
 
-  it('keeps the net position and flags cashShortfall when cash plus retained OA cannot cover the signing payment', () => {
+  it('keeps the net position and flags cashShortfall when the start year is not known', () => {
     const s = toCompareScenario(withOutcomes(outcome(41_200_000), outcome(39_800_000, { warnings: ['CASH_SHORTFALL_AT_PURCHASE'] })))
     expect(s.pathA).not.toHaveProperty('cashShortfall')
     expect(s.pathB).toEqual({ label: 'Resale', netPosition: 398000, cashShortfall: true })
+  })
+
+  it('D19: a cash shortfall on a purchase in a later year keeps the figure with a note', () => {
+    const s = toCompareScenario(cashShortB(START_YEAR + 2))
+    expect(s.pathB).toEqual({ label: 'Resale', netPosition: 398000, cashShortfall: true })
+  })
+
+  it('D19: a cash shortfall on a purchase in the evaluation start year is NOT_FUNDABLE, with no figure', () => {
+    const s = toCompareScenario(cashShortB(START_YEAR))
+    expect(s.pathB).toEqual({ label: 'Resale', netPosition: null, reason: 'NOT_FUNDABLE' })
+    expect(s.pathA).toEqual({ label: 'BTO', netPosition: 412000 })
+  })
+
+  it('D19: a NOT_FUNDABLE path is never Ahead, even when its figure would have been higher', () => {
+    // Path B would end S$450,000 but can't be paid for this year, so Path A (S$412,000) is Ahead.
+    const s = toCompareScenario(cashShortB(START_YEAR, 41_200_000, 45_000_000))
+    expect(aheadPathKey(s)).toBe('pathA')
+  })
+
+  it('D19: a NOT_FUNDABLE path cannot win the headline', () => {
+    // X: Path B (S$450,000) is not fundable, so X's best is Path A at S$390,000.
+    // Y: best is Path A at S$400,000. Y should win by S$10,000, not lose to X's unfundable S$450,000.
+    const x = toCompareScenario(cashShortB(START_YEAR, 39_000_000, 45_000_000))
+    const y = toCompareScenario(withOutcomes(outcome(40_000_000), outcome(38_000_000)))
+    const headline = compareHeadline(x, y)
+    expect(headline.winner).toBe('B')
+    expect(headline.text).toContain(formatMoney(10000))
   })
 
   it('keeps the net position when only the loan is over the limit, and reports the shortfall in dollars', () => {
