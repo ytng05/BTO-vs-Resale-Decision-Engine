@@ -48,6 +48,9 @@ describe('Sources view loan additions', () => {
     expect(formatRuleValue('cpf.housingUsageLeaseRule.leaseMustCoverYoungestToAge', 95)).toBe('age 95');
     expect(formatRuleValue('cpf.housingUsageLeaseRule.leaseProRating.percentPerYearShort', 2)).toBe('2% per year');
     expect(formatRuleValue('loans.hdbLoanOaRetentionPerBuyer', 20000)).toBe('$20,000');
+    expect(formatRuleValue('eligibility.newFlatIncomeCeiling.family', 16000)).toBe('$16,000 a month');
+    expect(formatRuleValue('loans.hdbLoanIncomeCeiling.family', 16000)).toBe('$16,000 a month');
+    expect(formatRuleValue('grants.ehg.incomeCeiling.family', 9000)).toBe('$9,000');
     expect(formatRuleValue('loans.btoDownpaymentStages.hdbLoan.atSigningPercent', 10)).toBe('10%');
     expect(formatRuleValue('loans.btoDownpaymentStages.bankLoan.atReducedLtv.minCashAtSigningPercent', 10)).toBe('10%');
     expect(formatRuleValue('loans.btoDownpaymentStages.bankLoan.atMaxLtv', null)).toBe('Not yet verified');
