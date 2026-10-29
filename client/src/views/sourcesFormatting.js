@@ -40,6 +40,8 @@ const sourceTitles = new Map([
   ['https://www.mas.gov.sg/regulation/explainers/tdsr-for-property-loans/calculating-tdsr', 'MAS: Calculating TDSR'],
   ['https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-resale-flats/plan-source-and-contract/mode-of-financing', 'HDB: Mode of Financing'],
   ['https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-new-flats/sign-agreement-for-lease', 'HDB: Sign Agreement for Lease'],
+  ['https://www.hdb.gov.sg/-/media/hdb-pulse/news/2026/increase-in-income-ceilings-and-greater-support-for-families-with-children/Annex-A.pdf', 'HDB: NDR 2026 revised income ceilings'],
+  ['https://www.mynicehome.gov.sg/get-started/hdb-loans-guide/', 'MyNiceHome: HDB loans guide'],
   ['https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life', 'MOM: 2019 more flexibility to buy a home for life'],
   ['https://www.mas.gov.sg/news/parliamentary-replies/2022/reply-to-parliamentary-question-on-setting-total-debt-servicing-ratio-medium-term-interest-rate-floor-at-4-per-cent-per-annum', 'MAS: 2022 reply on the 4% interest rate floor'],
   ['https://www.hdb.gov.sg/cs/infoweb/residential/buying-a-flat/understanding-your-eligibility-and-housing-loan-options/housing-loan-options/housing-loan-from-hdb', 'HDB: Housing Loan from HDB'],
@@ -82,6 +84,9 @@ export function formatRuleValue(path, value) {
     }
     if (path.endsWith('Percent') || path.endsWith('ratePercent')) {
       return formatPercent(value);
+    }
+    if (path === 'eligibility.newFlatIncomeCeiling.family' || path === 'loans.hdbLoanIncomeCeiling.family') {
+      return `${currencyFormatter.format(value)} a month`;
     }
     if (/(incomeCeiling|grantAmount|amounts\.|buyerStampDutyTiers.*\.portion|legalFees|agentFees|OaRetention)/i.test(path)) {
       return currencyFormatter.format(value);
