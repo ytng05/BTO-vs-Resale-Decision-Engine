@@ -16,8 +16,6 @@ const router = createRouter({
     { path: '/login', name: 'login', component: LoginView },
     // Logged-out visitors see a "Log in" prompt in the view itself (no guard: see the note below).
     { path: '/scenarios', name: 'scenarios', component: () => import('../views/ScenariosView.vue') },
-        // Logged-out visitors see a "Log in" prompt in the view itself (no guard: see the note below).
-    { path: '/scenarios', name: 'scenarios', component: () => import('../views/ScenariosView.vue') },
     { path: '/scenarios/compare', name: 'scenario-compare', component: () => import('../views/ScenarioCompareView.vue') },
   ],
 });

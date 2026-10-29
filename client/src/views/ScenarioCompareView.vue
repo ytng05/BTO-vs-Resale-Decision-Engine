@@ -2,11 +2,13 @@
 // /scenarios/compare?a=<id>&b=<id>
 // Read-only summary of two saved scenarios side by side. Full detail for a path stays on /results,
 // one click away via "Open full results". Styles: .compare-* in styles/_components.scss.
+// Scenarios are only ranked against each other at a common horizon year under one ruleset (D1);
+// otherwise the headline says they can't be compared directly and no winner is highlighted.
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import ScenarioCompareCard from '../components/ScenarioCompareCard.vue';
 import { loadComparePair, openScenarioInResults } from '../api/scenarioCompare.js';
-import { compareHeadline, horizonsDiffer } from '../utils/scenarioCompare.js';
+import { compareHeadline, horizonsDiffer, rulesetsDiffer } from '../utils/scenarioCompare.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -19,12 +21,18 @@ const openingId = ref(null);
 const idA = computed(() => route.query.a);
 const idB = computed(() => route.query.b);
 
+const bothLoaded = computed(() => scenarios.value.length === 2);
 const headline = computed(() =>
-  scenarios.value.length === 2 ? compareHeadline(scenarios.value[0], scenarios.value[1]) : null,
+  bothLoaded.value ? compareHeadline(scenarios.value[0], scenarios.value[1]) : null,
 );
 const showHorizonNote = computed(
-  () => scenarios.value.length === 2 && horizonsDiffer(scenarios.value[0], scenarios.value[1]),
+  () => bothLoaded.value && horizonsDiffer(scenarios.value[0], scenarios.value[1]),
 );
+const showRulesetNote = computed(
+  () => bothLoaded.value && rulesetsDiffer(scenarios.value[0], scenarios.value[1]),
+);
+// Only explain the basis of the comparison when one was actually made (a winner or a tie).
+const compared = computed(() => headline.value?.winner != null);
 
 async function load() {
   if (!idA.value || !idB.value || idA.value === idB.value) {
@@ -127,10 +135,14 @@ watch([idA, idB], load, { immediate: true });
       <!-- Lead statement: .hero-statement, no card chrome (UI.md §8 cards) -->
       <div class="mb-4">
         <p class="hero-statement mb-1" data-cy="compare-headline-sentence">{{ headline.text }}</p>
-        <p class="text-secondary text-measure mb-0">Compared on each scenario's own best path.</p>
+        <p v-if="compared" class="text-secondary text-measure mb-0">Compared on each scenario's own best path.</p>
         <p v-if="showHorizonNote" class="text-secondary text-measure mt-2 mb-0" data-cy="compare-horizon-note">
-          These scenarios use different horizon years ({{ scenarios[0].horizonYear }} and
-          {{ scenarios[1].horizonYear }}), so this is not a same-year comparison.
+          Scenario A is measured at {{ scenarios[0].horizonYear }} and Scenario B at
+          {{ scenarios[1].horizonYear }}. Save both with the same horizon year to see which comes out ahead.
+        </p>
+        <p v-if="showRulesetNote" class="text-secondary text-measure mt-2 mb-0" data-cy="compare-ruleset-note">
+          Scenario A was calculated under ruleset {{ scenarios[0].rulesetVersion }} and Scenario B under
+          {{ scenarios[1].rulesetVersion }}. Reopen and re-save the older one to compare under the same rules.
         </p>
       </div>
 

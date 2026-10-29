@@ -1,15 +1,21 @@
 // Pure helpers for the side-by-side scenario view (/scenarios/compare).
 // Kept free of Vue so they can be unit-tested with Vitest.
 //
-// Scenario shape (agreed with Yu Qing):
+// Scenario shape (built by toCompareScenario() in api/scenarioCompare.js):
 // {
 //   id, name, savedAt, rulesetVersion, horizonYear,
-//   pathA: { label: 'BTO',    netPosition: number | null },
-//   pathB: { label: 'Resale', netPosition: number | null },
+//   pathA: { label: 'BTO',    netPosition: number | null, reason?, loanShortfall?, cashShortfall? },
+//   pathB: { label: 'Resale', netPosition: number | null, reason?, loanShortfall?, cashShortfall? },
 //   inputs: { ... }
 // }
-// netPosition is null when the engine could not produce a figure for that
-// path (for example the loan is over the limit and the path is not fundable).
+// netPosition is in DOLLARS (the API stores cents; the mapper divides by 100).
+// netPosition is null only together with a reason:
+//   'NO_RESULT'     nothing usable saved
+//   'NOT_FUNDABLE'  a cash shortfall on a purchase in the evaluation start year (D19)
+// A path with no figure is never "Ahead" and never wins the headline. A capped loan, or a cash
+// shortfall in a later year, still has a figure (loanShortfall / cashShortfall is set).
+
+import { formatMoney } from './format.js'
 
 const PATH_KEYS = ['pathA', 'pathB']
 const PATH_NAMES = { pathA: 'Path A', pathB: 'Path B' }
@@ -36,7 +42,7 @@ export function aheadPathKey(scenario) {
 
 /**
  * The scenario's own best path.
- * @returns {{ key, name, label, netPosition } | null}
+ * @returns {{ key, name, label, netPosition, tie } | null}
  */
 export function bestPath(scenario) {
   const key = aheadPathKey(scenario)
@@ -52,27 +58,46 @@ export function bestPath(scenario) {
   }
 }
 
-/** Format a dollar figure as S$13,000 (whole dollars, minus sign for negatives). */
-export function formatSGD(value) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '—'
-  const rounded = Math.round(value)
-  const abs = Math.abs(rounded).toLocaleString('en-SG')
-  return rounded < 0 ? `−S$${abs}` : `S$${abs}`
+/** True when the two scenarios are measured at different horizon years. */
+export function horizonsDiffer(scenarioA, scenarioB) {
+  return (
+    scenarioA?.horizonYear != null &&
+    scenarioB?.horizonYear != null &&
+    scenarioA.horizonYear !== scenarioB.horizonYear
+  )
 }
 
-/** Format an ISO date as 12 Oct 2026. */
-export function formatSavedDate(iso) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
+/** True when the two scenarios were calculated under different ruleset versions. */
+export function rulesetsDiffer(scenarioA, scenarioB) {
+  return (
+    scenarioA?.rulesetVersion != null &&
+    scenarioB?.rulesetVersion != null &&
+    scenarioA.rulesetVersion !== scenarioB.rulesetVersion
+  )
 }
 
 /**
  * One-line headline comparing the two scenarios' own best paths.
+ * D1 only compares net positions at a common horizon year under one ruleset, so when
+ * either differs no winner is named and no dollar gap is shown.
  * @returns {{ text: string, winner: 'A' | 'B' | 'tie' | null }}
  */
 export function compareHeadline(scenarioA, scenarioB) {
+  const horizon = horizonsDiffer(scenarioA, scenarioB)
+  const ruleset = rulesetsDiffer(scenarioA, scenarioB)
+  if (horizon || ruleset) {
+    const why =
+      horizon && ruleset
+        ? 'different horizon years and rulesets'
+        : horizon
+          ? 'different horizon years'
+          : 'different rulesets'
+    return {
+      text: `These scenarios use ${why}, so they can't be compared directly.`,
+      winner: null,
+    }
+  }
+
   const bestA = bestPath(scenarioA)
   const bestB = bestPath(scenarioB)
 
@@ -80,10 +105,10 @@ export function compareHeadline(scenarioA, scenarioB) {
     return { text: 'Neither scenario has a net position to compare.', winner: null }
   }
   if (!bestA) {
-    return { text: 'Only Scenario B has a net position; Scenario A has no fundable path.', winner: 'B' }
+    return { text: 'Only Scenario B has a net position, so the two cannot be compared.', winner: null }
   }
   if (!bestB) {
-    return { text: 'Only Scenario A has a net position; Scenario B has no fundable path.', winner: 'A' }
+    return { text: 'Only Scenario A has a net position, so the two cannot be compared.', winner: null }
   }
 
   const diff = Math.round(bestA.netPosition) - Math.round(bestB.netPosition)
@@ -93,18 +118,9 @@ export function compareHeadline(scenarioA, scenarioB) {
 
   const [winLetter, win, loseLetter] = diff > 0 ? ['A', bestA, 'B'] : ['B', bestB, 'A']
   return {
-    text: `Scenario ${winLetter} (${win.name}: ${win.label}) ends ${formatSGD(Math.abs(diff))} ahead of Scenario ${loseLetter}.`,
+    text: `Scenario ${winLetter} (${win.name}: ${win.label}) ends ${formatMoney(Math.abs(diff))} ahead of Scenario ${loseLetter}.`,
     winner: winLetter,
   }
-}
-
-/** True when the two scenarios are measured at different horizon years. */
-export function horizonsDiffer(scenarioA, scenarioB) {
-  return (
-    scenarioA?.horizonYear != null &&
-    scenarioB?.horizonYear != null &&
-    scenarioA.horizonYear !== scenarioB.horizonYear
-  )
 }
 
 export { PATH_KEYS, PATH_NAMES }
