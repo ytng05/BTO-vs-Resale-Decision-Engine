@@ -2,11 +2,13 @@
 import { computed, onMounted, ref } from 'vue';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
+import GapBreakdownPanel from '../components/GapBreakdownPanel.vue';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
 import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
 import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
 import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
+import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
 import { validateStep } from '../validation/planValidation.js';
@@ -145,6 +147,9 @@ onMounted(load);
         </div>
       </div>
 
+      <!-- Why one path ends ahead, line by line (D34). Arrives with /compare; hidden if an older server omits it. -->
+      <GapBreakdownPanel v-if="result.gapBreakdown" :gap="result.gapBreakdown" />
+
       <div v-if="result.outcomeA && result.outcomeB" class="card mb-3">
         <div class="card-body">
           <h2 class="h5">Net position over time</h2>
@@ -171,9 +176,12 @@ onMounted(load);
         </div>
       </div>
 
+      <!-- Part of the plan, fetches independently of /compare: which BTO application year ends highest (POST /api/timing). -->
+      <TimingOptimiserPanel />
+
       <!-- Background market context, not part of the comparison itself: fetches independently of /compare. -->
       <HistoricalRpiChart />
-      <!-- TODO (seat 5): timing optimiser panel and strategy top 3 once /api/timing and /api/strategy exist. -->
+      <!-- TODO (seat 5): strategy top 3 once /api/strategy exists (future work, off by default). -->
     </template>
   </section>
 </template>
