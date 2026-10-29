@@ -32,6 +32,8 @@ const { createApp } = await import('../src/app.js');
 const { breakEvenSentence } = await import('../src/routes/analysis.js');
 const { evaluate } = await import('../src/engine/index.js');
 const { explainGap } = await import('../src/engine/explainGap.js');
+const { WARNINGS } = await import('../src/engine/evaluate.contract.js');
+const { WARNING_MESSAGES, warningMessagesFor } = await import('../src/services/warningMessages.js');
 const { loadRuleset } = await import('../src/engine/rules/loadRuleset.js');
 const { FEE_DEFAULTS, PRICE_GROWTH_STEPS, INCOME_GROWTH_STEPS, MAX_YEARS_AHEAD } = await import('../src/services/engineInputs.js');
 const app = createApp();
@@ -150,6 +152,18 @@ describe('POST /api/compare', () => {
     expect(gap.totalGrants).toEqual({ aCents: res.body.outcomeA.totalGrantsCents, bCents: res.body.outcomeB.totalGrantsCents });
   });
 
+  it('returns a plain-English message for each warning code in either outcome, and no others', () => {
+    const codes = new Set([...res.body.outcomeA.warnings, ...res.body.outcomeB.warnings]);
+    expect(new Set(Object.keys(res.body.warningMessages))).toEqual(codes);
+    for (const code of codes) expect(res.body.warningMessages[code]).toBe(WARNING_MESSAGES[code]);
+  });
+
+  it('a household with no cash gets the cash-shortfall message', async () => {
+    const broke = await compare(body({ profile: { ...profile, cashSavingsCents: 0 } }));
+    expect(broke.body.outcomeA.warnings).toContain('CASH_SHORTFALL_AT_PURCHASE');
+    expect(broke.body.warningMessages.CASH_SHORTFALL_AT_PURCHASE).toBe(WARNING_MESSAGES.CASH_SHORTFALL_AT_PURCHASE);
+  });
+
   it('the outcomes are exactly what evaluate() gives for the resolved inputs', () => {
     const { ruleset } = loadRuleset();
     const choiceA = { ...bto, classification: 'STANDARD', ...res.body.resolvedA };
@@ -222,6 +236,15 @@ describe('POST /api/timing', () => {
     expect(res.body.best.year).toBe(res.body.all.find((e) => e.outcome.netPositionCents === top).year); // ties: earliest
   });
 
+  it('returns a plain-English message for each warning code in a ranked year and each skip reason', () => {
+    const codes = new Set([
+      ...res.body.all.flatMap((e) => e.outcome.warnings),
+      ...res.body.skipped.map((s) => s.reason),
+    ]);
+    expect(new Set(Object.keys(res.body.warningMessages))).toEqual(codes);
+    for (const code of codes) expect(res.body.warningMessages[code]).toBe(WARNING_MESSAGES[code]);
+  });
+
   it('one horizon for every year: the last candidate\'s keys + 10, and plain-language lines', () => {
     const lastKeys = YEAR + 2 + Math.floor(res.body.resolved.btoWaitMonths / 12);
     expect(res.body.horizonYear).toBe(lastKeys + 10);
@@ -252,5 +275,22 @@ describe('POST /api/timing', () => {
     const r = await timing({ profile, choiceBase: bto, candidateYears: years, assumptions, ...over });
     expect(r.status).toBe(400);
     expect(r.body.error.message).toMatch(message);
+  });
+});
+
+describe('warning messages', () => {
+  it('every engine warning code has a plain-English message that does not show the code', () => {
+    for (const code of Object.values(WARNINGS)) {
+      expect(typeof WARNING_MESSAGES[code]).toBe('string');
+      expect(WARNING_MESSAGES[code].length).toBeGreaterThan(20);
+      expect(WARNING_MESSAGES[code]).not.toContain(code);
+    }
+  });
+
+  it('warningMessagesFor keeps each known code once and leaves out unknown codes', () => {
+    expect(warningMessagesFor(['LOAN_ABOVE_LIMIT', 'NOT_A_CODE', 'LOAN_ABOVE_LIMIT'])).toEqual({
+      LOAN_ABOVE_LIMIT: WARNING_MESSAGES.LOAN_ABOVE_LIMIT,
+    });
+    expect(warningMessagesFor([])).toEqual({});
   });
 });
