@@ -192,7 +192,7 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
         </div>
         <div class="d-flex gap-2">
           <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="dashboard-edit-button">Edit inputs</RouterLink>
-          <RouterLink to="/results" class="btn btn-primary" data-cy="dashboard-results-button">See break-even map</RouterLink>
+          <RouterLink to="/results" class="btn btn-primary" data-cy="dashboard-results-button">Back to results</RouterLink>
         </div>
       </div>
 

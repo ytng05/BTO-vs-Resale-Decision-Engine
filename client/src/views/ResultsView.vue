@@ -121,7 +121,7 @@ onMounted(load);
       </p>
       <div class="d-flex flex-wrap gap-2 mb-3">
         <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="results-edit-button">Change inputs</RouterLink>
-        <RouterLink to="/dashboard" class="btn btn-outline-primary" data-cy="results-dashboard-button">See the financial dashboard</RouterLink>
+        <RouterLink to="/dashboard" class="btn btn-outline-primary" data-cy="results-dashboard-button">What's this made of?</RouterLink>
       </div>
       <SaveScenarioPanel :result="result" />
 
