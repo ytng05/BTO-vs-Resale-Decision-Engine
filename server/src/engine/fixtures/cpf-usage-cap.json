@@ -1,0 +1,31 @@
+{
+  "_source": "Hand-worked by seat 1 in cpf-cap-template.xlsx (exported as cpf-cap-template.pdf), 2026-10-29, from the D37 rule and the inputs below. Not derived from evaluate() or from AI output; checked independently by Claude from the written rules (all 18 figures match).",
+  "_workedBy": "seat 1",
+  "_dateWorked": "2026-10-29",
+  "_rule": "D37 (#42): cap = factor x Valuation Limit, factor = 100% - 2% x (95 - (youngest buyer's age at purchase + remaining lease)), only when the lease falls short; valuation = price (stated assumption); grants count towards the cap (seat 1, stated assumption); what the cap stops moves to the next source in the D28 order; a fee is paid whole from CPF only if both the OA left and the cap left cover it; instalments from the OA while both last (D24).",
+  "_inputs": "evaluate.json case E1 (resale, HDB loan) with buyers aged 40 and 41 today, each cpfOaBalanceCents 15000000, purchasePriceCents and marketValueAtKeysCents 40000000, remainingLeaseYears 50, assumptions.horizonYear 2045. Given (evaluate() before the cap): price at purchase 412,000.00; grants 125,000.00; max loan 284,280.00; stamp duty 6,960.00; legal 2,500.00; agent 5,000.00.",
+  "_units": "integer cents",
+  "case": {
+    "baseCaseId": "E1-resale-hdb-loan",
+    "agesToday": [40, 41],
+    "cpfOaBalanceCentsEach": 15000000,
+    "purchasePriceCents": 40000000,
+    "remainingLeaseYears": 50,
+    "horizonYear": 2045
+  },
+  "expected": {
+    "yearsShort": 4,
+    "factorPercent": 92,
+    "cpfUsageCapCents": 37904000,
+    "grantsUsedCents": 12500000,
+    "oaAboveRetentionUsedAtKeysCents": 25404000,
+    "loanPrincipalCents": 3296000,
+    "loanShortfallCents": 0,
+    "bsdPaidFrom": "CASH",
+    "legalPaidFrom": "CASH",
+    "cpfUsedAtPurchaseCents": 25404000,
+    "cashRequiredAtPurchaseCents": 1446000,
+    "capLeftAfterPurchaseCents": 0,
+    "firstInstalmentPaidFrom": "CASH"
+  }
+}
