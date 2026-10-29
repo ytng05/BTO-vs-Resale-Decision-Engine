@@ -34,8 +34,8 @@ export default [
       globals: { ...globals.browser, ...globals.mocha, cy: 'readonly', Cypress: 'readonly', expect: 'readonly' },
     },
   },
-  // cypress.config.js is CommonJS (module.exports).
-  { files: ['cypress.config.js'], languageOptions: { sourceType: 'commonjs', globals: globals.node } },
+  // The Cypress configs are CommonJS (module.exports).
+  { files: ['cypress.config.js', 'cypress.journeys.config.js'], languageOptions: { sourceType: 'commonjs', globals: globals.node } },
 
   {
     rules: {
