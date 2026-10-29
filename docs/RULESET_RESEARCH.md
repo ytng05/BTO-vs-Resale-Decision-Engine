@@ -82,6 +82,12 @@ ASSUMPTION `btoWaiting.defaultMonths`: 48. Fallback only when neither the select
 STATED ASSUMPTION `btoWaiting.monthsToAgreementForLease`: 9 from application. HDB: signing within 9 months after booking (same source).
 ✅ `notes.eip`: Resale only: EIP and SPR quotas may limit which blocks can be bought; quotas update on the 1st of each month; check HDB's EIP/SPR quota e-Service. Source: <https://www.hdb.gov.sg/business/estate-agents-and-salespersons/buying-a-resale-flat/eligibility> (checked 2026-10-10: Claude + Har)
 
+## Income Ceilings
+
+✅ `eligibility.newFlatIncomeCeiling.family`: 16000 (from 14,000), HFE applications from 24 Aug 2026; same for Standard/Plus/Prime. Source: HDB NDR 2026 Annex A <https://www.hdb.gov.sg/-/media/hdb-pulse/news/2026/increase-in-income-ceilings-and-greater-support-for-families-with-children/Annex-A.pdf> (checked 2026-10-29: Claude + Har)
+✅ `loans.hdbLoanIncomeCeiling.family`: 16000 (from 14,000). Source: MyNiceHome HDB loans guide <https://www.mynicehome.gov.sg/get-started/hdb-loans-guide/>; HDB NDR 2026 Annex A <https://www.hdb.gov.sg/-/media/hdb-pulse/news/2026/increase-in-income-ceilings-and-greater-support-for-families-with-children/Annex-A.pdf> (checked 2026-10-29: Claude + Har)
+☐ Lower ceiling for 2-room Flexi / 3-room flats in some projects: not yet confirmed (Annex A table unclear).
+
 ## Transaction Costs
 
 ✅ `transactionCosts.buyerStampDutyTiers`: 1% first 180k; 2% next 180k; 3% next 640k; 4% next 500k; 5% next 1.5m; 6% remainder. Source: <https://www.mof.gov.sg/news-resources/newsroom/buyer-s-stamp-duty-bsd-rates-to-be-raised-for-higher-value-properties/> (effective 15 Feb 2023). (checked vs official source 2026-10-06: Claude + Har)
