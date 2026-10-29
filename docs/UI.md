@@ -10,6 +10,25 @@ screen is wrong, not the file — raise a PR to change the rule instead of impro
 
 ---
 
+## 0. Page roles (D35)
+
+Three pages, one question each. The user moves through them in this order: Plan → Results → Dashboard.
+
+| Page | Route | The question it answers | What lives here |
+|---|---|---|---|
+| Onboarding | `/plan` | "Tell us about your situation." | The 3-step stepper: household, Path A (BTO), Path B (resale). Submitting goes to Results. |
+| Results | `/results` | "Which path, and when?" | The verdict: break-even sentence, path cards (compact), heatmap, timing panel, why-the-gap panel, net position over time chart, save scenario. |
+| Dashboard | `/dashboard` | "What is this result made of, and what if my assumptions change?" | The detail: what-if sliders with the Resale Price Index history chart beside them, cost table, grants table with reasons and source links, size and price comparison, PHG map, MOP and EIP notes, how-the-net-position-adds-up chart. |
+
+Separate pages: Sources (`/sources`, always in the nav), My scenarios (`/scenarios`) and scenario compare
+(`/scenarios/compare`).
+
+- A new feature goes on the page whose question it answers. If it answers neither, raise it with the team before
+  building it.
+- Results links on to the Dashboard ("What's this made of?"); the Dashboard links back to Results.
+- The path cards are one component, `PathOutcomeCard`, with a `compact` prop: compact on Results, full on the
+  Dashboard, so the two can't drift (agreed in D35; not done yet).
+
 ## 1. Principles
 
 | # | Principle | Why | Do | Don't |
@@ -359,6 +378,14 @@ inline — never a single generic message covering several failed items at once.
 - Empty: an icon, one sentence explaining why it's empty, and — where relevant — a primary action to resolve
   it.
 - Error: states what went wrong and what to do next, in plain language, using the `$danger` alert style.
+
+### Illustrations
+
+- Decorative SVG only (`HeroScene` on the home page): fills use the brand palette through the CSS custom
+  properties, never hex values; one `role="img"` and `aria-label` on the whole scene, nothing focusable.
+- Ambient looping motion is allowed here as an exception to the §9 durations, using `transform` only. It
+  stops under `prefers-reduced-motion: reduce`, pauses when off-screen or in a background tab, and never
+  carries information. `data-cy="hero-scene"`.
 
 ### Navigation / top bar
 

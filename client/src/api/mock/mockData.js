@@ -41,7 +41,7 @@ export function mockCompare(payload = {}) {
     }),
   );
 
-  return {
+  const result = {
     mock: true,
     rulesetVersion: rulesetSnapshot.version,
     horizonYear,
@@ -136,7 +136,7 @@ export function mockCompare(payload = {}) {
             {
               id: 'PHG_LIVING_ARRANGEMENT',
               passed: true,
-              reason: 'MOCK: you said you\u2019ll live near your parents.',
+              reason: 'MOCK: you said you’ll live near your parents.',
               sourceUrl: sourceUrlFor('PHG_LIVING_ARRANGEMENT'),
             },
           ],
@@ -144,6 +144,100 @@ export function mockCompare(payload = {}) {
       ],
       clawbackCents: 0,
     }),
+  };
+
+  // D34: the real route adds gapBreakdown next to the outcomes (docs/API_CONTRACT.md "POST /api/compare").
+  result.gapBreakdown = mockGapBreakdown(result.outcomeA, result.outcomeB);
+  return result;
+}
+
+// MOCK: /api/compare gapBreakdown (D34). Same shape as explainGap() in the server: 11 lines in a fixed order,
+// signed so positive helps Path A, summing exactly to marginCents (= outcomeA minus outcomeB). The figures are
+// invented for the mock (loosely modelled on server/src/engine/fixtures/gap-breakdown.json); the last line is
+// worked out as the remainder, so the sum stays exact whatever the mock outcomes' net positions are.
+function mockGapBreakdown(outcomeA, outcomeB) {
+  const marginCents = outcomeA.netPositionCents - outcomeB.netPositionCents;
+  const fixed = [
+    { id: 'MARKET_VALUE', label: 'MOCK: Flat value at the horizon', amountCents: 6_300_000 },
+    { id: 'LOAN_OWED', label: 'MOCK: Loan still owed', amountCents: 8_200_000 },
+    { id: 'CPF_PRINCIPAL', label: 'MOCK: CPF savings to pay back', amountCents: -9_000_000 },
+    { id: 'CPF_INTEREST', label: 'MOCK: CPF interest to pay back', amountCents: -1_200_000 },
+    { id: 'CLAWBACK', label: 'MOCK: Subsidy clawback', amountCents: 0 },
+    { id: 'RENT_WHILE_WAITING', label: 'MOCK: Rent while waiting for keys', amountCents: -2_850_000 },
+    { id: 'RENOVATION', label: 'MOCK: Renovation', amountCents: -1_000_000 },
+    { id: 'BSD', label: "MOCK: Buyer's stamp duty paid in cash", amountCents: 1_150_000 },
+    { id: 'LEGAL', label: 'MOCK: Legal fees paid in cash', amountCents: 0 },
+    { id: 'AGENT', label: "MOCK: Agent's fees", amountCents: 500_000 },
+  ];
+  const rest = marginCents - fixed.reduce((sum, line) => sum + line.amountCents, 0);
+  return {
+    horizonYear: outcomeA.horizonYear,
+    marginCents,
+    lines: [...fixed, { id: 'CASH_PURCHASE', label: 'MOCK: Other cash paid for the flat', amountCents: rest }],
+    totalGrants: { aCents: outcomeA.totalGrantsCents, bCents: outcomeB.totalGrantsCents },
+  };
+}
+
+// MOCK: /api/timing — builds an Outcome per candidate year via mockOutcome(), the same helper
+// mockCompare() uses, so the timing panel can be built before the real search exists.
+// CONTRACT v2: see docs/API_CONTRACT.md "POST /api/timing".
+export function mockTiming(payload = {}) {
+  const assumptions = payload.assumptions ?? {};
+  const choiceBase = payload.choiceBase ?? { path: 'BTO' };
+  const isResale = choiceBase.path === 'RESALE';
+  const evaluationStartYear = assumptions.evaluationStartYear ?? 2026;
+  const thisYear = new Date().getFullYear();
+  const candidateYears = payload.candidateYears
+    ?? [thisYear, thisYear + 1, thisYear + 2, thisYear + 3, thisYear + 4, thisYear + 5];
+  const moveInByYear = payload.profile?.constraints?.moveInByYear;
+
+  const horizonYear = assumptions.horizonYear
+    ?? keysYearFor({ ...choiceBase, applicationYear: candidateYears[candidateYears.length - 1] }, evaluationStartYear) + 10;
+
+  const all = [];
+  const skipped = [];
+
+  candidateYears.forEach((year, i) => {
+    const choice = { ...choiceBase, applicationYear: year };
+    const keysYear = keysYearFor(choice, evaluationStartYear);
+
+    if (moveInByYear && keysYear > moveInByYear) {
+      skipped.push({ year, reason: 'MOVE_IN_DEADLINE_MISSED' });
+      return;
+    }
+
+    const outcome = mockOutcome({
+      choice,
+      evaluationStartYear,
+      horizonYear,
+      netPositionCents: 15_000_000 + i * 700_000, // MOCK: arbitrary upward trend across candidate years
+      cpfRefundPrincipalCents: isResale ? 21_000_000 : 14_000_000,
+      cpfAccruedInterestCents: isResale ? 5_200_000 : 3_800_000,
+      grants: [],
+      clawbackCents: 0,
+    });
+
+    all.push({ year, outcome });
+  });
+
+  const best = all.length
+    ? all.reduce((top, row) => (row.outcome.netPositionCents > top.outcome.netPositionCents ? row : top))
+    : null;
+
+  return {
+    mock: true,
+    rulesetVersion: rulesetSnapshot.version,
+    horizonYear,
+    best,
+    all,
+    skipped,
+    explanation: [
+      'MOCK: net financial position improves the later you apply, under these assumptions.',
+      ...(skipped.length ? [`MOCK: ${skipped.length} candidate year(s) skipped (move-in deadline).`] : []),
+    ],
+    btoProject: null, // MOCK: fill in once seat 3's BTO project lookup is wired for a single choice
+    assumptions,
+    resolved: null, // MOCK: fill in once a single-choice resolved-lookup exists (compare() has resolvedA/B)
   };
 }
 

@@ -8,6 +8,7 @@ import { loadRuleset } from '../engine/rules/loadRuleset.js';
 import { computeAccruedInterest } from '../engine/cpf/accruedInterest.js';
 import { computeBuyerStampDuty } from '../engine/costs/transactionCosts.js';
 import { evaluate } from '../engine/index.js';
+import { explainGap } from '../engine/explainGap.js';
 import { solveBreakEven } from '../engine/solvers/breakEven.js';
 import { optimiseTiming } from '../engine/solvers/timingOptimiser.js';
 import { getResalePriceBasis } from '../services/datagov/resalePrice.js';
@@ -15,6 +16,7 @@ import {
   validateProfile, resolveChoice, resolveAssumptions, InputError, DataUnavailableError,
   PRICE_GROWTH_STEPS, INCOME_GROWTH_STEPS, MAX_YEARS_AHEAD, stepsCovering,
 } from '../services/engineInputs.js';
+import { warningMessagesFor } from '../services/warningMessages.js';
 
 const router = Router();
 
@@ -187,6 +189,10 @@ router.post('/compare', async (req, res, next) => {
       frontier: surface.frontier,
       outcomeA,
       outcomeB,
+      // Why one path ends ahead, line by line (D34). Both outcomes share one horizon, so this never throws.
+      gapBreakdown: explainGap(outcomeA, outcomeB),
+      // Plain-English text for the warning codes in either outcome.
+      warningMessages: warningMessagesFor([...outcomeA.warnings, ...outcomeB.warnings]),
       btoProjectA: a.btoProject,
       btoProjectB: b.btoProject,
       assumptions: engineAssumptions, // with the server's defaults filled in (D17, D22)
@@ -257,6 +263,11 @@ const timing = async (req, res, next) => {
       all: result.all,
       skipped: result.skipped,
       explanation: timingExplanation(result, { horizonYear: engineAssumptions.horizonYear }),
+      // Plain-English text for the warning codes in any ranked year, and for the skip reasons.
+      warningMessages: warningMessagesFor([
+        ...result.all.flatMap((e) => e.outcome.warnings),
+        ...result.skipped.map((s) => s.reason),
+      ]),
       btoProject: base.btoProject,
       assumptions: engineAssumptions,
       resolved: base.resolved,

@@ -77,6 +77,8 @@ npm run test:e2e                                  # terminal 2  (or npm run cy:o
 | `scenarios.cy.js` | save, list, open and delete a scenario (needs a database) |
 | `scenario-compare.cy.js` | side-by-side compare page (mock scenarios) |
 | `responsive.cy.js` | every page at 375 / 768 / 1280 px with no sideways scrolling |
+| `sources.cy.js` | ruleset version and badge, expand/collapse all, safe https source links, assumptions and datasets |
+
 
 Specs marked "needs a database" register real users: run them locally only with the server's `MONGODB_URI` pointing at
 a **test** database. If Cypress fails to start with `bad option: --smoke-test`, run `Remove-Item Env:ELECTRON_RUN_AS_NODE`
