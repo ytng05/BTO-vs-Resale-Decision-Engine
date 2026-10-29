@@ -34,6 +34,12 @@ describe('smoke', () => {
     cy.get('[data-cy=disclaimer-banner]').should('be.visible');
   });
 
+  it('shows the hero scene on the home page, with residents placed on the ground line', () => {
+    cy.visit('/');
+    cy.get('[data-cy=hero-scene]').should('be.visible').and('have.attr', 'aria-label');
+    cy.get('[data-cy=hero-scene] #hs-cyclist').should('have.attr', 'transform').and('match', /^translate\(/);
+  });
+
   it('blocks the stepper until the current step is valid', () => {
     cy.visit('/plan');
     cy.get('[data-cy=plan-step-next]').click();

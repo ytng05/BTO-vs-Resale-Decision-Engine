@@ -185,6 +185,8 @@
     },
     "hdbLoanOaRetentionPerBuyer": 20000,
     "_hdbLoanOaRetentionPerBuyerNote": "Dollars. Each buyer taking an HDB loan may retain UP TO $20,000 of available OA savings (optional); the rest goes to the purchase. Per buyer, not per household.",
+    "hdbLoanIncomeCeiling": { "family": 16000 },
+    "_hdbLoanIncomeCeilingNote": "Dollars per month, household, families. For HFE letter applications from 24 Aug 2026 (was 14,000). Checked at the HFE letter application; HDB also reviews finances before disbursement and may reduce the loan.",
     "sources": [
       "https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/",
       "https://www.hdb.gov.sg/business/estate-agents-and-salespersons/letters-to-keos/Measures-to-Cool-the-HDB-Resale-Market-and-Provide-Greater-Support-for-First-time-Home-Buyers",
@@ -196,8 +198,15 @@
       "https://www.mas.gov.sg/regulation/explainers/tdsr-for-property-loans/calculating-tdsr",
       "https://www.mom.gov.sg/newsroom/press-releases/2019/0509-more-flexibility-to-buy-a-home-for-life",
       "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-resale-flats/plan-source-and-contract/mode-of-financing",
-      "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-new-flats/sign-agreement-for-lease"
+      "https://www.hdb.gov.sg/residential/buying-a-flat/buying-procedure-for-new-flats/sign-agreement-for-lease",
+      "https://www.mynicehome.gov.sg/get-started/hdb-loans-guide/",
+      "https://www.hdb.gov.sg/-/media/hdb-pulse/news/2026/increase-in-income-ceilings-and-greater-support-for-families-with-children/Annex-A.pdf"
     ]
+  },
+  "eligibility": {
+    "newFlatIncomeCeiling": { "family": 16000 },
+    "_newFlatIncomeCeilingNote": "Dollars per month, household. Families buying a new HDB flat; same for Standard, Plus and Prime. For HFE letter applications from 24 Aug 2026 (was 14,000). Checked at the HFE letter application.",
+    "sources": ["https://www.hdb.gov.sg/-/media/hdb-pulse/news/2026/increase-in-income-ceilings-and-greater-support-for-families-with-children/Annex-A.pdf"]
   },
   "transactionCosts": {
     "buyerStampDutyTiers": [
