@@ -8,7 +8,7 @@ export const WARNING_MESSAGES = Object.freeze({
   [WARNINGS.BTO_WAIT_ASSUMED]:
     "We don't have this project's waiting time, so the usual BTO wait from the ruleset is assumed. Your key date may differ.",
   [WARNINGS.LEASE_BELOW_95_PRORATION]:
-    "The flat's remaining lease ends before the youngest buyer turns 95, so the maximum HDB loan is reduced. CPF use is also limited for such flats, which this version does not model, so the cash needed may be higher than shown.",
+    "The flat's remaining lease ends before the youngest buyer turns 95, so both the maximum HDB loan and the CPF you can use for the flat are reduced. Whatever CPF can't cover is paid from the loan or in cash.",
   [WARNINGS.LOAN_ABOVE_LIMIT]:
     'The loan this flat needs is above your maximum loan. The difference is paid from your CPF and cash at purchase.',
   [WARNINGS.CLASSIFICATION_CLAWBACK_ESTIMATED]:
