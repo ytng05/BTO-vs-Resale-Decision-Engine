@@ -379,6 +379,14 @@ inline — never a single generic message covering several failed items at once.
   it.
 - Error: states what went wrong and what to do next, in plain language, using the `$danger` alert style.
 
+### Illustrations
+
+- Decorative SVG only (`HeroScene` on the home page): fills use the brand palette through the CSS custom
+  properties, never hex values; one `role="img"` and `aria-label` on the whole scene, nothing focusable.
+- Ambient looping motion is allowed here as an exception to the §9 durations, using `transform` only. It
+  stops under `prefers-reduced-motion: reduce`, pauses when off-screen or in a background tab, and never
+  carries information. `data-cy="hero-scene"`.
+
 ### Navigation / top bar
 
 - Sticky top bar, `$bg-page` or translucent blur variant, `$border-subtle` bottom border on scroll only.

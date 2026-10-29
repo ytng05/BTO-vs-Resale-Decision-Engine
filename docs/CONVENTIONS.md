@@ -11,7 +11,7 @@ Rename one only in the same PR that updates the specs. `{n}` = buyer 1/2, `{pref
 | Screen | Selectors |
 |---|---|
 | Navbar | `nav-bar`, `nav-brand-home`, `nav-plan-link`, `nav-sources-link`, `nav-login-link`, `nav-scenarios-link`, `nav-account-toggle`, `nav-logout-button`, `nav-toggler-toggle` |
-| Home | `home-title`, `home-start-button`, `ruleset-badge`, `disclaimer-banner` |
+| Home | `home-title`, `home-start-button`, `ruleset-badge`, `disclaimer-banner`, `hero-scene` |
 | Stepper / plan | `stepper`, `stepper-step-{i}`, `stepper-mobile-label`, `stepper-mobile-track`, `plan-form`, `plan-step-{1-3}-panel`, `plan-step-next`, `plan-step-back`, `plan-step-errors` |
 | Situation | `situation-form`, `situation-buyer-{n}`, `situation-buyer-{n}-age-input`, `-citizenship-select`, `-first-timer-switch`, `-income-input`, `-cpf-input`, `situation-applicants-error`, `situation-cash-savings-input`, `situation-price-growth-input`, `situation-income-growth-input`, `situation-horizon-year-input`, `situation-move-in-by-input`, `situation-rent-input`, `situation-buyer-{n}-age-error`, `situation-buyer-{n}-citizenship-error`, `situation-buyer-{n}-income-error`, `situation-buyer-{n}-cpf-error` |
 | Path A / B | `{prefix}-form`, `{prefix}-year-input`, `{prefix}-town-select`, `{prefix}-flat-type-select`, `{prefix}-classification-select`, `{prefix}-living-select`, `{prefix}-lease-band-select`, `{prefix}-renovation-input`, `{prefix}-project-section`, `{prefix}-project-select`, `{prefix}-project-error`, `{prefix}-price-section`, `{prefix}-price-slider`, `{prefix}-price-value` |
