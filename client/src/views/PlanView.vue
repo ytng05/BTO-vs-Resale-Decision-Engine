@@ -269,8 +269,14 @@ function back() {
 @media (min-width: 768px) {
   .estate.plan-scene { min-height: auto; aspect-ratio: 1240 / 860; }
 }
-/* Phones crop the scene's sides, which would cut the bubbles off: hide them, keep the scene. */
-@media (max-width: 767px) {
+/* Below 1280px the card covers some of the bubbles, or the scene's edges cut them off (measured at 768–1279px):
+   hide them, keep the scene and its animation. */
+@media (max-width: 1279.98px) {
   .plan-scene :deep(.es-bubble) { display: none; }
+}
+/* Step 3 on phones: the scene shrinks so far that its bubble text would render at 6–9px. The keys year is also
+   in the summary card beside it. */
+@media (max-width: 575.98px) {
+  .side-step__art :deep(.bs-bubble) { display: none; }
 }
 </style>
