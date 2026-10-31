@@ -139,13 +139,13 @@ border as well. Never ship a card with neither a shadow nor a colour step.
 
 ### 2.7 Semantic colours
 
-Unchanged from 1.1; measured again on the Calm backgrounds:
+`$success` and `$warning` darkened slightly for the Calm backgrounds so text passes AA everywhere (#82 review); the rest unchanged from 1.1:
 
 | Token | Hex | Use | Text on Mist | Text on its own fill |
 |---|---|---|---|---|
-| `$success` | `#2E7D5B` | Positive status, success badges | 4.51 — PASS | 4.26 (on `#E3F0E9`) |
+| `$success` | `#2C7756` | Positive status, success badges | 4.88 — PASS | 4.61 — PASS (on `#E3F0E9`) |
 | `$success-fill` | `#E3F0E9` | Success banner background | — | — |
-| `$warning` | `#9A6B1F` | Caution status, "not yet verified" badges | 4.21 | 4.14 (on `#FBF0DD`) |
+| `$warning` | `#8E621D` | Caution status, "not yet verified" badges | 4.84 — PASS | 4.75 — PASS (on `#FBF0DD`) |
 | `$warning-fill` | `#FBF0DD` | Warning banner background | — | — |
 | `$danger` | `#B3372C` | Errors, failed validation, destructive actions | 5.41 — PASS | 5.00 (on `#FAE6E3`) — PASS |
 | `$danger-fill` | `#FAE6E3` | Error banner background | — | — |
@@ -154,8 +154,7 @@ Unchanged from 1.1; measured again on the Calm backgrounds:
 
 **Rule:** semantic colours are reserved for status communication only (validation, alerts, badges). Never use
 `$danger` for a merely "important" button, and never use `$success` decoratively. Success and warning text
-on their own fills, and warning text on Mist, sit **below 4.5:1**, so keep that text at 14px and weight 600 or
-larger, and always pair the colour with a word (see Open questions).
+pass 4.5:1 on Mist, white, periwinkle and their own fills; still pair the colour with a word, never colour alone.
 
 ### 2.8 Dark mode (optional, not required for this project)
 
@@ -517,9 +516,7 @@ requirement.
 
 ## Open questions for the team
 
-1. **Success and warning text sits just under 4.5:1** on its own fill (success 4.26, warning 4.14) and warning
-   text on Mist is 4.21 (§2.7). The Calm handoff keeps it at 14px semibold or larger and always with a word.
-   That is below AA for normal text, so confirm the team accepts it, or darken `$success` and `$warning`.
+1. ~~Success and warning text under 4.5:1~~ **Resolved (#82 review):** `$success` `#2C7756` and `$warning` `#8E621D` pass AA on Mist, white, periwinkle and their own fills.
 2. **Semantic colours (§2.7) were not specified by the team and are proposed here** — confirm they read
    correctly to everyone (colour-blindness varies person to person) before they're used for anything safety-
    or correctness-critical, such as a failed-eligibility banner.
