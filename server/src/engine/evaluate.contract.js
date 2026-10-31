@@ -84,6 +84,9 @@ const RULESET_KEYS = Object.freeze({
   // Flat rules
   MOP_YEARS: 'classifications',               // classifications.<STANDARD|PLUS|PRIME>.mopYears
   BTO_DEFAULT_WAIT_MONTHS: 'btoWaiting.defaultMonths', // 48, an assumption: fallback when no project or town wait applies
+  // D36: household income ceilings, dollars a month, checked at the HFE letter application (seat 2, #78)
+  NEW_FLAT_INCOME_CEILING: 'eligibility.newFlatIncomeCeiling.family', // to buy a new (BTO) flat
+  HDB_LOAN_INCOME_CEILING: 'loans.hdbLoanIncomeCeiling.family',      // to take an HDB loan, either path
   // btoWaiting.shorterWaitingTimeThresholdMonths (36) is read by the UI only, to label SWT projects.
   // notes.eip = { text, sourceUrl } is shown by the UI only; the engine doesn't read it.
   // grants.checkSources = { <test id>: <url> } is read by seat 2's grants.js to fill EligibilityTest.sourceUrl.
@@ -340,7 +343,12 @@ const WARNINGS = Object.freeze({
   HDB_RATE_UNRESOLVED: 'HDB_RATE_UNRESOLVED',
   LEASE_BELOW_95_PRORATION: 'LEASE_BELOW_95_PRORATION',   // lease doesn't cover the youngest buyer to 95:
                                                            // CPF use and the HDB loan LTV are pro-rated
-  INCOME_CEILING_BREACHED_AT_PURCHASE: 'INCOME_CEILING_BREACHED_AT_PURCHASE',
+  INCOME_CEILING_BREACHED_AT_PURCHASE: 'INCOME_CEILING_BREACHED_AT_PURCHASE', // D36, BTO only: household income
+                                                           // projected to the application year is above
+                                                           // NEW_FLAT_INCOME_CEILING, so this flat can't be bought
+  HDB_LOAN_INCOME_CEILING_BREACHED: 'HDB_LOAN_INCOME_CEILING_BREACHED', // D36, either path: projected income is above
+                                                           // HDB_LOAN_INCOME_CEILING; the outcome still assumes an
+                                                           // HDB loan (bank loans not modelled, D32)
   CLASSIFICATION_CLAWBACK_ESTIMATED: 'CLASSIFICATION_CLAWBACK_ESTIMATED',
   CASH_SHORTFALL_AT_PURCHASE: 'CASH_SHORTFALL_AT_PURCHASE', // cashRequiredAtPurchaseCents > cashSavingsCents (D19)
   LOAN_ABOVE_LIMIT: 'LOAN_ABOVE_LIMIT',                     // loan needed > affordability.maxLoanCents
