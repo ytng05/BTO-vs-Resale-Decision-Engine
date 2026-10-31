@@ -70,24 +70,37 @@ onBeforeUnmount(() => clearTimeout(timer));
 
 <template>
   <div data-cy="situation-form">
-    <!-- Buyers -->
-    <p class="text-secondary mb-3" data-cy="situation-intro">
-      Have your CPF statement handy, or estimate. You can change these later.
-    </p>
-    <h3 class="h6 mt-2">Buyers</h3>
-    <p class="text-secondary small mb-2">Two buyers buying together; at least one must be a Singapore Citizen.</p>
+    <!-- Buyers. The step's intro (two buyers, at least one a citizen; CPF statement handy) sits in PlanView's banner. -->
     <p v-if="err('applicants')" class="text-danger small" role="alert" data-cy="situation-applicants-error">{{ err('applicants') }}</p>
 
+    <!-- The two buyers one above the other, each in its own box: on wide screens a single row per buyer. -->
+    <div class="row g-2 mb-3">
     <div
       v-for="(a, i) in applicants"
       :key="a.id ?? i"
-      class="border rounded p-3 mb-3"
-      :data-cy="`situation-buyer-${i + 1}`"
+      class="col-12"
     >
-      <p class="fw-semibold mb-2">Buyer {{ i + 1 }}</p>
+    <div class="buyer border rounded p-3 h-100" :data-cy="`situation-buyer-${i + 1}`">
+      <div class="buyer__head">
+        <p class="fw-semibold mb-0 buyer__name">Buyer {{ i + 1 }}</p>
+        <div class="form-check form-switch mb-0">
+          <input
+            :id="`buyer-${i}-first-timer`"
+            v-model="a.firstTimer"
+            type="checkbox"
+            role="switch"
+            class="form-check-input"
+            :data-cy="`situation-buyer-${i + 1}-first-timer-switch`"
+          />
+          <label :for="`buyer-${i}-first-timer`" class="form-check-label" title="Has never taken an HDB housing subsidy">
+            First-timer <span class="buyer__hint text-secondary">(never taken an HDB housing subsidy)</span>
+          </label>
+        </div>
+      </div>
 
-      <div class="row g-3">
-        <div class="col-12 col-sm-6">
+      <!-- Age, citizenship, income and CPF beside the name on wide screens (buyer__fields), two by two below. -->
+      <div class="row g-2 buyer__fields">
+        <div class="col-6 buyer__field">
           <label :for="`buyer-${i}-age`" class="form-label">Age</label>
           <input
             :id="`buyer-${i}-age`"
@@ -106,7 +119,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 
         </div>
 
-        <div class="col-12 col-sm-6">
+        <div class="col-6 buyer__field">
           <label :for="`buyer-${i}-citizenship`" class="form-label">Citizenship</label>
           <select
             :id="`buyer-${i}-citizenship`"
@@ -122,7 +135,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 
         </div>
 
-        <div class="col-12 col-sm-6">
+        <div class="col-6 buyer__field">
           <label :for="`buyer-${i}-income`" class="form-label">Monthly income</label>
           <div class="input-group has-validation">
             <span class="input-group-text">$</span>
@@ -143,7 +156,7 @@ onBeforeUnmount(() => clearTimeout(timer));
           </div>
         </div>
 
-        <div class="col-12 col-sm-6">
+        <div class="col-6 buyer__field">
           <label :for="`buyer-${i}-cpf`" class="form-label">CPF OA balance</label>
           <div class="input-group has-validation">
             <span class="input-group-text">$</span>
@@ -164,33 +177,19 @@ onBeforeUnmount(() => clearTimeout(timer));
           </div>
         </div>
 
-        <div class="col-12">
-          <div class="form-check form-switch">
-            <input
-              :id="`buyer-${i}-first-timer`"
-              v-model="a.firstTimer"
-              type="checkbox"
-              role="switch"
-              class="form-check-input"
-              :data-cy="`situation-buyer-${i + 1}-first-timer-switch`"
-            />
-            <label :for="`buyer-${i}-first-timer`" class="form-check-label">
-              First-timer (has never taken an HDB housing subsidy)
-            </label>
-          </div>
-        </div>
       </div>
+    </div>
+    </div>
     </div>
 
     <!-- Early estimate: the EHG at today's income (D38) -->
-    <div v-if="ehg" class="alert alert-info small mb-4" role="status" aria-live="polite" data-cy="situation-ehg-hint">
+    <div v-if="ehg" class="alert alert-info small py-2 mb-3" role="status" aria-live="polite" data-cy="situation-ehg-hint">
       <strong v-if="ehg.cents > 0">At today's income, you'd likely get up to {{ formatMoney(ehg.cents / 100) }} in Enhanced CPF Housing Grant.</strong>
       <strong v-else>At today's income, the Enhanced CPF Housing Grant likely doesn't apply.</strong>
       {{ ehg.reason }} We check all your grants again once you choose your flats.
     </div>
 
     <!-- Household -->
-    <h3 class="h6 mt-4">Household</h3>
     <div class="row g-3">
       <div class="col-12 col-md-6">
         <label for="cash-savings" class="form-label">Cash savings now</label>
@@ -234,3 +233,23 @@ onBeforeUnmount(() => clearTimeout(timer));
     </div>
   </div>
 </template>
+
+<style scoped>
+.buyer__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; margin-bottom: 8px; }
+/* From lg each buyer is one row: name and first-timer switch, then age, citizenship and the two money fields, which
+   get the most room. Below lg the name sits on top and the fields go two by two. */
+@media (min-width: 992px) {
+  .buyer { display: grid; grid-template-columns: 150px 64px minmax(190px, 1fr) 1.3fr 1.3fr; column-gap: 12px; align-items: end; }
+  .buyer__head { flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 4px; margin-bottom: 0; align-self: stretch; }
+  /* The hint would wrap the name column onto four lines: kept for screen readers, shown as the label's tooltip. */
+  .buyer__hint { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .buyer__head .form-check-label { white-space: nowrap; }
+  .buyer__fields { display: contents; }
+  .buyer__fields > .buyer__field { width: auto; padding-inline: 0; margin-top: 0; }
+  .buyer__fields .form-select { padding-left: 12px; padding-right: 32px; background-position: right 12px center; }
+  /* Only the two-digit age drops its spinner, which would cover the digits in its narrow box. */
+  .buyer__fields input[id$="-age"] { appearance: textfield; -moz-appearance: textfield; }
+  .buyer__fields input[id$="-age"]::-webkit-inner-spin-button,
+  .buyer__fields input[id$="-age"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+}
+</style>

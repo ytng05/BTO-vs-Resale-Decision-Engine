@@ -6,6 +6,10 @@
   Props (all optional, so it works as pure decoration first):
     buyers    1 or 2       – shows the second buyer and switches the bubble between "Just me" and "Two of us"
     moveBy    year or null – shows a "Keys by <year>" bubble when set
+    wide      true         – a short banner (1400 × 180): the skyline, hills, ground and road carry on to both edges,
+                             the view starts at the third floor, and the cloud, kite and keys bubble come down into
+                             it, the kite now flown by the waving buyer. Fills a full-width panel (PlanView's About
+                             you step); given a taller box (phones) it crops to the middle, the original scene.
 
   Usage, inside the left feature card on PlanView step 2:
     <AboutYouScene :buyers="store.profile.applicants.length" :move-by="2030" />
@@ -19,7 +23,14 @@ import { computed } from 'vue';
 const props = defineProps({
   buyers: { type: Number, default: 2 },
   moveBy: { type: [Number, String], default: null },
+  wide: { type: Boolean, default: false },
 });
+
+// The wide banner adds 420 units each side and starts the view at y 290; the sky items move down into it.
+const viewBox = computed(() => (props.wide ? '-420 290 1400 180' : '0 0 560 470'));
+const cloudAt = computed(() => (props.wide ? 'translate(0 272)' : null));
+const kiteAt = computed(() => (props.wide ? 'translate(70 225)' : null));
+const keysAt = computed(() => (props.wide ? 'translate(200 272)' : null));
 
 const household = computed(() => (props.buyers >= 2 ? 'Two of us' : 'Just me'));
 </script>
@@ -28,23 +39,25 @@ const household = computed(() => (props.buyers >= 2 ? 'Two of us' : 'Just me'));
   <svg
     class="about-scene"
     data-cy="about-you-scene"
-    viewBox="0 0 560 470"
+    :viewBox="viewBox"
+    :preserveAspectRatio="wide ? 'xMidYMax slice' : null"
     role="img"
     :aria-label="`${household === 'Two of us' ? 'Two buyers stand together' : 'A buyer stands'} outside an HDB block, waving. Laundry flaps on bamboo poles, a kite flies and two children play on a see-saw.`"
   >
     <!-- sky and skyline -->
-    <g class="ay-cloud"><rect class="ay-white" x="0" y="40" width="86" height="24" rx="12"/><rect class="ay-white" x="20" y="28" width="44" height="26" rx="13"/></g>
+    <g :transform="cloudAt"><g class="ay-cloud"><rect class="ay-white" x="0" y="40" width="86" height="24" rx="12"/><rect class="ay-white" x="20" y="28" width="44" height="26" rx="13"/></g></g>
     <g class="ay-slate" opacity=".07"><rect x="10" y="200" width="50" height="210"/><rect x="60" y="240" width="40" height="170"/><rect x="170" y="170" width="60" height="240"/><rect x="300" y="190" width="50" height="220"/><rect x="350" y="230" width="70" height="180"/><rect x="470" y="180" width="50" height="230"/><rect x="520" y="230" width="40" height="180"/></g>
     <g class="ay-white" opacity=".45"><rect x="35" y="200" width="25" height="210"/><rect x="200" y="170" width="30" height="240"/><rect x="325" y="190" width="25" height="220"/><rect x="495" y="180" width="25" height="230"/></g>
 
     <!-- kite -->
-    <line class="ay-line-slate" x1="330" y1="98" x2="438" y2="212" stroke-opacity=".5" stroke-width="1"/>
-    <g class="ay-kite">
+    <line v-if="wide" class="ay-line-slate" x1="400" y1="323" x2="270" y2="365" stroke-opacity=".5" stroke-width="1"/>
+    <line v-else class="ay-line-slate" x1="330" y1="98" x2="438" y2="212" stroke-opacity=".5" stroke-width="1"/>
+    <g :transform="kiteAt"><g class="ay-kite">
       <path class="ay-pink" d="M330 70l18 28-18 28-18-28z"/>
       <path class="ay-line-white" stroke-width="1.5" d="M330 70v56M312 98h36"/>
       <path class="ay-line-slate" stroke-width="1.2" d="M330 126q-8 14 4 26t-2 30"/>
       <g class="ay-blush"><rect x="326" y="138" width="9" height="5" rx="2"/><rect x="329" y="158" width="9" height="5" rx="2"/></g>
-    </g>
+    </g></g>
 
     <!-- HDB blocks -->
     <rect class="ay-pink" x="26" y="228" width="128" height="10" rx="4"/>
@@ -70,16 +83,43 @@ const household = computed(() => (props.buyers >= 2 ? 'Two of us' : 'Just me'));
       <rect x="454" y="316" width="18" height="14" rx="3"/><rect class="ay-lit" style="animation-delay:-6s" x="488" y="316" width="18" height="14" rx="3"/><rect x="522" y="316" width="18" height="14" rx="3"/>
     </g>
 
+    <!-- wide banner only: the estate carries on to both edges, meeting the scene's own hills and ground at x 0 and 560 -->
+    <g v-if="wide">
+      <g class="ay-slate" opacity=".07"><rect x="-400" y="230" width="60" height="180"/><rect x="-300" y="190" width="50" height="220"/><rect x="-170" y="250" width="70" height="160"/><rect x="-80" y="210" width="50" height="200"/><rect x="600" y="220" width="60" height="190"/><rect x="700" y="180" width="50" height="230"/><rect x="820" y="240" width="70" height="170"/><rect x="920" y="200" width="50" height="210"/></g>
+      <g class="ay-white" opacity=".45"><rect x="-275" y="190" width="25" height="220"/><rect x="-55" y="210" width="25" height="200"/><rect x="725" y="180" width="25" height="230"/><rect x="945" y="200" width="25" height="210"/></g>
+      <rect class="ay-pink" x="-250" y="262" width="110" height="10" rx="4"/>
+      <rect class="ay-white" x="-245" y="270" width="100" height="146" rx="8"/>
+      <g class="ay-peri"><rect x="-232" y="286" width="16" height="12" rx="3"/><rect class="ay-lit" style="animation-delay:-4s" x="-203" y="286" width="16" height="12" rx="3"/><rect x="-174" y="286" width="16" height="12" rx="3"/><rect x="-232" y="314" width="16" height="12" rx="3"/><rect x="-203" y="314" width="16" height="12" rx="3"/><rect class="ay-lit" style="animation-delay:-9s" x="-174" y="314" width="16" height="12" rx="3"/><rect class="ay-lit" style="animation-delay:-2s" x="-232" y="342" width="16" height="12" rx="3"/><rect x="-203" y="342" width="16" height="12" rx="3"/><rect x="-174" y="342" width="16" height="12" rx="3"/></g>
+      <rect class="ay-pinkdeep" x="736" y="240" width="110" height="10" rx="4"/>
+      <rect class="ay-white" x="741" y="248" width="100" height="168" rx="8"/>
+      <g class="ay-peri"><rect x="754" y="264" width="16" height="12" rx="3"/><rect x="783" y="264" width="16" height="12" rx="3"/><rect class="ay-lit" style="animation-delay:-6s" x="812" y="264" width="16" height="12" rx="3"/><rect class="ay-lit" style="animation-delay:-1s" x="754" y="292" width="16" height="12" rx="3"/><rect x="783" y="292" width="16" height="12" rx="3"/><rect x="812" y="292" width="16" height="12" rx="3"/><rect x="754" y="320" width="16" height="12" rx="3"/><rect class="ay-lit" style="animation-delay:-8s" x="783" y="320" width="16" height="12" rx="3"/><rect x="812" y="320" width="16" height="12" rx="3"/><rect x="754" y="348" width="16" height="12" rx="3"/><rect x="783" y="348" width="16" height="12" rx="3"/><rect x="812" y="348" width="16" height="12" rx="3"/></g>
+      <!-- hills and ground drawn in one piece across the banner (the scene's own curves in the middle), replacing the
+           scene's hills and ground below so there is no join to show -->
+      <path class="ay-blush" d="M-420 372Q-200 340 0 382Q140 342 280 368T560 358Q760 336 980 368V470H-420Z"/>
+      <path class="ay-pink" opacity=".45" d="M-420 404Q-200 388 0 410Q200 382 380 402T560 398Q780 386 980 404V470H-420Z"/>
+      <circle class="ay-pink" cx="-80" cy="362" r="18"/><circle class="ay-blush" cx="-85" cy="357" r="6"/>
+      <path class="ay-line-slate" stroke-width="2" d="M-80 414V362M-80 384l-9-9M-80 374l7-8"/>
+      <circle class="ay-pink" cx="660" cy="356" r="20"/><circle class="ay-blush" cx="654" cy="350" r="7"/>
+      <path class="ay-line-slate" stroke-width="2" d="M660 414V356M660 378l-10-10M660 368l8-9"/>
+      <path class="ay-white" d="M-420 424Q-200 412 0 420Q280 404 560 418Q780 410 980 422V470H-420Z"/>
+      <rect class="ay-border" x="-420" y="448" width="1400" height="22"/>
+      <line class="ay-line-white" x1="-420" y1="459" x2="980" y2="459" stroke-width="2.5" stroke-dasharray="22 16"/>
+    </g>
+
     <!-- hills, trees, ground, road -->
-    <path class="ay-blush" d="M0 382Q140 342 280 368T560 358V470H0Z"/>
-    <path class="ay-pink" opacity=".45" d="M0 410Q200 382 380 402T560 398V470H0Z"/>
+    <template v-if="!wide">
+      <path class="ay-blush" d="M0 382Q140 342 280 368T560 358V470H0Z"/>
+      <path class="ay-pink" opacity=".45" d="M0 410Q200 382 380 402T560 398V470H0Z"/>
+    </template>
     <circle class="ay-pink" cx="182" cy="358" r="20"/><circle class="ay-blush" cx="176" cy="352" r="7"/>
     <path class="ay-line-slate" stroke-width="2" d="M182 410V358M182 380l-10-10M182 370l8-9"/>
     <circle class="ay-pink" cx="410" cy="364" r="16"/><circle class="ay-blush" cx="405" cy="359" r="6"/>
     <path class="ay-line-slate" stroke-width="2" d="M410 412V364M410 384l-8-8M410 376l7-8"/>
-    <path class="ay-white" d="M0 420Q280 404 560 418V470H0Z"/>
-    <rect class="ay-border" x="0" y="448" width="560" height="22"/>
-    <line class="ay-line-white" x1="0" y1="459" x2="560" y2="459" stroke-width="2.5" stroke-dasharray="22 16"/>
+    <template v-if="!wide">
+      <path class="ay-white" d="M0 420Q280 404 560 418V470H0Z"/>
+      <rect class="ay-border" x="0" y="448" width="560" height="22"/>
+      <line class="ay-line-white" x1="0" y1="459" x2="560" y2="459" stroke-width="2.5" stroke-dasharray="22 16"/>
+    </template>
 
     <!-- bubbles -->
     <g class="ay-bob">
@@ -87,11 +127,11 @@ const household = computed(() => (props.buyers >= 2 ? 'Two of us' : 'Just me'));
       <rect class="ay-white" x="220" y="294" width="96" height="36" rx="18"/><path class="ay-white" d="M264 328l6 12 8-12z"/>
       <text class="ay-text" x="268" y="317">{{ household }}</text>
     </g>
-    <g v-if="moveBy" class="ay-bob" style="animation-delay:-1.4s">
+    <g v-if="moveBy" :transform="keysAt"><g class="ay-bob" style="animation-delay:-1.4s">
       <rect class="ay-slate" opacity=".06" x="380" y="31" width="150" height="36" rx="18"/>
       <rect class="ay-white" x="380" y="28" width="150" height="36" rx="18"/><path class="ay-white" d="M412 62l-4 12 14-12z"/>
       <text class="ay-text" x="455" y="51">Keys by {{ moveBy }}</text>
-    </g>
+    </g></g>
 
     <!-- buyers -->
     <g transform="translate(252 422) scale(1.3)">
