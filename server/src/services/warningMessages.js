@@ -8,7 +8,7 @@ export const WARNING_MESSAGES = Object.freeze({
   [WARNINGS.BTO_WAIT_ASSUMED]:
     "We don't have this project's waiting time, so the usual BTO wait from the ruleset is assumed. Your key date may differ.",
   [WARNINGS.LEASE_BELOW_95_PRORATION]:
-    "The flat's remaining lease ends before the youngest buyer turns 95, so the maximum HDB loan is reduced. CPF use is also limited for such flats, which this version does not model, so the cash needed may be higher than shown.",
+    "The flat's remaining lease ends before the youngest buyer turns 95, so both the maximum HDB loan and the CPF you can use for the flat are reduced. Whatever CPF can't cover is paid from the loan or in cash.",
   [WARNINGS.LOAN_ABOVE_LIMIT]:
     'The loan this flat needs is above your maximum loan. The difference is paid from your CPF and cash at purchase.',
   [WARNINGS.CLASSIFICATION_CLAWBACK_ESTIMATED]:
@@ -20,7 +20,9 @@ export const WARNING_MESSAGES = Object.freeze({
   [WARNINGS.HDB_RATE_UNRESOLVED]:
     'The HDB loan interest rate is not confirmed in the ruleset, so a default rate is used.',
   [WARNINGS.INCOME_CEILING_BREACHED_AT_PURCHASE]:
-    'Your projected household income at purchase is above the income ceiling for this flat.',
+    'Your household income, projected to the year you apply, is above the income ceiling for a new HDB flat, so you could not buy this BTO flat that year.',
+  [WARNINGS.HDB_LOAN_INCOME_CEILING_BREACHED]:
+    'Your household income, projected to the year you apply, is above the ceiling for an HDB loan. You would need a bank loan, which this version does not model, so these figures still assume an HDB loan.',
 });
 
 /** { code: text } for each distinct warning code given, in first-seen order. Unknown codes are left out. */

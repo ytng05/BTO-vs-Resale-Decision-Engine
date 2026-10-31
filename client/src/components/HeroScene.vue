@@ -221,17 +221,17 @@ onBeforeUnmount(() => cleanup());
 
 <style scoped>
   .hero-scene { display:block; width:100%; height:auto; }
-  .hs-sky    { fill:var(--color-sky); }
-  .hs-venus  { fill:var(--color-venus); }
-  .hs-uni    { fill:var(--color-universe); }
-  .hs-planet { fill:var(--color-planetary); }
-  .hs-galaxy { fill:var(--color-galaxy); }
-  .hs-white  { fill:var(--bg-surface-raised); }
-  .hs-page   { fill:var(--bg-page); }
-  .hs-ink    { stroke:var(--color-galaxy); fill:none; stroke-linecap:round; stroke-linejoin:round; }
-  .hs-blue   { stroke:var(--color-planetary); fill:none; stroke-linecap:round; stroke-linejoin:round; }
-  .hs-win-back  { fill:var(--color-venus); }
-  .hs-win-front { fill:var(--color-universe); }
+  .hs-sky    { fill:var(--color-white, #ffffff); stroke:var(--color-ink, #1d1d24); stroke-width:1.5; }
+  .hs-venus  { fill:var(--color-periwinkle, #e9ecf6); }
+  .hs-uni    { fill:var(--color-pink, #f5a3c7); }
+  .hs-planet { fill:var(--color-blush, #fbd5e5); }
+  .hs-galaxy { fill:var(--color-ink, #1d1d24); }
+  .hs-white  { fill:var(--color-white, #ffffff); }
+  .hs-page   { fill:var(--bg-page, #f3f3f5); }
+  .hs-ink    { stroke:var(--color-ink, #1d1d24); fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .hs-blue   { stroke:var(--color-pink, #f5a3c7); fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .hs-win-back  { fill:var(--color-periwinkle, #e9ecf6); }
+  .hs-win-front { fill:var(--color-pink, #f5a3c7); }
 
   /* limbs and wheels animate in CSS; positions along the ground are set by the script */
   .hs-anim { transform-box:fill-box; }
