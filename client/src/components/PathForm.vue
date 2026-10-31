@@ -34,7 +34,7 @@ const err = (key) => props.errors[key];
 // '4 ROOM' -> '4-room', 'PLUS' -> 'plus': stable data-cy suffixes.
 const slug = (v) => String(v).toLowerCase().replace(/\s+/g, '-');
 
-// "A bit more space" picked in step 1: suggest a 5-room rather than a 4-room.
+// "More space" picked in step 1: suggest a 5-room rather than a 4-room.
 const preferredFlatType = computed(() => (store.wishes.includes('space') ? '5 ROOM' : '4 ROOM'));
 
 // ---- BTO: towns, flat types and classifications from the seeded launches ----

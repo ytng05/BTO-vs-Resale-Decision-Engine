@@ -5,14 +5,14 @@
 import { useScenarioStore, WISHES } from '../stores/scenario.js';
 
 const store = useScenarioStore();
+const picked = (key) => store.wishes.includes(key);
 </script>
 
 <template>
   <div data-cy="wishes-form">
-    <p class="text-secondary mb-3">Pick any that matter to you. We'll only ask about the things you pick.</p>
     <fieldset>
       <legend class="visually-hidden">What matters most in your next home</legend>
-      <div class="chip-group">
+      <div class="chip-group chip-group--center">
         <label v-for="w in WISHES" :key="w.key" class="chip" :data-cy="`wish-${w.key}`">
           <input
             v-model="store.wishes"
@@ -21,10 +21,25 @@ const store = useScenarioStore();
             :value="w.key"
             :data-cy="`wish-${w.key}-input`"
           />
-          <span class="chip__face">{{ w.label }}</span>
+          <span class="chip__face">
+            <!-- Lucide "check" -->
+            <svg
+              v-if="picked(w.key)"
+              class="chip__icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+            {{ w.label }}
+          </span>
         </label>
       </div>
     </fieldset>
-    <p class="small text-secondary mt-3 mb-0">None of these is required. Choose Next to skip.</p>
   </div>
 </template>

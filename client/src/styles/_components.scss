@@ -750,3 +750,19 @@ a:focus-visible,
 
 // ---- Wide centred primary button -------------------------------------------------------
 .btn-wide { display: block; width: 100%; max-width: 26rem; margin-inline: auto; min-height: 54px; }
+
+// ---- Primary button's leading disc (Button README: a 32–34px accent disc holding an ink arrow) ----
+// <button class="btn btn-primary btn-disc"><span class="btn-disc__disc"><svg>…</svg></span>Next</button>
+.btn-disc { display: inline-flex; align-items: center; gap: $space-3; padding-left: $space-2; }
+.btn-disc__disc {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: $accent-fill-1;
+  color: $primary;
+
+  svg { width: 16px; height: 16px; }
+}

@@ -17,9 +17,10 @@ export const STEPS = ['What matters most', 'About you', 'Your BTO', 'Resale flat
 export const WISHES = [
   { key: 'parents', label: 'Near my parents' },
   { key: 'moveby', label: 'Moving in by a date' },
-  { key: 'space', label: 'A bit more space' },
-  { key: 'monthly', label: 'Low monthly payments' },
-  { key: 'value', label: 'Holds its value' },
+  { key: 'monthly', label: 'A low monthly loan' },
+  { key: 'cash', label: 'Keeping cash in hand' },
+  { key: 'space', label: 'More space' },
+  { key: 'value', label: 'Good resale value' },
 ];
 
 const nextYear = () => new Date().getFullYear() + 1;
