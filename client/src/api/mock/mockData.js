@@ -148,7 +148,20 @@ export function mockCompare(payload = {}) {
 
   // D34: the real route adds gapBreakdown next to the outcomes (docs/API_CONTRACT.md "POST /api/compare").
   result.gapBreakdown = mockGapBreakdown(result.outcomeA, result.outcomeB);
+  // ...and warningMessages, a sentence for each warning code that occurs.
+  result.warningMessages = mockWarningMessages([...result.outcomeA.warnings, ...result.outcomeB.warnings]);
   return result;
+}
+
+// MOCK: /api/compare warningMessages. Wording copied from server/src/services/warningMessages.js, only for the
+// codes the mock outcomes raise; add a line here if a mock outcome gains another code.
+const MOCK_WARNING_MESSAGES = {
+  BTO_WAIT_ASSUMED:
+    "We don't have this project's waiting time, so the usual BTO wait from the ruleset is assumed. Your key date may differ.",
+};
+
+function mockWarningMessages(codes) {
+  return Object.fromEntries(codes.filter((c) => MOCK_WARNING_MESSAGES[c]).map((c) => [c, MOCK_WARNING_MESSAGES[c]]));
 }
 
 // MOCK: /api/compare gapBreakdown (D34). Same shape as explainGap() in the server: 11 lines in a fixed order,
