@@ -203,7 +203,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   const youngestAtPurchase = Math.min(...projected.map((p) => p.age));
   const yearsShort = Math.max(0, usageRule.leaseMustCoverYoungestToAge - (youngestAtPurchase + choice.remainingLeaseYears));
   const factorPercent = Math.max(0, 100 - usageRule.leaseProRating.percentPerYearShort * yearsShort);
-  let cpfCapLeftCents = yearsShort > 0 ? Math.floor((priceCents * factorPercent) / 100) : Infinity;
+  let cpfCapLeftCents = yearsShort > 0 ? Math.floor((valuationLimitCents * factorPercent) / 100) : Infinity;
 
   const loanRate = hdbConcessionaryRate; // HDB loans only (D32)
 

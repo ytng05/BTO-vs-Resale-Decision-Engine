@@ -101,3 +101,20 @@ test("Below the median, stamp duty is on the valuation (the higher figure, D20/D
   assert.equal(bsd(belowMedian), bsd(atMedian));
   assert.ok(bsd(overpaid) > bsd(atMedian), 'above the median, stamp duty is on the higher price paid');
 });
+
+test("D37 with COV: a short lease's CPF cap is a share of the valuation, not of the price paid", () => {
+  // Seat 1's D37 case (cpf-usage-cap.json): a lease short of 95 for the youngest, where own OA + grants use the
+  // whole cap. Bought S$70,000 above its valuation, the cap (factor x Valuation Limit) must not grow with the price.
+  const c = JSON.parse(readFileSync(new URL('../../src/engine/fixtures/cpf-usage-cap.json', import.meta.url), 'utf8')).case;
+  const profile = {
+    ...E1.profile,
+    applicants: E1.profile.applicants.map((a, i) => ({ ...a, age: c.agesToday[i], cpfOaBalanceCents: c.cpfOaBalanceCentsEach })),
+  };
+  const choice = { ...E1.choice, purchasePriceCents: c.purchasePriceCents, marketValueAtKeysCents: c.purchasePriceCents, remainingLeaseYears: c.remainingLeaseYears };
+  const assumptions = { ...E1.assumptions, horizonYear: c.horizonYear };
+  const atValuation = evaluate(profile, choice, assumptions, ruleset);
+  const above = evaluate(profile, { ...choice, purchasePriceCents: c.purchasePriceCents + OVERPAY_CENTS }, assumptions, ruleset);
+  assert.equal(above.cpfRefundPrincipalCents, atValuation.cpfRefundPrincipalCents); // the same cap, used in full
+  assert.equal(above.loanPrincipalCents, atValuation.loanPrincipalCents);
+});
+
