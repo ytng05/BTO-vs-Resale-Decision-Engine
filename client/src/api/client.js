@@ -102,6 +102,32 @@ export async function grants(payload) {
   return (await http.post('/grants', payload)).data;
 }
 
+// Onboarding's early EHG estimate (D38): the household as typed so far, applying for a BTO flat this year.
+// The flat isn't chosen yet, so it uses the BTO choice so far (4-room Standard if blank); the EHG doesn't
+// depend on the town. An estimate only: Results checks the grants again with the real choices.
+export async function ehgEstimate(store) {
+  const a = store.choiceA;
+  return grants({
+    profile: {
+      applicants: store.profile.applicants.map((p) => ({
+        age: p.age,
+        citizenship: p.citizenship,
+        firstTimer: p.firstTimer,
+        monthlyIncomeCents: toCents(p.monthlyIncome),
+        cpfOaBalanceCents: toCents(p.cpfOaBalance ?? 0),
+      })),
+      cashSavingsCents: toCents(store.profile.cashSavings ?? 0),
+    },
+    choice: withoutUnset({
+      path: 'BTO',
+      applicationYear: new Date().getFullYear(),
+      town: a.town,
+      flatType: a.flatType ?? '4 ROOM',
+      classification: a.classification ?? 'STANDARD',
+    }),
+  });
+}
+
 // Converts the store's shape into the /api/timing TimingRequest (contract "POST /api/timing").
 // choiceKey picks which stored choice ('choiceA' | 'choiceB') to search timing for — its
 // applicationYear is ignored server-side since candidateYears sweeps that instead.
