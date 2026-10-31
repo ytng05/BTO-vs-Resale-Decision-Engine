@@ -60,7 +60,8 @@ function checkOption(errors, key, value, options, label) {
   }
 }
 
-export function validateSituation(profile, assumptions, { currentYear = new Date().getFullYear() } = {}) {
+// Step "About you": the two buyers, cash savings and the optional move-in year.
+export function validateBuyers(profile, { currentYear = new Date().getFullYear() } = {}) {
   const errors = {};
   const applicants = profile?.applicants ?? [];
 
@@ -95,6 +96,13 @@ export function validateSituation(profile, assumptions, { currentYear = new Date
     required: false,
     rangeMessage: `Enter a year from ${currentYear} to ${currentYear + 30}, or leave it blank.`,
   });
+
+  return errors;
+}
+
+// The assumptions: defaults in onboarding (D38), changed on the Dashboard.
+export function validateAssumptions(assumptions, { currentYear = new Date().getFullYear() } = {}) {
+  const errors = {};
 
   // Growth rates are stored as decimals (0.03 = 3%).
   checkNumber(errors, 'annualPriceGrowth', assumptions?.annualPriceGrowth, {
@@ -133,6 +141,11 @@ export function validateSituation(profile, assumptions, { currentYear = new Date
   });
 
   return errors;
+}
+
+// The buyers and the assumptions together (the old single "Situation" step).
+export function validateSituation(profile, assumptions, options = {}) {
+  return { ...validateBuyers(profile, options), ...validateAssumptions(assumptions, options) };
 }
 
 export function validateChoice(choice, { currentYear = new Date().getFullYear(), btoPriceRange } = {}) {
@@ -182,12 +195,32 @@ export function validateChoice(choice, { currentYear = new Date().getFullYear(),
   return errors;
 }
 
-// Errors for whichever step the stepper is on. Step 3 (Results) has no inputs.
+// Errors for whichever step the stepper is on (STEPS in the store, D38). Step 0 (what matters most) is
+// optional and step 4 (Results) has no inputs.
 export function validateStep(step, store, options = {}) {
-  if (step === 0) return validateSituation(store.profile, store.assumptions, options);
-  if (step === 1) return validateChoice(store.choiceA, options);
-  if (step === 2) return validateChoice(store.choiceB, options);
+  if (step === 1) return validateBuyers(store.profile, options);
+  if (step === 2) return validateChoice(store.choiceA, options);
+  if (step === 3) return validateChoice(store.choiceB, options);
   return {};
+}
+
+// Every input the comparison needs, whichever step asks for it (or the default that stands in for it).
+export function validatePlan(store, options = {}) {
+  return {
+    ...validateBuyers(store.profile, options),
+    ...validateAssumptions(store.assumptions, options),
+    ...prefixed('choiceA', validateChoice(store.choiceA, options)),
+    ...prefixed('choiceB', validateChoice(store.choiceB, options)),
+  };
+}
+
+// True when the plan can be compared: Results and the Dashboard check this before calling the server.
+export function isPlanComplete(store, options = {}) {
+  return Object.keys(validatePlan(store, options)).length === 0;
+}
+
+function prefixed(prefix, errors) {
+  return Object.fromEntries(Object.entries(errors).map(([k, v]) => [`${prefix}.${k}`, v]));
 }
 
 function withArticle(noun) {

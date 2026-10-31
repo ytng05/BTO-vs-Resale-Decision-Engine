@@ -10,7 +10,7 @@ import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
-import { validateStep } from '../validation/planValidation.js';
+import { isPlanComplete } from '../validation/planValidation.js';
 
 const store = useScenarioStore();
 const result = ref(null);
@@ -18,10 +18,10 @@ const error = ref(null);
 const loading = ref(false);
 
 // Someone who opens /results directly (or reloads) has no real inputs yet: show an empty state instead
-// of asking the server to compare nothing. "Has inputs" = all three plan steps pass the same validation
-// the stepper enforces before it lets anyone reach /results. (Checking applicants.length is not enough:
-// the store's blank state already seeds one empty buyer.)
-const hasInputs = computed(() => [0, 1, 2].every((step) => Object.keys(validateStep(step, store)).length === 0));
+// of asking the server to compare nothing. "Has inputs" = every input the comparison needs passes the
+// same validation the stepper enforces, defaults included (isPlanComplete). (Checking applicants.length
+// is not enough: the store's blank state already seeds one empty buyer.)
+const hasInputs = computed(() => isPlanComplete(store));
 
 // Contract v2: Outcome.horizonYear is the authoritative value once results load (both paths share it,
 // D1). Before that, fall back to the user's own assumption so the empty/loading states can still size

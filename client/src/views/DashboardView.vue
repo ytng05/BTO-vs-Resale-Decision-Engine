@@ -9,7 +9,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
-import { validateStep } from '../validation/planValidation.js';
+import { isPlanComplete } from '../validation/planValidation.js';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
 import WhatIfPanel from '../components/dashboard/WhatIfPanel.vue';
@@ -22,7 +22,7 @@ const store = useScenarioStore();
 const thisYear = new Date().getFullYear();
 
 // Same rule the stepper uses before it lets anyone reach the results.
-const hasInputs = computed(() => [0, 1, 2].every((step) => Object.keys(validateStep(step, store)).length === 0));
+const hasInputs = computed(() => isPlanComplete(store));
 
 // The two paths may start in different years; the year slider moves both and keeps the gap.
 const yearGap = computed(() => (store.choiceB.applicationYear ?? 0) - (store.choiceA.applicationYear ?? 0));

@@ -1,6 +1,6 @@
 // Plan form validation (contract v2/v2.1 field names). Pure functions, no components mounted.
 import { describe, it, expect } from 'vitest';
-import { validateSituation, validateChoice, validateStep } from '../src/validation/planValidation.js';
+import { validateSituation, validateChoice, validateStep, isPlanComplete, validatePlan } from '../src/validation/planValidation.js';
 
 const YEAR = 2026;
 const buyer = (over = {}) => ({ age: 30, citizenship: 'SC', firstTimer: true, monthlyIncome: 5000, cpfOaBalance: 40000, ...over });
@@ -85,12 +85,34 @@ describe('validateChoice', () => {
   });
 });
 
-describe('validateStep', () => {
-  it('validates the step the stepper is on', () => {
+describe('validateStep (D38 steps)', () => {
+  it('validates the step the stepper is on: 0 what matters (optional), 1 about you, 2 BTO, 3 resale, 4 results', () => {
     const store = { profile: profile(), assumptions: assumptions(), choiceA: bto({ town: null }), choiceB: resale() };
     expect(validateStep(0, store, opts)).toEqual({});
-    expect(validateStep(1, store, opts).town).toMatch(/Choose a town/);
-    expect(validateStep(2, store, opts)).toEqual({});
+    expect(validateStep(1, store, opts)).toEqual({});
+    expect(validateStep(2, store, opts).town).toMatch(/Choose a town/);
     expect(validateStep(3, store, opts)).toEqual({});
+    expect(validateStep(4, store, opts)).toEqual({});
+  });
+
+  it('about you checks the buyers, cash and move-in year, not the assumptions (they have defaults)', () => {
+    const store = { profile: profile({ cashSavings: null }), assumptions: assumptions({ annualPriceGrowth: null }) };
+    const errors = validateStep(1, store, opts);
+    expect(errors.cashSavings).toMatch(/cash savings/);
+    expect(errors).not.toHaveProperty('annualPriceGrowth');
+  });
+});
+
+describe('isPlanComplete', () => {
+  const complete = () => ({ profile: profile(), assumptions: assumptions(), choiceA: bto(), choiceB: resale() });
+
+  it('is true when every input the comparison needs is valid', () => {
+    expect(isPlanComplete(complete(), opts)).toBe(true);
+  });
+
+  it('is false when any step, or an assumption that onboarding no longer asks, is invalid', () => {
+    expect(isPlanComplete({ ...complete(), choiceB: resale({ leaseBand: null }) }, opts)).toBe(false);
+    expect(isPlanComplete({ ...complete(), assumptions: assumptions({ annualIncomeGrowth: null }) }, opts)).toBe(false);
+    expect(validatePlan({ ...complete(), choiceA: bto({ town: null }) }, opts)).toHaveProperty(['choiceA.town']);
   });
 });

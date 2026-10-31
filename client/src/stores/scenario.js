@@ -9,10 +9,24 @@ import { blankApplicant } from '../constants/planOptions.js';
 // Money is kept in DOLLARS here; the API client converts to …Cents when sending (D14). Fields the
 // SERVER resolves and the client never sends (purchasePriceCents, marketValueAtKeysCents,
 // remainingLeaseYears, evaluationStartYear) are deliberately absent from this shape.
-export const STEPS = ['Situation', 'Path A', 'Path B', 'Results'];
+// Onboarding steps (D38). Step 0's choices decide which optional questions appear later.
+export const STEPS = ['What matters most', 'About you', 'Your BTO', 'Resale flat', 'Results'];
+
+// Step 0 choices. UI only: never sent to the API or saved; the two that map to engine inputs show
+// their question later (parents → living arrangement, moveby → move-in year); space → a size up.
+export const WISHES = [
+  { key: 'parents', label: 'Near my parents' },
+  { key: 'moveby', label: 'Moving in by a date' },
+  { key: 'space', label: 'A bit more space' },
+  { key: 'monthly', label: 'Low monthly payments' },
+  { key: 'value', label: 'Holds its value' },
+];
+
+const nextYear = () => new Date().getFullYear() + 1;
 
 const blank = () => ({
   step: 0,
+  wishes: [],               // keys from WISHES; UI only (not sent, not saved)
 
   profile: {
     // One buyer to start; the form can add a second. blankApplicant() lives in
@@ -26,7 +40,7 @@ const blank = () => ({
 
   choiceA: {
     path: 'BTO',
-    applicationYear: null,
+    applicationYear: nextYear(), // not asked in onboarding (D38); the Dashboard's year slider changes it
     town: null,              // TODO (seat 3): BTO towns should come from seeded BTO projects,
                               // not the resale TOWNS list — Tengah etc. currently unselectable
     flatType: null,          // '3 ROOM' | '4 ROOM' | '5 ROOM' only (D27) — see planOptions.js fix below
@@ -43,7 +57,7 @@ const blank = () => ({
 
   choiceB: {
     path: 'RESALE',
-    applicationYear: null,
+    applicationYear: nextYear(), // not asked in onboarding (D38)
     town: null,
     flatType: null,          // '3 ROOM' | '4 ROOM' | '5 ROOM' only (D27)
     livingArrangement: 'NONE', // 'WITH' | 'NEAR' | 'NONE' — resale only (D15), for PHG
@@ -55,8 +69,8 @@ const blank = () => ({
   assumptions: {
     // Stored as FRACTIONS per the contract (0.03 = 3%). The form shows "3" with a % add-on
     // and converts to/from 0.03 — that conversion is the form's job, not the store's.
-    annualPriceGrowth: null,
-    annualIncomeGrowth: null,
+    annualPriceGrowth: 0.03, // defaults (D38): changed on the Dashboard, not asked in onboarding
+    annualIncomeGrowth: 0.02,
     horizonYear: null,       // optional; null = later key year + 10 (server default)
     monthlyHousingCostWhileWaiting: 0, // dollars; rent until keys, BOTH paths; default 0 (D1) — defaulting
                               // to 0 favours BTO, the UI must show this prominently with a sourced rental guide
@@ -122,6 +136,11 @@ export const useScenarioStore = defineStore('scenario', {
         choiceA: { ...fresh.choiceA, ...saved.choiceA },
         choiceB: { ...fresh.choiceB, ...saved.choiceB },
         assumptions: { ...fresh.assumptions, ...saved.assumptions },
+        // Show the optional questions this scenario answered, so they stay editable.
+        wishes: [
+          ...(saved.choiceB?.livingArrangement && saved.choiceB.livingArrangement !== 'NONE' ? ['parents'] : []),
+          ...(saved.profile?.constraints?.moveInByYear ? ['moveby'] : []),
+        ],
       });
     },
   },

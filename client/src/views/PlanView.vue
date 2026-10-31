@@ -5,6 +5,7 @@ import { useScenarioStore, STEPS } from '../stores/scenario.js';
 import AppStepper from '../components/AppStepper.vue';
 import SituationForm from '../components/SituationForm.vue';
 import PathForm from '../components/PathForm.vue';
+import WishesForm from '../components/WishesForm.vue';
 import { validateStep } from '../validation/planValidation.js';
 
 const store = useScenarioStore();
@@ -58,9 +59,10 @@ function back() {
           Some details need fixing before you continue.
         </div>
 
-        <SituationForm v-if="store.step === 0" :errors="shownErrors" />
-        <PathForm v-else-if="store.step === 1" key="choiceA" choice-key="choiceA" :errors="shownErrors" />
-        <PathForm v-else-if="store.step === 2" key="choiceB" choice-key="choiceB" :errors="shownErrors" />
+        <WishesForm v-if="store.step === 0" />
+        <SituationForm v-else-if="store.step === 1" :errors="shownErrors" />
+        <PathForm v-else-if="store.step === 2" key="choiceA" choice-key="choiceA" :errors="shownErrors" />
+        <PathForm v-else-if="store.step === 3" key="choiceB" choice-key="choiceB" :errors="shownErrors" />
       </div>
     </form>
 
