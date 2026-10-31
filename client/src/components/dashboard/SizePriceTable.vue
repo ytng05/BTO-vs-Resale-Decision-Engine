@@ -7,7 +7,8 @@ import { btoColumn, pickBtoProject, resaleColumn, sizePriceRows } from '../../ut
 const props = defineProps({
   choiceA: { type: Object, required: true },
   choiceB: { type: Object, required: true },
-  // The compare result: btoProjectA says which project was priced, outcome*.purchasePriceCents the prices used.
+  // The compare result: btoProjectA says which project was priced, resolvedA/B.purchasePriceCents the prices used
+  // (today's; outcome*.purchasePriceCents is grown to the application year, D31).
   result: { type: Object, default: null },
 });
 
@@ -16,6 +17,17 @@ const resale = ref(null);
 const loading = ref(true);
 const failed = ref(false);
 
+// Sales in the user's lease band, as the comparison uses (the route takes leaseBand from #84 on; before that it
+// ignores it and answers for all leases). A band with no sales answers 404, so ask again for all leases.
+async function loadResale(b) {
+  try {
+    return await getResalePrice({ town: b.town, flatType: b.flatType, leaseBand: b.leaseBand });
+  } catch (err) {
+    if (!b.leaseBand) throw err;
+    return getResalePrice({ town: b.town, flatType: b.flatType });
+  }
+}
+
 async function load() {
   loading.value = true;
   failed.value = false;
@@ -23,7 +35,7 @@ async function load() {
   const b = props.choiceB;
   const [btoRes, resaleRes] = await Promise.allSettled([
     getBtoProjects({ town: a.town, flatType: a.flatType }),
-    getResalePrice({ town: b.town, flatType: b.flatType }),
+    loadResale(b),
   ]);
   btoProject.value = btoRes.status === 'fulfilled'
     ? pickBtoProject(btoRes.value.projects, props.result?.btoProjectA?.id ?? a.btoProjectId)
@@ -33,15 +45,14 @@ async function load() {
   loading.value = false;
 }
 
-
 onMounted(load);
 
-
 const rows = computed(() => sizePriceRows(
-  btoColumn(btoProject.value, props.result?.outcomeA?.purchasePriceCents),
-  resaleColumn(resale.value),
+  btoColumn(btoProject.value, props.result?.resolvedA?.purchasePriceCents),
+  resaleColumn(resale.value, props.result?.resolvedB?.purchasePriceCents),
 ));
 </script>
+
 
 <template>
   <p v-if="loading" class="text-secondary small mb-0" role="status" data-cy="dashboard-size-price-loading">Loading flat sizes and prices…</p>
@@ -67,9 +78,10 @@ const rows = computed(() => sizePriceRows(
       </tbody>
     </table>
     <p class="text-caption text-secondary mb-0">
-      BTO: the project's launch price range, and the price used in this comparison divided by the middle of its floor
-      area range. Resale: every sale of this flat type in the town over the last 12 months, all leases; the range is
-      the middle half of those sales, so the median can differ from the price used above (which follows your lease band).
+        Price is the one this comparison uses, at today's prices. Price per m² divides it by the middle of the BTO
+        project's floor area range, or by the median floor area of the resale sales. Resale sales are this flat type
+        in the town over the last 12 months ("Based on" says whether in your lease band or all leases); the range is
+        the middle half of them.
     </p>
   </template>
 </template>

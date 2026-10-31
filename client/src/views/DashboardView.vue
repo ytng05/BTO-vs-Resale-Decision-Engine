@@ -19,7 +19,6 @@ import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
 import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
 import SizePriceTable from '../components/dashboard/SizePriceTable.vue';
 
-
 const store = useScenarioStore();
 const thisYear = new Date().getFullYear();
 
@@ -152,7 +151,10 @@ const warnings = computed(() => [
   ...(A.value?.warnings ?? []).map((w) => ({ path: 'BTO', w })),
   ...(B.value?.warnings ?? []).map((w) => ({ path: 'Resale', w })),
 ]);
-const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ?? '');
+// A code becomes the server's plain-English sentence (`warningMessages`, docs/API_CONTRACT.md "POST /api/compare");
+// the bare code only if the server sent none for it.
+const warningText = (w) =>
+  typeof w === 'string' ? result.value?.warningMessages?.[w] ?? w : w?.message ?? w?.code ?? '';
 </script>
 
 <template>

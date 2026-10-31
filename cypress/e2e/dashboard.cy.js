@@ -38,6 +38,11 @@ describe('financial dashboard', () => {
     cy.get('[data-cy=dashboard-sources-link]').should('have.attr', 'href', '/sources');
   });
 
+  it('explains each warning in a sentence, not as a code', () => {
+    openDashboard();
+    cy.get('[data-cy=dashboard-warnings]').should('contain', 'usual BTO wait').and('not.contain', 'BTO_WAIT_ASSUMED');
+  });
+
   it('draws how the net position adds up, and lists the costs', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-cashflow] canvas').should('be.visible');
