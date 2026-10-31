@@ -332,7 +332,7 @@ function evaluatePHG(profile, choice, ruleset) {
   // The optional choice field records WITH, NEAR, or NONE; omitted arrangements default to NONE.
   const livingArrangement = choice.livingArrangement ?? 'NONE';
   if (livingArrangement === 'NONE') {
-    checks.push(eligibility('PHG', 'PHG: living arrangement', 'PHG_LIVING_ARRANGEMENT', true, 'You selected no qualifying arrangement to live with or near your parents or child, so no PHG is included.'));
+    checks.push(eligibility('PHG', 'PHG: living arrangement', 'PHG_LIVING_ARRANGEMENT', false, 'You selected no qualifying arrangement to live with or near your parents or child, so no PHG is included.'));
     return { amount: 0, checks };
   }
   const arrangementPassed = livingArrangement === 'WITH' || livingArrangement === 'NEAR';

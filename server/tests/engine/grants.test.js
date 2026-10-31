@@ -128,6 +128,23 @@ describe('evaluateGrants', () => {
     }));
   });
 
+  it('PHG_LIVING_ARRANGEMENT fails and PHG is 0 when the arrangement is NONE or missing', () => {
+    const { ruleset } = loadRuleset();
+    const base = { path: 'RESALE', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', remainingLeaseYears: 80 };
+
+    for (const choice of [{ ...base, livingArrangement: 'NONE' }, base]) {
+      const result = evaluateGrants(scFirstTimerProfile, choice, '2026-10-06', ruleset);
+
+      expect(result.phg).toBe(0);
+      expect(result.eligibility).toContainEqual(expect.objectContaining({
+        grantGroup: 'PHG',
+        id: 'PHG_LIVING_ARRANGEMENT',
+        passed: false,
+        reason: 'You selected no qualifying arrangement to live with or near your parents or child, so no PHG is included.',
+      }));
+    }
+  });
+
   it('resale with null or missing remaining lease skips lease checks without crashing', () => {
     const { ruleset } = loadRuleset();
     const base = { path: 'RESALE', applicationYear: 2026, town: 'TODO', flatType: '4 ROOM', livingArrangement: 'NONE' };
