@@ -6,6 +6,7 @@ import AppStepper from '../components/AppStepper.vue';
 import SituationForm from '../components/SituationForm.vue';
 import PathForm from '../components/PathForm.vue';
 import WishesForm from '../components/WishesForm.vue';
+import EstateScene from '../components/EstateScene.vue';
 import { validateStep } from '../validation/planValidation.js';
 
 const store = useScenarioStore();
@@ -43,7 +44,7 @@ function back() {
 </script>
 
 <template>
-  <section>
+  <EstateScene :wishes="store.wishes" :move-in-by-year="store.profile.constraints?.moveInByYear">
     <AppStepper :steps="STEPS" :current="store.step" />
 
     <form class="card mt-3" data-cy="plan-form" novalidate @submit.prevent="next">
@@ -80,5 +81,5 @@ function back() {
         {{ store.step === STEPS.length - 2 ? 'See results' : 'Next' }}
       </button>
     </div>
-  </section>
+  </EstateScene>
 </template>

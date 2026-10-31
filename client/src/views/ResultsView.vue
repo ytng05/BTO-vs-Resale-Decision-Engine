@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import GapBreakdownPanel from '../components/GapBreakdownPanel.vue';
@@ -13,6 +14,16 @@ import { formatMoney } from '../utils/format.js';
 import { isPlanComplete } from '../validation/planValidation.js';
 
 const store = useScenarioStore();
+const router = useRouter();
+
+// D38: the parents question is only asked if picked in step 1, so say when the Proximity Housing Grant
+// was left out, and offer a way back to it.
+const phgNotAsked = computed(() => store.choiceB.livingArrangement === 'NONE');
+function addParents() {
+  if (!store.wishes.includes('parents')) store.wishes.push('parents');
+  store.step = 3; // the resale step, where the parents question is
+  router.push('/plan');
+}
 const result = ref(null);
 const error = ref(null);
 const loading = ref(false);
@@ -112,6 +123,11 @@ onMounted(load);
       <!-- Lead with the single break-even sentence before any chart (UI.md §8). -->
       <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
       <p v-if="gapSentence" data-cy="results-gap-sentence">{{ gapSentence }}</p>
+      <p v-if="phgNotAsked" class="text-caption mb-2" data-cy="results-phg-note">
+        Not counted: the Proximity Housing Grant (up to S$30,000 on a resale flat). Living with or within 4 km of your
+        parents?
+        <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-cy="results-phg-add" @click="addParents">Add it</button>
+      </p>
       <p class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <span class="badge-version" data-cy="results-ruleset-version">Ruleset {{ result.rulesetVersion }}</span>
         <span class="text-caption">
