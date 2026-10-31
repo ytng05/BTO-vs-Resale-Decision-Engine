@@ -60,6 +60,7 @@ const RULESET_KEYS = Object.freeze({
   OA_RATE: 'cpf.oaInterestRate',
   ACCRUED_INTEREST_COMPOUNDING: 'cpf.accruedInterestCompounding', // 'ANNUAL' | 'MONTHLY' — see note below
   PARTIAL_MONTH_TREATMENT: 'cpf.partialMonthTreatment',           // 'EXCLUDE_BOTH' — see stub-period note
+  CPF_USAGE_LEASE_RULE: 'cpf.housingUsageLeaseRule', // D37: { leaseMustCoverYoungestToAge, leaseProRating: { percentPerYearShort } } (seat 2, #35, #42)
 
   // Loans and affordability
   HDB_RATE_PREMIUM: 'loans.hdbRatePremium',   // HDB concessionary rate = oaRate + this — see note below
