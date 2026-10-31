@@ -16,19 +16,26 @@
   illustration" board on the canvas.
 -->
 <script setup>
+import { computed } from 'vue';
+
 const props = defineProps({
   // Keys of the choices the user has ticked: parents, moveby, monthly, space, value.
   wishes: { type: Array, default: () => [] },
+  // The user's "must move in by" year, shown on the moveby bubble; without one it keeps its example text.
+  moveInByYear: { type: [Number, String], default: null },
 });
 
 // Bubble positions are in the SVG's 1240 × 860 coordinate space.
-const bubbles = [
+const baseBubbles = [
   { key: 'value',   label: 'Holds its value',       x: 40,   y: 52,  w: 150, tail: 'M150 92l14 14 2-14z',   delay: '0s' },
   { key: 'monthly', label: 'Under S$1,500 a month', x: 984,  y: 40,  w: 216, tail: 'M1020 80l-6 16 22-16z', delay: '-1.2s' },
   { key: 'parents', label: 'Near my parents',       x: 110,  y: 642, w: 160, tail: 'M228 682l12 16 4-16z',  delay: '-.6s' },
   { key: 'moveby',  label: 'Keys before 2030',      x: 660,  y: 682, w: 168, tail: 'M760 722l14 12-2-12z',  delay: '-2s' },
   { key: 'space',   label: 'A bit more space',      x: 1050, y: 628, w: 166, tail: 'M1110 668l-4 14 18-14z', delay: '-2.6s' },
 ];
+const bubbles = computed(() =>
+  baseBubbles.map((b) => (b.key === 'moveby' && props.moveInByYear ? { ...b, label: `Keys by ${props.moveInByYear}` } : b)),
+);
 
 const isOn = (key) => props.wishes.includes(key);
 </script>

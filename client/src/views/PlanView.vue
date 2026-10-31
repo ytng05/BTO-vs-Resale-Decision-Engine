@@ -44,7 +44,10 @@ function back() {
 </script>
 
 <template>
-  <EstateScene :wishes="store.wishes" class="plan-scene" :class="{ 'plan-scene--tall': store.step > 0 }">
+  <EstateScene
+    :wishes="store.wishes"
+    :move-in-by-year="store.profile.constraints?.moveInByYear"
+    class="plan-scene" :class="{ 'plan-scene--tall': store.step > 0 }">
     <AppStepper :steps="STEPS" :current="store.step" />
 
     <form class="card mt-3" data-cy="plan-form" novalidate @submit.prevent="next">
