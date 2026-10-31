@@ -44,7 +44,7 @@ function back() {
 </script>
 
 <template>
-  <EstateScene :wishes="store.wishes" :move-in-by-year="store.profile.constraints?.moveInByYear">
+  <EstateScene :wishes="store.wishes" class="plan-scene" :class="{ 'plan-scene--tall': store.step > 0 }">
     <AppStepper :steps="STEPS" :current="store.step" />
 
     <form class="card mt-3" data-cy="plan-form" novalidate @submit.prevent="next">
@@ -83,3 +83,20 @@ function back() {
     </div>
   </EstateScene>
 </template>
+
+<style scoped>
+/* How the estate scene fits the stepper; EstateScene.vue itself stays as designed. */
+@media (min-width: 768px) {
+  /* Step 1: the box keeps the scene's own 1240 × 860 shape, so no bubble is cut off at the sides. It still
+     grows if the content needs more room. */
+  .estate.plan-scene { min-height: auto; aspect-ratio: 1240 / 860; }
+  /* Later steps are taller than the scene: keep it at the top in its own shape instead of zooming it to the
+     form's height; the form continues on the periwinkle below. */
+  .estate.plan-scene--tall { aspect-ratio: auto; min-height: 0; padding-bottom: 48px; }
+  .estate.plan-scene--tall :deep(.estate__art) { inset: 0 0 auto 0; height: auto; aspect-ratio: 1240 / 860; }
+}
+/* Phones crop the scene's sides, which would cut the bubbles off: hide them, keep the scene. */
+@media (max-width: 767px) {
+  .plan-scene :deep(.es-bubble) { display: none; }
+}
+</style>

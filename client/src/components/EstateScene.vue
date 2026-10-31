@@ -2,8 +2,8 @@
   EstateScene.vue – full-bleed Singapore estate illustration that sits behind a card of content.
   Flat vector in the Calm palette: layered skyline, MRT train on the viaduct, HDB blocks with
   windows lighting up, a bus pulling up, residents walking, a cyclist and the void-deck cat.
-  Floating "wish" bubbles echo the user's onboarding choices: pass their keys in `wishes`
-  and the matching bubbles turn blush.
+  Floating white "wish" bubbles echo the onboarding choices. Each carries an `is-on` class
+  when its key is in `wishes`, as a hook only: bubbles stay white by design.
 
   Usage:
     <EstateScene :wishes="['parents', 'moveby']">
@@ -16,26 +16,19 @@
   illustration" board on the canvas.
 -->
 <script setup>
-import { computed } from 'vue';
-
 const props = defineProps({
   // Keys of the choices the user has ticked: parents, moveby, monthly, space, value.
   wishes: { type: Array, default: () => [] },
-  // The user's "must move in by" year, shown on the moveby bubble; without one it keeps its example text.
-  moveInByYear: { type: [Number, String], default: null },
 });
 
 // Bubble positions are in the SVG's 1240 × 860 coordinate space.
-const baseBubbles = [
+const bubbles = [
   { key: 'value',   label: 'Holds its value',       x: 40,   y: 52,  w: 150, tail: 'M150 92l14 14 2-14z',   delay: '0s' },
   { key: 'monthly', label: 'Under S$1,500 a month', x: 984,  y: 40,  w: 216, tail: 'M1020 80l-6 16 22-16z', delay: '-1.2s' },
   { key: 'parents', label: 'Near my parents',       x: 110,  y: 642, w: 160, tail: 'M228 682l12 16 4-16z',  delay: '-.6s' },
   { key: 'moveby',  label: 'Keys before 2030',      x: 660,  y: 682, w: 168, tail: 'M760 722l14 12-2-12z',  delay: '-2s' },
   { key: 'space',   label: 'A bit more space',      x: 1050, y: 628, w: 166, tail: 'M1110 668l-4 14 18-14z', delay: '-2.6s' },
 ];
-const bubbles = computed(() =>
-  baseBubbles.map((b) => (b.key === 'moveby' && props.moveInByYear ? { ...b, label: `Keys by ${props.moveInByYear}` } : b)),
-);
 
 const isOn = (key) => props.wishes.includes(key);
 </script>
@@ -62,7 +55,7 @@ const isOn = (key) => props.wishes.includes(key);
       <g class="es-slate" opacity=".12">
         <rect x="150" y="420" width="90" height="220"/><rect x="430" y="400" width="120" height="240"/><rect x="640" y="380" width="70" height="260"/><rect x="820" y="430" width="120" height="210"/><rect x="1090" y="410" width="90" height="230"/>
       </g>
-      <path class="es-line-white" stroke-opacity=".5" stroke-width="3" d="M150 450h90M150 480h90M150 510h90M430 430h120M430 460h120M430 490h120M820 460h120M820 490h120M820 520h120"/>
+      <path class="es-line-white" stroke-opacity=".5" stroke-width="2" d="M150 450h90M150 480h90M150 510h90M430 430h120M430 460h120M430 490h120M820 460h120M820 490h120M820 520h120"/>
 
       <!-- viaduct columns -->
       <g class="es-slate" opacity=".14"><rect x="230" y="168" width="26" height="472"/><rect x="630" y="168" width="26" height="472"/><rect x="1030" y="168" width="26" height="472"/></g>
@@ -93,7 +86,7 @@ const isOn = (key) => props.wishes.includes(key);
         <rect class="es-lit" style="animation-delay:-7s" x="76" y="494" width="18" height="14" rx="3"/><rect x="108" y="494" width="18" height="14" rx="3"/><rect x="140" y="494" width="18" height="14" rx="3"/><rect x="172" y="494" width="18" height="14" rx="3"/>
         <rect x="76" y="526" width="18" height="14" rx="3"/><rect x="108" y="526" width="18" height="14" rx="3"/><rect class="es-lit" style="animation-delay:-3s" x="140" y="526" width="18" height="14" rx="3"/><rect x="172" y="526" width="18" height="14" rx="3"/>
       </g>
-      <rect class="es-ink" x="1002" y="330" width="156" height="10" rx="4"/>
+      <rect class="es-pinkdeep" x="1002" y="330" width="156" height="10" rx="4"/>
       <rect class="es-white" x="1010" y="338" width="140" height="302" rx="8"/>
       <g class="es-peri">
         <rect x="1026" y="356" width="18" height="14" rx="3"/><rect class="es-lit" style="animation-delay:-5s" x="1058" y="356" width="18" height="14" rx="3"/><rect x="1090" y="356" width="18" height="14" rx="3"/><rect x="1122" y="356" width="18" height="14" rx="3"/>
@@ -110,63 +103,63 @@ const isOn = (key) => props.wishes.includes(key);
 
       <!-- trees -->
       <circle class="es-pink" cx="430" cy="664" r="24"/><circle class="es-blush" cx="422" cy="656" r="9"/>
-      <path class="es-line-ink" stroke-width="3" d="M430 724V664M430 692l-12-12M430 680l10-12"/>
+      <path class="es-line-ink" stroke-width="2" d="M430 724V664M430 692l-12-12M430 680l10-12"/>
       <circle class="es-pink" cx="508" cy="650" r="32"/><circle class="es-blush" cx="498" cy="640" r="12"/>
-      <path class="es-line-ink" stroke-width="3" d="M508 730V650M508 686l-16-16M508 672l14-16M492 670l-8-10"/>
+      <path class="es-line-ink" stroke-width="2" d="M508 730V650M508 686l-16-16M508 672l14-16M492 670l-8-10"/>
       <circle class="es-pink" cx="940" cy="668" r="22"/><circle class="es-blush" cx="933" cy="661" r="8"/>
-      <path class="es-line-ink" stroke-width="3" d="M940 726V668M940 694l-11-11M940 682l9-11"/>
+      <path class="es-line-ink" stroke-width="2" d="M940 726V668M940 694l-11-11M940 682l9-11"/>
 
       <!-- ground, footpath, road -->
       <path class="es-white" d="M0 762Q300 734 620 754T1240 746V860H0Z"/>
       <rect class="es-border" x="0" y="822" width="1240" height="38"/>
-      <line class="es-line-white" x1="0" y1="842" x2="1240" y2="842" stroke-width="3" stroke-dasharray="30 22"/>
+      <line class="es-line-white" x1="0" y1="842" x2="1240" y2="842" stroke-width="2" stroke-dasharray="30 22"/>
 
       <!-- covered walkway -->
-      <rect class="es-ink" x="620" y="736" width="300" height="8" rx="3"/>
-      <path class="es-line-ink" stroke-width="3" d="M636 744V800M716 744V800M796 744V800M876 744V800M904 744V800"/>
+      <rect class="es-pinkdeep" x="620" y="734" width="300" height="10" rx="4"/>
+      <path class="es-line-ink" stroke-width="2" d="M636 744V800M716 744V800M796 744V800M876 744V800M904 744V800"/>
 
       <!-- bus shelter with a waiting resident -->
-      <rect class="es-ink" x="1080" y="690" width="152" height="12" rx="4"/>
-      <path class="es-line-ink" stroke-width="4" d="M1092 702V800M1222 702V800"/>
+      <rect class="es-pinkdeep" x="1080" y="690" width="152" height="12" rx="4"/>
+      <path class="es-line-ink" stroke-width="2" d="M1092 702V800M1222 702V800"/>
       <rect class="es-blush" x="1152" y="704" width="64" height="72" rx="4"/>
       <path class="es-line-pink" stroke-width="2" d="M1152 722h64M1152 740h64M1152 758h64"/>
       <rect class="es-ink" x="1100" y="772" width="48" height="6" rx="3"/>
       <g transform="translate(1124 800)">
         <rect class="es-ink" x="-4" y="-16" width="3.5" height="16" rx="1.75"/><rect class="es-ink" x="1" y="-16" width="3.5" height="16" rx="1.75"/>
         <path class="es-pinkdeep es-outline" stroke-width="1" d="M-8 -14 -5 -33h10l3 19z"/>
-        <circle class="es-white es-outline" stroke-width="1.5" cx="0" cy="-40" r="7"/>
+        <circle class="es-white es-outline" stroke-width="1.2" cx="0" cy="-40" r="7"/>
         <circle class="es-ink" cx="-6" cy="-44" r="3.4"/>
       </g>
 
       <!-- cat -->
       <g transform="translate(990 800)">
-        <path class="es-line-ink es-tail" stroke-width="2.5" d="M7 -3q9-1 8-11"/>
+        <path class="es-line-ink es-tail" stroke-width="2" d="M7 -3q9-1 8-11"/>
         <path class="es-ink" d="M-6 0q-2-10 3-14l-1-6 3 3h3l2-3v7q5 4 4 13z"/>
       </g>
 
       <!-- strolling residents -->
       <g class="es-stroll">
         <g transform="translate(0 800)">
-          <line class="es-line-ink es-leg" stroke-width="3.5" x1="-2" y1="-16" x2="-2" y2="0"/>
-          <line class="es-line-ink es-leg es-leg--b" stroke-width="3.5" x1="2" y1="-16" x2="2" y2="0"/>
+          <line class="es-line-ink es-leg" stroke-width="2.6" x1="-2" y1="-16" x2="-2" y2="0"/>
+          <line class="es-line-ink es-leg es-leg--b" stroke-width="2.6" x1="2" y1="-16" x2="2" y2="0"/>
           <rect class="es-ink" x="-7" y="-34" width="14" height="20" rx="5"/>
-          <circle class="es-white es-outline" stroke-width="1.5" cx="0" cy="-41" r="7"/>
+          <circle class="es-white es-outline" stroke-width="1.2" cx="0" cy="-41" r="7"/>
           <path class="es-ink" d="M-7 -42a7 7 0 0 1 14 0z"/>
         </g>
         <g transform="translate(22 800)">
-          <line class="es-line-ink es-leg es-leg--b" stroke-width="3.5" x1="-2" y1="-14" x2="-2" y2="0"/>
-          <line class="es-line-ink es-leg" stroke-width="3.5" x1="2" y1="-14" x2="2" y2="0"/>
+          <line class="es-line-ink es-leg es-leg--b" stroke-width="2.6" x1="-2" y1="-14" x2="-2" y2="0"/>
+          <line class="es-line-ink es-leg" stroke-width="2.6" x1="2" y1="-14" x2="2" y2="0"/>
           <path class="es-pink es-outline" stroke-width="1" d="M-8 -14 -5 -33h10l3 19z"/>
-          <circle class="es-white es-outline" stroke-width="1.5" cx="0" cy="-40" r="7"/>
+          <circle class="es-white es-outline" stroke-width="1.2" cx="0" cy="-40" r="7"/>
           <circle class="es-ink" cx="-6" cy="-44" r="3.4"/>
         </g>
       </g>
       <g class="es-stroll es-stroll--late">
         <g transform="translate(0 800)">
-          <line class="es-line-ink es-leg" stroke-width="3.5" x1="-2" y1="-16" x2="-2" y2="0"/>
-          <line class="es-line-ink es-leg es-leg--b" stroke-width="3.5" x1="2" y1="-16" x2="2" y2="0"/>
+          <line class="es-line-ink es-leg" stroke-width="2.6" x1="-2" y1="-16" x2="-2" y2="0"/>
+          <line class="es-line-ink es-leg es-leg--b" stroke-width="2.6" x1="2" y1="-16" x2="2" y2="0"/>
           <rect class="es-blush es-outline" stroke-width="1" x="-7" y="-34" width="14" height="20" rx="5"/>
-          <circle class="es-white es-outline" stroke-width="1.5" cx="0" cy="-41" r="7"/>
+          <circle class="es-white es-outline" stroke-width="1.2" cx="0" cy="-41" r="7"/>
           <path class="es-ink" d="M-7 -42a7 7 0 0 1 14 0z"/>
         </g>
       </g>
@@ -174,13 +167,13 @@ const isOn = (key) => props.wishes.includes(key);
       <!-- cyclist -->
       <g class="es-ride">
         <g transform="translate(0 800)">
-          <g class="es-spin"><circle class="es-line-ink" stroke-width="2.5" cx="-14" cy="-10" r="10"/><path class="es-line-ink" stroke-width="1.2" d="M-24 -10h20M-14 -20v20"/></g>
-          <g class="es-spin"><circle class="es-line-ink" stroke-width="2.5" cx="16" cy="-10" r="10"/><path class="es-line-ink" stroke-width="1.2" d="M6 -10h20M16 -20v20"/></g>
+          <g class="es-spin"><circle class="es-line-ink" stroke-width="2" cx="-14" cy="-10" r="10"/><path class="es-line-ink" stroke-width="1.2" d="M-24 -10h20M-14 -20v20"/></g>
+          <g class="es-spin"><circle class="es-line-ink" stroke-width="2" cx="16" cy="-10" r="10"/><path class="es-line-ink" stroke-width="1.2" d="M6 -10h20M16 -20v20"/></g>
           <path class="es-line-pinkdeep" stroke-width="2.6" d="M-14 -10h12l10-13H-5zM-2 -10l-4-16M8 -23l8 13M8 -23l1-6"/>
-          <path class="es-line-ink" stroke-width="3.4" d="M-5 -27l7 10-3 8"/>
+          <path class="es-line-ink" stroke-width="2.6" d="M-5 -27l7 10-3 8"/>
           <path class="es-ink" d="M-8 -28l4-16 8 2-3 15z"/>
           <line class="es-line-ink" stroke-width="2.4" x1="2" y1="-40" x2="9" y2="-29"/>
-          <circle class="es-white es-outline" stroke-width="1.5" cx="2" cy="-49" r="6"/>
+          <circle class="es-white es-outline" stroke-width="1.2" cx="2" cy="-49" r="6"/>
           <path class="es-pink" d="M-4 -50a6 6 0 0 1 12 0l3 1H-4z"/>
         </g>
       </g>
@@ -192,9 +185,9 @@ const isOn = (key) => props.wishes.includes(key);
         <rect class="es-white" x="16" y="724" width="276" height="50" rx="6"/>
         <rect class="es-white" x="300" y="724" width="22" height="56" rx="6"/>
         <g class="es-pink"><rect x="84" y="724" width="6" height="50"/><rect x="154" y="724" width="6" height="50"/><rect x="224" y="724" width="6" height="50"/></g>
-        <rect class="es-ink" x="33" y="756" width="14" height="18" rx="5"/><circle class="es-white es-outline" stroke-width="1.5" cx="40" cy="748" r="7"/><path class="es-ink" d="M33 747a7 7 0 0 1 14 0z"/>
-        <rect class="es-blush es-outline" stroke-width="1" x="111" y="756" width="14" height="18" rx="5"/><circle class="es-white es-outline" stroke-width="1.5" cx="118" cy="748" r="7"/><circle class="es-ink" cx="112" cy="744" r="3.4"/>
-        <rect class="es-pinkdeep" x="255" y="756" width="14" height="18" rx="5"/><circle class="es-white es-outline" stroke-width="1.5" cx="262" cy="748" r="7"/><path class="es-ink" d="M255 747a7 7 0 0 1 14 0z"/>
+        <rect class="es-ink" x="33" y="756" width="14" height="18" rx="5"/><circle class="es-white es-outline" stroke-width="1.2" cx="40" cy="748" r="7"/><path class="es-ink" d="M33 747a7 7 0 0 1 14 0z"/>
+        <rect class="es-blush es-outline" stroke-width="1" x="111" y="756" width="14" height="18" rx="5"/><circle class="es-white es-outline" stroke-width="1.2" cx="118" cy="748" r="7"/><circle class="es-ink" cx="112" cy="744" r="3.4"/>
+        <rect class="es-pinkdeep" x="255" y="756" width="14" height="18" rx="5"/><circle class="es-white es-outline" stroke-width="1.2" cx="262" cy="748" r="7"/><path class="es-ink" d="M255 747a7 7 0 0 1 14 0z"/>
         <circle class="es-ink" cx="70" cy="820" r="18"/><circle class="es-border" cx="70" cy="820" r="7"/>
         <circle class="es-ink" cx="262" cy="820" r="18"/><circle class="es-border" cx="262" cy="820" r="7"/>
       </g>
@@ -240,12 +233,12 @@ const isOn = (key) => props.wishes.includes(key);
 .es-blush    { fill: var(--color-blush, #fbd5e5); }
 .es-pink     { fill: var(--color-pink, #f5a3c7); }
 .es-pinkdeep { fill: var(--color-pink-deep, #f08ab6); }
-.es-ink      { fill: var(--color-ink, #1d1d24); }
+.es-ink      { fill: var(--color-slate, #5f6373); }
 .es-slate    { fill: var(--color-slate, #5f6373); }
 .es-border   { fill: var(--border, #dfe2ea); }
-.es-outline  { stroke: var(--color-ink, #1d1d24); }
+.es-outline  { stroke: var(--color-slate, #5f6373); }
 .es-line-ink, .es-line-white, .es-line-slate, .es-line-pink, .es-line-pinkdeep { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.es-line-ink      { stroke: var(--color-ink, #1d1d24); }
+.es-line-ink      { stroke: var(--color-slate, #5f6373); }
 .es-line-white    { stroke: var(--color-white, #ffffff); stroke-linecap: butt; }
 .es-line-slate    { stroke: var(--color-slate, #5f6373); stroke-linecap: butt; }
 .es-line-pink     { stroke: var(--color-pink, #f5a3c7); }
@@ -253,8 +246,7 @@ const isOn = (key) => props.wishes.includes(key);
 
 /* wish bubbles */
 .es-bubble { animation: es-bob 3.2s ease-in-out infinite alternate; }
-.es-bubble__fill { fill: var(--color-white, #ffffff); transition: fill .25s; }
-.es-bubble.is-on .es-bubble__fill { fill: var(--color-blush, #fbd5e5); }
+.es-bubble__fill { fill: var(--color-white, #ffffff); }
 .es-bubble__text { font-family: var(--font-body, 'Plus Jakarta Sans', system-ui, sans-serif); font-size: 15px; font-weight: 500; fill: var(--color-ink, #1d1d24); text-anchor: middle; }
 
 /* motion */
@@ -280,19 +272,10 @@ const isOn = (key) => props.wishes.includes(key);
 
 @media (prefers-reduced-motion: reduce) {
   .es-bubble, .es-train, .es-bus, .es-ride, .es-stroll, .es-leg, .es-spin, .es-tail, .es-lit { animation: none; }
-  .es-bubble__fill { transition: none; }
   .es-bus { transform: translateX(36px); }
 }
 
 @media (max-width: 767px) {
   .estate { padding-top: 120px; min-height: 0; padding-bottom: 260px; }
-  /* Phones crop the scene's sides, so the bubbles would be cut off: hide them, keep the scene. */
-  .es-bubble { display: none; }
-}
-/* Wider screens: the scene keeps its own 1240 × 860 shape at the top instead of stretching to the content,
-   so a tall step never zooms or crops it; longer content continues on the periwinkle below. */
-@media (min-width: 768px) {
-  .estate { min-height: 0; padding-bottom: 48px; }
-  .estate__art { inset: 0 0 auto 0; height: auto; aspect-ratio: 1240 / 860; }
 }
 </style>
