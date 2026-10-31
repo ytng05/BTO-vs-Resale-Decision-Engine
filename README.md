@@ -111,5 +111,6 @@ The active ruleset is the dated `2026-08-24` snapshot. `ruleset.template.json` r
 ## Libraries and credits
 Vue, Pinia, Vue Router (MIT), Bootstrap (MIT), Chart.js (MIT), Axios (MIT), Express (MIT), Mongoose (MIT),
 jsonwebtoken (MIT), bcryptjs (MIT/BSD), dotenv (BSD-2), Vitest (MIT), Supertest (MIT), Cypress (MIT), concurrently (MIT), Vite (MIT), Sass (MIT).
+Font: Plus Jakarta Sans (SIL OFL 1.1, Google Fonts).
 Credit each library again in code comments where it is used, and in the presentation.
 Data: data.gov.sg (Singapore Open Data Licence). Confirm licence wording before submission.
