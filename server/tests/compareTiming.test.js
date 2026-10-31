@@ -114,6 +114,7 @@ describe('POST /api/compare', () => {
     const { resolvedB } = res.body;
     expect(resolvedB.purchasePriceCents).toBe(58000000); // median of the three 80-89 year sales
     expect(resolvedB.marketValueAtKeysCents).toBe(58000000);
+    expect(resolvedB.medianPriceCents).toBe(58000000); // no asking price: pays the median
     expect(resolvedB.remainingLeaseYears).toBe(80);
     expect(resolvedB.priceData.fellBackToAllLeases).toBe(false);
   });
@@ -178,6 +179,16 @@ describe('POST /api/compare', () => {
     expect(r.body.resolvedA.purchasePriceCents).toBe(50000000);
   });
 
+  it("resale asking price: pays the listing's price, but the flat is still worth the median", async () => {
+    const r = await compare(body({ choiceB: { ...resale, resalePriceCents: 65000000 } }));
+    expect(r.status).toBe(200);
+    expect(r.body.resolvedB.purchasePriceCents).toBe(65000000);
+    expect(r.body.resolvedB.medianPriceCents).toBe(58000000);
+    expect(r.body.resolvedB.marketValueAtKeysCents).toBe(58000000);
+    // Paying S$70,000 over the median leaves the resale path worse off than paying the median.
+    expect(r.body.outcomeB.netPositionCents).toBeLessThan(res.body.outcomeB.netPositionCents);
+  });
+
   it("a lease band with no sales falls back to the town's whole median and says so", async () => {
     const r = await compare(body({ choiceB: { ...resale, leaseBand: '70-79' } }));
     expect(r.status).toBe(200);
@@ -200,6 +211,9 @@ describe('POST /api/compare', () => {
     ['a price outside the range', { choiceA: { ...bto, btoPriceCents: 1 } }, /within/],
     ['the wrong classification', { choiceA: { ...bto, classification: 'PRIME' } }, /No recent BTO launch in TAMPINES offers PRIME 4 ROOM/],
     ['no lease band on resale', { choiceB: { ...resale, leaseBand: undefined } }, /leaseBand/],
+    ['a resale asking price of 0', { choiceB: { ...resale, resalePriceCents: 0 } }, /resalePriceCents/],
+    ['a resale asking price in dollars and cents', { choiceB: { ...resale, resalePriceCents: 650000.5 } }, /resalePriceCents/],
+    ['a negative resale asking price', { choiceB: { ...resale, resalePriceCents: -1 } }, /resalePriceCents/],
     ['an application year in the past', { choiceA: { ...bto, applicationYear: YEAR - 1 } }, /applicationYear/],
     ['growth as a percentage', { assumptions: { ...assumptions, annualPriceGrowth: 3 } }, /annualPriceGrowth/],
     ['a horizon before the BTO keys', { assumptions: { ...assumptions, horizonYear: YEAR } }, /before a path's keys/],
