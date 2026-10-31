@@ -87,7 +87,7 @@ export async function getBtoProjects(filters = {}) {
 
 // Resale price summary for a town + flat type (seat 3, GET /api/data/resale-price).
 export async function getResalePrice(params) {
-  if (USE_MOCK) return mockResalePrice();
+  if (USE_MOCK) return mockResalePrice(params);
   return (await http.get('/data/resale-price', { params })).data;
 }
 

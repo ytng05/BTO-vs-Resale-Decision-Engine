@@ -17,6 +17,8 @@ import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
 import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
 import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
+import SizePriceTable from '../components/dashboard/SizePriceTable.vue';
+
 
 const store = useScenarioStore();
 const thisYear = new Date().getFullYear();
@@ -283,6 +285,14 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
               <h2 id="costs-heading" class="h5">Costs up to {{ horizon }}</h2>
               <p class="text-secondary small">Rent while waiting, renovation, fees, loan interest and CPF interest, and how each is paid.</p>
               <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="size-price-heading">
+            <div class="card-body">
+              <h2 id="size-price-heading" class="h5">Size and price side by side</h2>
+              <p class="text-secondary small">How much flat each path gets for the money: floor area, price and price per square metre.</p>
+              <SizePriceTable :choice-a="store.choiceA" :choice-b="store.choiceB" :result="result" />
             </div>
           </section>
 
