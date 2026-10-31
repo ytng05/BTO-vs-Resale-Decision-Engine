@@ -227,7 +227,12 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     return 'CASH';
   };
 
-  const bsdCents = computeBuyerStampDuty(priceCents, ruleset);
+  // D39: resale stamp duty on the higher of price paid and HDB's valuation (IRAS; HDB acceptance page).
+  // BTO has no valuation step, so the price stands.
+  const bsdBaseCents = isBto
+    ? priceCents
+    : Math.max(priceCents, marketValueAtKeysCents ?? priceCents); // valuation grown to keys (D31), as used for COV
+  const bsdCents = computeBuyerStampDuty(bsdBaseCents, ruleset);
   // A path's own fees override the shared assumption: the route sets them per path, since resale and BTO
   // defaults differ, and the solvers pass one assumptions object to both paths (D17, D33).
   const legalCents = choice.legalFeesCents ?? assumptions.legalFeesCents ?? 0;

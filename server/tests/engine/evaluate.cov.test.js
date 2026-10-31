@@ -66,12 +66,26 @@ test("COV: the flat's worth is the same and the net position falls by at least t
   assert.ok(fall >= OVERPAY_CENTS);
 });
 
-test('Paying below the median creates no COV: the valuation changes no funding figure', () => {
-  // If any COV were charged, a price below the valuation would fund differently from a price equal to it.
+test('Paying below the median creates no COV: the valuation changes only the stamp duty', () => {
+  // If any COV were charged, a price below the valuation would borrow or pay cash differently from a price
+  // equal to it. Stamp duty is the one exception: it is on the higher of price and valuation (D20, D39).
   const lowCents = medianCents - 5_000_000; // S$50,000 below the median
   const belowMedian = run(E1, { purchasePriceCents: lowCents });
   const valuedAtPrice = run(E1, { purchasePriceCents: lowCents, marketValueAtKeysCents: lowCents });
-  assert.deepEqual(funding(belowMedian), funding(valuedAtPrice));
+  const loanAndCash = (o) => ({
+    affordability: o.affordability,
+    loanPrincipalCents: o.loanPrincipalCents,
+    outstandingLoanAtHorizonCents: o.outstandingLoanAtHorizonCents,
+    cashRequiredAtPurchaseCents: o.cashRequiredAtPurchaseCents,
+  });
+  assert.deepEqual(loanAndCash(belowMedian), loanAndCash(valuedAtPrice));
+  // Everything else that moves, moves by exactly the extra stamp duty.
+  const bsd = (o) => o.costBreakdown.find((l) => l.id === 'BSD').amountCents;
+  const extraBsd = bsd(belowMedian) - bsd(valuedAtPrice);
+  assert.ok(extraBsd > 0, 'stamp duty on the valuation should be higher than on the lower price');
+  const paidFromCpf = belowMedian.costBreakdown.find((l) => l.id === 'BSD').paidFrom === 'CPF';
+  assert.equal(belowMedian.cpfUsedAtPurchaseCents - valuedAtPrice.cpfUsedAtPurchaseCents, paidFromCpf ? extraBsd : 0);
+  assert.equal(belowMedian.housingCashSpentCents - valuedAtPrice.housingCashSpentCents, extraBsd);
 });
 
 test('BTO has no COV: a market value below the price changes no funding figure', () => {
@@ -79,4 +93,11 @@ test('BTO has no COV: a market value below the price changes no funding figure',
   const asIs = run(BTO_CASE);
   const lowValue = run(BTO_CASE, { marketValueAtKeysCents: Math.round(BTO_CASE.choice.purchasePriceCents / 2) });
   assert.deepEqual(funding(lowValue), funding(asIs));
+});
+
+test("Below the median, stamp duty is on the valuation (the higher figure, D20/D39), so it matches paying the median", () => {
+  const belowMedian = run(E1, { purchasePriceCents: medianCents - 5_000_000 });
+  const bsd = (o) => o.costBreakdown.find((l) => l.id === 'BSD').amountCents;
+  assert.equal(bsd(belowMedian), bsd(atMedian));
+  assert.ok(bsd(overpaid) > bsd(atMedian), 'above the median, stamp duty is on the higher price paid');
 });
