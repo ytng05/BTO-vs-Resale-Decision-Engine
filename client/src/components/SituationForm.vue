@@ -87,7 +87,7 @@ onBeforeUnmount(() => clearTimeout(timer));
       <p class="fw-semibold mb-2">Buyer {{ i + 1 }}</p>
 
       <div class="row g-3">
-        <div class="col-12 col-sm-6 col-lg-3">
+        <div class="col-12 col-sm-6">
           <label :for="`buyer-${i}-age`" class="form-label">Age</label>
           <input
             :id="`buyer-${i}-age`"
@@ -106,7 +106,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 
         </div>
 
-        <div class="col-12 col-sm-6 col-lg-3">
+        <div class="col-12 col-sm-6">
           <label :for="`buyer-${i}-citizenship`" class="form-label">Citizenship</label>
           <select
             :id="`buyer-${i}-citizenship`"
@@ -122,7 +122,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 
         </div>
 
-        <div class="col-12 col-sm-6 col-lg-3">
+        <div class="col-12 col-sm-6">
           <label :for="`buyer-${i}-income`" class="form-label">Monthly income</label>
           <div class="input-group has-validation">
             <span class="input-group-text">$</span>
@@ -143,7 +143,7 @@ onBeforeUnmount(() => clearTimeout(timer));
           </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-lg-3">
+        <div class="col-12 col-sm-6">
           <label :for="`buyer-${i}-cpf`" class="form-label">CPF OA balance</label>
           <div class="input-group has-validation">
             <span class="input-group-text">$</span>
