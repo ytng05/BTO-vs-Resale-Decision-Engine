@@ -46,7 +46,7 @@ describe('saved scenarios', () => {
     cy.location('pathname').should('eq', '/results');
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
     cy.get('[data-cy=results-edit-button]').click();
-    cy.get('[data-cy=plan-step-3-panel]').should('be.visible');
+    cy.get('[data-cy=plan-step-4-panel]').should('be.visible');
     cy.get('[data-cy=pathb-town-select]').should('have.value', 'BEDOK');
 
     // Delete asks first; Keep leaves it.

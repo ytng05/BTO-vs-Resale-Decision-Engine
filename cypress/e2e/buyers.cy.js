@@ -1,4 +1,4 @@
-// The two buyers on the Situation step (mock data). The app models exactly two buyers, at least one a
+// The two buyers on the 'About you' step (step 2, D38; mock data). The app models exactly two buyers, at least one a
 // Singapore Citizen (D21), so both are always shown and there are no add/remove buttons.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 import { back, fillPath, fillSituation, next } from './helpers/plan.js';
@@ -7,9 +7,10 @@ const citizenship = (n) => cy.get(`[data-cy=situation-buyer-${n}-citizenship-sel
 // The error message shown under one buyer's field (field: age, citizenship, income or cpf).
 const fieldError = (n, field) => cy.get(`[data-cy=situation-buyer-${n}-${field}-error]`);
 
-describe('buyers on the Situation step', () => {
+describe('buyers on the About you step', () => {
   beforeEach(() => {
     cy.visit('/plan');
+    next(); // step 1 (what matters most) is optional
     // The form can take a moment to appear on a slow CI machine: wait longer for this one element only.
     cy.get('[data-cy=situation-buyer-2]', { timeout: 10000 }).should('exist');
   });
@@ -29,18 +30,18 @@ describe('buyers on the Situation step', () => {
     citizenship(2).select('PR');
     next();
     cy.get('[data-cy=situation-applicants-error]').should('contain', 'At least one buyer must be a Singapore Citizen.');
-    cy.get('[data-cy=plan-step-2-panel]').should('not.exist'); // did not move on
+    cy.get('[data-cy=plan-step-3-panel]').should('not.exist'); // did not move on
 
     citizenship(1).select('SC');
     next();
-    cy.get('[data-cy=plan-step-2-panel]').should('exist'); // moved on to Path A
+    cy.get('[data-cy=plan-step-3-panel]').should('exist'); // moved on to Your BTO
   });
 
   it('accepts a citizen with a Permanent Resident', () => {
     fillSituation();
     citizenship(2).select('PR');
     next();
-    cy.get('[data-cy=plan-step-2-panel]').should('exist');
+    cy.get('[data-cy=plan-step-3-panel]').should('exist');
   });
 
   it('checks each buyer separately and says which field is wrong', () => {
@@ -50,7 +51,7 @@ describe('buyers on the Situation step', () => {
     next();
 
     cy.get('[data-cy=plan-step-errors]').should('be.visible');
-    cy.get('[data-cy=plan-step-1-panel]').should('exist');
+    cy.get('[data-cy=plan-step-2-panel]').should('exist');
     cy.get('[data-cy=situation-buyer-2-age-input]').should('have.class', 'is-invalid');
     fieldError(2, 'age').should('contain', 'Enter an age.');
     cy.get('[data-cy=situation-buyer-1-age-input]').should('not.have.class', 'is-invalid');
@@ -76,7 +77,7 @@ describe('buyers on the Situation step', () => {
     cy.location('pathname').should('eq', '/results');
 
     cy.get('[data-cy=results-edit-button]').click();
-    cy.get('[data-cy=plan-step-3-panel]').should('exist'); // back on Path B
+    cy.get('[data-cy=plan-step-4-panel]').should('exist'); // back on the resale step
     back();
     back();
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
