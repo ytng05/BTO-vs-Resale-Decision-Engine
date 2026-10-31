@@ -55,17 +55,21 @@ function back() {
     :move-in-by-year="store.profile.constraints?.moveInByYear"
     class="plan-scene" :class="{ 'plan-scene--tall': store.step > 0 }">
     <form class="card plan-card" data-cy="plan-form" novalidate @submit.prevent="next">
-      <div class="card-body" :data-cy="`plan-step-${store.step + 1}-panel`">
+      <div
+        class="plan-card__body"
+        :class="{ 'plan-card__body--center': store.step === 0 }"
+        :data-cy="`plan-step-${store.step + 1}-panel`"
+      >
         <AppStepper :steps="TRACK" :current="store.step" />
 
-        <div :class="{ 'text-center': store.step === 0 }">
-          <h2 class="plan-card__title" :class="store.step === 0 ? 'h3' : 'h4'">{{ HEADINGS[store.step] }}</h2>
-          <p v-if="store.step === 0" class="text-secondary small">Pick as many as you like. You can change these later.</p>
+        <div class="plan-card__head">
+          <h2 class="plan-card__title" :class="{ 'plan-card__title--hero': store.step === 0 }">{{ HEADINGS[store.step] }}</h2>
+          <p v-if="store.step === 0" class="plan-card__lead">Pick as many as you like. You can change these later.</p>
         </div>
 
         <div
           v-if="attempted && !isStepValid"
-          class="alert alert-danger py-2"
+          class="alert alert-danger py-2 mb-0"
           role="alert"
           data-cy="plan-step-errors"
         >
@@ -104,12 +108,23 @@ function back() {
 </template>
 
 <style scoped>
-/* The step card: progress, question and actions in one white box over the scene (Calm onboarding board). */
-.plan-card { max-width: 760px; margin-inline: auto; }
-.plan-card :deep(.step-track) { margin-bottom: 1.5rem; }
-.plan-card :deep(.stepper-mobile) { margin-bottom: 1rem; }
-.plan-card__title { margin-bottom: 0.5rem; }
-.plan-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+/* The step card: progress, question and actions in one white box over the scene, sized and spaced as on the
+   Calm onboarding board (820px, 36px corners, 24px between parts). */
+.plan-card {
+  max-width: 820px;
+  margin-inline: auto;
+  border: 0;
+  border-radius: 36px;
+  box-shadow: 0 1px 2px rgba(29, 29, 36, 0.05), 0 20px 40px rgba(60, 64, 90, 0.08);
+  padding: 32px clamp(20px, 4vw, 48px) 36px;
+}
+.plan-card__body { display: flex; flex-direction: column; gap: 24px; }
+.plan-card__body--center { align-items: center; text-align: center; }
+.plan-card__head { display: flex; flex-direction: column; gap: 8px; }
+.plan-card__title { margin: 0; }
+.plan-card__title--hero { font-size: clamp(26px, 2.8vw, 36px); font-weight: 500; letter-spacing: -0.025em; line-height: 1.15; }
+.plan-card__lead { margin: 0; font-size: 15px; color: var(--text-secondary, #5f6373); }
+.plan-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
 
 /* How the estate scene fits the stepper; EstateScene.vue itself stays as designed. */
 @media (min-width: 768px) {
