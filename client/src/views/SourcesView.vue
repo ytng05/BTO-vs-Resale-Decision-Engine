@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { getRuleset } from '../api/client.js';
 import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption, sourceTitle, statedAssumptionText } from './sourcesFormatting.js';
 
@@ -77,7 +77,6 @@ const ruleLabels = {
 const tierArrayKeys = new Set(['tiers', 'ehgTiers', 'buyerStampDutyTiers']);
 const omittedRuleKeys = new Set(['appliesTo', 'sources', 'partialMonthTreatment', 'legalFees', 'agentFees']);
 const selectedSectionIds = ref(new Set());
-const expandedSectionIds = ref(new Set());
 const expandedTierKeys = ref(new Set());
 
 // Rule-topic chips toggle their sections (the two Eligibility sections share one chip); the last two only scroll.
@@ -326,38 +325,39 @@ const allSectionsShown = computed(() => ruleGroups.value.length > 0
   && ruleGroups.value.every((section) => selectedSectionIds.value.has(section.id)));
 
 function toggleAllSections() {
-  const ids = allSectionsShown.value ? [] : ruleGroups.value.map((section) => section.id);
-  selectedSectionIds.value = new Set(ids);
-  expandedSectionIds.value = new Set(ids);
+  if (allSectionsShown.value) hideSections(ruleGroups.value.map((section) => section.id));
+  else showSections(ruleGroups.value.map((section) => section.id));
 }
 
 function isChipActive(chip) {
   return chip.ids.some((id) => selectedSectionIds.value.has(id));
 }
 
+// A section is shown exactly when it is selected, and a shown section is always open.
 function showSections(ids) {
   selectedSectionIds.value = new Set([...selectedSectionIds.value, ...ids]);
-  expandedSectionIds.value = new Set([...expandedSectionIds.value, ...ids]);
+}
+
+// Drops a hash that points at a section being hidden, so it can't reopen it or linger in the URL.
+function hideSections(ids) {
+  selectedSectionIds.value = new Set([...selectedSectionIds.value].filter((id) => !ids.includes(id)));
+  const hashId = decodeURIComponent(route.hash.replace(/^#/, '')).replace(/^sources-section-/, '');
+  if (hashId && ids.includes(hashId)) router.replace({ path: route.path, query: route.query, hash: '' });
 }
 
 function toggleChip(chip) {
   if (isChipActive(chip)) {
-    selectedSectionIds.value = new Set([...selectedSectionIds.value].filter((id) => !chip.ids.includes(id)));
-    expandedSectionIds.value = new Set([...expandedSectionIds.value].filter((id) => !chip.ids.includes(id)));
+    hideSections(chip.ids);
     return;
   }
   showSections(chip.ids);
   nextTick(() => scrollToSection(chip.ids[0]));
 }
 
+// Collapsing a section with its chevron hides it and unselects its chip.
 function syncSectionOpen(id, event) {
-  if (normalizedQuery.value) return;
-  const isOpen = event.currentTarget.open;
-  if (expandedSectionIds.value.has(id) === isOpen) return;
-  const next = new Set(expandedSectionIds.value);
-  if (isOpen) next.add(id);
-  else next.delete(id);
-  expandedSectionIds.value = next;
+  if (normalizedQuery.value || event.currentTarget.open) return;
+  hideSections([id]);
 }
 
 function visibleTierRows(table) {
@@ -451,8 +451,10 @@ function scrollToSection(id) {
 }
 
 const route = useRoute();
+const router = useRouter();
 
 // /sources#loans (or #sources-section-loans) opens that rule section; #assumptions and #data just scroll.
+// Runs on load and when the hash changes from outside; hiding a section clears its own hash, which does nothing here.
 function applyHash() {
   const id = decodeURIComponent(route.hash.replace(/^#/, '')).replace(/^sources-section-/, '');
   if (!id) return;
@@ -565,7 +567,7 @@ onMounted(async () => {
             :id="`sources-section-${section.id}`"
             :key="section.id"
             class="sources-rule-card"
-            :open="normalizedQuery ? true : expandedSectionIds.has(section.id)"
+            open
             @toggle="syncSectionOpen(section.id, $event)"
           >
             <summary class="sources-rule-card__summary">

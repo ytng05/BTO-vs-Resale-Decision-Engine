@@ -35,12 +35,28 @@ describe('sources page', () => {
     cy.get('[data-cy=sources-rules-hint]').should('be.visible');
   });
 
-  it('toggles a section with its topic chip', () => {
-    cy.contains('button.sources-chip', 'Loans').should('have.attr', 'aria-pressed', 'false').click();
-    cy.contains('button.sources-chip', 'Loans').should('have.attr', 'aria-pressed', 'true');
-    cy.get('#sources-section-loans').should('have.attr', 'open');
+  it('shows a section when its topic chip is clicked and hides it completely when clicked again', () => {
+    cy.contains('button.sources-chip', 'EHG').should('have.attr', 'aria-pressed', 'false').click();
+    cy.contains('button.sources-chip', 'EHG').should('have.attr', 'aria-pressed', 'true').and('have.class', 'btn-primary');
+    cy.get('#sources-section-ehg').should('have.attr', 'open');
+    cy.contains('button.sources-chip', 'EHG').click();
+    cy.get('#sources-section-ehg').should('not.exist');
+    cy.contains('button.sources-chip', 'EHG').should('have.attr', 'aria-pressed', 'false').and('have.class', 'btn-outline-primary');
+  });
+
+  it('hides a section and unselects its chip when its chevron collapses it', () => {
+    cy.contains('button.sources-chip', 'EHG').click();
+    cy.get('#sources-section-ehg > summary').click();
+    cy.get('#sources-section-ehg').should('not.exist');
+    cy.contains('button.sources-chip', 'EHG').should('have.attr', 'aria-pressed', 'false');
+  });
+
+  it('removes the hash when the section it named is hidden', () => {
+    cy.visit('/sources#loans');
+    cy.get('#sources-section-loans').should('exist');
     cy.contains('button.sources-chip', 'Loans').click();
     cy.get('#sources-section-loans').should('not.exist');
+    cy.location('hash').should('eq', '');
   });
 
   it('opens the section named in the URL hash', () => {
@@ -50,10 +66,12 @@ describe('sources page', () => {
   });
 
   it('shows every section that matches a search, whatever chips are selected', () => {
+    cy.contains('button.sources-chip', 'EHG').click();
     cy.get('[data-cy=sources-search-input]').type('stamp duty');
     cy.get('[data-cy=sources-rules-table] details').should('have.length', 1).and('have.attr', 'open');
     cy.get('[data-cy=sources-search-input]').clear();
-    cy.get('[data-cy=sources-rules-table] details').should('not.exist');
+    cy.get('[data-cy=sources-rules-table] details').should('have.length', 1);
+    cy.get('#sources-section-ehg').should('exist');
   });
 
   it('lists rules with values once a section is opened', () => {
