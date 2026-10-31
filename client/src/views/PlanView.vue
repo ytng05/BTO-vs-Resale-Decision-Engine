@@ -264,10 +264,15 @@ function back() {
 .plan-card--side { max-width: none; min-width: 0; margin: 0; padding: 36px; height: 100%; }
 .plan-card__back-link { color: var(--text-secondary, #5f6373); text-decoration: none; padding-inline: 4px; }
 
-/* How the estate scene fits step 1; EstateScene.vue itself stays as designed. The box keeps the scene's own
-   1240 × 860 shape, so no bubble is cut off at the sides. It still grows if the content needs more room. */
+/* How the estate scene fits step 1; EstateScene.vue itself stays as designed. The box is at least the scene's own
+   1240 × 860 shape at the page column's width (App.vue: up to 1344px, 16–48px gutters), and grows when the card
+   needs more room. Not aspect-ratio: the box clips its overflow (for the train and bus), and a clipping box with
+   aspect-ratio does not grow, so the card was cut off at 768–990px. */
 @media (min-width: 768px) {
-  .estate.plan-scene { min-height: auto; aspect-ratio: 1240 / 860; }
+  .estate.plan-scene {
+    min-height: calc((min(100vw, 1344px) - 2 * clamp(16px, 4vw, 48px)) * 860 / 1240);
+    padding-bottom: 32px;
+  }
 }
 /* Below 1280px the card covers some of the bubbles, or the scene's edges cut them off (measured at 768–1279px):
    hide them, keep the scene and its animation. */
