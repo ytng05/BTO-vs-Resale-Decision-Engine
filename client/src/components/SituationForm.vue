@@ -38,8 +38,9 @@ const askMoveIn = computed(() => store.wishes.includes('moveby') || store.profil
 const err = (key) => props.errors[key];
 
 // ---- Early EHG estimate from seat 2's grant rules (POST /api/grants), once both buyers' ages and
-// incomes are in. Worded as an estimate: the year and flat come later. Hidden on mock data.
-const ehg = ref(null); // { cents, reason } or null
+// incomes are in. Projected to the plan's application year, as Results works it out, so the two agree.
+// Worded as an estimate: the flat comes later. Hidden on mock data.
+const ehg = ref(null); // { cents, reason, year, growthPct, years } or null
 const ready = computed(() => applicants.value.length === REQUIRED_APPLICANTS && applicants.value.every(
   (a) => Number.isInteger(a.age) && a.age >= 18 && typeof a.monthlyIncome === 'number' && a.monthlyIncome >= 0,
 ));
@@ -55,7 +56,13 @@ async function refreshEhg() {
     if (!grant) { ehg.value = null; return; }
     const band = grant.tests.find((t) => t.id === 'EHG_INCOME_BAND' && t.passed);
     const failed = grant.tests.find((t) => !t.passed);
-    ehg.value = { cents: grant.amountCents, reason: (grant.amountCents > 0 ? band : failed)?.reason ?? '' };
+    ehg.value = {
+      cents: grant.amountCents,
+      reason: (grant.amountCents > 0 ? band : failed)?.reason ?? '',
+      year: res.applicationYear,
+      years: res.years,
+      growthPct: Math.round((store.assumptions.annualIncomeGrowth ?? 0) * 1000) / 10,
+    };
   } catch {
     if (id === requestId) ehg.value = null; // the hint is a bonus: no error message for it
   }
@@ -98,9 +105,10 @@ onBeforeUnmount(() => clearTimeout(timer));
         </div>
       </div>
 
-      <!-- Age, citizenship, income and CPF beside the name on wide screens (buyer__fields), two by two below. -->
+      <!-- Age, citizenship, income and CPF beside the name on wide screens (buyer__fields), two by two below; on phones
+           the money fields take the full width so a six-figure balance is never cut off. -->
       <div class="row g-2 buyer__fields">
-        <div class="col-6 buyer__field">
+        <div class="col-3 col-sm-6 buyer__field">
           <label :for="`buyer-${i}-age`" class="form-label">Age</label>
           <input
             :id="`buyer-${i}-age`"
@@ -109,7 +117,7 @@ onBeforeUnmount(() => clearTimeout(timer));
             min="18"
             step="1"
             inputmode="numeric"
-            placeholder="e.g. 30"
+            placeholder="30"
             :aria-invalid="err(`applicants.${i}.age`) ? 'true' : null"
             class="form-control"
             :class="{ 'is-invalid': err(`applicants.${i}.age`) }"
@@ -119,7 +127,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 
         </div>
 
-        <div class="col-6 buyer__field">
+        <div class="col-9 col-sm-6 buyer__field">
           <label :for="`buyer-${i}-citizenship`" class="form-label">Citizenship</label>
           <select
             :id="`buyer-${i}-citizenship`"
@@ -135,7 +143,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 
         </div>
 
-        <div class="col-6 buyer__field">
+        <div class="col-12 col-sm-6 buyer__field">
           <label :for="`buyer-${i}-income`" class="form-label">Monthly income</label>
           <div class="input-group has-validation">
             <span class="input-group-text">$</span>
@@ -156,7 +164,7 @@ onBeforeUnmount(() => clearTimeout(timer));
           </div>
         </div>
 
-        <div class="col-6 buyer__field">
+        <div class="col-12 col-sm-6 buyer__field">
           <label :for="`buyer-${i}-cpf`" class="form-label">CPF OA balance</label>
           <div class="input-group has-validation">
             <span class="input-group-text">$</span>
@@ -182,10 +190,11 @@ onBeforeUnmount(() => clearTimeout(timer));
     </div>
     </div>
 
-    <!-- Early estimate: the EHG at today's income (D38) -->
+    <!-- Early estimate: the EHG in the application year, incomes grown as on Results (D38) -->
     <div v-if="ehg" class="alert alert-info small py-2 mb-3" role="status" aria-live="polite" data-cy="situation-ehg-hint">
-      <strong v-if="ehg.cents > 0">At today's income, you'd likely get up to {{ formatMoney(ehg.cents / 100) }} in Enhanced CPF Housing Grant.</strong>
-      <strong v-else>At today's income, the Enhanced CPF Housing Grant likely doesn't apply.</strong>
+      <strong v-if="ehg.cents > 0">Applying in {{ ehg.year }}, you'd likely get up to {{ formatMoney(ehg.cents / 100) }} in Enhanced CPF Housing Grant.</strong>
+      <strong v-else>Applying in {{ ehg.year }}, the Enhanced CPF Housing Grant likely doesn't apply.</strong>
+      <template v-if="ehg.years > 0">We grow your incomes {{ ehg.growthPct }}% a year to then, as the results do. </template>
       {{ ehg.reason }} We check all your grants again once you choose your flats.
     </div>
 
@@ -235,6 +244,10 @@ onBeforeUnmount(() => clearTimeout(timer));
 </template>
 
 <style scoped>
+/* Only the two-digit age drops its spinner, which would cover the digits in its narrow box (every width). */
+.buyer__fields input[id$="-age"] { appearance: textfield; -moz-appearance: textfield; }
+.buyer__fields input[id$="-age"]::-webkit-inner-spin-button,
+.buyer__fields input[id$="-age"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .buyer__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; margin-bottom: 8px; }
 /* From lg each buyer is one row: name and first-timer switch, then age, citizenship and the two money fields, which
    get the most room. Below lg the name sits on top and the fields go two by two. */
@@ -247,9 +260,5 @@ onBeforeUnmount(() => clearTimeout(timer));
   .buyer__fields { display: contents; }
   .buyer__fields > .buyer__field { width: auto; padding-inline: 0; margin-top: 0; }
   .buyer__fields .form-select { padding-left: 12px; padding-right: 32px; background-position: right 12px center; }
-  /* Only the two-digit age drops its spinner, which would cover the digits in its narrow box. */
-  .buyer__fields input[id$="-age"] { appearance: textfield; -moz-appearance: textfield; }
-  .buyer__fields input[id$="-age"]::-webkit-inner-spin-button,
-  .buyer__fields input[id$="-age"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 }
 </style>

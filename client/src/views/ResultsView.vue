@@ -17,10 +17,11 @@ const store = useScenarioStore();
 const router = useRouter();
 
 // D38: the parents question is only asked if picked in step 1, so say when the Proximity Housing Grant
-// was left out, and offer a way back to it.
-const phgNotAsked = computed(() => store.choiceB.livingArrangement === 'NONE');
+// was left out, and offer a way back to it. Not when they were asked and answered "Neither".
+const phgNotAsked = computed(() => store.choiceB.livingArrangement === 'NONE' && !store.wishes.includes('parents'));
 function addParents() {
   if (!store.wishes.includes('parents')) store.wishes.push('parents');
+  store.choiceB.livingArrangement = null; // ask, don't assume "Neither"
   store.step = 3; // the resale step, where the parents question is
   router.push('/plan');
 }
