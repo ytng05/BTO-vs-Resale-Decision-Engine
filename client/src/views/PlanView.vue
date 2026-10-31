@@ -71,16 +71,17 @@ function back() {
     </form>
 
     <div class="d-flex justify-content-between mt-3">
+      <!-- Nothing to go back to on the first step. -->
       <button
+        v-if="store.step > 0"
         type="button"
         class="btn btn-outline-secondary"
-        :disabled="store.step === 0"
         data-cy="plan-step-back"
         @click="back"
       >
         Back
       </button>
-      <button type="button" class="btn btn-primary" data-cy="plan-step-next" @click="next">
+      <button type="button" class="btn btn-primary ms-auto" data-cy="plan-step-next" @click="next">
         {{ store.step === STEPS.length - 2 ? 'See results' : 'Next' }}
       </button>
     </div>
