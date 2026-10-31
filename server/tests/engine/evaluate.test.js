@@ -113,3 +113,42 @@ describe('evaluate: grants above the price', () => {
     expect(paidFrom.LEGAL).toBe('CASH');
   });
 });
+
+// Cash over valuation (Part B). Properties of the rule, not figures: a hand-worked case with exact amounts is
+// still to come from seat 1. E1 bought S$70,000 above its valuation (the median) against the same flat at the median.
+describe('evaluate: cash over valuation (resale)', () => {
+  const e1 = fixture.cases[0].inputs;
+  const e2 = fixture.cases[1].inputs;
+  const overCents = 7_000_000;
+  let atMedian;
+  let over;
+  beforeAll(() => {
+    atMedian = evaluate(e1.profile, e1.choice, e1.assumptions, ruleset);
+    over = evaluate(e1.profile, { ...e1.choice, purchasePriceCents: e1.choice.purchasePriceCents + overCents }, e1.assumptions, ruleset);
+  });
+
+  it('the loan limit and the loan are measured on the valuation, so paying more does not raise them', () => {
+    expect(over.affordability.maxLoanCents).toBe(atMedian.affordability.maxLoanCents);
+    expect(over.loanPrincipalCents).toBe(atMedian.loanPrincipalCents);
+  });
+
+  it('the amount above the valuation is paid in cash at purchase', () => {
+    expect(over.cashRequiredAtPurchaseCents - atMedian.cashRequiredAtPurchaseCents).toBeGreaterThanOrEqual(overCents);
+  });
+
+  it('the flat is worth the same, so the net position falls by at least the overpayment', () => {
+    expect(over.marketValueAtHorizonCents).toBe(atMedian.marketValueAtHorizonCents);
+    expect(atMedian.netPositionCents - over.netPositionCents).toBeGreaterThanOrEqual(overCents);
+  });
+
+  it('a price below the valuation has no cash over valuation: the loan limit follows the lower price', () => {
+    const under = evaluate(e1.profile, { ...e1.choice, purchasePriceCents: e1.choice.purchasePriceCents - overCents }, e1.assumptions, ruleset);
+    expect(under.affordability.maxLoanCents).toBeLessThanOrEqual(atMedian.affordability.maxLoanCents);
+    expect(under.cashRequiredAtPurchaseCents).toBeLessThanOrEqual(atMedian.cashRequiredAtPurchaseCents);
+  });
+
+  it('BTO has no valuation step: its fixture case is unchanged (E2 figures still hold above)', () => {
+    const o = evaluate(e2.profile, e2.choice, e2.assumptions, ruleset);
+    expect(o).toMatchObject(fixture.cases[1].expected);
+  });
+});
