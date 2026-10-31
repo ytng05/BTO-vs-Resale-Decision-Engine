@@ -38,6 +38,8 @@ function fromPlan() {
     monthlyHousingCostWhileWaiting: store.assumptions.monthlyHousingCostWhileWaiting ?? 0,
     renovationA: store.choiceA.renovation ?? 0,
     renovationB: store.choiceB.renovation ?? 0,
+    // null = the middle of HDB's range for the launch (D26).
+    btoPrice: store.choiceA.btoPrice ?? null,
   };
 }
 const whatIf = reactive(fromPlan());
@@ -53,7 +55,7 @@ const reset = () => Object.assign(whatIf, fromPlan());
 // A copy of the plan with the what-if values swapped in. compare() turns it into the contract's request.
 const whatIfPlan = computed(() => ({
   profile: store.profile,
-  choiceA: { ...store.choiceA, applicationYear: whatIf.applicationYear, renovation: whatIf.renovationA },
+  choiceA: { ...store.choiceA, applicationYear: whatIf.applicationYear, renovation: whatIf.renovationA, btoPrice: whatIf.btoPrice },
   choiceB: { ...store.choiceB, applicationYear: whatIf.applicationYear + yearGap.value, renovation: whatIf.renovationB },
   assumptions: {
     ...store.assumptions,
@@ -65,6 +67,13 @@ const whatIfPlan = computed(() => ({
 }));
 
 const result = ref(null);
+
+// The BTO launch the comparison used and HDB's price range for the flat, in dollars (D26), for the price slider.
+const btoRange = computed(() => {
+  const p = result.value?.btoProjectA;
+  if (!p?.priceMinCents || !p?.priceMaxCents) return null;
+  return { name: p.name, min: p.priceMinCents / 100, max: p.priceMaxCents / 100, used: (result.value.resolvedA?.purchasePriceCents ?? 0) / 100 };
+});
 const error = ref(null);
 const updating = ref(false);
 let timer = null;
@@ -208,6 +217,7 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
             :horizon-shown="horizon"
             :horizon-min="horizonLimits.min"
             :horizon-max="horizonLimits.max"
+            :bto-range="btoRange"
             @update:model-value="setWhatIf"
             @reset="reset"
           />

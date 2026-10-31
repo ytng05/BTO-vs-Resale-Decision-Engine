@@ -59,6 +59,33 @@ const gapSentence = computed(() => {
   return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in net financial position under your assumptions.`;
 });
 
+// Which prices the comparison used (D26, D33), so a default is never hidden: the BTO launch and its price
+// against HDB's range, and the resale median with the sales behind it.
+const monthYear = (ym) => {
+  const [y, m] = String(ym ?? '').split('-').map(Number);
+  return y && m ? new Date(y, m - 1, 1).toLocaleDateString('en-SG', { month: 'short', year: 'numeric' }) : '';
+};
+const btoPriceBasis = computed(() => {
+  const p = result.value?.btoProjectA;
+  const used = result.value?.resolvedA?.purchasePriceCents;
+  if (!p || typeof used !== 'number') return '';
+  const mid = Math.round((p.priceMinCents + p.priceMaxCents) / 2);
+  const where = used === mid ? 'the middle of' : 'within';
+  return `BTO priced as ${p.name} at ${formatMoney(used / 100)}, ${where} HDB's ${formatMoney(p.priceMinCents / 100)} to ${formatMoney(p.priceMaxCents / 100)} range.`;
+});
+const resalePriceBasis = computed(() => {
+  const r = result.value?.resolvedB;
+  const d = r?.priceData;
+  if (!r || typeof r.purchasePriceCents !== 'number' || !d) return '';
+  const lease = d.fellBackToAllLeases
+    ? 'any remaining lease (too few sales in your band)'
+    : `${d.leaseFilter?.minLeaseYears}–${d.leaseFilter?.maxLeaseYears} years left`;
+  const sales = `${d.transactions} sale${d.transactions === 1 ? '' : 's'}`;
+  const when = d.window ? `, ${monthYear(d.window.from)} to ${monthYear(d.window.to)}` : '';
+  const rough = d.lowSample ? ' Few sales, so treat it as rough.' : '';
+  return `Resale priced at ${formatMoney(r.purchasePriceCents / 100)}, the median of ${sales} of ${labelOf(TOWNS, store.choiceB.town)} ${labelOf(FLAT_TYPES, store.choiceB.flatType).toLowerCase()} flats with ${lease}${when}. A specific listing can cost more or less.${rough}`;
+});
+
 const labelOf = (options, value) => options.find((o) => o.value === value)?.label ?? value;
 function describe(choice) {
   const parts = [labelOf(TOWNS, choice.town), labelOf(FLAT_TYPES, choice.flatType)];
@@ -160,6 +187,14 @@ onMounted(load);
             cy-prefix="results-pathb"
           />
         </div>
+      </div>
+
+      <div v-if="btoPriceBasis || resalePriceBasis" class="text-caption mb-3" data-cy="results-price-basis">
+        <p v-if="btoPriceBasis" class="mb-1" data-cy="results-price-basis-bto">
+          {{ btoPriceBasis }}
+          <RouterLink to="/dashboard" data-cy="results-price-basis-change">Change the price</RouterLink>
+        </p>
+        <p v-if="resalePriceBasis" class="mb-0" data-cy="results-price-basis-resale">{{ resalePriceBasis }}</p>
       </div>
 
       <!-- Why one path ends ahead, line by line (D34). Arrives with /compare; hidden if an older server omits it. -->

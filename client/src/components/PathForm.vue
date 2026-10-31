@@ -5,8 +5,9 @@
 //                                       have (GET /api/data/bto-projects), so the choice always resolves.
 //   <PathForm choice-key="choiceB" />  "Resale flat": town, flat type (pre-filled from the BTO step),
 //                                       remaining lease, and living with or near parents if picked in step 1.
-// Not asked here (D38): the year (defaults to next year), renovation (0), and the BTO project and price
-// (the server uses the town's newest launch at its midpoint, D26). They change on the Dashboard or later.
+// Not asked here (D38): the year (defaults to next year) and renovation (0). The BTO project is asked only when
+// the town has more than one launch for the chosen flat type and classification (defaults to the newest, as
+// the server would pick); its price defaults to the midpoint of HDB's range and changes on the Dashboard (D26).
 // Field names follow the store (contract v2/v2.1). The path ('BTO' / 'RESALE') is fixed in the store.
 import { computed, onMounted, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
@@ -63,6 +64,17 @@ const classificationOptions = computed(() => {
   return CLASSIFICATIONS.filter((c) => offered.has(c.value));
 });
 
+// Launches offering the chosen flat type and classification, newest first (the server's default pick, D33).
+const projectOptions = computed(() =>
+  townProjects.value
+    .filter((p) => p.classification === choice.value.classification)
+    .map((p) => ({ ...p, flat: (p.flats ?? []).find((f) => f.flatType === choice.value.flatType) }))
+    .filter((p) => p.flat)
+    .sort((a, b) => String(b.launch).localeCompare(String(a.launch))),
+);
+// '$481k–$600k' from cents.
+const kRange = (f) => `S$${Math.round(f.priceMinCents / 100000)}k–${Math.round(f.priceMaxCents / 100000)}k`;
+
 let latestRequest = 0;
 async function loadTown() {
   if (!isBto.value) return;
@@ -96,9 +108,21 @@ function settleBtoChoice() {
   if (classes.length && !classes.includes(choice.value.classification)) {
     choice.value.classification = classes.includes('STANDARD') ? 'STANDARD' : classes[0];
   }
-  // The project and price are the server's pick now (D38); clear any left over from a saved plan.
-  choice.value.btoProjectId = null;
-  choice.value.btoPrice = null;
+  settleProject();
+}
+
+// One launch: leave the pick to the server. Several: keep the user's pick if still offered, else the newest.
+// A price kept from a saved plan must still sit inside the project's range (the server refuses it otherwise).
+function settleProject() {
+  const opts = projectOptions.value;
+  const keep = opts.find((p) => p.id === choice.value.btoProjectId);
+  if (opts.length <= 1) choice.value.btoProjectId = null;
+  else if (!keep) choice.value.btoProjectId = opts[0].id;
+  const used = keep ?? opts[0];
+  const price = choice.value.btoPrice;
+  if (price != null && (!used || price * 100 < used.flat.priceMinCents || price * 100 > used.flat.priceMaxCents)) {
+    choice.value.btoPrice = null;
+  }
 }
 
 onMounted(() => {
@@ -111,6 +135,9 @@ onMounted(() => {
 });
 watch(() => choice.value.town, () => { if (isBto.value) loadTown(); });
 watch(() => choice.value.flatType, () => { if (isBto.value) settleBtoChoice(); });
+watch(() => choice.value.classification, () => { if (isBto.value) settleProject(); });
+// A different launch has a different range: start again from its midpoint.
+watch(() => choice.value.btoProjectId, (now, before) => { if (isBto.value && before !== undefined && now !== before) choice.value.btoPrice = null; });
 
 // ---- Resale: living with or near parents, shown when picked in step 1 or already set ----
 const askParents = computed(() => store.wishes.includes('parents') || choice.value.livingArrangement !== 'NONE');
@@ -188,6 +215,27 @@ const LIVING = [
           Only what this town's launches offer. Plus and Prime have a longer minimum occupation period and a subsidy clawback when sold.
         </div>
         <div v-if="err('classification')" class="invalid-feedback d-block">{{ err('classification') }}</div>
+      </fieldset>
+
+      <!-- BTO: which launch, only when the town has more than one for this flat -->
+      <fieldset v-if="isBto && projectOptions.length > 1" class="col-12" :data-cy="`${prefix}-project`">
+        <legend class="form-label fs-6">Which launch?</legend>
+        <div class="chip-group">
+          <label v-for="p in projectOptions" :key="p.id" class="chip" :data-cy="`${prefix}-project-${p.id}`">
+            <input
+              v-model="choice.btoProjectId"
+              type="radio"
+              class="chip__input"
+              :name="`${prefix}-project`"
+              :value="p.id"
+              :data-cy="`${prefix}-project-${p.id}-input`"
+            />
+            <span class="chip__face">{{ p.name }} · {{ kRange(p.flat) }}</span>
+          </label>
+        </div>
+        <div class="form-text">
+          Launches in this town differ in price and wait. We use the middle of HDB's price range; you can move it on the dashboard.
+        </div>
       </fieldset>
 
       <!-- Resale: remaining lease -->

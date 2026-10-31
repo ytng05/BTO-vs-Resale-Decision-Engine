@@ -1,6 +1,6 @@
 // Results page (mock data). Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 // Selector convention: data-cy="<area>-<element>-<action>" (see docs/CONVENTIONS.md).
-import { completePlan } from './helpers/plan.js';
+import { completePlan, fillPath, fillSituation, next } from './helpers/plan.js';
 
 describe('results page', () => {
   it('shows an empty state when opened without a plan', () => {
@@ -32,7 +32,7 @@ describe('results page', () => {
   });
 
   it('marks the user’s own assumptions on the heatmap and explains any square on tap', () => {
-    completePlan({ priceGrowth: '3', incomeGrowth: '2' });
+    completePlan(); // growth defaults: 3% price, 2% income (D38)
     cy.get('td[data-cy^=heatmap-cell-]').should('have.length', 36);
     cy.get('[data-cy=heatmap-legend]').should('be.visible');
 
@@ -54,8 +54,10 @@ describe('results page', () => {
     });
   });
 
-  it('notes when the user’s assumptions are outside the heatmap range', () => {
-    completePlan({ priceGrowth: '12', incomeGrowth: '2' });
+  // Onboarding no longer asks for growth (D38: defaults, changed on the Dashboard), so a plan built through
+  // /plan can't put the user's point outside the grid. Bring this back if Results gets its own assumptions.
+  it.skip('notes when the user’s assumptions are outside the heatmap range', () => {
+    completePlan();
     cy.get('[data-cy=heatmap-outside-note]').should('be.visible');
   });
 
@@ -77,5 +79,37 @@ describe('results page', () => {
     cy.get('[data-cy=plan-step-back]').click();
     cy.get('[data-cy=plan-step-back]').click();
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
+  });
+
+  it('says which BTO launch and resale median the prices come from (D26, D33)', () => {
+    completePlan();
+    // Tampines has two Standard 4-room launches in the mock data; the newest is the default.
+    cy.get('[data-cy=results-price-basis-bto]')
+      .should('contain', 'MOCK Tampines Bliss').and('contain', 'the middle of').and('contain', 'S$481,000');
+    cy.get('[data-cy=results-price-basis-resale]').should('contain', 'the median of 120 sales');
+  });
+
+  it('asks which launch when the town has more than one, and prices the one picked', () => {
+    cy.visit('/plan');
+    next();
+    fillSituation();
+    next();
+    cy.get('[data-cy=patha-town-select]').select('TAMPINES');
+    cy.get('[data-cy=patha-project-tampines-bliss-input]').should('be.checked'); // newest first
+    cy.get('[data-cy=patha-project-simei-symphony]').click();
+    next();
+    fillPath('pathb', { town: 'BEDOK' });
+    next();
+    cy.get('[data-cy=results-price-basis-bto]').should('contain', 'MOCK Simei Symphony');
+  });
+
+  it('does not ask which launch when the town has only one', () => {
+    cy.visit('/plan');
+    next();
+    fillSituation();
+    next();
+    cy.get('[data-cy=patha-town-select]').select('BEDOK');
+    cy.get('[data-cy=patha-flat-type-4-room]').should('exist');
+    cy.get('[data-cy=patha-project]').should('not.exist');
   });
 });
