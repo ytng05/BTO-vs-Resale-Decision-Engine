@@ -86,7 +86,7 @@ $btn-hover-bg-shade-amount: 10%; // UI.md: hover darkens fill ~10%
 
 $link-color: $universe-text;
 $link-hover-color: $text-primary;
-$link-decoration: none;
+$link-decoration: underline; // links in body text are ink like the text, so the underline marks them (WCAG 1.4.1)
 $link-hover-decoration: underline;
 
 // ---- Forms (UI.md §8 Inputs) -------------------------------------------------------
