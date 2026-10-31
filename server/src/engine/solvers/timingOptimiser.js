@@ -17,7 +17,7 @@ import { WARNINGS } from '../evaluate.contract.js';
  * @returns {{
  *   best: { year: number, outcome: object } | null,
  *   all: Array<{ year: number, outcome: object }>,
- *   skipped: Array<{ year: number, reason: 'MOVE_IN_DEADLINE_MISSED' | 'CASH_SHORTFALL_AT_PURCHASE' }>
+ *   skipped: Array<{ year: number, reason: 'MOVE_IN_DEADLINE_MISSED' | 'INCOME_CEILING_BREACHED_AT_PURCHASE' | 'CASH_SHORTFALL_AT_PURCHASE' }>
  * }}  best is null when every year is skipped
  */
 export function optimiseTiming(args) {
@@ -44,6 +44,8 @@ export function optimiseTiming(args) {
     const outcome = evaluate(profile, { ...choiceBase, applicationYear: year }, assumptions, ruleset);
     if (outcome.warnings.includes(WARNINGS.MOVE_IN_DEADLINE_MISSED)) {
       skipped.push({ year, reason: WARNINGS.MOVE_IN_DEADLINE_MISSED });
+    } else if (outcome.warnings.includes(WARNINGS.INCOME_CEILING_BREACHED_AT_PURCHASE)) {
+      skipped.push({ year, reason: WARNINGS.INCOME_CEILING_BREACHED_AT_PURCHASE });
     } else if (year === startYear && outcome.warnings.includes(WARNINGS.CASH_SHORTFALL_AT_PURCHASE)) {
       skipped.push({ year, reason: WARNINGS.CASH_SHORTFALL_AT_PURCHASE });
     } else {

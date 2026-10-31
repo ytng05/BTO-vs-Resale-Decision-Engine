@@ -113,6 +113,24 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     age: a.age + yearsToApplication,
     monthlyIncomeCents: Math.round(a.monthlyIncomeCents * (1 + assumptions.annualIncomeGrowth) ** yearsToApplication)
   }));
+
+  // D36: income ceilings, checked at the HFE application
+  const householdIncomeCents = projected.reduce((sum, p) => sum + p.monthlyIncomeCents, 0);
+  const newFlatCeilingCents = read(ruleset, RULESET_KEYS.NEW_FLAT_INCOME_CEILING) * 100;
+  const hdbLoanCeilingCents = read(ruleset, RULESET_KEYS.HDB_LOAN_INCOME_CEILING) * 100;
+  for (const [name, value] of [
+    ['NEW_FLAT_INCOME_CEILING', newFlatCeilingCents],
+    ['HDB_LOAN_INCOME_CEILING', hdbLoanCeilingCents]
+  ]) {
+    if (!Number.isFinite(value)) throw new Error(`Ruleset key ${name} is missing or not a number`);
+  }
+  if (isBto && householdIncomeCents > newFlatCeilingCents) {
+    warnings.add(WARNINGS.INCOME_CEILING_BREACHED_AT_PURCHASE);
+  }
+  if (householdIncomeCents > hdbLoanCeilingCents) {
+    warnings.add(WARNINGS.HDB_LOAN_INCOME_CEILING_BREACHED);
+  }
+
   const grantsProfile = {
     applicants: applicants.map((a, i) => ({
       age: projected[i].age,
