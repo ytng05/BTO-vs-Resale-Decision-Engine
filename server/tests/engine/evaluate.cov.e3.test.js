@@ -1,7 +1,7 @@
 // SEAT 1. D39 exact figures: E1 bought at S$620,000 today (S$638,600 in 2027) for a flat valued at the median,
 // S$550,000 today (S$566,500 in 2027). Expected values come from seat 1's hand-worked case
 // (cov-template.xlsx, 2026-10-31), NOT from the code under test or from AI-generated output.
-// Rows 18 and 20 (own CPF refund, net position) are provisional until "E1 monthly" is re-run.
+// Rows 18 and 20 (own CPF refund, net position) from the re-run of "E1 monthly" (OA left after purchase S$23,742).
 import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { evaluate } from '../../src/engine/index.js';
@@ -58,6 +58,12 @@ describe('evaluate: E3, resale bought S$70,000 above the median (cash over valua
     expect(o.housingCashSpentCents).toBe(20_079_542);
   });
 
-  it.todo('row 18: own CPF refund at the horizon (provisional S$123,715 + interest delta; re-run E1 monthly)');
-  it.todo('row 20: net position at the horizon (provisional S$16,068.23 minus the same delta)');
+  it('row 18: own CPF refund at the horizon S$123,790.54 (principal S$110,000.00 + accrued interest S$13,790.54)', () => {
+    expect(o.cpfSavingsRefundPrincipalCents).toBe(11_000_000);
+    expect(o.cpfSavingsAccruedInterestCents).toBe(1_379_054);
+  });
+
+  it('row 20: net position at the horizon S$15,992.69 (D1)', () => {
+    expect(o.netPositionCents).toBe(1_599_269);
+  });
 });
