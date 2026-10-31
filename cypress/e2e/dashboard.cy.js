@@ -69,6 +69,16 @@ describe('financial dashboard', () => {
     cy.get('[data-cy=whatif-bto-price-value]').should('contain', 'S$540,500');
   });
 
+  it('marks where the verdict flips on the BTO price slider, and says it in the hint (D40)', () => {
+    openDashboard();
+    // Mock: the flip is 80% of the way up MOCK Tampines Bliss's S$481,000 to S$600,000 range, at S$576,200.
+    cy.get('[data-cy=whatif-bto-price-hint]')
+      .should('contain', 'Estimated from MOCK Tampines Bliss')
+      .and('contain', 'Above about S$576,000 (the mark), resale comes out ahead.');
+    cy.get('[data-cy=whatif-bto-price-mark]').should('have.attr', 'aria-hidden', 'true')
+      .invoke('attr', 'style').should('contain', '--at: 0.8');
+  });
+
   it('moves the resale price around the median, which stays the valuation (D39)', () => {
     openDashboard();
     cy.get('[data-cy=whatif-resale-price-value]').should('contain', 'S$665,000');

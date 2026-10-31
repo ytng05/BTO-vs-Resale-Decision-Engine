@@ -71,7 +71,9 @@ const btoPriceBasis = computed(() => {
   if (!p || typeof used !== 'number') return '';
   const mid = Math.round((p.priceMinCents + p.priceMaxCents) / 2);
   const where = used === mid ? 'the middle of' : 'within';
-  return `BTO priced as ${p.name} at ${formatMoney(used / 100)}, ${where} HDB's ${formatMoney(p.priceMinCents / 100)} to ${formatMoney(p.priceMaxCents / 100)} range.`;
+  // D40: a past launch stands in for the user's own, which hasn't happened yet.
+  const launch = p.launch ? ` (${monthYear(p.launch)} launch)` : '';
+  return `BTO estimated from ${p.name}${launch} at ${formatMoney(used / 100)}, ${where} HDB's ${formatMoney(p.priceMinCents / 100)} to ${formatMoney(p.priceMaxCents / 100)} range.`;
 });
 const resalePriceBasis = computed(() => {
   const r = result.value?.resolvedB;
@@ -160,6 +162,8 @@ onMounted(load);
       <!-- Lead with the single break-even sentence before any chart (UI.md §8). -->
       <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
       <p v-if="gapSentence" data-cy="results-gap-sentence">{{ gapSentence }}</p>
+      <!-- D40: the BTO price at which the verdict flips. Absent from older servers and when path A isn't a BTO. -->
+      <p v-if="result.btoPriceSentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
       <p v-if="phgNotAsked" class="text-caption mb-2" data-cy="results-phg-note">
         Not counted: the Proximity Housing Grant (up to S$30,000 on a resale flat). Living with or within 4 km of your
         parents?

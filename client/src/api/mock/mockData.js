@@ -154,6 +154,20 @@ export function mockCompare(payload = {}) {
   if (project && flat) {
     result.btoProjectA = { id: project.id, name: project.name, launch: project.launch, waitMonths: project.waitMonths, priceMinCents: flat.priceMinCents, priceMaxCents: flat.priceMaxCents, sourceUrl: project.sourceUrl };
     result.resolvedA = { purchasePriceCents: choiceA.btoPriceCents ?? Math.round((flat.priceMinCents + flat.priceMaxCents) / 2), btoWaitMonths: project.waitMonths };
+    // D40: the BTO price at which the verdict flips. Mock: 80% of the way up HDB's range, so the "split" case shows.
+    const priceCents = Math.floor((flat.priceMinCents + 0.8 * (flat.priceMaxCents - flat.priceMinCents)) / 100) * 100;
+    result.btoPriceBreakEven = {
+      priceCents,
+      atHdbMin: 'A',
+      atHdbMax: 'B',
+      hdbRangeCents: { min: flat.priceMinCents, max: flat.priceMaxCents },
+      bracketCents: { min: Math.round(flat.priceMinCents * 0.5), max: Math.round(flat.priceMaxCents * 1.5) },
+    };
+    const dollars = (c) => `$${Math.round(c / 100).toLocaleString('en-SG')}`;
+    result.btoPriceSentence = `MOCK: BTO leaves the household with the higher net financial position at the end of ${horizonYear} as long as the ${choiceA.flatType.toLowerCase().replace(' room', '-room')} costs under ${dollars(Math.floor(priceCents / 100_000) * 100_000)}; above that, resale does. That is inside HDB's range for ${project.name} (${dollars(flat.priceMinCents)} to ${dollars(flat.priceMaxCents)}). Prices are in today's terms. This is not a price forecast.`;
+  } else {
+    result.btoPriceBreakEven = null;
+    result.btoPriceSentence = null;
   }
   result.resolvedB = {
     purchasePriceCents: choiceB.resalePriceCents ?? 66_500_000,

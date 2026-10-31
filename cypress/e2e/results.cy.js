@@ -85,8 +85,15 @@ describe('results page', () => {
     completePlan();
     // Tampines has two Standard 4-room launches in the mock data; the newest is the default.
     cy.get('[data-cy=results-price-basis-bto]')
-      .should('contain', 'MOCK Tampines Bliss').and('contain', 'the middle of').and('contain', 'S$481,000');
+      .should('contain', 'BTO estimated from MOCK Tampines Bliss').and('contain', 'the middle of').and('contain', 'S$481,000');
     cy.get('[data-cy=results-price-basis-resale]').should('contain', 'the median of 120 sales');
+  });
+
+  it('says at what BTO price the verdict would flip (D40)', () => {
+    completePlan();
+    cy.get('[data-cy=results-bto-price-breakeven]')
+      .should('contain', 'as long as the 4-room costs under $576,000; above that, resale does')
+      .and('contain', 'This is not a price forecast.');
   });
 
   it('asks which launch when the town has more than one, and prices the one picked', () => {

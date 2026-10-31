@@ -79,7 +79,13 @@ const resaleMedian = computed(() => {
 const btoRange = computed(() => {
   const p = result.value?.btoProjectA;
   if (!p?.priceMinCents || !p?.priceMaxCents) return null;
-  return { name: p.name, min: p.priceMinCents / 100, max: p.priceMaxCents / 100, used: (result.value.resolvedA?.purchasePriceCents ?? 0) / 100 };
+  // D40: where the verdict flips, if the server sent it. It doesn't depend on the slider's own price.
+  const be = result.value.btoPriceBreakEven;
+  return {
+    name: p.name, launch: p.launch, min: p.priceMinCents / 100, max: p.priceMaxCents / 100,
+    used: (result.value.resolvedA?.purchasePriceCents ?? 0) / 100,
+    breakEven: be ? { price: be.priceCents === null ? null : be.priceCents / 100, atMin: be.atHdbMin, atMax: be.atHdbMax } : null,
+  };
 });
 const error = ref(null);
 const updating = ref(false);

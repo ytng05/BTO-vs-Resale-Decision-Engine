@@ -18,7 +18,8 @@ const props = defineProps({
   horizonShown: { type: Number, default: null },
   horizonMin: { type: Number, required: true },
   horizonMax: { type: Number, required: true },
-  // { name, min, max, used } in dollars: the BTO launch's HDB price range and the price the last result used.
+  // { name, launch, min, max, used, breakEven } in dollars: the BTO launch's HDB price range, the price the last
+  // result used, and where the verdict flips (D40: { price | null, atMin, atMax }, or null from an older server).
   btoRange: { type: Object, default: null },
   // { median, used } in dollars: the resale median (the valuation, D39) and the price the last result used.
   resaleMedian: { type: Object, default: null },
@@ -33,6 +34,21 @@ function set(key, raw, scale = 1) {
 
 const pct = (fraction) => Math.round(fraction * 1000) / 10;
 
+// D40: the BTO slider's hint says where the verdict flips, and a mark on the track shows it when it's inside the range.
+const btoFlip = computed(() => {
+  const r = props.btoRange;
+  const be = r?.breakEven;
+  if (!be) return { text: '', at: null };
+  if (be.atMax !== 'B') return { text: ' BTO stays at least level with resale across the whole range.', at: null };
+  if (be.atMin === 'B') return { text: ' Resale stays ahead across the whole range.', at: null };
+  const at = r.max > r.min ? (be.price - r.min) / (r.max - r.min) : null;
+  return { text: ` Above about ${formatMoney(Math.floor(be.price / 1000) * 1000)} (the mark), resale comes out ahead.`, at };
+});
+const monthYear = (ym) => {
+  const [y, m] = String(ym ?? '').split('-').map(Number);
+  return y && m ? ` (${new Date(y, m - 1, 1).toLocaleDateString('en-SG', { month: 'short', year: 'numeric' })} launch)` : '';
+};
+
 const sliders = computed(() => {
   const v = props.modelValue;
   const horizon = v.horizonYear ?? props.horizonShown ?? props.horizonMin;
@@ -45,8 +61,8 @@ const sliders = computed(() => {
     ...(props.btoRange
       ? [{
         key: 'btoPrice', id: 'whatif-bto-price', label: 'BTO price',
-        hint: `${props.btoRange.name}: HDB's range ${formatMoney(props.btoRange.min)} to ${formatMoney(props.btoRange.max)}. Starts at the middle.`,
-        min: props.btoRange.min, max: props.btoRange.max, step: 1000, scale: 1,
+        hint: `Estimated from ${props.btoRange.name}${monthYear(props.btoRange.launch)}: HDB's range ${formatMoney(props.btoRange.min)} to ${formatMoney(props.btoRange.max)}. Starts at the middle.${btoFlip.value.text}`,
+        min: props.btoRange.min, max: props.btoRange.max, step: 1000, scale: 1, markAt: btoFlip.value.at,
         value: v.btoPrice ?? props.btoRange.used, text: formatMoney(v.btoPrice ?? props.btoRange.used),
       }]
       : []),
@@ -77,19 +93,29 @@ const sliders = computed(() => {
           <label :for="s.id" class="fw-semibold">{{ s.label }}</label>
           <output :for="s.id" class="fw-semibold text-numeric" :data-cy="`${s.id}-value`">{{ s.text }}</output>
         </div>
-        <input
-          :id="s.id"
-          type="range"
-          class="form-range"
-          :min="s.min"
-          :max="s.max"
-          :step="s.step"
-          :value="s.value"
-          :aria-valuetext="s.text"
-          :data-cy="`${s.id}-slider`"
-          :aria-describedby="s.hint ? `${s.id}-hint` : undefined"
-          @input="set(s.key, $event.target.value, s.scale)"
-        />
+        <div class="whatif-track">
+          <input
+            :id="s.id"
+            type="range"
+            class="form-range"
+            :min="s.min"
+            :max="s.max"
+            :step="s.step"
+            :value="s.value"
+            :aria-valuetext="s.text"
+            :data-cy="`${s.id}-slider`"
+            :aria-describedby="s.hint ? `${s.id}-hint` : undefined"
+            @input="set(s.key, $event.target.value, s.scale)"
+          />
+          <!-- D40: where the verdict flips. Decoration only: the hint says it in words. -->
+          <span
+            v-if="typeof s.markAt === 'number'"
+            class="whatif-track__mark"
+            :style="{ '--at': s.markAt }"
+            aria-hidden="true"
+            :data-cy="`${s.id}-mark`"
+          ></span>
+        </div>
         <div v-if="s.hint" :id="`${s.id}-hint`" class="form-text mt-0" :data-cy="`${s.id}-hint`">
           {{ s.hint }}
           <a v-if="s.link" :href="s.link.href" target="_blank" rel="noopener noreferrer">{{ s.link.text }}<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>

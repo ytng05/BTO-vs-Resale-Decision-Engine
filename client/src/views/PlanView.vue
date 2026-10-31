@@ -8,9 +8,11 @@ import PathForm from '../components/PathForm.vue';
 import WishesForm from '../components/WishesForm.vue';
 import EstateScene from '../components/EstateScene.vue';
 import BtoScene from '../components/BtoScene.vue';
+import AboutYouScene from '../components/AboutYouScene.vue';
+import ResaleScene from '../components/ResaleScene.vue';
 import { useAuthStore } from '../stores/auth.js';
 import { validateStep } from '../validation/planValidation.js';
-import { FLAT_TYPES, toTitleCase } from '../constants/planOptions.js';
+import { FLAT_TYPES, LEASE_BANDS, toTitleCase } from '../constants/planOptions.js';
 
 const store = useScenarioStore();
 const auth = useAuthStore();
@@ -20,7 +22,7 @@ const router = useRouter();
 const TRACK = STEPS.slice(0, -1).map((s, i) => (i === 0 ? 'What matters' : s));
 const HEADINGS = ['What matters most in your next home?', STEPS[1], 'Which BTO are you eyeing?', STEPS[3]];
 const isLastInput = computed(() => store.step === STEPS.length - 2);
-const nextLabel = computed(() => (isLastInput.value ? 'See results' : `Next: ${STEPS[store.step + 1].toLowerCase()}`));
+const nextLabel = computed(() => (isLastInput.value ? 'See results' : 'Next'));
 
 // Errors are always computed, but only shown after the user tries to continue,
 // so a fresh form is not covered in red before they have typed anything.
@@ -29,9 +31,12 @@ const errors = computed(() => validateStep(store.step, store));
 const isStepValid = computed(() => Object.keys(errors.value).length === 0);
 const shownErrors = computed(() => (attempted.value ? errors.value : {}));
 
-// Step 3 ("Your BTO") has its own layout, as on the Calm "Plan your BTO" board: the track above two columns,
-// the building illustration with a summary of the choice on the left and the form card on the right.
+// Steps 2 to 4 share the Calm "Plan your BTO" layout: the track above two columns, the step's illustration on the
+// left (with a summary of the choice on "Your BTO") and the form card on the right. Step 1 sits on the estate scene.
+const isSideStep = computed(() => store.step > 0);
 const isBtoStep = computed(() => store.step === 2);
+// The resale scene's lease bubble: '80 to 89 years' becomes '80 to 89', as the scene adds "years left".
+const leaseLabel = computed(() => LEASE_BANDS.find((b) => b.value === store.choiceB.leaseBand)?.label.replace(/ years$/, '') ?? null);
 const firstName = computed(() => auth.user?.name?.trim().split(/\s+/)[0] ?? '');
 // The launch PathForm resolves the choice to; its range and wait fill the summary card.
 const btoProject = ref(null);
@@ -84,16 +89,22 @@ function back() {
 
 <template>
   <component
-    :is="isBtoStep ? 'div' : EstateScene"
-    v-bind="isBtoStep ? {} : { wishes: store.wishes, moveInByYear: store.profile.constraints?.moveInByYear }"
-    :class="isBtoStep ? 'bto-step' : ['plan-scene', { 'plan-scene--tall': store.step > 0 }]"
+    :is="isSideStep ? 'div' : EstateScene"
+    v-bind="isSideStep ? {} : { wishes: store.wishes, moveInByYear: store.profile.constraints?.moveInByYear }"
+    :class="isSideStep ? 'side-step' : 'plan-scene'"
   >
-    <AppStepper v-if="isBtoStep" :steps="TRACK" :current="store.step" />
+    <AppStepper v-if="isSideStep" :steps="TRACK" :current="store.step" />
 
-    <div :class="{ 'bto-step__grid': isBtoStep }">
-      <section v-if="isBtoStep" class="bto-step__art" data-cy="bto-step-art">
-        <BtoScene :wishes="store.wishes" :keys-year="keysYear" />
-        <div class="bto-step__summary" data-cy="bto-step-summary" aria-live="polite">
+    <div :class="{ 'side-step__grid': isSideStep }">
+      <section v-if="isSideStep" class="side-step__art" data-cy="plan-step-art">
+        <AboutYouScene
+          v-if="store.step === 1"
+          :buyers="store.profile.applicants.length"
+          :move-by="store.profile.constraints?.moveInByYear"
+        />
+        <BtoScene v-else-if="isBtoStep" :wishes="store.wishes" :keys-year="keysYear" />
+        <ResaleScene v-else :lease="leaseLabel" />
+        <div v-if="isBtoStep" class="bto-step__summary" data-cy="bto-step-summary" aria-live="polite">
           <span class="bto-step__summary-text">
             <span class="bto-step__summary-label">Building your BTO plan</span>
             <span class="bto-step__summary-value">{{ btoSummary ?? 'Choose a town to start' }}</span>
@@ -102,17 +113,17 @@ function back() {
         </div>
       </section>
 
-      <form class="card plan-card" :class="{ 'plan-card--side': isBtoStep }" data-cy="plan-form" novalidate @submit.prevent="next">
+      <form class="card plan-card" :class="{ 'plan-card--side': isSideStep }" data-cy="plan-form" novalidate @submit.prevent="next">
         <div
           class="plan-card__body"
           :class="{ 'plan-card__body--center': store.step === 0 }"
           :data-cy="`plan-step-${store.step + 1}-panel`"
         >
-          <AppStepper v-if="!isBtoStep" :steps="TRACK" :current="store.step" />
+          <AppStepper v-if="!isSideStep" :steps="TRACK" :current="store.step" />
 
           <div class="plan-card__head">
             <p v-if="isBtoStep && firstName" class="plan-card__lead">Welcome back, {{ firstName }}</p>
-            <h2 class="plan-card__title" :class="{ 'plan-card__title--hero': store.step === 0 || isBtoStep }">{{ HEADINGS[store.step] }}</h2>
+            <h2 class="plan-card__title plan-card__title--hero">{{ HEADINGS[store.step] }}</h2>
             <p v-if="store.step === 0" class="plan-card__lead">Pick as many as you like. You can change these later.</p>
             <p v-else-if="isBtoStep" class="plan-card__lead">
               We'll compare it with a resale flat in the next step, as if you apply next year. You can change the year on the dashboard.
@@ -143,7 +154,7 @@ function back() {
             </button>
             <button
               v-else type="button" class="btn"
-              :class="isBtoStep ? 'btn-link plan-card__back-link' : 'btn-outline-secondary'"
+              :class="isSideStep ? 'btn-link plan-card__back-link' : 'btn-outline-secondary'"
               data-cy="plan-step-back" @click="back"
             >
               Back
@@ -183,17 +194,17 @@ function back() {
 .plan-card__lead { margin: 0; font-size: 15px; color: var(--text-secondary, #5f6373); }
 .plan-card__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
 
-/* Step 3, "Your BTO" (Calm "Plan your BTO" board): track on the page, then the illustration panel and the form
-   card side by side, stacking below ~900px. */
-.bto-step { display: flex; flex-direction: column; gap: 28px; }
-.bto-step__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+/* Steps 2 to 4 (Calm "Plan your BTO" board): track on the page, then the illustration panel and the form
+   card side by side, stacking below 992px. */
+.side-step { display: flex; flex-direction: column; gap: 28px; }
+.side-step__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
 /* Below lg the form comes first, so the question is on screen without scrolling; the illustration follows. */
-.bto-step__grid > .bto-step__art { order: 2; }
+.side-step__grid > .side-step__art { order: 2; }
 @media (min-width: 992px) {
-  .bto-step__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .bto-step__grid > .bto-step__art { order: 0; }
+  .side-step__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .side-step__grid > .side-step__art { order: 0; }
 }
-.bto-step__art {
+.side-step__art {
   display: flex; flex-direction: column; gap: 12px; min-width: 0; overflow: hidden;
   padding: 24px; border-radius: 36px;
   background: var(--color-periwinkle, #e9ecf6); border: 1px solid var(--color-white, #ffffff);
@@ -209,15 +220,10 @@ function back() {
 .plan-card--side { max-width: none; min-width: 0; margin: 0; padding: 36px; height: 100%; }
 .plan-card__back-link { color: var(--text-secondary, #5f6373); text-decoration: none; padding-inline: 4px; }
 
-/* How the estate scene fits the stepper; EstateScene.vue itself stays as designed. */
+/* How the estate scene fits step 1; EstateScene.vue itself stays as designed. The box keeps the scene's own
+   1240 × 860 shape, so no bubble is cut off at the sides. It still grows if the content needs more room. */
 @media (min-width: 768px) {
-  /* Step 1: the box keeps the scene's own 1240 × 860 shape, so no bubble is cut off at the sides. It still
-     grows if the content needs more room. */
   .estate.plan-scene { min-height: auto; aspect-ratio: 1240 / 860; }
-  /* Later steps are taller than the scene: keep it at the top in its own shape instead of zooming it to the
-     form's height; the form continues on the periwinkle below. */
-  .estate.plan-scene--tall { aspect-ratio: auto; min-height: 0; padding-bottom: 48px; }
-  .estate.plan-scene--tall :deep(.estate__art) { inset: 0 0 auto 0; height: auto; aspect-ratio: 1240 / 860; }
 }
 /* Phones crop the scene's sides, which would cut the bubbles off: hide them, keep the scene. */
 @media (max-width: 767px) {
