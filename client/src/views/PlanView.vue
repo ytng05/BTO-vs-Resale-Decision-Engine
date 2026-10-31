@@ -46,8 +46,11 @@ const btoSummary = computed(() => {
 const keysIn = computed(() => {
   const months = btoProject.value?.waitMonths;
   if (typeof months !== 'number') return null;
-  const years = Math.round(months / 12);
-  return years < 1 ? 'Keys in under a year' : `Keys in about ${years} year${years === 1 ? '' : 's'}`;
+  // To the nearest half year, as the launch chips' hint in PathForm says it.
+  const half = Math.round(months / 6) / 2;
+  if (half < 1) return 'Keys in under a year';
+  const whole = Math.floor(half);
+  return `Keys in about ${whole}${half > whole ? '½' : ''} year${half === 1 ? '' : 's'}`;
 });
 
 async function next() {

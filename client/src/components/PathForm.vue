@@ -1,14 +1,14 @@
 <script setup>
 // Steps 3 and 4 of the plan stepper (D38). One component serves both paths:
-//   <PathForm choice-key="choiceA" />  "Your BTO": town (towns with a recent launch), then flat type and
-//                                       classification as chips, offering only what that town's launches
-//                                       have (GET /api/data/bto-projects), so the choice always resolves.
+//   <PathForm choice-key="choiceA" />  "Your BTO": town (towns with a recent launch), then the launch (which
+//                                       fixes the classification), then the flat types that launch offers
+//                                       (GET /api/data/bto-projects), then HDB's price range as a sentence.
 //   <PathForm choice-key="choiceB" />  "Resale flat": town, flat type (pre-filled from the BTO step),
 //                                       remaining lease, an optional asking price (D39, blank = the median),
 //                                       and living with or near parents if picked in step 1.
-// Not asked here (D38): the year (defaults to next year) and renovation (0). The BTO project is asked only when
-// the town has more than one launch for the chosen flat type and classification (defaults to the newest, as
-// the server would pick); its price defaults to the midpoint of HDB's range and changes on the Dashboard (D26).
+// Not asked here (D38): the year (defaults to next year) and renovation (0). HDB publishes a price range per launch
+// and flat type, not one price (the unit is picked later), so the price defaults to the midpoint and changes on
+// the Dashboard (D26).
 // Field names follow the store (contract v2/v2.1). The path ('BTO' / 'RESALE') is fixed in the store.
 import { computed, onMounted, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
@@ -53,35 +53,39 @@ const townOptions = computed(() => {
   return btoTowns.value.map((value) => ({ value, label: toTitleCase(value) }));
 });
 
-// Flat types offered by at least one launch in the town (BTO), or all three (resale).
+// Every launch in the town, newest first; a tie goes to Standard, then Plus, then Prime, then by name.
+const CLASS_ORDER = { STANDARD: 0, PLUS: 1, PRIME: 2 };
+const launchOptions = computed(() =>
+  [...townProjects.value].sort((x, y) => String(y.launch).localeCompare(String(x.launch))
+    || (CLASS_ORDER[x.classification] ?? 9) - (CLASS_ORDER[y.classification] ?? 9)
+    || x.name.localeCompare(y.name)),
+);
+const activeProject = computed(() => launchOptions.value.find((p) => p.id === choice.value.btoProjectId) ?? null);
+watch(activeProject, (p) => { if (isBto.value) emit('project', p); }, { immediate: true });
+
+// Flat types the chosen launch offers (BTO), or all three (resale).
 const flatTypeOptions = computed(() => {
   if (!isBto.value) return FLAT_TYPES;
-  const offered = new Set(townProjects.value.flatMap((p) => (p.flats ?? []).map((f) => f.flatType)));
+  const offered = new Set((activeProject.value?.flats ?? []).map((f) => f.flatType));
   return BTO_FLAT_TYPES.filter((f) => offered.has(f.value));
 });
-// Classifications offered for the chosen flat type in the town.
-const classificationOptions = computed(() => {
-  const offered = new Set(
-    townProjects.value
-      .filter((p) => (p.flats ?? []).some((f) => f.flatType === choice.value.flatType))
-      .map((p) => p.classification),
-  );
-  return CLASSIFICATIONS.filter((c) => offered.has(c.value));
-});
+// HDB's range for the chosen launch and flat type, in cents.
+const activeFlat = computed(() => (activeProject.value?.flats ?? []).find((f) => f.flatType === choice.value.flatType) ?? null);
+const midpointCents = computed(() => (activeFlat.value ? Math.round((activeFlat.value.priceMinCents + activeFlat.value.priceMaxCents) / 2) : null));
 
-// Launches offering the chosen flat type and classification, newest first (the server's default pick, D33).
-const projectOptions = computed(() =>
-  townProjects.value
-    .filter((p) => p.classification === choice.value.classification)
-    .map((p) => ({ ...p, flat: (p.flats ?? []).find((f) => f.flatType === choice.value.flatType) }))
-    .filter((p) => p.flat)
-    .sort((a, b) => String(b.launch).localeCompare(String(a.launch))),
-);
-const activeProject = computed(() =>
-  projectOptions.value.find((p) => p.id === choice.value.btoProjectId) ?? projectOptions.value[0] ?? null);
-watch(activeProject, (p) => { if (isBto.value) emit('project', p); }, { immediate: true });
-// '$481k–$600k' from cents.
-const kRange = (f) => `S$${Math.round(f.priceMinCents / 100000)}k–${Math.round(f.priceMaxCents / 100000)}k`;
+const labelOf = (options, value) => options.find((o) => o.value === value)?.label ?? value;
+const monthYear = (ym) => {
+  const [y, m] = String(ym ?? '').split('-').map(Number);
+  return y && m ? new Date(y, m - 1, 1).toLocaleDateString('en-SG', { month: 'short', year: 'numeric' }) : '';
+};
+// '4 years', '4½ years', 'under a year': from HDB's waiting time for the launch.
+const keysIn = (months) => {
+  if (typeof months !== 'number') return '';
+  const half = Math.round(months / 6) / 2;
+  if (half < 1) return 'keys in under a year';
+  const whole = Math.floor(half);
+  return `keys in about ${whole}${half > whole ? '½' : ''} year${half === 1 ? '' : 's'}`;
+};
 
 let latestRequest = 0;
 async function loadTown() {
@@ -104,33 +108,31 @@ async function loadTown() {
   settleBtoChoice();
 }
 
-// Keep the flat type and classification to what the town offers; fill a sensible default.
+// Keep the choice to what the town offers: a launch (the user's, else the newest), its classification, and a
+// flat type it offers (5-room if "More space" was picked, else 4-room, else the first).
 function settleBtoChoice() {
   if (!choice.value.town) return;
+  const launches = launchOptions.value;
+  if (!launches.length) return;
+  if (!launches.some((p) => p.id === choice.value.btoProjectId)) choice.value.btoProjectId = launches[0].id;
+  settleLaunch();
+}
+function settleLaunch() {
+  const p = activeProject.value;
+  if (!p) return;
+  choice.value.classification = p.classification;
   const types = flatTypeOptions.value.map((f) => f.value);
   if (types.length && !types.includes(choice.value.flatType)) {
     choice.value.flatType = types.includes(preferredFlatType.value) ? preferredFlatType.value
       : types.includes('4 ROOM') ? '4 ROOM' : types[0];
   }
-  const classes = classificationOptions.value.map((c) => c.value);
-  if (classes.length && !classes.includes(choice.value.classification)) {
-    choice.value.classification = classes.includes('STANDARD') ? 'STANDARD' : classes[0];
-  }
-  settleProject();
+  settlePrice();
 }
-
-// One launch: leave the pick to the server. Several: keep the user's pick if still offered, else the newest.
-// A price kept from a saved plan must still sit inside the project's range (the server refuses it otherwise).
-function settleProject() {
-  const opts = projectOptions.value;
-  const keep = opts.find((p) => p.id === choice.value.btoProjectId);
-  if (opts.length <= 1) choice.value.btoProjectId = null;
-  else if (!keep) choice.value.btoProjectId = opts[0].id;
-  const used = keep ?? opts[0];
+// A price kept from a saved plan must still sit inside the range (the server refuses it otherwise).
+function settlePrice() {
+  const f = activeFlat.value;
   const price = choice.value.btoPrice;
-  if (price != null && (!used || price * 100 < used.flat.priceMinCents || price * 100 > used.flat.priceMaxCents)) {
-    choice.value.btoPrice = null;
-  }
+  if (price != null && (!f || price * 100 < f.priceMinCents || price * 100 > f.priceMaxCents)) choice.value.btoPrice = null;
 }
 
 onMounted(() => {
@@ -142,8 +144,8 @@ onMounted(() => {
   }
 });
 watch(() => choice.value.town, () => { if (isBto.value) loadTown(); });
-watch(() => choice.value.flatType, () => { if (isBto.value) settleBtoChoice(); });
-watch(() => choice.value.classification, () => { if (isBto.value) settleProject(); });
+watch(() => choice.value.btoProjectId, () => { if (isBto.value) settleLaunch(); });
+watch(() => choice.value.flatType, () => { if (isBto.value) settlePrice(); });
 // A different launch has a different range: start again from its midpoint.
 watch(() => choice.value.btoProjectId, (now, before) => { if (isBto.value && before !== undefined && now !== before) choice.value.btoPrice = null; });
 
@@ -208,8 +210,31 @@ const LIVING = [
         <div v-if="loadError" class="text-danger small mt-1" role="alert" :data-cy="`${prefix}-projects-error`">{{ loadError }}</div>
       </div>
 
+      <!-- BTO: which launch. It fixes the classification and which flat types there are. -->
+      <fieldset v-if="isBto && choice.town && launchOptions.length" class="col-12" :data-cy="`${prefix}-project`">
+        <legend class="form-label fs-6">Which launch?</legend>
+        <div class="chip-group">
+          <label v-for="p in launchOptions" :key="p.id" class="chip" :data-cy="`${prefix}-project-${p.id}`">
+            <input
+              v-model="choice.btoProjectId"
+              type="radio"
+              class="chip__input"
+              :name="`${prefix}-project`"
+              :value="p.id"
+              :data-cy="`${prefix}-project-${p.id}-input`"
+            />
+            <span class="chip__face">{{ p.name }} · {{ monthYear(p.launch) }} · {{ labelOf(CLASSIFICATIONS, p.classification) }}</span>
+          </label>
+        </div>
+        <div class="form-text">
+          <template v-if="activeProject">{{ activeProject.name }}: {{ keysIn(activeProject.waitMonths) }} after you apply. </template>
+          Plus and Prime flats have a longer minimum occupation period and a subsidy clawback when sold.
+        </div>
+        <div v-if="err('classification')" class="invalid-feedback d-block">{{ err('classification') }}</div>
+      </fieldset>
+
       <!-- Flat type -->
-      <fieldset class="col-12" :data-cy="`${prefix}-flat-type`">
+      <fieldset v-if="!isBto || activeProject" class="col-12" :data-cy="`${prefix}-flat-type`">
         <legend class="form-label fs-6">Flat type</legend>
         <p v-if="isBto && !choice.town" class="form-text mt-0">Choose a town to see the flat types on offer.</p>
         <div v-else class="chip-group">
@@ -228,48 +253,12 @@ const LIVING = [
         <div v-if="err('flatType')" class="invalid-feedback d-block">{{ err('flatType') }}</div>
       </fieldset>
 
-      <!-- BTO: classification -->
-      <fieldset v-if="isBto && choice.town" class="col-12" :data-cy="`${prefix}-classification`">
-        <legend class="form-label fs-6">Classification</legend>
-        <div class="chip-group" :aria-describedby="`${prefix}-classification-help`">
-          <label v-for="c in classificationOptions" :key="c.value" class="chip" :data-cy="`${prefix}-classification-${slug(c.value)}`">
-            <input
-              v-model="choice.classification"
-              type="radio"
-              class="chip__input"
-              :name="`${prefix}-classification`"
-              :value="c.value"
-              :data-cy="`${prefix}-classification-${slug(c.value)}-input`"
-            />
-            <span class="chip__face">{{ c.label }}</span>
-          </label>
-        </div>
-        <div :id="`${prefix}-classification-help`" class="form-text">
-          Only what this town's launches offer. Plus and Prime have a longer minimum occupation period and a subsidy clawback when sold.
-        </div>
-        <div v-if="err('classification')" class="invalid-feedback d-block">{{ err('classification') }}</div>
-      </fieldset>
-
-      <!-- BTO: which launch, only when the town has more than one for this flat -->
-      <fieldset v-if="isBto && projectOptions.length > 1" class="col-12" :data-cy="`${prefix}-project`">
-        <legend class="form-label fs-6">Which launch?</legend>
-        <div class="chip-group">
-          <label v-for="p in projectOptions" :key="p.id" class="chip" :data-cy="`${prefix}-project-${p.id}`">
-            <input
-              v-model="choice.btoProjectId"
-              type="radio"
-              class="chip__input"
-              :name="`${prefix}-project`"
-              :value="p.id"
-              :data-cy="`${prefix}-project-${p.id}-input`"
-            />
-            <span class="chip__face">{{ p.name }} · {{ kRange(p.flat) }}</span>
-          </label>
-        </div>
-        <div class="form-text">
-          Launches in this town differ in price and wait. We use the middle of HDB's price range; you can move it on the dashboard.
-        </div>
-      </fieldset>
+      <!-- BTO: the price, as HDB publishes it: a range for the launch and flat type (D26) -->
+      <p v-if="isBto && activeFlat" class="col-12 mb-0 small" :data-cy="`${prefix}-price-basis`">
+        HDB's range for a {{ labelOf(FLAT_TYPES, choice.flatType).toLowerCase() }} at {{ activeProject.name }} is
+        {{ formatMoney(activeFlat.priceMinCents / 100) }} to {{ formatMoney(activeFlat.priceMaxCents / 100) }}; the actual price
+        depends on the unit you pick. We use the middle, {{ formatMoney(midpointCents / 100) }}. You can change it on the dashboard.
+      </p>
 
       <!-- Resale: remaining lease -->
       <fieldset v-if="!isBto" class="col-12" :data-cy="`${prefix}-lease-band`">

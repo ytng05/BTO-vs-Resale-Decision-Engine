@@ -8,12 +8,13 @@ import { next, pickWishes } from '../e2e/helpers/plan.js';
 const sc = (age, monthlyIncome, cpfOa) => ({ age, citizenship: 'SC', monthlyIncome, cpfOa });
 const pr = (age, monthlyIncome, cpfOa) => ({ age, citizenship: 'PR', monthlyIncome, cpfOa });
 const resale = (town, leaseBand, livingArrangement, flatType = '4 ROOM') => ({ town, flatType, leaseBand, livingArrangement });
-const bto = (town, classification, flatType = '4 ROOM') => ({ town, flatType, classification });
+// The launch defaults to the town's newest (a tie goes to Standard, then by name); project picks another.
+const bto = (town, project, flatType = '4 ROOM') => ({ town, flatType, project });
 
 // 1. First-time couple: "BTO or resale?" BTO ends well ahead; both within the loan limit.
 export const J1 = {
   buyers: [sc(29, 4200, 90000), sc(30, 3800, 80000)], cash: 60000,
-  pathA: bto('SENGKANG', 'STANDARD'), pathB: resale('SENGKANG', '80-89'),
+  pathA: bto('SENGKANG'), pathB: resale('SENGKANG', '80-89'),
 };
 
 // 2. Near parents: with no rent while waiting BTO ends ahead; renting at S$2,800 while a long BTO wait runs
@@ -21,14 +22,14 @@ export const J1 = {
 export const J2 = {
   wishes: ['parents'],
   buyers: [sc(31, 3300, 75000), sc(32, 3000, 65000)], cash: 80000,
-  pathA: bto('JURONG EAST', 'STANDARD'), pathB: resale('JURONG EAST', '80-89', 'NEAR'),
+  pathA: bto('JURONG EAST'), pathB: resale('JURONG EAST', '80-89', 'NEAR'),
 };
 
 // 3. Must move in by 2032: the timing panel ranks application years and skips any whose keys come too late.
 export const J3 = {
   wishes: ['moveby'],
   buyers: [sc(28, 3600, 70000), sc(29, 3400, 60000)], cash: 60000, moveInBy: 2032,
-  pathA: bto('SENGKANG', 'STANDARD'), pathB: resale('SENGKANG', '80-89'),
+  pathA: bto('SENGKANG'), pathB: resale('SENGKANG', '80-89'),
 };
 
 // 4. Returning user: J1's couple saves 4-room and 5-room in Sengkang and compares them. Both use the same launch
@@ -36,13 +37,13 @@ export const J3 = {
 export const J4A = J1;
 export const J4B = {
   ...J1, wishes: ['space'],
-  pathA: bto('SENGKANG', 'STANDARD', '5 ROOM'), pathB: resale('SENGKANG', '80-89', undefined, '5 ROOM'),
+  pathA: bto('SENGKANG', undefined, '5 ROOM'), pathB: resale('SENGKANG', '80-89', undefined, '5 ROOM'),
 };
 
 // 5. SC + PR with little cash: both paths are over the loan limit and short of cash at purchase.
 export const J5 = {
   buyers: [sc(26, 2600, 12000), pr(27, 2300, 9000)], cash: 8000,
-  pathA: bto('YISHUN', 'STANDARD'), pathB: resale('YISHUN', '80-89'),
+  pathA: bto('YISHUN'), pathB: resale('YISHUN', '80-89'),
 };
 
 // A short pause so a recorded journey can be followed by eye. 0 skips it: CYPRESS_JOURNEY_PAUSE=0.
@@ -68,9 +69,9 @@ export function fillSituation(p) {
 export function fillPaths(p) {
   const a = p.pathA;
   cy.get('[data-cy=patha-town-select]').select(a.town);
+  if (a.project) cy.get(`[data-cy=patha-project-${a.project}]`, { timeout: 15000 }).click();
   // The chips load from the server once the town is chosen: only what that town's launches offer.
   cy.get(`[data-cy=patha-flat-type-${slug(a.flatType)}]`, { timeout: 15000 }).click();
-  cy.get(`[data-cy=patha-classification-${slug(a.classification)}]`).click();
   beat();
   next();
 

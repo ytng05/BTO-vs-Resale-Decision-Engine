@@ -27,12 +27,12 @@ export function fillSituation({ moveInBy } = {}) {
   if (moveInBy) cy.get('[data-cy=situation-move-in-by-input]').type(String(moveInBy));
 }
 
-// Steps 3 and 4. BTO chips only appear once the town's launches have loaded. living only works when
-// 'parents' was picked in step 1.
-export function fillPath(prefix, { town = 'TAMPINES', flatType = '4 ROOM', leaseBand = '80-89', classification, living } = {}) {
+// Steps 3 and 4. BTO: town, then the launch (default: the newest, which also sets the classification), then the
+// flat types that launch offers. living only works when 'parents' was picked in step 1.
+export function fillPath(prefix, { town = 'TAMPINES', flatType = '4 ROOM', leaseBand = '80-89', project, living } = {}) {
   cy.get(`[data-cy=${prefix}-town-select]`).select(town);
+  if (project) cy.get(`[data-cy=${prefix}-project-${project}]`, { timeout: 10000 }).click();
   cy.get(`[data-cy=${prefix}-flat-type-${slug(flatType)}]`, { timeout: 10000 }).click();
-  if (classification) cy.get(`[data-cy=${prefix}-classification-${slug(classification)}]`).click();
   if (prefix === 'pathb') cy.get(`[data-cy=pathb-lease-band-${leaseBand}]`).click();
   if (living) cy.get(`[data-cy=pathb-living-${slug(living)}]`).click();
 }
