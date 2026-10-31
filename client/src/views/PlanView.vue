@@ -211,16 +211,22 @@ function back() {
 
 /* How the estate scene fits the stepper; EstateScene.vue itself stays as designed. */
 @media (min-width: 768px) {
-  /* Step 1: the box keeps the scene's own 1240 × 860 shape, so no bubble is cut off at the sides. It still
-     grows if the content needs more room. */
-  .estate.plan-scene { min-height: auto; aspect-ratio: 1240 / 860; }
+  /* Step 1: the box is at least the scene's own 1240 × 860 shape at the page column's width (App.vue: up to
+     1344px, 16–48px gutters), and grows when the card needs more room. Not aspect-ratio: the box clips its
+     overflow (for the train and bus), and a clipping box with aspect-ratio does not grow, so the card was cut
+     off at 768–990px. */
+  .estate.plan-scene {
+    min-height: calc((min(100vw, 1344px) - 2 * clamp(16px, 4vw, 48px)) * 860 / 1240);
+    padding-bottom: 32px;
+  }
   /* Later steps are taller than the scene: keep it at the top in its own shape instead of zooming it to the
      form's height; the form continues on the periwinkle below. */
   .estate.plan-scene--tall { aspect-ratio: auto; min-height: 0; padding-bottom: 48px; }
   .estate.plan-scene--tall :deep(.estate__art) { inset: 0 0 auto 0; height: auto; aspect-ratio: 1240 / 860; }
 }
-/* Phones crop the scene's sides, which would cut the bubbles off: hide them, keep the scene. */
-@media (max-width: 767px) {
+/* Below 1280px the card covers some of the bubbles, or the scene's edges cut them off (measured at 768–1279px):
+   hide them, keep the scene and its animation. */
+@media (max-width: 1279.98px) {
   .plan-scene :deep(.es-bubble) { display: none; }
 }
 </style>
