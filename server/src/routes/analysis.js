@@ -210,6 +210,7 @@ export function timingExplanation({ best, all, skipped }, { horizonYear }) {
   const reasons = {
     MOVE_IN_DEADLINE_MISSED: 'keys come after the move-in year',
     CASH_SHORTFALL_AT_PURCHASE: "the cash needed at purchase is more than today's savings",
+    INCOME_CEILING_BREACHED_AT_PURCHASE: 'household income would be above the new-flat ceiling',
   };
   if (!best) {
     lines.push('No application year in the range works under these assumptions.');
