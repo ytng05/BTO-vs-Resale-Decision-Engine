@@ -1,6 +1,6 @@
 // SEAT 3. External data, server-side only. Cached in MongoDB (services/cache.js; memory if no database).
 //
-//   GET /api/data/resale-price?town=TAMPINES&flatType=4 ROOM&months=12
+//   GET /api/data/resale-price?town=TAMPINES&flatType=4 ROOM&months=12&leaseBand=80-89   (leaseBand optional)
 //     -> median resale price (cents), spread, floor area and remaining lease from data.gov.sg
 //   GET /api/data/rpi?from=2015-Q1&to=2026-Q2        -> HDB Resale Price Index + historical growth
 //   GET /api/data/bto-projects?town=&flatType=&classification=   (filters optional)
@@ -43,7 +43,14 @@ router.get('/resale-price', async (req, res, next) => {
       return badRequest(res, 'months must be a whole number from 1 to 60');
     }
 
-    const basis = await getResalePriceBasis({ town, flatType, months });
+    // Optional remaining-lease band, as /api/compare uses it (D16, D33): '80-89' keeps 80y 0m to 89y 11m.
+    let lease = {};
+    if (req.query.leaseBand !== undefined) {
+      const band = /^(\d{2})-(\d{2})$/.exec(String(req.query.leaseBand).trim());
+      if (!band || Number(band[1]) > Number(band[2])) return badRequest(res, 'leaseBand must look like 80-89');
+      lease = { minLeaseYears: Number(band[1]), maxLeaseYears: Number(band[2]) };
+    }
+    const basis = await getResalePriceBasis({ town, flatType, months, ...lease });
     if (basis.count === 0) {
       return res.status(404).json({
         error: {
