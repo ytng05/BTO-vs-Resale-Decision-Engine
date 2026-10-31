@@ -19,6 +19,7 @@ import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
 import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
 import DashboardOverview from '../components/dashboard/DashboardOverview.vue';
+import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
 import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
 
 const store = useScenarioStore();
@@ -291,6 +292,12 @@ const warningText = (w) =>
               <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
             </div>
           </section>
+
+          <PhgMapCard
+            :bto-town="store.choiceA.town"
+            :resale-town="store.choiceB.town"
+            :living-arrangement="store.choiceB.livingArrangement"
+          />
 
           <section class="card" aria-labelledby="notes-heading">
             <div class="card-body">
