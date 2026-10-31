@@ -2,7 +2,7 @@
 // Dashboard card: the parents' home, a 4 km circle round it, the resale and BTO towns, and (optionally)
 // the resale flat the user has in mind, so they can check their Proximity Housing Grant answer.
 // DISPLAY-ONLY (D15): PHG eligibility stays what the user declared; this card never changes it.
-// Postal codes typed here are not saved anywhere.
+// Postal codes typed here are not saved with your scenario or linked to your account (the server caches geocode results, not tied to any user).
 //
 // Data: GET /api/data/geocode, /town-point, /distance (OneMap, cached on the server; api/onemap.js).
 // Map: Leaflet (BSD-2-Clause) on OneMap's Default basemap. OneMap's terms require its logo and
@@ -132,6 +132,7 @@ onMounted(async () => {
   const mod = await import('leaflet');
   L.value = mod.default ?? mod;
   map.value = L.value.map(mapEl.value, {
+    dragging: !window.matchMedia('(pointer: coarse)').matches, // a one-finger swipe scrolls the page on phones; pinch still zooms
     center: SG_CENTRE, zoom: 11, minZoom: 11, maxZoom: 18, maxBounds: SG_BOUNDS, scrollWheelZoom: false,
   });
   L.value.tileLayer(ONEMAP_TILES, { detectRetina: true, minZoom: 11, maxZoom: 18, attribution: ONEMAP_ATTRIBUTION }).addTo(map.value);
@@ -145,11 +146,11 @@ onBeforeUnmount(() => map.value?.remove());
 <template>
   <section class="card" aria-labelledby="phg-map-heading" data-cy="dashboard-phg-map">
     <div class="card-body">
-      <h2 id="phg-map-heading" class="h5">Near your parents? (Proximity Housing Grant)</h2>
+      <h2 id="phg-map-heading" class="h5">Near your parents (or child)? (Proximity Housing Grant)</h2>
       <p class="text-secondary small">
         Enter your parents' postal code to see the {{ PHG_RADIUS_KM }} km circle the PHG uses. Add the resale flat's
         postal code for its exact distance. This map is a guide only: your grants use the answer you gave in the plan.
-        Postal codes typed here are not saved.
+        Postal codes typed here aren't saved with your scenario or linked to your account.
       </p>
 
       <form class="row g-2 align-items-end mb-3" novalidate @submit.prevent="show">
@@ -193,7 +194,7 @@ onBeforeUnmount(() => map.value?.remove());
         :aria-label="`Map of Singapore showing ${parents ? 'your parents\' home with a 4 km circle, ' : ''}the ${townLabel(resaleTown) || 'resale'} and ${townLabel(btoTown) || 'BTO'} towns`"
         data-cy="phg-map-canvas"></div>
       <p class="text-caption mt-2 mb-0">
-        Town points are approximate town centres. Distances are straight lines, as the PHG measures them.
+        Town points are approximate town centres. Distances are straight-line estimates; HDB checks the 4 km rule itself when you apply.
       </p>
     </div>
   </section>

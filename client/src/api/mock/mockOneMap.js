@@ -3,6 +3,7 @@
 import { haversineKm } from '../../utils/phgMap.js';
 
 const MOCK_TOWN_POINTS = {
+  'JURONG EAST': { lat: 1.3329, lng: 103.7436 },
   TAMPINES: { lat: 1.3496, lng: 103.9568 },
   BEDOK: { lat: 1.3236, lng: 103.9273 },
   PUNGGOL: { lat: 1.3984, lng: 103.9072 },
