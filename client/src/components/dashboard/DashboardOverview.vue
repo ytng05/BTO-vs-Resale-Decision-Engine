@@ -8,6 +8,8 @@ import { formatMoney } from '../../utils/format.js';
 import { monthYear, totalCpfOa } from '../../utils/dashboardFormat.js';
 import CashCoverRing from './CashCoverRing.vue';
 
+const emit = defineEmits(['open-grants']); // the grants section may be closed: the Dashboard opens it
+
 const props = defineProps({
   outcomeA: { type: Object, required: true },
   outcomeB: { type: Object, required: true },
@@ -78,7 +80,7 @@ const paths = computed(() => [
                 </div>
               </dl>
               <p class="dash-tile__note">
-                <a href="#grants-heading" data-cy="dashboard-grants-jump">See why each grant applies</a>
+                <a href="#grants-heading" data-cy="dashboard-grants-jump" @click="emit('open-grants')">See why each grant applies</a>
               </p>
             </div>
           </div>

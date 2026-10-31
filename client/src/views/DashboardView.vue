@@ -7,18 +7,19 @@
 // in the store never changes, and "Reset" goes back to it.
 // Store and sliders hold dollars and fractions; client.js turns them into the contract's cents (D14).
 // All money from the API is integer cents (API_CONTRACT.md); it is divided by 100 only for display.
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import { validateStep } from '../validation/planValidation.js';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
-import { monthYear } from '../utils/dashboardFormat.js';
+import { costsTakeaway, grantsTakeaway, monthYear } from '../utils/dashboardFormat.js';
 import WhatIfPanel from '../components/dashboard/WhatIfPanel.vue';
 import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
 import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
 import DashboardOverview from '../components/dashboard/DashboardOverview.vue';
+import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
 import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
 
@@ -149,6 +150,29 @@ const warnings = computed(() => [
 ]);
 // A code becomes the server's plain-English sentence (`warningMessages`, docs/API_CONTRACT.md "POST /api/compare");
 // the bare code only if the server sent none for it.
+
+// The detail sections open and close. The chart that explains the result starts open; the rest start closed,
+// each with a one-line takeaway in its header. "Expand all" opens or closes every one.
+const sections = reactive({ cashflow: true, grants: false, costs: false, rpi: false, map: false });
+const allOpen = computed(() => Object.values(sections).every(Boolean));
+function toggleAll() {
+  const next = !allOpen.value;
+  Object.keys(sections).forEach((key) => { sections[key] = next; });
+}
+// The grants link in the overview: open the section, then bring its heading into view and focus it.
+function showGrants() {
+  sections.grants = true;
+  nextTick(() => {
+    const heading = document.getElementById('grants-heading');
+    heading?.scrollIntoView();
+    heading?.focus({ preventScroll: true });
+  });
+}
+const grantsLine = computed(() => grantsTakeaway(A.value, B.value));
+const costsLine = computed(() => costsTakeaway(A.value, B.value));
+const mapLine = computed(() => (store.choiceB.livingArrangement === 'NEAR'
+  ? "You said you'll live near your parents: check the 4 km rule."
+  : "Only needed if you'll live near your parents."));
 const warningText = (w) =>
   typeof w === 'string' ? result.value?.warningMessages?.[w] ?? w : w?.message ?? w?.code ?? '';
 </script>
@@ -212,6 +236,7 @@ const warningText = (w) =>
         :cash-savings="store.profile.cashSavings"
         :applicants="store.profile.applicants"
         :horizon="horizon"
+        @open-grants="showGrants"
       />
 
       <div class="row g-4" :aria-busy="updating ? 'true' : 'false'">
@@ -262,42 +287,77 @@ const warningText = (w) =>
             </ul>
           </div>
 
-          <!-- Beside the sliders (D35): the historical range informs the price growth slider. In this column, not
-               under the sticky what-if panel, which would slide over it on scroll. Fetches on its own. -->
-          <HistoricalRpiChart />
-
-          <section class="card" aria-labelledby="grants-heading">
-            <div class="card-body">
-              <h2 id="grants-heading" tabindex="-1" class="h5">Grants you qualify for</h2>
-              <p class="text-secondary small">
-                Every check says why it passed or failed.
-                <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>.
-              </p>
-              <GrantsTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+          <div class="d-flex align-items-baseline justify-content-between gap-3 mt-2">
+            <div>
+              <h2 class="h5 mb-0">The detail</h2>
+              <p class="text-secondary small mb-0">Open a section to see the numbers behind the result.</p>
             </div>
-          </section>
+            <button type="button" class="btn btn-link p-0" data-cy="dashboard-sections-toggle" @click="toggleAll">
+              {{ allOpen ? 'Collapse all' : 'Expand all' }}
+            </button>
+          </div>
 
-          <section class="card" aria-labelledby="cashflow-heading">
-            <div class="card-body">
-              <h2 id="cashflow-heading" class="h5">How the net position adds up</h2>
-              <p class="text-secondary small">In {{ horizon }}: what the flat is worth, minus what you still owe and the cash you spent on housing. Nothing is sold.</p>
-              <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
-            </div>
-          </section>
+          <DashboardSection
+            v-model:open="sections.cashflow"
+            title="How the net position adds up"
+            :takeaway="`In ${horizon}: what the flat is worth, minus what you still owe and the cash you spent on housing.`"
+            cy="dashboard-section-cashflow"
+          >
+            <p class="text-secondary small">Nothing is sold: this is the position if you stayed in the flat.</p>
+            <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
+          </DashboardSection>
 
-          <section class="card" aria-labelledby="costs-heading">
-            <div class="card-body">
-              <h2 id="costs-heading" class="h5">Costs up to {{ horizon }}</h2>
-              <p class="text-secondary small">Rent while waiting, renovation, fees, loan interest and CPF interest, and how each is paid.</p>
-              <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
-            </div>
-          </section>
+          <DashboardSection
+            v-model:open="sections.grants"
+            heading-id="grants-heading"
+            title="Grants you qualify for"
+            :takeaway="grantsLine"
+            cy="dashboard-section-grants"
+          >
+            <p class="text-secondary small">
+              Every check says why it passed or failed.
+              <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>.
+            </p>
+            <GrantsTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+          </DashboardSection>
 
-          <PhgMapCard
-            :bto-town="store.choiceA.town"
-            :resale-town="store.choiceB.town"
-            :living-arrangement="store.choiceB.livingArrangement"
-          />
+          <DashboardSection
+            v-model:open="sections.costs"
+            heading-id="costs-heading"
+            :title="`Costs up to ${horizon}`"
+            :takeaway="costsLine"
+            cy="dashboard-section-costs"
+          >
+            <p class="text-secondary small">Rent while waiting, renovation, fees, loan interest and CPF interest, and how each is paid.</p>
+            <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+          </DashboardSection>
+
+          <!-- D35: the historical range informs the price growth slider. Fetches on its own, only once opened. -->
+          <DashboardSection
+            v-model:open="sections.rpi"
+            title="Resale price history"
+            takeaway="Historical only, not a prediction of future prices."
+            lazy
+            flat
+            cy="dashboard-section-rpi"
+          >
+            <HistoricalRpiChart />
+          </DashboardSection>
+
+          <DashboardSection
+            v-model:open="sections.map"
+            title="Near your parents? (Proximity Housing Grant)"
+            :takeaway="mapLine"
+            lazy
+            flat
+            cy="dashboard-section-map"
+          >
+            <PhgMapCard
+              :bto-town="store.choiceA.town"
+              :resale-town="store.choiceB.town"
+              :living-arrangement="store.choiceB.livingArrangement"
+            />
+          </DashboardSection>
 
           <section class="card" aria-labelledby="notes-heading">
             <div class="card-body">

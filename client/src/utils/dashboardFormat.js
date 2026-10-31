@@ -61,3 +61,30 @@ export function largestFirst(rows) {
     .sort((x, y) => size(y.row) - size(x.row) || x.index - y.index)
     .map(({ row }) => row);
 }
+
+// One-line takeaways for the closed Dashboard sections, so a collapsed section still says something.
+
+// "BTO S$30,000 · Resale S$130,000 in total grants"
+export function grantsTakeaway(outcomeA, outcomeB) {
+  const a = outcomeA?.totalGrantsCents;
+  const b = outcomeB?.totalGrantsCents;
+  if (typeof a !== 'number' || typeof b !== 'number') return '';
+  if (a === 0 && b === 0) return 'No grants apply on either path';
+  return `BTO ${formatMoney(a / 100)} · Resale ${formatMoney(b / 100)} in total grants`;
+}
+
+// The biggest single cost line across both paths: "Biggest: Loan interest, S$80,000 on both paths".
+export function costsTakeaway(outcomeA, outcomeB) {
+  const largest = (outcome) => (outcome?.costBreakdown ?? [])
+    .filter((line) => typeof line.amountCents === 'number')
+    .reduce((best, line) => (!best || line.amountCents > best.amountCents ? line : best), null);
+  const a = largest(outcomeA);
+  const b = largest(outcomeB);
+  if (!a && !b) return 'No cost breakdown in this result';
+  if (a && b && a.id === b.id && a.amountCents === b.amountCents) {
+    return `Biggest: ${a.label}, ${formatMoney(a.amountCents / 100)} on both paths`;
+  }
+  const useA = a && (!b || a.amountCents >= b.amountCents);
+  const line = useA ? a : b;
+  return `Biggest: ${line.label}, ${formatMoney(line.amountCents / 100)} for ${useA ? 'BTO' : 'resale'}`;
+}
