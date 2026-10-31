@@ -113,6 +113,24 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     age: a.age + yearsToApplication,
     monthlyIncomeCents: Math.round(a.monthlyIncomeCents * (1 + assumptions.annualIncomeGrowth) ** yearsToApplication)
   }));
+
+  // D36: income ceilings, checked at the HFE application
+  const householdIncomeCents = projected.reduce((sum, p) => sum + p.monthlyIncomeCents, 0);
+  const newFlatCeilingCents = read(ruleset, RULESET_KEYS.NEW_FLAT_INCOME_CEILING) * 100;
+  const hdbLoanCeilingCents = read(ruleset, RULESET_KEYS.HDB_LOAN_INCOME_CEILING) * 100;
+  for (const [name, value] of [
+    ['NEW_FLAT_INCOME_CEILING', newFlatCeilingCents],
+    ['HDB_LOAN_INCOME_CEILING', hdbLoanCeilingCents]
+  ]) {
+    if (!Number.isFinite(value)) throw new Error(`Ruleset key ${name} is missing or not a number`);
+  }
+  if (isBto && householdIncomeCents > newFlatCeilingCents) {
+    warnings.add(WARNINGS.INCOME_CEILING_BREACHED_AT_PURCHASE);
+  }
+  if (householdIncomeCents > hdbLoanCeilingCents) {
+    warnings.add(WARNINGS.HDB_LOAN_INCOME_CEILING_BREACHED);
+  }
+
   const grantsProfile = {
     applicants: applicants.map((a, i) => ({
       age: projected[i].age,
@@ -175,6 +193,13 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   );
   if (maxLoan.ltvProrated) warnings.add(WARNINGS.LEASE_BELOW_95_PRORATION);
 
+  // D37: CPF usage cap when the lease doesn't cover the youngest buyer to 95
+  const usageRule = read(ruleset, RULESET_KEYS.CPF_USAGE_LEASE_RULE);
+  const youngestAtPurchase = Math.min(...projected.map((p) => p.age));
+  const yearsShort = Math.max(0, usageRule.leaseMustCoverYoungestToAge - (youngestAtPurchase + choice.remainingLeaseYears));
+  const factorPercent = Math.max(0, 100 - usageRule.leaseProRating.percentPerYearShort * yearsShort);
+  let cpfCapLeftCents = yearsShort > 0 ? Math.floor((priceCents * factorPercent) / 100) : Infinity;
+
   const loanRate = hdbConcessionaryRate; // HDB loans only (D32)
 
   // -------------------------------------------------------------------------
@@ -197,6 +222,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   const payOa = (month, cents, kind) => {
     if (cents <= 0) return;
     oaLeftCents -= cents;
+    cpfCapLeftCents -= cents;
     cpfUsedAtPurchaseCents += cents;
     ledger.push({ date: toDate(month), amountCents: cents, kind });
   };
@@ -208,13 +234,13 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   // D28 v3: the retention is a ceiling, not a floor. Where there is no loan to fall back on (signing) or
   // the loan is capped (keys), any OA left, the retained part included, pays before cash
   const payOaThenCash = (month, cents) => {
-    const fromOa = Math.min(cents, Math.max(0, oaLeftCents));
+    const fromOa = Math.min(cents, Math.max(0, oaLeftCents), Math.max(0, cpfCapLeftCents));
     payOa(month, fromOa, 'LUMP_SUM');
     payCash(month, cents - fromOa);
   };
   // A fee is paid whole from the OA left if it covers it, else whole in cash
   const payFee = (month, cents) => {
-    if (cents <= oaLeftCents) {
+    if (cents <= oaLeftCents && cents <= cpfCapLeftCents) {
       payOa(month, cents, 'LUMP_SUM');
       return 'CPF';
     }
@@ -234,10 +260,11 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   // Grants are credited when used, each part a GRANT ledger entry dated then (D29 v2)
   let grantsLeftCents = totalGrantsCents;
   const useGrants = (month, dueCents) => {
-    const used = Math.min(grantsLeftCents, dueCents);
+    const used = Math.min(grantsLeftCents, dueCents, Math.max(0, cpfCapLeftCents));
     if (used > 0) {
       ledger.push({ date: toDate(month), amountCents: used, kind: 'GRANT' });
       grantsLeftCents -= used;
+      cpfCapLeftCents -= used;
     }
     return used;
   };
@@ -262,7 +289,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   // accounts (HDB Sign Agreement for Lease page; seat 2 on #46), so they never reach the OA: they can't pay
   // fees or instalments and aren't refund principal. D1 doesn't count CPF balances, so they drop out here;
   // they never make a grant lower net position. Not counted in v1 (stated limitation, D32; seat 2 on #54).
-  const oaAtKeysCents = Math.min(remainingCents, Math.max(0, oaLeftCents - retentionCents));
+  const oaAtKeysCents = Math.min(remainingCents, Math.max(0, oaLeftCents - retentionCents), Math.max(0, cpfCapLeftCents));
   payOa(keyMonth, oaAtKeysCents, 'LUMP_SUM');
   remainingCents -= oaAtKeysCents;
 
@@ -311,9 +338,10 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   const closingByMonth = new Map(); // payment month → closing balance
   for (const row of schedule) {
     const month = toMonthNumber(row.paymentDate);
-    const fromOa = Math.min(row.instalmentCents, Math.max(0, oaLeftCents));
+    const fromOa = Math.min(row.instalmentCents, Math.max(0, oaLeftCents), Math.max(0, cpfCapLeftCents));
     if (fromOa > 0) {
       oaLeftCents -= fromOa;
+      cpfCapLeftCents -= fromOa;
       ledger.push({ date: row.paymentDate, amountCents: fromOa, kind: 'INSTALMENT' });
     }
     payCash(month, row.instalmentCents - fromOa, { atPurchase: false });

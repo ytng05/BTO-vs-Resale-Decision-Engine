@@ -1,0 +1,30 @@
+<!-- @dsCard group="Forms" height=330 subtitle="Label, field, helper text, error · static rendition" -->
+<!doctype html><html lang="en-SG"><head><meta charset="utf-8"><style>body{margin:0;padding:24px;background:var(--bg-page)}</style></head><body>
+<div class="row g-4" style="max-width:640px">
+  <div class="col-sm-6">
+    <label for="income" class="form-label">Monthly income</label>
+    <div class="input-group">
+      <span class="input-group-text">S$</span>
+      <input id="income" class="form-control" inputmode="numeric" value="5,400">
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <label for="town" class="form-label">Town</label>
+    <select id="town" class="form-select"><option>Tampines</option></select>
+    <div class="form-text">Towns with a recent BTO launch.</div>
+  </div>
+  <div class="col-sm-6">
+    <label for="cash" class="form-label">Cash savings now</label>
+    <div class="input-group has-validation">
+      <span class="input-group-text">S$</span>
+      <input id="cash" class="form-control is-invalid" value="-200" aria-describedby="cash-err">
+      <div id="cash-err" class="invalid-feedback">Enter an amount of S$0 or more.</div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <label for="year" class="form-label">Compare in year <span class="text-secondary fw-normal">(optional)</span></label>
+    <input id="year" class="form-control" placeholder="2036" disabled>
+    <div class="form-text">Leave blank to compare 10 years after the later move-in.</div>
+  </div>
+</div>
+</body></html>

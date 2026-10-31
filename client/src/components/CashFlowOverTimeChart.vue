@@ -27,6 +27,10 @@ let chart = null;
 function themeColour(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(`--bs-${name}`).trim();
 }
+// Resale's colour is the pink accent from the design tokens, as on the heatmap and the path cards.
+function resaleColour() {
+  return getComputedStyle(document.documentElement).getPropertyValue('--accent-fill-1').trim();
+}
 
 const dollars = (cents) => (typeof cents === 'number' ? cents / 100 : null);
 const netOf = (row) => {
@@ -73,8 +77,8 @@ function data() {
       {
         label: 'Resale',
         data: rows.value.map((r) => r.resale),
-        borderColor: themeColour('warning'),
-        backgroundColor: themeColour('warning'),
+        borderColor: resaleColour(),
+        backgroundColor: resaleColour(),
         spanGaps: true,
         tension: 0.15,
       },
