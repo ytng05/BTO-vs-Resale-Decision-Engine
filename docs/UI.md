@@ -1,12 +1,15 @@
 # UI.md — Design system and UI rulebook
 
-> Version 1.0 · Owner: seat 4 (frontend core + styling) · Last updated: 2026-09-28
+> Version 1.2 · Owner: seat 4 (frontend core + styling) · Last updated: 2026-10-29
 > Propose changes by pull request against this file. A change to a token value needs sign-off from seat 4
 > and seat 5 (since it affects Cypress screenshots/visual state), and should update `StyleGuide.vue` in the
 > same PR.
 
 This file is the single source of truth for how the app looks. If a screen disagrees with this file, the
 screen is wrong, not the file — raise a PR to change the rule instead of improvising in a component.
+
+Since 1.2 the look is the **Calm** direction (mist page, ink, blush and pink, Plus Jakarta Sans). The brand
+book, token list and per-component guidance with HTML previews are in `docs/design-system/`.
 
 ---
 
@@ -45,142 +48,133 @@ Separate pages: Sources (`/sources`, always in the nav), My scenarios (`/scenari
 
 ## 2. Colour
 
-### 2.1 Brand palette (given)
+### 2.1 Brand palette (Calm)
 
-| Name | Hex | Role |
-|---|---|---|
-| Planetary | `#334EAC` | Primary action colour |
-| Universe | `#7096D1` | Supporting tint / large-scale accent |
-| Venus | `#BAD6EB` | Supporting tint, subtle fills |
-| Sky | `#D0E3FF` | Supporting tint, subtle fills |
-| Meteor | `#F7F2EB` | Elevated surface (cards, panels) |
-| Milky Way | `#FFF9F0` | **Main page background** |
-| Galaxy | `#081F5C` | Primary text / strong accent |
-
-### 2.2 Verified contrast on Milky Way (`#FFF9F0`)
-
-All ratios below are measured, not estimated (WCAG 2.1 relative-luminance formula). AA for normal text needs
-**4.5:1**; AA for large text (≥24px, or ≥19px bold) needs **3.0:1**.
-
-| Colour | Hex | Ratio on Milky Way | Normal text | Large text / icons |
-|---|---|---|---|---|
-| Galaxy | `#081F5C` | 14.74 | ✅ PASS | ✅ PASS |
-| Planetary | `#334EAC` | 7.10 | ✅ PASS | ✅ PASS |
-| Universe | `#7096D1` | 2.88 | ❌ fail | ❌ fail |
-| Venus | `#BAD6EB` | 1.44 | ❌ fail | ❌ fail |
-| Sky | `#D0E3FF` | 1.24 | ❌ fail | ❌ fail |
-| Meteor | `#F7F2EB` | 1.06 | ❌ fail | ❌ fail |
-| White | `#FFFFFF` | 1.05 | ❌ fail | ❌ fail |
-
-**Rule:** only **Galaxy** and **Planetary** may be used as text or icon colour directly on Milky Way or
-Meteor. Universe, Venus, Sky, Meteor and White are **fill/background colours only** at their given
-lightness — never body text, never a small icon's only colour.
-
-**Button fills checked separately** (white text on a solid colour fill):
-
-| Fill | White text ratio | Verdict |
-|---|---|---|
-| Planetary | 7.43 | ✅ PASS |
-| Galaxy | 15.43 | ✅ PASS |
-| Universe | 3.01 | ❌ fail — do not use Universe as a filled button with white text |
-
-**Galaxy text on tinted fills** (for chips/badges built on Venus or Sky):
-
-| Fill | Galaxy text ratio | Verdict |
-|---|---|---|
-| Venus | 10.22 | ✅ PASS |
-| Sky | 11.84 | ✅ PASS |
-
-### 2.3 Derived token: Universe-text
-
-Universe fails AA for text at its given lightness (ratio 2.88). For the rare case where an Universe-family
-colour is needed as small text or an icon (e.g. a link in the Universe family, a secondary icon tint), use
-the darkened variant below instead of the base Universe swatch:
-
-| Token | Hex | Contrast on Milky Way |
-|---|---|---|
-| `$universe` (fills, large decorative use only) | `#7096D1` | 2.88 — fails for text |
-| `$universe-text` (links/icons/small text) | `#54709C` | 4.81 ✅ PASS |
-
-### 2.4 Derived neutral (grey) scale
-
-No grey scale was given, so one is derived by blending Galaxy toward Milky Way, keeping the whole scale in
-the same desaturated blue family rather than a neutral that would clash:
-
-| Token | Hex | Use | Contrast on Milky Way |
+| Name | Token | Hex | Role |
 |---|---|---|---|
-| `$text-primary` | `#081F5C` (Galaxy) | Headings, primary body text | 14.74 — PASS |
-| `$text-secondary` | `#536088` | Secondary/supporting text, labels | 5.19 — PASS |
-| `$text-tertiary` | `#8188A0` | Placeholder text, timestamps, disabled text | 2.9 — fails AA; **large/decorative only, never body copy** |
-| `$border` | `#D3D2D5` | Input borders, dividers between sections | — (not text) |
-| `$border-subtle` | `#E6E3E1` | Card borders on Meteor, faint dividers | — (not text) |
-| `$surface-disabled` | `#F3EEE9` | Disabled input/button backgrounds | — (not text) |
+| Mist | `$color-mist` | `#F3F3F5` | **Main page background** |
+| White | `$color-white` | `#FFFFFF` | Cards, modals, navbar pills |
+| Periwinkle | `$color-periwinkle` | `#E9ECF6` | The one feature card on a screen, hover, info fill |
+| Blush | `$color-blush` | `#FBD5E5` | Soft pink fills: selected chips, step halo, version badge |
+| Pink | `$color-pink` | `#F5A3C7` | Accent fill, and resale in charts |
+| Pink deep | `$color-pink-deep` | `#F08AB6` | Edge of the accent disc |
+| Berry | `$color-berry` | `#B23A78` | The only pink allowed as text or a thin mark |
+| Ink | `$color-ink` | `#1D1D24` | Primary text, primary buttons, BTO in charts |
+| Slate | `$color-slate` | `#5F6373` | Secondary text and labels |
+
+### 2.2 Verified contrast
+
+Ratios below are calculated with the WCAG 2.1 relative-luminance formula. AA for normal text needs **4.5:1**;
+AA for large text (≥24px, or ≥19px bold) and for icons needs **3.0:1**.
+
+| Colour on background | Ratio | Normal text | Large text / icons |
+|---|---|---|---|
+| Ink on Mist | 15.12 | ✅ PASS | ✅ PASS |
+| Ink on White | 16.75 | ✅ PASS | ✅ PASS |
+| Slate on Mist | 5.39 | ✅ PASS | ✅ PASS |
+| Slate on White | 5.97 | ✅ PASS | ✅ PASS |
+| Berry on White | 5.57 | ✅ PASS | ✅ PASS |
+| Berry on Mist | 5.03 | ✅ PASS | ✅ PASS |
+| Tertiary (`#9A9DB0`) on Mist | 2.42 | ❌ fail | ❌ fail |
+| Pink on White | 1.92 | ❌ fail | ❌ fail |
+| Pink on Mist | 1.73 | ❌ fail | ❌ fail |
+
+**Rule:** only **Ink**, **Slate** and **Berry** may be text or icon colour on Mist or White. Pink, Blush and
+Periwinkle are **fill colours only**: never body text, never a small icon's only colour. Tertiary is for
+placeholders and decoration only.
+
+**Fills checked separately** (text on a solid fill):
+
+| Fill | Text | Ratio | Verdict |
+|---|---|---|---|
+| Ink (`$primary`) | White | 16.75 | ✅ PASS |
+| `$primary-hover` (`#3A3A44`) | White | 11.24 | ✅ PASS |
+| Pink | Ink | 8.73 | ✅ PASS |
+| Blush | Ink | 12.57 | ✅ PASS |
+| Periwinkle | Ink | 14.20 | ✅ PASS |
+
+### 2.3 Legacy token: `$universe-text`
+
+Kept as an alias of Ink so existing code that links or highlights with it still builds. New code uses
+`$text-primary` or `$primary`. Links, the active nav item and the active step are ink.
+
+### 2.4 Neutral scale
+
+| Token | Hex | Use | Contrast |
+|---|---|---|---|
+| `$text-primary` | `#1D1D24` (Ink) | Headings, primary body text | 15.12 on Mist — PASS |
+| `$text-secondary` | `#5F6373` (Slate) | Secondary/supporting text, labels | 5.39 on Mist, 5.97 on White — PASS |
+| `$text-tertiary` | `#9A9DB0` | Placeholder text, decoration | 2.42 on Mist — fails AA; **never body copy** |
+| `$border` | `#DFE2EA` | Input borders, outline buttons, dividers | not text |
+| `$border-subtle` | `#ECEDF2` | Faint dividers | not text |
+| `$surface-disabled` | `#F0F1F5` | Disabled inputs and buttons, skeleton blocks, hover tint | not text |
 
 ### 2.5 Surfaces
 
 | Token | Hex | Use |
 |---|---|---|
-| `$bg-page` | `#FFF9F0` (Milky Way) | Main page background, body |
-| `$bg-surface` | `#F7F2EB` (Meteor) | Cards, panels, elevated content sitting on the page |
-| `$bg-surface-raised` | `#FFFFFF` | Modals, popovers — the most "lifted" surface |
+| `$bg-page` | `#F3F3F5` (Mist) | Main page background, body |
+| `$bg-surface` | `#FFFFFF` | Cards, panels |
+| `$bg-surface-raised` | `#FFFFFF` | Modals, popovers |
+| `$accent-fill-3` | `#E9ECF6` (Periwinkle) | The single highlighted ("feature") card on a screen, with a 1px white edge |
 
-**Decided trade-off:** Meteor vs Milky Way measures a contrast ratio of only **1.06** (nearly identical
-lightness) — checked against white as an alternative background too, which doesn't improve this (Meteor vs
-White is 1.11, no better). The team has decided to keep Milky Way as the page background and solve card
-separation structurally instead of by colour: **every card MUST have both `1px solid $border-subtle` and
-`$shadow-sm` (§6) at rest** — this is not optional styling, it is the mechanism that makes a card readable as
-a surface at all on this background. This is also the Apple-like pattern (hairline + soft shadow, not a big
-colour jump), so it fits the design direction. Never ship a card with only a colour change and no border or
-shadow.
+**Decided trade-off:** White vs Mist measures a contrast ratio of only **1.11**, so colour alone does not
+separate a card from the page. The Calm direction separates cards with a **soft shadow, not a border**:
+**every card MUST carry `$shadow-sm` (§6) at rest.** This replaces the earlier rule (1.1) that required a
+border as well. Never ship a card with neither a shadow nor a colour step.
 
 ### 2.6 Primary action and tints
 
 | Token | Hex | Use |
 |---|---|---|
-| `$primary` | `#334EAC` (Planetary) | Primary buttons, links, focus rings, active nav |
-| `$primary-hover` | `#2A3F8D` (Planetary darkened ~15%) | Primary button hover/active |
-| `$accent-fill-1` | `#7096D1` (Universe) | Large decorative fills, chart series, progress bars — not text |
-| `$accent-fill-2` | `#BAD6EB` (Venus) | Subtle background tint, selected-row background, chip fill |
-| `$accent-fill-3` | `#D0E3FF` (Sky) | Lightest tint — hover background on list rows, info banner fill |
+| `$primary` | `#1D1D24` (Ink) | Primary buttons, links, focus rings, active step |
+| `$primary-hover` | `#3A3A44` | Primary button hover/active |
+| `$on-primary` | `#FFFFFF` | Text on a primary fill |
+| `$focus-ring` | `#1D1D24` (Ink) | 2px focus ring with a 2px `$bg-page` offset |
+| `$accent-fill-1` | `#F5A3C7` (Pink) | Accent disc, resale series, progress marks — not text |
+| `$accent-fill-2` | `#FBD5E5` (Blush) | Selected chip, step halo, version badge, current nav pill |
+| `$accent-fill-3` | `#E9ECF6` (Periwinkle) | Feature card, hover tint, info banner fill |
+
+**Action is ink.** There is one filled ink button per screen. Pink is warmth, not text.
 
 ### 2.7 Semantic colours
 
-None were given, so these are proposed to match the palette's desaturated, non-neon mood, and are checked
-against Milky Way and against each other for distinguishability:
+`$success` and `$warning` darkened slightly for the Calm backgrounds so text passes AA everywhere (#82 review); the rest unchanged from 1.1:
 
-| Token | Hex | Use | Contrast on Milky Way (text use) |
-|---|---|---|---|
-| `$success` | `#2E7D5B` | Positive status, success banners/badges | 5.3 — PASS |
-| `$success-fill` | `#E3F0E9` | Success banner background | — |
-| `$warning` | `#9A6B1F` | Caution status, "not yet verified" badges | 5.6 — PASS |
-| `$warning-fill` | `#FBF0DD` | Warning banner background | — |
-| `$danger` | `#B3372C` | Errors, failed validation, destructive actions | 5.2 — PASS |
-| `$danger-fill` | `#FAE6E3` | Error banner background | — |
-| `$info` | `#334EAC` (= `$primary`) | Informational banners | 7.10 — PASS |
-| `$info-fill` | `#E8EDFA` | Info banner background | — |
+| Token | Hex | Use | Text on Mist | Text on its own fill |
+|---|---|---|---|---|
+| `$success` | `#2C7756` | Positive status, success badges | 4.88 — PASS | 4.61 — PASS (on `#E3F0E9`) |
+| `$success-fill` | `#E3F0E9` | Success banner background | — | — |
+| `$warning` | `#8E621D` | Caution status, "not yet verified" badges | 4.84 — PASS | 4.75 — PASS (on `#FBF0DD`) |
+| `$warning-fill` | `#FBF0DD` | Warning banner background | — | — |
+| `$danger` | `#B3372C` | Errors, failed validation, destructive actions | 5.41 — PASS | 5.00 (on `#FAE6E3`) — PASS |
+| `$danger-fill` | `#FAE6E3` | Error banner background | — | — |
+| `$info` | `#5F6373` (= Slate) | Informational banners | 5.39 — PASS | 5.06 (on `#E9ECF6`) — PASS |
+| `$info-fill` | `#E9ECF6` (= Periwinkle) | Info banner background | — | — |
 
 **Rule:** semantic colours are reserved for status communication only (validation, alerts, badges). Never use
-`$danger` for a merely "important" button, and never use `$success` decoratively.
+`$danger` for a merely "important" button, and never use `$success` decoratively. Success and warning text
+pass 4.5:1 on Mist, white, periwinkle and their own fills; still pair the colour with a word, never colour alone.
 
 ### 2.8 Dark mode (optional, not required for this project)
 
 Not required for IS216 grading, but tokens are structured so it's possible later: a `[data-theme="dark"]`
-block would remap `$bg-page` to a dark desaturated navy near Galaxy, `$text-primary` to Milky Way, and keep
-Planetary as the accent (it already passes AA on dark backgrounds — check before shipping if attempted).
+block would remap `$bg-page` to a deep ink, `$text-primary` to Mist, and keep Pink as the accent. Check every
+pair against §2.2 before shipping if attempted.
 
 ---
 
 ## 3. Data-visualisation colour
 
-For charts and any grid/matrix visual (e.g. a heatmap), build from the brand blues plus semantic colours,
-never from arbitrary chart-library defaults:
+For charts and any grid/matrix visual (e.g. a heatmap), use the Calm palette, never arbitrary chart-library
+defaults:
 
-- **Categorical series (Chart.js line/bar):** `$primary` (Planetary), `$accent-fill-1` (Universe), `$success`,
-  `$warning`, in that order, so the first two series read clearly against Milky Way.
-- **Diverging scale (e.g. a two-sided comparison or heatmap):** `$primary` (Planetary) at one end,
-  `$warning` (`#9A6B1F`) at the other end — chosen because blue/amber is distinguishable under the common
-  forms of colour-blindness, unlike blue/red or green/red. Use `$border` (`#D3D2D5`) as the neutral midpoint
-  for a "tie" or "no difference" value.
+- **Path colours:** BTO / Path A is **Ink** (`$color-ink`); resale / Path B is **Pink** (`$color-pink`). A tie
+  or break-even value is **Berry** (`$color-berry`). Unplayed or neutral marks use `$border`.
+- **Pink is only 1.92:1 on white, so resale never relies on colour.** It also sits below the baseline
+  (timeline bars), uses a dotted line (line charts), or carries a text label.
+- **Heatmap:** Ink where BTO is ahead, Pink where resale is ahead, `$border` for a tie. Cells keep a text
+  `title`/`aria-label` stating the value in words.
 - **Never colour-only.** Every chart needs a legend or inline label; every heatmap cell needs a text
   tooltip/`title`/`aria-label` stating its value and meaning, not just a fill colour. A matrix or heatmap
   must be DOM- or SVG-rendered (not canvas) so both accessibility and Cypress can read it — see §14.
@@ -191,41 +185,40 @@ never from arbitrary chart-library defaults:
 
 | Role | Font |
 |---|---|
-| Headings (h1–h4, display) | **Hanken Grotesk** |
-| Body, labels, UI text, numbers | **Inter** |
+| Everything: headings, body, labels, UI text, numbers | **Plus Jakarta Sans** |
 
-Both are open-source under the SIL Open Font License (OFL). Load via Google Fonts or Fontsource with
-`font-display: swap`. Credit line for the presentation/README: *"Hanken Grotesk and Inter by their respective
-foundries, licensed under the SIL Open Font License."* Confirm the exact current licence text on the font's
-Google Fonts or Fontsource page before submission.
+Plus Jakarta Sans is open-source under the SIL Open Font License (OFL). Load weights 400, 500 and 600 from
+Google Fonts with `font-display: swap` (the `<link>` is in `client/index.html`). Credit line for the
+presentation/README: *"Plus Jakarta Sans by Tokotype, licensed under the SIL Open Font License."* Confirm the
+exact current licence text on the font's Google Fonts page before submission.
 
 ```scss
-$font-heading: 'Hanken Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-$font-body:    'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+$font-heading: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+$font-body:    'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 ```
 
-**Rule:** Hanken Grotesk is a display/heading face. Never use it below `body-small` size (it loses
-legibility at small sizes) — body copy, labels, and captions are always Inter.
+**Rule:** headings are weight 500, **never bold**, with tight tracking. Body is 400; labels and buttons 500.
 
 ### Type scale
 
-| Token | Font | Size (mobile) | Size (desktop, ≥lg) | Weight | Line-height | Letter-spacing |
-|---|---|---|---|---|---|---|
-| `display` | Hanken Grotesk | 2rem / 32px | 2.75rem / 44px | 600 | 1.1 | -0.01em |
-| `h1` | Hanken Grotesk | 1.5rem / 24px | 2rem / 32px | 600 | 1.2 | -0.01em |
-| `h2` | Hanken Grotesk | 1.25rem / 20px | 1.5rem / 24px | 600 | 1.25 | normal |
-| `h3` | Hanken Grotesk | 1.125rem / 18px | 1.25rem / 20px | 600 | 1.3 | normal |
-| `h4` | Hanken Grotesk | 1rem / 16px | 1.125rem / 18px | 600 | 1.3 | normal |
-| `body` | Inter | 1rem / 16px | 1rem / 16px | 400 | 1.5 | normal |
-| `body-small` | Inter | 0.875rem / 14px | 0.875rem / 14px | 400 | 1.5 | normal |
-| `caption` | Inter | 0.75rem / 12px | 0.75rem / 12px | 400 | 1.4 | 0.01em |
-| `label` | Inter | 0.8125rem / 13px | 0.8125rem / 13px | 500 | 1.3 | 0.01em |
-| `numeric` | Inter, `font-variant-numeric: tabular-nums` | matches context | matches context | 500 | matches context | normal |
+| Token | Size (mobile) | Size (desktop, ≥lg) | Weight | Line-height | Letter-spacing |
+|---|---|---|---|---|---|
+| `display` | 2.25rem / 36px | 3rem / 48px | 500 | 1.1 | -0.025em |
+| `h1` | 1.75rem / 28px | 2.25rem / 36px | 500 | 1.15 | -0.02em |
+| `h2` | 1.375rem / 22px | 1.5rem / 24px | 500 | 1.25 | -0.015em |
+| `h3` | 1.125rem / 18px | 1.25rem / 20px | 500 | 1.3 | normal |
+| `h4` | 1rem / 16px | 1.125rem / 18px | 500 | 1.3 | normal |
+| `body` | 1rem / 16px | 1rem / 16px | 400 | 1.5 | normal |
+| `body-small` | 0.875rem / 14px | 0.875rem / 14px | 400 | 1.5 | normal |
+| `caption` | 0.75rem / 12px | 0.75rem / 12px | 400 | 1.4 | 0.01em |
+| `label` | 0.8125rem / 13px | 0.8125rem / 13px | 500 | 1.3 | 0.01em |
+| `numeric` | `font-variant-numeric: tabular-nums` | matches context | 500 | matches context | normal |
 
 **Rules:**
 - Any money, percentage, or table of numbers uses `numeric` (tabular figures), so digits align in columns.
+  Big result figures are 24–34px at weight 500.
 - Body text max line length: **75 characters** (use `max-width` on the text container, not on the page).
-- Headings use `$text-primary` (Galaxy). Body text may use `$text-primary` or `$text-secondary`; never
+- Headings use `$text-primary` (Ink). Body text may use `$text-primary` or `$text-secondary`; never
   `$text-tertiary` for anything the user must read to complete a task.
 
 ---
@@ -260,27 +253,24 @@ $space-10: 4rem;    // 64px
 
 | Token | Value | Use |
 |---|---|---|
-| `$radius-sm` | 6px | Inputs, chips, small buttons |
-| `$radius-md` | 12px | Cards, panels |
-| `$radius-lg` | 20px | Modals, hero sections |
-| `$radius-pill` | 999px | Pills, toggle switches |
+| `$radius-sm` | 16px | Inputs, icon buttons |
+| `$radius-md` | 28px | Cards, panels |
+| `$radius-lg` | 36px | Feature cards, the results chart card, modals |
+| `$radius-pill` | 999px | Every button, chip, nav pill and badge; toggle switches |
 
-**Borders:** `1px solid $border` for interactive elements (inputs, buttons with outline variant);
-`1px solid $border-subtle` for separating cards from the Milky Way background (see §2.5's note on why this
-is needed).
+**Borders:** `1px solid $border` for interactive elements (inputs, outline buttons). Cards are separated by
+shadow, not a border (see §2.5). A feature card carries a 1px white edge.
 
-**Shadows** (calibrated for a warm-white background — pure grey shadows look muddy on Milky Way, so these
-use a warm, low-opacity Galaxy tint instead of black):
+**Shadows** (soft, tinted with a cool ink, so they stay light on Mist):
 
 ```scss
-$shadow-sm: 0 1px 2px rgba(8, 31, 92, 0.06);
-$shadow-md: 0 4px 12px rgba(8, 31, 92, 0.08);
-$shadow-lg: 0 12px 32px rgba(8, 31, 92, 0.12);
+$shadow-sm: 0 1px 2px rgba(29, 29, 36, 0.05), 0 8px 24px rgba(60, 64, 90, 0.06);
+$shadow-md: 0 20px 40px rgba(60, 64, 90, 0.08);
+$shadow-lg: 0 24px 48px rgba(60, 64, 90, 0.12);
 ```
 
-Use `$shadow-sm` for cards at rest, `$shadow-md` on hover/focus, `$shadow-lg` for modals only. Optional: a
-restrained `backdrop-filter: blur(12px)` with a translucent Milky Way fill may be used for a sticky top bar
-only — nowhere else.
+Use `$shadow-sm` on every white card at rest, `$shadow-md` on the main form card and on hover/focus-within,
+`$shadow-lg` for modals only.
 
 ---
 
@@ -290,9 +280,9 @@ only — nowhere else.
 presentation.
 
 - Sizes: 16px (inline with body text), 20px (buttons, form fields), 24px (standalone/nav).
-- Stroke weight: use Lucide's default (2px at 24px size) — don't override per-icon.
-- Icon colour follows the same contrast rule as text (§2.2): only Galaxy or Planetary for a meaningful
-  standalone icon; tinted icons (Universe/Venus/Sky) are decorative-only and always paired with a text label.
+- Stroke weight: 1.6–1.8px with round caps (the Calm look), the same for every icon. Icons are ink.
+- Icon colour follows the same contrast rule as text (§2.2): only Ink, Slate or Berry for a meaningful
+  standalone icon; tinted icons (Pink, Blush, Periwinkle) are decorative-only and always paired with a text label.
 - A button with an icon and no visible text label must have an `aria-label`.
 
 ---
@@ -312,8 +302,10 @@ Touch targets are **44×44px minimum** on all interactive elements.
 | Destructive | `$danger` | White | `.btn-danger` |
 
 Rule: **one filled (primary or destructive) button per view.** Every other action is secondary or tertiary.
-Hover darkens the fill ~10%; focus adds a 2px `$primary` outline with 2px offset; disabled drops opacity to
-0.5 and removes hover/focus states.
+All buttons are pill-shaped (`$radius-pill`), weight 500. A primary button may lead with a 32–34px
+`$accent-fill-1` (pink) disc holding an ink arrow. Primary hover moves to `$primary-hover`, other fills
+darken ~10%; focus adds a 2px `$focus-ring` (ink) outline with a 2px `$bg-page` offset; disabled drops
+opacity to 0.5 and removes hover/focus states.
 
 ### Inputs, selects, sliders
 
@@ -329,14 +321,16 @@ Hover darkens the fill ~10%; focus adds a 2px `$primary` outline with 2px offset
   with a checkmark, upcoming steps in `$text-tertiary`.
 - Mobile (<`md`): condense to "Step 2 of 4" text plus a thin progress bar in `$primary` on `$border`.
 - Back/Next buttons anchor to the bottom of the step card; Next is the one primary button on the screen.
+- *Moving to the numbered step track (`.step-track`) with a blush halo on the current step; see
+  `docs/design-system/components/Stepper/`. Until that PR, the current stepper stays as described above.*
 
 ### Cards and summary tiles
 
-- Background `$bg-surface` (Meteor) on a Milky Way page, **`$border-subtle` AND `$shadow-sm` both required**
-  at rest (see §2.5 — colour alone does not separate these two surfaces), `$radius-md`. On hover/focus-within
-  (e.g. a clickable summary tile), step up to `$shadow-md`. A hero/lead statement (the single most important
-  sentence on a results-style page) sits above any chart, in `h2` or `display` size, with no card chrome
-  around it.
+- Background `$bg-surface` (White) on a Mist page, **`$shadow-sm` required** at rest (see §2.5 — colour alone
+  does not separate these two surfaces), `$radius-md`. On hover/focus-within (e.g. a clickable summary tile),
+  step up to `$shadow-md`. The one highlighted card on a screen is a feature card: `$accent-fill-3`
+  (Periwinkle), `$radius-lg`, 1px white edge. A hero/lead statement (the single most important sentence on a
+  results-style page) sits above any chart, in `h2` or `display` size, with no card chrome around it.
 
 ### Tables
 
@@ -360,7 +354,7 @@ inline — never a single generic message covering several failed items at once.
 - Status badges use the semantic fills (§2.7): `$success-fill` / `$warning-fill` / `$danger-fill` /
   `$info-fill` backgrounds with the matching text colour, `$radius-pill`, `caption` size.
 - A version/freshness badge (e.g. showing which data or ruleset produced a result) uses `$accent-fill-2`
-  (Venus) background with `$text-primary` text.
+  (Blush) background with `$text-primary` text (12.6:1).
 
 ### Alerts, toasts, modals, banners
 
@@ -381,8 +375,9 @@ inline — never a single generic message covering several failed items at once.
 
 ### Illustrations
 
-- Decorative SVG only (`HeroScene` on the home page): fills use the brand palette through the CSS custom
-  properties, never hex values; one `role="img"` and `aria-label` on the whole scene, nothing focusable.
+- Decorative SVG only (`HeroScene` on the home page): fills use the Calm palette through CSS custom
+  properties (a fallback hex inside `var()` is allowed so the scene still renders if a token is missing); one
+  `role="img"` and `aria-label` on the whole scene, nothing focusable.
 - Ambient looping motion is allowed here as an exception to the §9 durations, using `transform` only. It
   stops under `prefers-reduced-motion: reduce`, pauses when off-screen or in a background tab, and never
   carries information. `data-cy="hero-scene"`.
@@ -391,6 +386,8 @@ inline — never a single generic message covering several failed items at once.
 
 - Sticky top bar, `$bg-page` or translucent blur variant, `$border-subtle` bottom border on scroll only.
 - Active nav item in `$primary`; inactive items in `$text-secondary`.
+- *Moving to three floating white pills (status, logo and links, account) on `$bg-page`; see
+  `docs/design-system/components/Navbar/`. Until that PR, the current bar stays as described above.*
 
 ---
 
@@ -484,8 +481,7 @@ individual cell — a canvas-rendered chart cannot be asserted on by Cypress.
 
 | Library / asset | Licence | Used for |
 |---|---|---|
-| Hanken Grotesk | SIL Open Font License | Headings |
-| Inter | SIL Open Font License | Body text |
+| Plus Jakarta Sans | SIL Open Font License | All text |
 | Lucide | ISC | Icons |
 | Bootstrap 5 | MIT | Grid, base components |
 | Chart.js | MIT | Charts |
@@ -509,14 +505,18 @@ requirement.
     page background and require border + shadow on every card (§2.5, §8) rather than change the palette.
     Checked white as an alternative background; it does not improve the separation (1.11 vs 1.06), so it
     would not have helped.
+  - `1.2` (2026-10-29): moved to the Calm direction from the design handoff. Mist, ink, pink, blush and
+    periwinkle replace Galaxy/Planetary (§2, §3); Plus Jakarta Sans at weight 500 replaces Hanken Grotesk
+    and Inter (§4); radii are 16/28/36px with soft card shadows (§6); cards are separated by shadow and no
+    longer need a border (§2.5, §8); buttons are pills (§8). Navbar and stepper keep their layout until
+    the pill-nav and step-track PR. Chart.js series colours still need to move to ink and pink. Brand
+    book and component previews: `docs/design-system/`.
 
 ---
 
 ## Open questions for the team
 
-1. **Universe cannot be used as text or a filled button with white text** at its given lightness (ratios
-   2.88 and 3.01). A darkened `$universe-text` token (§2.3) is provided for the rare case text is needed in
-   that hue — confirm the team is fine reserving plain Universe for large fills/charts only.
+1. ~~Success and warning text under 4.5:1~~ **Resolved (#82 review):** `$success` `#2C7756` and `$warning` `#8E621D` pass AA on Mist, white, periwinkle and their own fills.
 2. **Semantic colours (§2.7) were not specified by the team and are proposed here** — confirm they read
    correctly to everyone (colour-blindness varies person to person) before they're used for anything safety-
    or correctness-critical, such as a failed-eligibility banner.

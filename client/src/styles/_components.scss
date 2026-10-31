@@ -64,7 +64,7 @@
 
     &--active {
       border-color: $primary;
-      color: $primary;
+      color: $universe-text;
     }
     &--done {
       color: $text-secondary;
@@ -121,7 +121,7 @@
     color: $text-secondary;
 
     &.router-link-active {
-      color: $primary;
+      color: $universe-text;
     }
   }
 
@@ -191,7 +191,7 @@
 }
 
 .heatmap__cell--a { background-color: $primary; }
-.heatmap__cell--b { background-color: $warning; }
+.heatmap__cell--b { background-color: $accent-fill-1; }
 .heatmap__cell--tie { background-color: $border; }
 
 // The whole square is the tap target: 48px tall everywhere; width shrinks on phones so all
@@ -309,7 +309,7 @@
 // that's natively focusable (links, custom controls).
 a:focus-visible,
 [tabindex]:focus-visible {
-  outline: 2px solid $primary;
+  outline: 2px solid $focus-ring;
   outline-offset: 2px;
 }
 
@@ -317,7 +317,7 @@ a:focus-visible,
 // Summary card accents, chart and map boxes. BTO = $primary, resale = $warning, matching the heatmap (UI.md §3).
 
 .dash-card--bto { border-top: 4px solid $primary; }
-.dash-card--resale { border-top: 4px solid $warning; }
+.dash-card--resale { border-top: 4px solid $accent-fill-1; }
 
 .dash-chart {
   position: relative;
@@ -342,7 +342,7 @@ a:focus-visible,
   vertical-align: middle;
 
   &--bto { background: $primary; }
-  &--resale { background: $warning; }
+  &--resale { background: $accent-fill-1; }
 }
 
 // Grants table: on phones each grant stacks, with "BTO" / "Resale" written above its cell
@@ -428,3 +428,325 @@ a:focus-visible,
 
 .scenarios-pick-label { cursor: pointer; }
 .scenarios-row--picked { border-color: $primary; }
+// ---- Primary on Universe (design system change, 29 Oct 2026) ----------------------
+// Universe fills take Galaxy text; hover lightens instead of darkening so the text keeps 4.5:1.
+.btn-primary {
+  --bs-btn-color: #{$on-primary};
+  --bs-btn-hover-color: #{$on-primary};
+  --bs-btn-active-color: #{$on-primary};
+  --bs-btn-disabled-color: #{$on-primary};
+  --bs-btn-hover-bg: #{$primary-hover};
+  --bs-btn-hover-border-color: #{$primary-hover};
+  --bs-btn-active-bg: #{$primary-hover};
+  --bs-btn-active-border-color: #{$primary-hover};
+}
+
+// ---- Choice chips (design system, 29 Oct 2026) ------------------------------------
+// A radio group drawn as pills: <label class="chip"><input type="radio" class="chip__input"><span class="chip__face">4-room</span></label>
+.chip-group { display: flex; flex-wrap: wrap; gap: $space-2; }
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  margin: 0;
+  cursor: pointer;
+
+  &__input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  &__face {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: $space-2 $space-5;
+    border: 1px solid $border;
+    border-radius: $radius-pill;
+    background: $bg-surface-raised;
+    color: $text-primary;
+    font-family: $font-body;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    line-height: 1.2;
+    transition: background-color $duration-micro $ease-out, color $duration-micro $ease-out, border-color $duration-micro $ease-out;
+  }
+
+  &:hover &__face { background: $surface-disabled; }
+
+  &__input:checked + &__face {
+    background: $accent-fill-2;
+    border-color: $accent-fill-1;
+    color: $text-primary;
+  }
+
+  &__input:focus-visible + &__face { box-shadow: 0 0 0 2px $bg-page, 0 0 0 4px $focus-ring; }
+  &__input:disabled + &__face { background: $surface-disabled; color: $text-tertiary; cursor: not-allowed; }
+}
+
+// ---- Floor picker: lift buttons beside a block (design system, 29 Oct 2026) -------
+.floor-picker {
+  display: flex;
+  align-items: flex-end;
+  gap: $space-4;
+
+  &__block { width: 11rem; max-width: 100%; height: auto; }
+  &__body { fill: $color-white; }
+  &__win { fill: $accent-fill-3; }
+  &__line { stroke: $text-primary; stroke-width: 2; fill: none; stroke-linecap: round; }
+  &__band { fill: $accent-fill-1; opacity: 0; transition: opacity $duration-base $ease-out; }
+}
+
+.lift-panel {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  padding: $space-2;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-pill;
+  background: $bg-surface;
+  box-shadow: $shadow-sm;
+}
+
+.lift-button {
+  position: relative;
+  margin: 0;
+  cursor: pointer;
+
+  &__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+
+  &__face {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: $space-8;
+    height: $space-8;
+    border: 1px solid $border;
+    border-radius: 50%;
+    background: $bg-surface-raised;
+    box-shadow: inset 0 -2px 0 rgba($color-ink, 0.06);
+    color: $text-primary;
+    font-family: $font-body;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    transition: background-color $duration-micro $ease-out, box-shadow $duration-micro $ease-out;
+  }
+
+  &:hover &__face { background: $accent-fill-3; }
+
+  // Lit, like a pressed lift button: Universe fill, navy number, a ring in universe-text
+  &__input:checked + &__face {
+    background: $primary;
+    border-color: $universe-text;
+    color: $on-primary;
+    box-shadow: 0 0 0 2px $bg-surface, 0 0 0 4px $universe-text;
+  }
+
+  &__input:focus-visible + &__face { outline: 2px solid $focus-ring; outline-offset: 6px; }
+}
+
+// Highlight the chosen band on the block (CSS only: radios + :has)
+@for $i from 1 through 4 {
+  .floor-picker:has(.lift-button__input[value="#{$i}"]:checked) .floor-picker__band--#{$i} { opacity: 0.75; }
+}
+
+// ---- Pill navigation (design system, 29 Oct 2026) ----------------------------------
+// Three floating pills: a status pill (left), logo + links (centre), an account pill (right).
+.pill-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-4;
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-1;
+    min-height: 56px;
+    box-sizing: border-box;
+    padding: 6px;
+    white-space: nowrap;
+    background: $color-white;
+    border-radius: $radius-pill;
+    box-shadow: 0 3px 0 rgba($color-ink, 0.08), 0 8px 20px rgba(60, 64, 90, 0.06);
+  }
+
+  &__status,
+  &__end {
+    padding: 0 $space-5;
+    gap: 10px;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: $text-primary;
+    text-decoration: none;
+  }
+
+  &__end:hover { background: $surface-disabled; color: $text-primary; }
+
+  &__dot {
+    width: 12px;
+    height: 12px;
+    flex: none;
+    border-radius: 50%;
+    background: $success;
+    box-shadow: 0 0 0 0 rgba($success, 0.35);
+    animation: pill-nav-pulse 2.4s ease-out infinite;
+  }
+
+  &__logo {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border-radius: 50%;
+    background: $color-ink;
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 -3px 0 rgba($color-white, 0.12);
+    margin-right: $space-2;
+  }
+
+  &__links { display: flex; gap: 2px; padding-right: $space-2; }
+
+  &__link {
+    padding: 10px 16px;
+    border-radius: $radius-pill;
+    font-size: 1rem;
+    font-weight: 500;
+    color: $text-primary;
+    text-decoration: none;
+    transition: background-color $duration-micro $ease-out;
+
+    &:hover { background: $surface-disabled; color: $text-primary; text-decoration: none; }
+    &[aria-current="page"] { background: $accent-fill-2; }
+  }
+
+  &__menu {
+    display: none;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    place-items: center;
+    cursor: pointer;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid $focus-ring;
+    outline-offset: 2px;
+  }
+
+  @include media-breakpoint-down(lg) {
+    &__status { display: none; }
+  }
+
+  @include media-breakpoint-down(md) {
+    &__links { display: none; }
+    &__menu { display: grid; }
+    &__end-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    &__end { padding: 0; width: 56px; justify-content: center; }
+  }
+}
+
+@keyframes pill-nav-pulse {
+  0% { box-shadow: 0 0 0 0 rgba($success, 0.35); }
+  70%, 100% { box-shadow: 0 0 0 8px rgba($success, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill-nav__dot { animation: none; }
+}
+
+// ---- Numbered step track (design system, 29 Oct 2026) -------------------------------
+// <ol class="step-track"><li class="step-track__item step-track__item--done">…</li>…</ol>
+.step-track {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  &__item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-2;
+    width: 7.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $text-secondary;
+    text-align: center;
+
+    // connector to the next step
+    &:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 17px;
+      left: calc(50% + 26px);
+      width: calc(100% - 52px);
+      height: 2px;
+      border-radius: 1px;
+      background: $border;
+    }
+  }
+
+  &__num {
+    width: 36px;
+    height: 36px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 1.5px solid $border;
+    background: $color-white;
+    display: grid;
+    place-items: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: $text-secondary;
+  }
+
+  &__item--done &__num { background: $color-white; border-color: $text-primary; color: $text-primary; }
+  &__item--done::after { background: $text-primary !important; }
+
+  &__item--current { color: $text-primary; }
+  &__item--current &__num {
+    background: $text-primary;
+    border-color: $text-primary;
+    color: $color-white;
+    box-shadow: 0 0 0 5px $accent-fill-2;
+  }
+}
+
+// ---- Centred section label with rules ------------------------------------------------
+.divider-label {
+  display: flex;
+  align-items: center;
+  gap: $space-4;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: $text-secondary;
+
+  &::before,
+  &::after {
+    content: "";
+    flex: 1 1 0;
+    height: 1px;
+    background: $border;
+  }
+}
+
+// ---- Chip extras: leading icon, centred groups, multi-select ---------------------------
+.chip-group--center { justify-content: center; }
+.chip__face { gap: $space-2; }
+.chip__icon { width: 18px; height: 18px; flex: none; }
+
+// ---- Wide centred primary button -------------------------------------------------------
+.btn-wide { display: block; width: 100%; max-width: 26rem; margin-inline: auto; min-height: 54px; }
