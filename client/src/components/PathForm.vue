@@ -27,6 +27,9 @@ const props = defineProps({
   choiceKey: { type: String, required: true, validator: (v) => v === 'choiceA' || v === 'choiceB' },
   errors: { type: Object, default: () => ({}) },
 });
+// BTO only: the launch the choice resolves to (the user's pick, else the newest), or null, for the step's
+// summary card.
+const emit = defineEmits(['project']);
 
 const store = useScenarioStore();
 const choice = computed(() => store[props.choiceKey]);
@@ -74,6 +77,9 @@ const projectOptions = computed(() =>
     .filter((p) => p.flat)
     .sort((a, b) => String(b.launch).localeCompare(String(a.launch))),
 );
+const activeProject = computed(() =>
+  projectOptions.value.find((p) => p.id === choice.value.btoProjectId) ?? projectOptions.value[0] ?? null);
+watch(activeProject, (p) => { if (isBto.value) emit('project', p); }, { immediate: true });
 // '$481k–$600k' from cents.
 const kRange = (f) => `S$${Math.round(f.priceMinCents / 100000)}k–${Math.round(f.priceMaxCents / 100000)}k`;
 
