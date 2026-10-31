@@ -62,8 +62,21 @@ const sliders = computed(() => {
       : []),
     { key: 'renovationA', id: 'whatif-reno-bto', label: 'Renovation, BTO', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationA, text: formatMoney(v.renovationA) },
     { key: 'renovationB', id: 'whatif-reno-resale', label: 'Renovation, resale', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationB, text: formatMoney(v.renovationB) },
+    { group: 'Timing', key: 'applicationYear', id: 'whatif-year', label: 'Apply / buy in', hint: 'Both paths move together', min: thisYear, max: thisYear + 6, step: 1, scale: 1, value: v.applicationYear, text: String(v.applicationYear) },
+    { group: 'Market', key: 'annualPriceGrowth', id: 'whatif-price-growth', label: 'Flat price growth', min: -2, max: 8, step: 0.5, scale: 100, value: pct(v.annualPriceGrowth), text: `${pct(v.annualPriceGrowth)}% / yr` },
+    { group: 'Market', key: 'annualIncomeGrowth', id: 'whatif-income-growth', label: 'Income growth', min: 0, max: 10, step: 0.5, scale: 100, value: pct(v.annualIncomeGrowth), text: `${pct(v.annualIncomeGrowth)}% / yr` },
+    { group: 'Timing', key: 'horizonYear', id: 'whatif-horizon', label: 'Compare in', hint: 'Not before both sets of keys', min: props.horizonMin, max: props.horizonMax, step: 1, scale: 1, value: horizon, text: String(horizon) },
+    { group: 'Housing costs', key: 'monthlyHousingCostWhileWaiting', id: 'whatif-rent', label: 'Rent while waiting for keys', hint: '0 = living with parents.', link: { href: RENT_GUIDE_URL, text: 'Median rents by town' }, min: 0, max: 5000, step: 100, scale: 1, value: v.monthlyHousingCostWhileWaiting, text: `${formatMoney(v.monthlyHousingCostWhileWaiting)}/mo` },
+    { group: 'Housing costs', key: 'renovationA', id: 'whatif-reno-bto', label: 'Renovation, BTO', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationA, text: formatMoney(v.renovationA) },
+    { group: 'Housing costs', key: 'renovationB', id: 'whatif-reno-resale', label: 'Renovation, resale', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationB, text: formatMoney(v.renovationB) },
   ];
 });
+
+// The sliders in three groups, in the order above, so the panel reads as three short questions.
+const groups = computed(() => ['Timing', 'Market', 'Housing costs'].map((title) => ({
+  title,
+  items: sliders.value.filter((s) => s.group === title),
+})));
 </script>
 
 <template>
@@ -72,10 +85,12 @@ const sliders = computed(() => {
       <h2 id="whatif-heading" class="h5 mb-1">What if…</h2>
       <p class="text-secondary small mb-4">Move a slider and the comparison runs again. Your saved plan does not change.</p>
 
-      <div v-for="s in sliders" :key="s.key" class="mb-3">
-        <div class="d-flex justify-content-between small">
+      <fieldset v-for="g in groups" :key="g.title" class="whatif-group">
+      <legend class="whatif-group__title">{{ g.title }}</legend>
+      <div v-for="s in g.items" :key="s.key" class="mb-3">
+        <div class="d-flex justify-content-between align-items-baseline gap-2 small">
           <label :for="s.id" class="fw-semibold">{{ s.label }}</label>
-          <output :for="s.id" class="fw-semibold text-numeric" :data-cy="`${s.id}-value`">{{ s.text }}</output>
+          <output :for="s.id" class="whatif-value text-numeric" :data-cy="`${s.id}-value`">{{ s.text }}</output>
         </div>
         <input
           :id="s.id"
@@ -95,6 +110,7 @@ const sliders = computed(() => {
           <a v-if="s.link" :href="s.link.href" target="_blank" rel="noopener noreferrer">{{ s.link.text }}<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
         </div>
       </div>
+      </fieldset>
 
       <button type="button" class="btn btn-outline-secondary w-100" data-cy="dashboard-whatif-reset" @click="emit('reset')">
         Reset to my inputs
@@ -102,3 +118,26 @@ const sliders = computed(() => {
     </div>
   </aside>
 </template>
+
+<style scoped>
+.whatif-group { border: 0; padding: 0; margin: 0; min-width: 0; }
+.whatif-group + .whatif-group { border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); }
+.whatif-group__title {
+  font-family: var(--font-heading);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  float: none;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 var(--space-3);
+}
+.whatif-value {
+  background: var(--accent-fill-3);
+  border-radius: var(--radius-pill);
+  padding: 0 0.625rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+</style>
