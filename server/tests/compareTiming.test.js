@@ -5,8 +5,8 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import request from 'supertest';
 
-// Fake resale transactions per town. TAMPINES: five near-new (lease 90+, enough on its own, D40), three in the
-// 80s, one in the 60s. BISHAN: no near-new, so its BTO value pools TOA PAYOH and ANG MO KIO's (D40).
+// Fake resale transactions per town. TAMPINES: five near-new (lease 90+, enough on its own, D41), three in the
+// 80s, one in the 60s. BISHAN: no near-new, so its BTO value pools TOA PAYOH and ANG MO KIO's (D41).
 // TENGAH and the Jurong towns have none; BEDOK's lookup fails as if data.gov.sg were down with nothing cached.
 const tx = (price, lease) => ({ month: '2026-08', resale_price: String(price), floor_area_sqm: '93', remaining_lease: `${lease} years` });
 const FAKE = {
@@ -118,13 +118,13 @@ describe('POST /api/compare', () => {
   });
 
   
-  it("BTO value: the town's own near-new median when it has at least 5 such sales (D40)", () => {
+  it("BTO value: the town's own near-new median when it has at least 5 such sales (D41)", () => {
     expect(res.body.resolvedA.marketValueData).toMatchObject({
       towns: ['TAMPINES'], fellBackToNearbyTowns: false, fellBackToAllLeases: false, transactions: 5,
     });
   });
 
-  it('BTO value: too few near-new sales in the town pools its nearby towns, never all leases (D40)', async () => {
+  it('BTO value: too few near-new sales in the town pools its nearby towns, never all leases (D41)', async () => {
     const r = await compare(body({ choiceA: { ...bto, town: 'BISHAN', classification: 'PRIME' } }));
     expect(r.status).toBe(200);
     // Bishan has no 90+ sales; Toa Payoh's three and Ang Mo Kio's two are pooled: 990k 1,000k 1,020k 1,050k 1,100k.
@@ -135,7 +135,7 @@ describe('POST /api/compare', () => {
     });
   });
 
-  it('BTO value: too few near-new sales even with the nearby towns is a 400 naming them (D40)', async () => {
+  it('BTO value: too few near-new sales even with the nearby towns is a 400 naming them (D41)', async () => {
     const r = await compare(body({ choiceA: { ...bto, town: 'JURONG EAST', flatType: '5 ROOM' } }));
     expect(r.status).toBe(400);
     expect(r.body.error.message).toMatch(/Too few near-new 5 ROOM resale sales in JURONG EAST, JURONG WEST, BUKIT BATOK/);

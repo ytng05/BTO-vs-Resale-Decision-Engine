@@ -15,7 +15,7 @@ export const DEFAULT_LOAN_TENURE_YEARS = 25;
 export const DEFAULT_LOAN_TYPE = 'HDB';
 export const PRICE_WINDOW_MONTHS = 12;
 export const NEAR_NEW_MIN_LEASE_YEARS = 90;
-// D40: fewer near-new sales than this in the BTO town, and its nearby towns' are pooled in.
+// D41: fewer near-new sales than this in the BTO town, and its nearby towns' are pooled in.
 export const MIN_NEAR_NEW_SALES = 5;
 export const HORIZON_YEARS_AFTER_KEYS = 10;
 // Heatmap axes (D33, agreed on #45): price growth −2% to +6% a year (prices can fall), income growth 0% to 5%,
@@ -108,7 +108,7 @@ async function resaleMedian({ town, flatType, minLeaseYears, maxLeaseYears, getR
 }
 
 /**
- * The BTO flat's market value at keys (D33, D40): the median of near-new sales (90+ years left) of the flat type,
+ * The BTO flat's market value at keys (D33, D41): the median of near-new sales (90+ years left) of the flat type,
  * in the town if it has at least MIN_NEAR_NEW_SALES, else pooled with its nearby towns (NEARBY_TOWNS). Never the
  * whole town's median: old leases sell far lower, which would understate every BTO. Too few even pooled -> 400.
  */
@@ -130,7 +130,7 @@ async function btoMarketValue({ town, flatType, getResale }) {
   }
   if ((basis.count ?? 0) < MIN_NEAR_NEW_SALES) {
     const searched = [town, ...(NEARBY_TOWNS[town] ?? [])].join(', ');
-    fail(`Too few near-new ${flatType} resale sales in ${searched} in the last ${PRICE_WINDOW_MONTHS} months to set the BTO flat's market value (D40).`);
+    fail(`Too few near-new ${flatType} resale sales in ${searched} in the last ${PRICE_WINDOW_MONTHS} months to set the BTO flat's market value (D41).`);
   }
   return {
     cents: basis.medianPriceCents,

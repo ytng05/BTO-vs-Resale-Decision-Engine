@@ -17,7 +17,7 @@ export const TOWNS = [
   'SERANGOON', 'TAMPINES', 'TOA PAYOH', 'WOODLANDS', 'YISHUN',
 ];
 
-// D40: the towns whose near-new sales stand in for a BTO town's when it has too few of its own (engineInputs.js).
+// D41: the towns whose near-new sales stand in for a BTO town's when it has too few of its own (engineInputs.js).
 // Chosen by hand: next to each other, and similar estates. Clementi is left out of Jurong East's list on purpose:
 // its near-new flats sell far higher (5-room about S$1.45M against S$0.74-0.83M in Jurong West and Bukit Batok).
 // TENGAH is not a dataset town yet: its first flats are not old enough to resell.
@@ -135,10 +135,11 @@ async function townRecords(town, flatType, window, force) {
  * Median resale price (and spread) for a town + flat type over the last `months` months. Optional
  * minLeaseYears / maxLeaseYears narrow it to a remaining-lease band (filterByLease); the cache holds the
  * whole town + flat type, so a band never needs its own fetch.
- * `towns` (instead of `town`) pools several towns' sales into one median (D40): the response then lists them,
+ * `towns` (instead of `town`) pools several towns' sales into one median (D41): the response then lists them,
  * is only `cached` if every town was, is `stale` if any was, and is as of the oldest town's fetch.
  */
 export async function getResalePriceBasis({ town, towns, flatType, months, minLeaseYears, maxLeaseYears, asOf = new Date(), force = false }) {
+  // End at the last full month: the current month is still being reported.
   const lastFullMonth = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() - 1, 1));
   const window = monthWindow(lastFullMonth, months);
 

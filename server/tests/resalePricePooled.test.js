@@ -1,4 +1,4 @@
-// getResalePriceBasis({ towns }) pools several towns' sales into one median (D40, seat 3), and NEARBY_TOWNS.
+// getResalePriceBasis({ towns }) pools several towns' sales into one median (D41, seat 3), and NEARBY_TOWNS.
 // data.gov.sg is replaced by a fetch stub that answers per town, so this runs offline.
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { clearMemoryCache } from '../src/services/cache.js';
@@ -25,7 +25,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 const asOf = new Date(Date.UTC(2026, 9, 15));
 
-describe('getResalePriceBasis with towns (D40)', () => {
+describe('getResalePriceBasis with towns (D41)', () => {
   it('pools the towns\' sales before taking the median, and lists the towns', async () => {
     const r = await getResalePriceBasis({ towns: ['BISHAN', 'TOA PAYOH', 'ANG MO KIO'], flatType: '4 ROOM', months: 12, minLeaseYears: 90, asOf });
     // 90+ only: 990k, 1,000k, 1,020k, 1,100k -> median (1,000k + 1,020k) / 2 = 1,010k
