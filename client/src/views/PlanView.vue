@@ -43,6 +43,11 @@ const btoSummary = computed(() => {
   if (flat) parts.push(`S$${Math.round(flat.priceMinCents / 100000)}k–${Math.round(flat.priceMaxCents / 100000)}k`);
   return parts.filter(Boolean).join(' · ');
 });
+// Keys year for the scene's bubble: application (1 January) plus HDB's waiting time for the launch (D7).
+const keysYear = computed(() => {
+  const months = btoProject.value?.waitMonths;
+  return typeof months === 'number' ? store.choiceA.applicationYear + Math.floor(months / 12) : null;
+});
 const keysIn = computed(() => {
   const months = btoProject.value?.waitMonths;
   if (typeof months !== 'number') return null;
@@ -87,7 +92,7 @@ function back() {
 
     <div :class="{ 'bto-step__grid': isBtoStep }">
       <section v-if="isBtoStep" class="bto-step__art" data-cy="bto-step-art">
-        <BtoScene :move-in-by-year="store.profile.constraints?.moveInByYear" />
+        <BtoScene :wishes="store.wishes" :keys-year="keysYear" />
         <div class="bto-step__summary" data-cy="bto-step-summary" aria-live="polite">
           <span class="bto-step__summary-text">
             <span class="bto-step__summary-label">Building your BTO plan</span>
@@ -109,7 +114,9 @@ function back() {
             <p v-if="isBtoStep && firstName" class="plan-card__lead">Welcome back, {{ firstName }}</p>
             <h2 class="plan-card__title" :class="{ 'plan-card__title--hero': store.step === 0 || isBtoStep }">{{ HEADINGS[store.step] }}</h2>
             <p v-if="store.step === 0" class="plan-card__lead">Pick as many as you like. You can change these later.</p>
-            <p v-else-if="isBtoStep" class="plan-card__lead">We'll compare it with a resale flat in the next step.</p>
+            <p v-else-if="isBtoStep" class="plan-card__lead">
+              We'll compare it with a resale flat in the next step, as if you apply next year. You can change the year on the dashboard.
+            </p>
           </div>
 
           <div
@@ -179,7 +186,13 @@ function back() {
 /* Step 3, "Your BTO" (Calm "Plan your BTO" board): track on the page, then the illustration panel and the form
    card side by side, stacking below ~900px. */
 .bto-step { display: flex; flex-direction: column; gap: 28px; }
-.bto-step__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 24px; align-items: start; }
+.bto-step__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+/* Below lg the form comes first, so the question is on screen without scrolling; the illustration follows. */
+.bto-step__grid > .bto-step__art { order: 2; }
+@media (min-width: 992px) {
+  .bto-step__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bto-step__grid > .bto-step__art { order: 0; }
+}
 .bto-step__art {
   display: flex; flex-direction: column; gap: 12px; min-width: 0; overflow: hidden;
   padding: 24px; border-radius: 36px;

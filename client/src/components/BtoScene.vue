@@ -1,10 +1,11 @@
 <!--
   BtoScene.vue – the "Your BTO" step illustration: a new HDB block rising floor by floor beside a crane, in an
   estate with an MRT train gliding past the skyline. Two future residents wave from the site hoarding, a
-  neighbour strolls by and the cat sits on the hoarding. Two white "wish" bubbles float above.
+  neighbour strolls by and the cat sits on the hoarding. Two white bubbles float above: "Near my parents" if
+  that was picked in step 1, and the chosen launch's keys year once there is one.
 
   Usage:
-    <BtoScene :move-in-by-year="2031" />
+    <BtoScene :wishes="['parents']" :keys-year="2031" />
 
   CSS only (no script animation). Colours read the --color-* custom properties with hex fallbacks, like
   EstateScene.vue. Decorative: one aria-label on the SVG. Holds still under prefers-reduced-motion.
@@ -14,11 +15,13 @@
 import { computed } from 'vue';
 
 const props = defineProps({
-  // The user's "must move in by" year, shown on the keys bubble; without one it keeps its example text.
-  moveInByYear: { type: [Number, String], default: null },
+  // Keys of the choices ticked in step 1: the parents bubble shows only if 'parents' is one of them.
+  wishes: { type: Array, default: () => [] },
+  // The chosen launch's estimated keys year; the keys bubble is hidden until there is one.
+  keysYear: { type: Number, default: null },
 });
 
-const keysLabel = computed(() => `Keys by ${props.moveInByYear || 2031}`);
+const keysLabel = computed(() => `Keys in ${props.keysYear}`);
 // One floor per row of windows, bottom to top; each floor drops in a beat after the one below (fl1 … fl6).
 const FLOOR_YS = [324, 290, 256, 222, 188, 154];
 // Which of the five windows on each floor light up, and when (seconds into the 14 s cycle).
@@ -166,13 +169,13 @@ const WINDOW_XS = [187, 219, 251, 283, 315];
     </g>
 
     <!-- wish bubbles -->
-    <g class="bs-bubble">
+    <g v-if="wishes.includes('parents')" class="bs-bubble" data-cy="bto-scene-parents">
       <rect class="bs-slate" x="20" y="166" width="148" height="40" rx="20" opacity=".06" transform="translate(0 3)" />
       <rect class="bs-white" x="20" y="166" width="148" height="40" rx="20" />
       <path class="bs-white" d="M118 204l12 14 2-14z" />
       <text class="bs-bubble__text" x="94" y="191">Near my parents</text>
     </g>
-    <g class="bs-bubble" style="animation-delay:-1.4s">
+    <g v-if="keysYear" class="bs-bubble" style="animation-delay:-1.4s">
       <rect class="bs-slate" x="436" y="314" width="120" height="40" rx="20" opacity=".06" transform="translate(0 3)" />
       <rect class="bs-white" x="436" y="314" width="120" height="40" rx="20" />
       <path class="bs-white" d="M474 352l4 14 14-14z" />

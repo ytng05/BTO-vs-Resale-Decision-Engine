@@ -185,10 +185,8 @@ const LIVING = [
 
 <template>
   <div :data-cy="`${prefix}-form`">
-    <p class="text-secondary">
-      <template v-if="isBto">The new flat you'd apply for. We compare it as if you apply next year; you can change that on the dashboard.</template>
-      <template v-else>The resale flat you're looking at.</template>
-    </p>
+    <!-- The BTO step's intro is in PlanView's heading. -->
+    <p v-if="!isBto" class="text-secondary">The resale flat you're looking at.</p>
 
     <div class="row g-4">
       <div class="col-12 col-md-6">
