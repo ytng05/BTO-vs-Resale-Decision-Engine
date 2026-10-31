@@ -83,7 +83,17 @@ const resalePriceBasis = computed(() => {
   const sales = `${d.transactions} sale${d.transactions === 1 ? '' : 's'}`;
   const when = d.window ? `, ${monthYear(d.window.from)} to ${monthYear(d.window.to)}` : '';
   const rough = d.lowSample ? ' Few sales, so treat it as rough.' : '';
-  return `Resale priced at ${formatMoney(r.purchasePriceCents / 100)}, the median of ${sales} of ${labelOf(TOWNS, store.choiceB.town)} ${labelOf(FLAT_TYPES, store.choiceB.flatType).toLowerCase()} flats with ${lease}${when}. A specific listing can cost more or less.${rough}`;
+  const flats = `${labelOf(TOWNS, store.choiceB.town)} ${labelOf(FLAT_TYPES, store.choiceB.flatType).toLowerCase()} flats with ${lease}${when}`;
+  const medianCents = r.medianPriceCents ?? r.purchasePriceCents;
+  if (r.purchasePriceCents === medianCents) {
+    return `Resale priced at ${formatMoney(medianCents / 100)}, the median of ${sales} of ${flats}. A specific listing can cost more or less.${rough}`;
+  }
+  // D39: an asking price. The flat is valued at the median; anything above it is cash over valuation.
+  const over = r.purchasePriceCents - medianCents;
+  const vsMedian = over > 0
+    ? `${formatMoney(over / 100)} above the median of ${sales} (${formatMoney(medianCents / 100)}), so that part is paid in cash and the flat is valued at the median`
+    : `${formatMoney(-over / 100)} below the median of ${sales} (${formatMoney(medianCents / 100)})`;
+  return `Resale priced at your asking price, ${formatMoney(r.purchasePriceCents / 100)}: ${vsMedian}. Sales of ${flats}.${rough}`;
 });
 
 const labelOf = (options, value) => options.find((o) => o.value === value)?.label ?? value;

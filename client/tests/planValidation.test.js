@@ -72,6 +72,13 @@ describe('validateChoice', () => {
     expect(validateChoice(bto({ btoPrice: 700000 }), range).btoPrice).toMatch(/price range/);
   });
 
+  it('takes an optional resale asking price within a sensible range (D39)', () => {
+    expect(validateChoice(resale({ resalePrice: null }), opts)).toEqual({});
+    expect(validateChoice(resale({ resalePrice: 650000 }), opts)).toEqual({});
+    expect(validateChoice(resale({ resalePrice: 500 }), opts).resalePrice).toMatch(/asking price/);
+    expect(validateChoice(resale({ resalePrice: 9000000 }), opts).resalePrice).toMatch(/asking price/);
+  });
+
   it('needs lease band and living arrangement for resale only', () => {
     const e = validateChoice(resale({ leaseBand: null, livingArrangement: null }), opts);
     expect(e.leaseBand).toMatch(/remaining lease band/);

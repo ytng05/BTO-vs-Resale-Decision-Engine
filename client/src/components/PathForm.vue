@@ -4,14 +4,16 @@
 //                                       classification as chips, offering only what that town's launches
 //                                       have (GET /api/data/bto-projects), so the choice always resolves.
 //   <PathForm choice-key="choiceB" />  "Resale flat": town, flat type (pre-filled from the BTO step),
-//                                       remaining lease, and living with or near parents if picked in step 1.
+//                                       remaining lease, an optional asking price (D39, blank = the median),
+//                                       and living with or near parents if picked in step 1.
 // Not asked here (D38): the year (defaults to next year) and renovation (0). The BTO project is asked only when
 // the town has more than one launch for the chosen flat type and classification (defaults to the newest, as
 // the server would pick); its price defaults to the midpoint of HDB's range and changes on the Dashboard (D26).
 // Field names follow the store (contract v2/v2.1). The path ('BTO' / 'RESALE') is fixed in the store.
 import { computed, onMounted, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
-import { getBtoProjects } from '../api/client.js';
+import { getBtoProjects, getResalePrice } from '../api/client.js';
+import { formatMoney } from '../utils/format.js';
 import {
   TOWNS,
   FLAT_TYPES,
@@ -139,6 +141,31 @@ watch(() => choice.value.classification, () => { if (isBto.value) settleProject(
 // A different launch has a different range: start again from its midpoint.
 watch(() => choice.value.btoProjectId, (now, before) => { if (isBto.value && before !== undefined && now !== before) choice.value.btoPrice = null; });
 
+// ---- Resale: the median for the town, flat type and lease band, beside the optional asking price (D39) ----
+const median = ref(null); // GET /api/data/resale-price summary, or null
+let latestMedian = 0;
+async function loadMedian() {
+  const { town, flatType, leaseBand } = choice.value;
+  const id = ++latestMedian;
+  if (isBto.value || !town || !flatType || !leaseBand) {
+    median.value = null;
+    return;
+  }
+  try {
+    const res = await getResalePrice({ town, flatType, leaseBand });
+    if (id === latestMedian) median.value = res?.medianPriceCents ? res : null;
+  } catch {
+    if (id === latestMedian) median.value = null; // no sales in the band, or offline: no hint rather than a wrong one
+  }
+}
+watch(() => [choice.value.town, choice.value.flatType, choice.value.leaseBand], loadMedian, { immediate: true });
+// Dollars above the median: the cash over valuation, paid in cash.
+const overMedian = computed(() => {
+  const price = choice.value.resalePrice;
+  if (!median.value || typeof price !== 'number') return 0;
+  return Math.max(0, Math.round(price - median.value.medianPriceCents / 100));
+});
+
 // ---- Resale: living with or near parents, shown when picked in step 1 or already set ----
 const askParents = computed(() => store.wishes.includes('parents') || choice.value.livingArrangement !== 'NONE');
 const LIVING = [
@@ -257,6 +284,39 @@ const LIVING = [
         <div class="form-text">From the listing. It sets the price we look up, the loan limit and how much CPF you can use.</div>
         <div v-if="err('leaseBand')" class="invalid-feedback d-block">{{ err('leaseBand') }}</div>
       </fieldset>
+
+      <!-- Resale: the listing's asking price, optional (D39) -->
+      <div v-if="!isBto" class="col-12 col-md-6">
+        <label :for="`${prefix}-asking-price`" class="form-label">Asking price <span class="text-secondary">(optional)</span></label>
+        <div class="input-group has-validation">
+          <span class="input-group-text">$</span>
+          <input
+            :id="`${prefix}-asking-price`"
+            v-model.number="choice.resalePrice"
+            type="number"
+            min="0"
+            step="1000"
+            inputmode="numeric"
+            :placeholder="median ? `e.g. ${Math.round(median.medianPriceCents / 100)}` : 'e.g. 650000'"
+            class="form-control"
+            :class="{ 'is-invalid': err('resalePrice') }"
+            :aria-invalid="err('resalePrice') ? 'true' : null"
+            :aria-describedby="`${prefix}-asking-price-help`"
+            :data-cy="`${prefix}-asking-price-input`"
+          />
+          <div class="invalid-feedback">{{ err('resalePrice') }}</div>
+        </div>
+        <div :id="`${prefix}-asking-price-help`" class="form-text" :data-cy="`${prefix}-asking-price-help`">
+          <template v-if="median">
+            Leave blank to use the median of recent sales, {{ formatMoney(median.medianPriceCents / 100) }}
+            (the middle half sold for {{ formatMoney(median.p25PriceCents / 100) }} to {{ formatMoney(median.p75PriceCents / 100) }}).
+          </template>
+          <template v-else>Leave blank to use the median of recent sales.</template>
+          <span v-if="overMedian > 0" class="d-block mt-1" :data-cy="`${prefix}-asking-price-cov`">
+            {{ formatMoney(overMedian) }} above the median. We treat the median as the valuation, so that part is paid in cash, not CPF or the loan.
+          </span>
+        </div>
+      </div>
 
       <!-- Resale: living with or near parents (only if picked in step 1) -->
       <fieldset v-if="!isBto && askParents" class="col-12" :data-cy="`${prefix}-living`">

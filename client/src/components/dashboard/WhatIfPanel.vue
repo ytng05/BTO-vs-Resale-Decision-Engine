@@ -6,6 +6,7 @@
 // paths, paid until each path's keys); renovation = choiceA/choiceB.renovationCents (paid at keys).
 // Compare in = assumptions.horizonYear: both paths are measured in that year (D1); it can't be before the keys.
 // BTO price = choiceA.btoPriceCents, within the launch's HDB range (D26); shown once a result names the launch.
+// Resale price = choiceB.resalePriceCents (D39), 80% to 130% of the median; the median stays the valuation.
 import { computed } from 'vue';
 import { formatMoney } from '../../utils/format.js';
 import { RENT_GUIDE_URL } from '../../constants/planOptions.js';
@@ -19,6 +20,8 @@ const props = defineProps({
   horizonMax: { type: Number, required: true },
   // { name, min, max, used } in dollars: the BTO launch's HDB price range and the price the last result used.
   btoRange: { type: Object, default: null },
+  // { median, used } in dollars: the resale median (the valuation, D39) and the price the last result used.
+  resaleMedian: { type: Object, default: null },
 });
 const emit = defineEmits(['update:modelValue', 'reset']);
 
@@ -45,6 +48,16 @@ const sliders = computed(() => {
         hint: `${props.btoRange.name}: HDB's range ${formatMoney(props.btoRange.min)} to ${formatMoney(props.btoRange.max)}. Starts at the middle.`,
         min: props.btoRange.min, max: props.btoRange.max, step: 1000, scale: 1,
         value: v.btoPrice ?? props.btoRange.used, text: formatMoney(v.btoPrice ?? props.btoRange.used),
+      }]
+      : []),
+    ...(props.resaleMedian
+      ? [{
+        key: 'resalePrice', id: 'whatif-resale-price', label: 'Resale price',
+        hint: `Median of recent sales ${formatMoney(props.resaleMedian.median)}. Anything above it is paid in cash.`,
+        min: Math.round((props.resaleMedian.median * 0.8) / 1000) * 1000,
+        max: Math.round((props.resaleMedian.median * 1.3) / 1000) * 1000,
+        step: 1000, scale: 1,
+        value: v.resalePrice ?? props.resaleMedian.used, text: formatMoney(v.resalePrice ?? props.resaleMedian.used),
       }]
       : []),
     { key: 'renovationA', id: 'whatif-reno-bto', label: 'Renovation, BTO', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationA, text: formatMoney(v.renovationA) },

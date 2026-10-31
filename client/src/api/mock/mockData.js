@@ -156,7 +156,8 @@ export function mockCompare(payload = {}) {
     result.resolvedA = { purchasePriceCents: choiceA.btoPriceCents ?? Math.round((flat.priceMinCents + flat.priceMaxCents) / 2), btoWaitMonths: project.waitMonths };
   }
   result.resolvedB = {
-    purchasePriceCents: 66_500_000,
+    purchasePriceCents: choiceB.resalePriceCents ?? 66_500_000,
+    medianPriceCents: 66_500_000,
     priceData: { source: 'MOCK resale prices', window: { from: '2025-10', to: '2026-09', months: 12 }, transactions: 120, leaseFilter: { minLeaseYears: 80, maxLeaseYears: 89 }, fellBackToAllLeases: false, lowSample: false },
   };
   return result;
@@ -421,7 +422,7 @@ export function mockResalePrice({ town = 'MOCK TOWN', flatType = '4 ROOM' } = {}
     town, flatType,
     window: { from: '2025-10', to: '2026-09', months: 12 },
     count: 100,
-    medianPriceCents: 50_000_000, p25PriceCents: 45_000_000, p75PriceCents: 55_000_000,
+    medianPriceCents: 66_500_000, p25PriceCents: 62_000_000, p75PriceCents: 76_000_000, // as mock compare's resale median
     medianPricePerSqmCents: 500_000, medianFloorAreaSqm: 93, medianRemainingLeaseYears: 72.5,
     lowSample: false,
     source: { datasetId: 'MOCK', name: 'MOCK resale data' },

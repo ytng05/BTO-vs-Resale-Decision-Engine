@@ -63,6 +63,8 @@ const blank = () => ({
     flatType: null,          // '3 ROOM' | '4 ROOM' | '5 ROOM' only (D27)
     livingArrangement: 'NONE', // 'WITH' | 'NEAR' | 'NONE' — resale only (D15), for PHG
     leaseBand: null,         // e.g. '80-89' (D16); server derives remainingLeaseYears from this
+    resalePrice: null,       // dollars; optional asking price (D39). Null = the median of recent sales.
+                              // The flat is still worth the median; anything above it is paid in cash
     renovation: 0,           // dollars; default 0
     // No classification — null for resale, not modelled here.
   },

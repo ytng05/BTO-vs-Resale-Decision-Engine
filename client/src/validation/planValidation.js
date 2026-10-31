@@ -182,6 +182,14 @@ export function validateChoice(choice, { currentYear = new Date().getFullYear(),
   } else {
     checkOption(errors, 'livingArrangement', choice?.livingArrangement, LIVING_ARRANGEMENTS, 'living arrangement');
     checkOption(errors, 'leaseBand', choice?.leaseBand, LEASE_BANDS, 'remaining lease band');
+    // Optional asking price (D39); blank = the median of recent sales.
+    checkNumber(errors, 'resalePrice', choice?.resalePrice, {
+      label: 'asking price',
+      min: 50000,
+      max: 3000000,
+      required: false,
+      rangeMessage: 'Enter an asking price from $50,000 to $3,000,000, or leave it blank to use the median.',
+    });
   }
 
   // Renovation budget for this flat; blank or 0 = none.

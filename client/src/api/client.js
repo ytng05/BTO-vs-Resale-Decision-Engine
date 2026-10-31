@@ -13,12 +13,14 @@ const isSet = (v) => v !== null && v !== undefined && v !== '';
 // Leaves out optional fields the user did not fill in, so the server applies its own defaults.
 const withoutUnset = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => isSet(v)));
 
-// One choice as the contract's RequestChoice: dollars become …Cents (renovationCents, btoPriceCents).
+// One choice as the contract's RequestChoice: dollars become …Cents (renovationCents, btoPriceCents,
+// resalePriceCents).
 function toRequestChoice(choice) {
-  const { btoPrice, renovation, ...rest } = choice;
+  const { btoPrice, resalePrice, renovation, ...rest } = choice;
   return withoutUnset({
     ...rest,
     btoPriceCents: isSet(btoPrice) ? toCents(btoPrice) : null,
+    resalePriceCents: isSet(resalePrice) ? toCents(resalePrice) : null,
     renovationCents: toCents(renovation ?? 0),
   });
 }

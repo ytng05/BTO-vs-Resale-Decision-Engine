@@ -40,6 +40,8 @@ function fromPlan() {
     renovationB: store.choiceB.renovation ?? 0,
     // null = the middle of HDB's range for the launch (D26).
     btoPrice: store.choiceA.btoPrice ?? null,
+    // null = the median of recent sales (D39).
+    resalePrice: store.choiceB.resalePrice ?? null,
   };
 }
 const whatIf = reactive(fromPlan());
@@ -56,7 +58,7 @@ const reset = () => Object.assign(whatIf, fromPlan());
 const whatIfPlan = computed(() => ({
   profile: store.profile,
   choiceA: { ...store.choiceA, applicationYear: whatIf.applicationYear, renovation: whatIf.renovationA, btoPrice: whatIf.btoPrice },
-  choiceB: { ...store.choiceB, applicationYear: whatIf.applicationYear + yearGap.value, renovation: whatIf.renovationB },
+  choiceB: { ...store.choiceB, applicationYear: whatIf.applicationYear + yearGap.value, renovation: whatIf.renovationB, resalePrice: whatIf.resalePrice },
   assumptions: {
     ...store.assumptions,
     annualPriceGrowth: whatIf.annualPriceGrowth,
@@ -69,6 +71,11 @@ const whatIfPlan = computed(() => ({
 const result = ref(null);
 
 // The BTO launch the comparison used and HDB's price range for the flat, in dollars (D26), for the price slider.
+// The resale median (the flat's valuation, D39) in dollars, for the resale price slider.
+const resaleMedian = computed(() => {
+  const r = result.value?.resolvedB;
+  return r?.medianPriceCents ? { median: r.medianPriceCents / 100, used: r.purchasePriceCents / 100 } : null;
+});
 const btoRange = computed(() => {
   const p = result.value?.btoProjectA;
   if (!p?.priceMinCents || !p?.priceMaxCents) return null;
@@ -218,6 +225,7 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
             :horizon-min="horizonLimits.min"
             :horizon-max="horizonLimits.max"
             :bto-range="btoRange"
+            :resale-median="resaleMedian"
             @update:model-value="setWhatIf"
             @reset="reset"
           />
