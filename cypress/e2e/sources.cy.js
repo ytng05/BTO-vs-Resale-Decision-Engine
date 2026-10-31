@@ -1,5 +1,6 @@
 // Sources page: the ruleset behind every figure, its sources, assumptions and datasets (mock data).
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
+// Rule sections start hidden: pick a topic chip, use "Show all", search, or open /sources#<section>.
 
 describe('sources page', () => {
   beforeEach(() => {
@@ -19,14 +20,40 @@ describe('sources page', () => {
     });
   });
 
-  it('expands and collapses every rule section with one button', () => {
+  it('shows no rule sections until a topic is picked', () => {
+    cy.get('[data-cy=sources-rules-hint]').should('contain', 'Pick a topic above or search');
+    cy.get('[data-cy=sources-rules-table] details').should('not.exist');
+  });
+
+  it('shows and hides every rule section with one button', () => {
+    cy.get('[data-cy=sources-expand-all]').should('contain', 'Show all').click();
     cy.get('[data-cy=sources-rules-table] details').should('have.length.greaterThan', 1).then(($all) => {
-      const total = $all.length;
-      cy.get('[data-cy=sources-expand-all]').should('contain', 'Expand all').click();
-      cy.get('[data-cy=sources-rules-table] details[open]').should('have.length', total);
-      cy.get('[data-cy=sources-expand-all]').should('contain', 'Collapse all').click();
-      cy.get('[data-cy=sources-rules-table] details[open]').should('have.length', 0);
+      cy.get('[data-cy=sources-rules-table] details[open]').should('have.length', $all.length);
     });
+    cy.get('[data-cy=sources-expand-all]').should('contain', 'Hide all').click();
+    cy.get('[data-cy=sources-rules-table] details').should('not.exist');
+    cy.get('[data-cy=sources-rules-hint]').should('be.visible');
+  });
+
+  it('toggles a section with its topic chip', () => {
+    cy.contains('button.sources-chip', 'Loans').should('have.attr', 'aria-pressed', 'false').click();
+    cy.contains('button.sources-chip', 'Loans').should('have.attr', 'aria-pressed', 'true');
+    cy.get('#sources-section-loans').should('have.attr', 'open');
+    cy.contains('button.sources-chip', 'Loans').click();
+    cy.get('#sources-section-loans').should('not.exist');
+  });
+
+  it('opens the section named in the URL hash', () => {
+    cy.visit('/sources#loans');
+    cy.get('#sources-section-loans').should('have.attr', 'open');
+    cy.contains('button.sources-chip', 'Loans').should('have.attr', 'aria-pressed', 'true');
+  });
+
+  it('shows every section that matches a search, whatever chips are selected', () => {
+    cy.get('[data-cy=sources-search-input]').type('stamp duty');
+    cy.get('[data-cy=sources-rules-table] details').should('have.length', 1).and('have.attr', 'open');
+    cy.get('[data-cy=sources-search-input]').clear();
+    cy.get('[data-cy=sources-rules-table] details').should('not.exist');
   });
 
   it('lists rules with values once a section is opened', () => {
