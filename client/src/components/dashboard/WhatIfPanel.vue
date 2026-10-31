@@ -44,7 +44,7 @@ const sliders = computed(() => {
     { key: 'monthlyHousingCostWhileWaiting', id: 'whatif-rent', label: 'Rent while waiting for keys', hint: '0 = living with parents.', link: { href: RENT_GUIDE_URL, text: 'Median rents by town' }, min: 0, max: 5000, step: 100, scale: 1, value: v.monthlyHousingCostWhileWaiting, text: `${formatMoney(v.monthlyHousingCostWhileWaiting)}/mo` },
     ...(props.btoRange
       ? [{
-        key: 'btoPrice', id: 'whatif-bto-price', label: 'BTO price',
+        group: 'Housing costs', key: 'btoPrice', id: 'whatif-bto-price', label: 'BTO price',
         hint: `${props.btoRange.name}: HDB's range ${formatMoney(props.btoRange.min)} to ${formatMoney(props.btoRange.max)}. Starts at the middle.`,
         min: props.btoRange.min, max: props.btoRange.max, step: 1000, scale: 1,
         value: v.btoPrice ?? props.btoRange.used, text: formatMoney(v.btoPrice ?? props.btoRange.used),
@@ -52,7 +52,7 @@ const sliders = computed(() => {
       : []),
     ...(props.resaleMedian
       ? [{
-        key: 'resalePrice', id: 'whatif-resale-price', label: 'Resale price',
+        group: 'Housing costs', key: 'resalePrice', id: 'whatif-resale-price', label: 'Resale price',
         hint: `Median of recent sales ${formatMoney(props.resaleMedian.median)}. Anything above it is paid in cash.`,
         min: Math.round((props.resaleMedian.median * 0.8) / 1000) * 1000,
         max: Math.round((props.resaleMedian.median * 1.3) / 1000) * 1000,
