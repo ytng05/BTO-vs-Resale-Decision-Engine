@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cashCover, largestFirst, monthYear, totalCpfOa } from '../src/utils/dashboardFormat.js';
+import { cashCover, costsTakeaway, grantsTakeaway, largestFirst, monthYear, totalCpfOa } from '../src/utils/dashboardFormat.js';
 
 describe('monthYear', () => {
   it('turns an ISO date into "May 2035"', () => {
@@ -49,5 +49,30 @@ describe('largestFirst', () => {
       { id: 'c', a: null, b: { amount: 100 } },
     ];
     expect(largestFirst(rows).map((r) => r.id)).toEqual(['b', 'a', 'c']);
+  });
+});
+
+describe('grantsTakeaway', () => {
+  it('names both totals', () => {
+    expect(grantsTakeaway({ totalGrantsCents: 3_000_000 }, { totalGrantsCents: 13_000_000 })).toBe('BTO S$30,000 · Resale S$130,000 in total grants');
+  });
+  it('says so when no grant applies, and is empty without totals', () => {
+    expect(grantsTakeaway({ totalGrantsCents: 0 }, { totalGrantsCents: 0 })).toBe('No grants apply on either path');
+    expect(grantsTakeaway({}, {})).toBe('');
+  });
+});
+
+describe('costsTakeaway', () => {
+  const line = (id, label, amountCents) => ({ id, label, amountCents });
+  it('names the biggest cost and whose it is', () => {
+    const a = { costBreakdown: [line('BSD', 'Stamp duty', 1_000_000), line('LOAN_INTEREST', 'Loan interest', 8_000_000)] };
+    const b = { costBreakdown: [line('LOAN_INTEREST', 'Loan interest', 8_000_000)] };
+    expect(costsTakeaway(a, b)).toBe('Biggest: Loan interest, S$80,000 on both paths');
+    const c = { costBreakdown: [line('AGENT', 'Agent fees', 9_000_000)] };
+    expect(costsTakeaway(a, c)).toBe('Biggest: Agent fees, S$90,000 for resale');
+    expect(costsTakeaway(c, a)).toBe('Biggest: Agent fees, S$90,000 for BTO');
+  });
+  it('copes with no breakdown', () => {
+    expect(costsTakeaway({}, {})).toBe('No cost breakdown in this result');
   });
 });
