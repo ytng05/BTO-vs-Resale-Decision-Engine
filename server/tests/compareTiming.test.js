@@ -5,28 +5,35 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import request from 'supertest';
 
-// Fake resale transactions per town: three near-new (lease 90+), three in the 80s, one in the 60s.
-// TENGAH has none (no resale stock); BEDOK's lookup fails as if data.gov.sg were down with nothing cached.
+// Fake resale transactions per town. TAMPINES: five near-new (lease 90+, enough on its own, D40), three in the
+// 80s, one in the 60s. BISHAN: no near-new, so its BTO value pools TOA PAYOH and ANG MO KIO's (D40).
+// TENGAH and the Jurong towns have none; BEDOK's lookup fails as if data.gov.sg were down with nothing cached.
 const tx = (price, lease) => ({ month: '2026-08', resale_price: String(price), floor_area_sqm: '93', remaining_lease: `${lease} years` });
 const FAKE = {
-  TAMPINES: [tx(700000, 95), tx(720000, 94), tx(740000, 93), tx(560000, 85), tx(580000, 84), tx(600000, 82), tx(450000, 65)],
+  TAMPINES: [tx(700000, 95), tx(710000, 96), tx(720000, 94), tx(730000, 92), tx(740000, 93),
+    tx(560000, 85), tx(580000, 84), tx(600000, 82), tx(450000, 65)],
   SEMBAWANG: [tx(520000, 96), tx(540000, 95), tx(430000, 75), tx(410000, 72)],
+  BISHAN: [tx(600000, 70), tx(650000, 85)],
+  'TOA PAYOH': [tx(1000000, 95), tx(1100000, 94), tx(1050000, 96), tx(500000, 60)],
+  'ANG MO KIO': [tx(990000, 93), tx(1020000, 92)],
 };
 vi.mock('../src/services/datagov/resalePrice.js', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
-    getResalePriceBasis: vi.fn(async ({ town, flatType, months, minLeaseYears, maxLeaseYears }) => {
-      if (town === 'BEDOK') throw new Error('data.gov.sg unreachable');
+    getResalePriceBasis: vi.fn(async ({ town, towns, flatType, months, minLeaseYears, maxLeaseYears }) => {
+      const list = towns ?? [town];
+      if (list.includes('BEDOK')) throw new Error('data.gov.sg unreachable');
       const lease = minLeaseYears !== undefined || maxLeaseYears !== undefined ? { leaseFilter: { minLeaseYears, maxLeaseYears } } : {};
       return {
-        town, flatType, window: { from: '2025-09', to: '2026-08', months }, ...lease,
-        ...actual.summariseResale(actual.filterByLease(FAKE[town] ?? [], { minLeaseYears, maxLeaseYears })),
+        town: list[0], ...(towns ? { towns } : {}), flatType, window: { from: '2025-09', to: '2026-08', months }, ...lease,
+        ...actual.summariseResale(actual.filterByLease(list.flatMap((t) => FAKE[t] ?? []), { minLeaseYears, maxLeaseYears })),
         source: { name: 'fake' }, cached: true, stale: false, fetchedAt: '2026-10-01T00:00:00.000Z',
       };
     }),
   };
 });
+
 
 const { createApp } = await import('../src/app.js');
 const { breakEvenSentence } = await import('../src/routes/analysis.js');
@@ -108,6 +115,30 @@ describe('POST /api/compare', () => {
     expect(resolvedA.marketValueAtKeysCents).toBe(72000000); // median of the three 90+ year sales
     expect(resolvedA.marketValueData.leaseFilter).toEqual({ minLeaseYears: 90 });
     expect(res.body.btoProjectB).toBeNull();
+  });
+
+  
+  it("BTO value: the town's own near-new median when it has at least 5 such sales (D40)", () => {
+    expect(res.body.resolvedA.marketValueData).toMatchObject({
+      towns: ['TAMPINES'], fellBackToNearbyTowns: false, fellBackToAllLeases: false, transactions: 5,
+    });
+  });
+
+  it('BTO value: too few near-new sales in the town pools its nearby towns, never all leases (D40)', async () => {
+    const r = await compare(body({ choiceA: { ...bto, town: 'BISHAN', classification: 'PRIME' } }));
+    expect(r.status).toBe(200);
+    // Bishan has no 90+ sales; Toa Payoh's three and Ang Mo Kio's two are pooled: 990k 1,000k 1,020k 1,050k 1,100k.
+    // Bishan's own older sales (600k, 650k) and Toa Payoh's 60-year sale are never used.
+    expect(r.body.resolvedA.marketValueAtKeysCents).toBe(102000000);
+    expect(r.body.resolvedA.marketValueData).toMatchObject({
+      towns: ['BISHAN', 'TOA PAYOH', 'ANG MO KIO'], fellBackToNearbyTowns: true, fellBackToAllLeases: false, transactions: 5,
+    });
+  });
+
+  it('BTO value: too few near-new sales even with the nearby towns is a 400 naming them (D40)', async () => {
+    const r = await compare(body({ choiceA: { ...bto, town: 'JURONG EAST', flatType: '5 ROOM' } }));
+    expect(r.status).toBe(400);
+    expect(r.body.error.message).toMatch(/Too few near-new 5 ROOM resale sales in JURONG EAST, JURONG WEST, BUKIT BATOK/);
   });
 
   it("resale: median of the lease band's sales, band's lower bound as the lease (D16)", () => {
