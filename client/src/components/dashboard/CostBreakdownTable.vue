@@ -2,9 +2,10 @@
 // Cost lines for both paths side by side, from outcome.costBreakdown in the contract:
 // [{ id, label, amountCents, paidFrom: 'CASH' | 'CPF' | 'NONE' }]. Ids include BSD, LEGAL, AGENT,
 // RENOVATION, RENT_WHILE_WAITING, LOAN_INTEREST and CPF_ACCRUED_INTEREST.
-// A line one path doesn't have shows "—". Stacks on phones like the grants table (.dash-grants).
+// A line one path doesn't have shows "—". The biggest cost is listed first. Stacks on phones like the grants table (.dash-grants).
 import { computed } from 'vue';
 import { formatMoney } from '../../utils/format.js';
+import { largestFirst } from '../../utils/dashboardFormat.js';
 
 const props = defineProps({
   outcomeA: { type: Object, required: true },
@@ -22,12 +23,12 @@ const rows = computed(() => {
     const l = lines.find((x) => x.id === id);
     return l ? { amount: dollars(l.amountCents), paidFrom: PAID_FROM[l.paidFrom] ?? '' } : null;
   };
-  return ids.map((id) => ({
+  return largestFirst(ids.map((id) => ({
     id,
     label: [...linesA, ...linesB].find((l) => l.id === id)?.label ?? id,
     a: cell(linesA, id),
     b: cell(linesB, id),
-  }));
+  })));
 });
 </script>
 
@@ -47,7 +48,7 @@ const rows = computed(() => {
         <td v-for="(c, i) in [row.a, row.b]" :key="i" :data-label="i === 0 ? 'BTO' : 'Resale'">
           <template v-if="c">
             <span class="text-numeric">{{ formatMoney(c.amount) }}</span>
-            <span v-if="c.paidFrom" class="d-block small text-secondary">paid from {{ c.paidFrom }}</span>
+            <span v-if="c.paidFrom" class="cost-chip">paid from {{ c.paidFrom }}</span>
           </template>
           <span v-else class="text-secondary">—</span>
         </td>
@@ -55,3 +56,15 @@ const rows = computed(() => {
     </tbody>
   </table>
 </template>
+
+<style scoped>
+.cost-chip {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.0625rem 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-fill-3);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+}
+</style>
