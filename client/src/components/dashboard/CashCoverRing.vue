@@ -22,16 +22,15 @@ const dash = computed(() => `${(cover.value.pct / 100) * CIRCUMFERENCE} ${CIRCUM
 const centre = computed(() => (cover.value.state === 'unknown' ? '—' : `${cover.value.pct}%`));
 const amounts = computed(() => {
   if (cover.value.state === 'unknown' || typeof props.requiredCents !== 'number') return '';
-  if (cover.value.state === 'none') return '';
+  if (cover.value.state === 'none' || cover.value.state === 'covered') return ''; // the status line already says it
   return `${formatMoney(props.cashSavings)} of ${formatMoney(props.requiredCents / 100)}`;
 });
-const summary = computed(() => `${props.label}: ${cover.value.text}${amounts.value ? `. ${amounts.value}` : ''}`);
 </script>
 
 <template>
   <figure class="cash-ring m-0" :data-cy="cy || undefined">
     <div class="cash-ring__dial">
-      <svg viewBox="0 0 120 120" class="cash-ring__svg" role="img" :aria-label="summary">
+      <svg viewBox="0 0 120 120" class="cash-ring__svg" aria-hidden="true">
         <circle class="cash-ring__track" cx="60" cy="60" :r="R" fill="none" stroke-width="12" />
         <circle
           class="cash-ring__bar"
@@ -41,7 +40,7 @@ const summary = computed(() => `${props.label}: ${cover.value.text}${amounts.val
           :r="R"
           fill="none"
           stroke-width="12"
-          stroke-linecap="round"
+          :stroke-linecap="cover.pct > 0 ? 'round' : 'butt'"
           :stroke-dasharray="dash"
           transform="rotate(-90 60 60)"
         />

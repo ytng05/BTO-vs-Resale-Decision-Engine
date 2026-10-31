@@ -25,9 +25,6 @@ const paths = computed(() => [
   { key: 'resale', label: 'Resale', o: props.outcomeB },
 ]);
 
-function toGrants() {
-  document.getElementById('grants-heading')?.scrollIntoView();
-}
 </script>
 
 <template>
@@ -39,7 +36,9 @@ function toGrants() {
           <div class="card-body">
             <h3 class="h5">Cash you need up front</h3>
             <p class="text-secondary small mb-4">
-              How much of the cash needed at purchase your cash savings cover. CPF and the loan pay for the rest.
+              How much of the cash needed at purchase your savings <strong>today</strong> would cover. The calculation
+              assumes you save nothing more before you buy, so the real picture may be better. CPF and the loan pay for
+              the rest.
             </p>
             <div class="d-flex justify-content-around gap-3">
               <CashCoverRing
@@ -79,7 +78,7 @@ function toGrants() {
                 </div>
               </dl>
               <p class="dash-tile__note">
-                <button type="button" class="btn btn-link p-0 align-baseline" data-cy="dashboard-grants-jump" @click="toGrants">See why each grant applies</button>
+                <a href="#grants-heading" data-cy="dashboard-grants-jump">See why each grant applies</a>
               </p>
             </div>
           </div>
@@ -93,7 +92,7 @@ function toGrants() {
                   <dd class="text-numeric">{{ formatMoney(dollars(p.o.housingCashSpentCents)) }}</dd>
                 </div>
               </dl>
-              <p class="dash-tile__note">Rent, fees, renovation and cash loan payments.</p>
+              <p class="dash-tile__note">What you pay in cash: rent, renovation, fees and loan payments.</p>
             </div>
           </div>
 
@@ -149,5 +148,5 @@ function toGrants() {
   text-align: right;
 }
 .dash-tile__note { margin: auto 0 0; font-size: 0.75rem; color: var(--text-secondary); }
-.dash-tile__note .btn-link { font-size: 0.75rem; min-height: 0; }
+.dash-tile__note a { color: var(--text-primary); }
 </style>

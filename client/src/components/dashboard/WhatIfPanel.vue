@@ -54,8 +54,8 @@ const groups = computed(() => ['Timing', 'Market', 'Housing costs'].map((title) 
       <h2 id="whatif-heading" class="h5 mb-1">What if…</h2>
       <p class="text-secondary small mb-4">Move a slider and the comparison runs again. Your saved plan does not change.</p>
 
-      <section v-for="g in groups" :key="g.title" class="whatif-group" :aria-label="g.title">
-      <h3 class="whatif-group__title">{{ g.title }}</h3>
+      <fieldset v-for="g in groups" :key="g.title" class="whatif-group">
+      <legend class="whatif-group__title">{{ g.title }}</legend>
       <div v-for="s in g.items" :key="s.key" class="mb-3">
         <div class="d-flex justify-content-between align-items-baseline gap-2 small">
           <label :for="s.id" class="fw-semibold">{{ s.label }}</label>
@@ -79,7 +79,7 @@ const groups = computed(() => ['Timing', 'Market', 'Housing costs'].map((title) 
           <a v-if="s.link" :href="s.link.href" target="_blank" rel="noopener noreferrer">{{ s.link.text }}<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
         </div>
       </div>
-      </section>
+      </fieldset>
 
       <button type="button" class="btn btn-outline-secondary w-100" data-cy="dashboard-whatif-reset" @click="emit('reset')">
         Reset to my inputs
@@ -89,6 +89,7 @@ const groups = computed(() => ['Timing', 'Market', 'Housing costs'].map((title) 
 </template>
 
 <style scoped>
+.whatif-group { border: 0; padding: 0; margin: 0; min-width: 0; }
 .whatif-group + .whatif-group { border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); }
 .whatif-group__title {
   font-family: var(--font-heading);
@@ -96,6 +97,9 @@ const groups = computed(() => ['Timing', 'Market', 'Housing costs'].map((title) 
   font-weight: 500;
   letter-spacing: 0.01em;
   color: var(--text-secondary);
+  float: none;
+  width: 100%;
+  padding: 0;
   margin: 0 0 var(--space-3);
 }
 .whatif-value {

@@ -214,7 +214,7 @@ const warningText = (w) =>
       />
 
       <div class="row g-4" :aria-busy="updating ? 'true' : 'false'">
-        <!-- What-if: after the headline on phones, on the right on large screens -->
+        <!-- What-if: after the overview on phones, on the right on large screens -->
         <div class="col-12 col-lg-4 order-lg-last">
           <WhatIfPanel
             :model-value="whatIf"
@@ -267,7 +267,7 @@ const warningText = (w) =>
 
           <section class="card" aria-labelledby="grants-heading">
             <div class="card-body">
-              <h2 id="grants-heading" class="h5">Grants you qualify for</h2>
+              <h2 id="grants-heading" tabindex="-1" class="h5">Grants you qualify for</h2>
               <p class="text-secondary small">
                 Every check says why it passed or failed.
                 <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>.
