@@ -14,7 +14,7 @@ const PAGES = [
   { path: '/', ready: '[data-cy=home-title]' },
   { path: '/plan', ready: '[data-cy=situation-form]' },
   { path: '/sources', ready: '[data-cy=sources-title]' },
-  { path: '/login', ready: '[data-cy=login-form]' },
+  { path: '/login', ready: '[data-cy=login-choice-register]' },
   { path: '/scenarios', ready: '[data-cy=scenarios-view]' },
   { path: '/dashboard', ready: '[data-cy=dashboard-empty]' },
   { path: '/scenarios/compare?a=mock-a&b=mock-b', ready: '[data-cy=compare-card-b]' },

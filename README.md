@@ -78,6 +78,7 @@ npm run test:e2e                                  # terminal 2  (or npm run cy:o
 | `scenario-compare.cy.js` | side-by-side compare page (mock scenarios) |
 | `responsive.cy.js` | every page at 375 / 768 / 1280 px with no sideways scrolling |
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, safe https source links, assumptions and datasets |
+| `login.cy.js` | Start planning → login page: the three choices, the create-account and log-in forms, Back, planning without an account, and going on to the plan |
 
 
 Demo user journeys (five households, one per presenter) live in `cypress/journeys/` and run against a **live**

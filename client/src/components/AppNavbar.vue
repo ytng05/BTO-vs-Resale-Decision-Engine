@@ -49,7 +49,7 @@ function logout() {
             <router-link class="nav-link" to="/scenarios" data-cy="nav-scenarios-link">My scenarios</router-link>
           </li>
           <li v-if="!auth.isLoggedIn" class="nav-item">
-            <router-link class="nav-link" to="/login" data-cy="nav-login-link">Log in</router-link>
+              <router-link class="nav-link" to="/login?mode=login" data-cy="nav-login-link">Log in</router-link>
           </li>
           <li v-else class="nav-item dropdown">
             <button

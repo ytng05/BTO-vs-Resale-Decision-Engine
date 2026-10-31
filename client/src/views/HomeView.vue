@@ -21,7 +21,8 @@ onMounted(async () => {
       Enter your situation and compare both paths. The app solves for the assumptions at which they are equal
       instead of predicting prices.
     </p>
-    <router-link class="btn btn-primary" to="/plan" data-cy="home-start-button">Start planning</router-link>
+      <router-link class="btn btn-primary" to="/login?redirect=/plan" data-cy="home-start-button">Start planning</router-link>
+
     <div class="mt-3">
       <RulesetBadge v-if="ruleset" v-bind="ruleset" />
     </div>
