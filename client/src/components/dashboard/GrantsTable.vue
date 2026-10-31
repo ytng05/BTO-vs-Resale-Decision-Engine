@@ -45,11 +45,11 @@ const rows = computed(() => {
         <tr v-for="row in rows" :key="row.id" :data-cy="`dashboard-grant-${row.id.toLowerCase()}`">
           <th scope="row" class="fw-semibold">{{ row.name }}</th>
           <td v-for="(c, i) in [row.a, row.b]" :key="i" :data-label="i === 0 ? 'BTO' : 'Resale'" :data-cy="`dashboard-grant-${row.id.toLowerCase()}-${i === 0 ? 'bto' : 'resale'}`">
-            <div class="fw-semibold" :class="c.eligible ? 'text-success' : 'text-danger'">
+            <span class="grant-pill" :class="c.eligible ? 'grant-pill--yes' : 'grant-pill--no'">
               {{ c.eligible ? '✓ Eligible' : '✗ Not eligible' }}
-            </div>
-            <div v-if="c.eligible" class="text-numeric">{{ formatMoney(c.amount) }}</div>
-            <ul class="list-unstyled small text-secondary mb-0 mt-1">
+            </span>
+            <div v-if="c.eligible" class="grant-amount text-numeric">{{ formatMoney(c.amount) }}</div>
+            <ul class="list-unstyled small text-secondary mb-0 mt-2">
               <li v-for="t in c.tests" :key="t.id" data-cy="dashboard-grant-reason">
                 <span aria-hidden="true">{{ t.passed ? '✓' : '✗' }}</span>
                 <span class="visually-hidden">{{ t.passed ? 'Passed:' : 'Failed:' }}</span>
@@ -74,3 +74,22 @@ const rows = computed(() => {
     </table>
   </div>
 </template>
+
+<style scoped>
+.grant-pill {
+  display: inline-block;
+  padding: 0.125rem 0.625rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.grant-pill--yes { background: var(--success-fill); color: var(--success); }
+.grant-pill--no { background: var(--danger-fill); color: var(--danger); }
+.grant-amount {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 1.125rem;
+  letter-spacing: -0.015em;
+  margin-top: 0.25rem;
+}
+</style>
