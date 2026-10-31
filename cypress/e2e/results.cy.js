@@ -112,4 +112,20 @@ describe('results page', () => {
     cy.get('[data-cy=patha-flat-type-4-room]').should('exist');
     cy.get('[data-cy=patha-project]').should('not.exist');
   });
+
+  it('takes an optional asking price and says the part above the median is paid in cash (D39)', () => {
+    cy.visit('/plan');
+    next();
+    fillSituation();
+    next();
+    fillPath('patha');
+    next();
+    fillPath('pathb', { town: 'BEDOK' });
+    cy.get('[data-cy=pathb-asking-price-help]').should('contain', 'S$665,000').and('contain', 'S$620,000 to S$760,000');
+    cy.get('[data-cy=pathb-asking-price-input]').type('700000');
+    cy.get('[data-cy=pathb-asking-price-cov]').should('contain', 'S$35,000 above the median');
+    next();
+    cy.get('[data-cy=results-price-basis-resale]')
+      .should('contain', 'your asking price, S$700,000').and('contain', 'S$35,000 above the median').and('contain', 'paid in cash');
+  });
 });
