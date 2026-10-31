@@ -20,7 +20,9 @@ export const WARNING_MESSAGES = Object.freeze({
   [WARNINGS.HDB_RATE_UNRESOLVED]:
     'The HDB loan interest rate is not confirmed in the ruleset, so a default rate is used.',
   [WARNINGS.INCOME_CEILING_BREACHED_AT_PURCHASE]:
-    'Your projected household income at purchase is above the income ceiling for this flat.',
+    'Your household income, projected to the year you apply, is above the income ceiling for a new HDB flat, so you could not buy this BTO flat that year.',
+  [WARNINGS.HDB_LOAN_INCOME_CEILING_BREACHED]:
+    'Your household income, projected to the year you apply, is above the ceiling for an HDB loan. You would need a bank loan, which this version does not model, so these figures still assume an HDB loan.',
 });
 
 /** { code: text } for each distinct warning code given, in first-seen order. Unknown codes are left out. */
