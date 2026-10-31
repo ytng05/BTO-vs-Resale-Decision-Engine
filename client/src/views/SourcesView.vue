@@ -368,11 +368,29 @@ function isTierExpanded(table) {
   return expandedTierKeys.value.has(table.key);
 }
 
-function toggleTierRows(table) {
+const tierTableEls = new Map();
+
+function setTierTableEl(key, el) {
+  if (el) tierTableEls.set(key, el);
+  else tierTableEls.delete(key);
+}
+
+async function toggleTierRows(table) {
+  const collapsing = expandedTierKeys.value.has(table.key);
   const next = new Set(expandedTierKeys.value);
-  if (next.has(table.key)) next.delete(table.key);
+  if (collapsing) next.delete(table.key);
   else next.add(table.key);
   expandedTierKeys.value = next;
+  if (!collapsing) return;
+
+  // The page gets shorter when the bands fold away: bring the table back unless its top is still on screen.
+  await nextTick();
+  const el = tierTableEls.get(table.key);
+  if (!el) return;
+  const { top } = el.getBoundingClientRect();
+  if (top >= 0 && top < window.innerHeight) return;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
 }
 
 const assumptions = computed(() => [
@@ -596,7 +614,7 @@ onMounted(async () => {
                   </tbody>
                 </table>
                 <template v-for="tierTable in section.tierTables" :key="tierTable.key">
-                  <table class="table table-hover align-middle sources-table sources-table--tiers w-100">
+                  <table :ref="(el) => setTierTableEl(tierTable.key, el)" class="table table-hover align-middle sources-table sources-table--tiers w-100">
                     <caption class="sources-table__caption">{{ tierTable.title }}</caption>
                     <colgroup><col class="sources-table__rule-column"><col class="sources-table__value-column"></colgroup>
                     <thead><tr><th v-for="header in tierTable.headers" :key="header" scope="col">{{ header }}</th></tr></thead>
@@ -1033,6 +1051,7 @@ onMounted(async () => {
 
 .sources-table--tiers {
   min-width: 32rem;
+  scroll-margin-top: var(--space-6);
 }
 
 .sources-table__rule-column {

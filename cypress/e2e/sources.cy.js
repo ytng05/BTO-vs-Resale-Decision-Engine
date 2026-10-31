@@ -74,6 +74,17 @@ describe('sources page', () => {
     cy.get('#sources-section-ehg').should('exist');
   });
 
+  it('scrolls back to a band table after it is collapsed', () => {
+    cy.contains('button.sources-chip', 'EHG').click();
+    cy.contains('#sources-section-ehg button.sources-tier-toggle', /Show all \d+ bands/).scrollIntoView().click();
+    cy.contains('#sources-section-ehg button.sources-tier-toggle', 'Show first 5 bands').scrollIntoView().click();
+    cy.get('#sources-section-ehg .sources-table__caption').should(($caption) => {
+      const { top, bottom } = $caption[0].getBoundingClientRect();
+      expect(top, 'caption top').to.be.at.least(0);
+      expect(bottom, 'caption bottom').to.be.at.most(Cypress.config('viewportHeight'));
+    });
+  });
+
   it('lists rules with values once a section is opened', () => {
     cy.get('[data-cy=sources-expand-all]').click();
     cy.get('[data-cy=sources-rules-table] tbody tr').should('have.length.greaterThan', 0);
