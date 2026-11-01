@@ -17,8 +17,7 @@ const resale = ref(null);
 const loading = ref(true);
 const failed = ref(false);
 
-// Sales in the user's lease band, as the comparison uses (the route takes leaseBand from #84 on; before that it
-// ignores it and answers for all leases). A band with no sales answers 404, so ask again for all leases.
+// Sales in the user's lease band, as the comparison uses. A band with no sales answers 404, so ask again for all leases.
 async function loadResale(b) {
   try {
     return await getResalePrice({ town: b.town, flatType: b.flatType, leaseBand: b.leaseBand });

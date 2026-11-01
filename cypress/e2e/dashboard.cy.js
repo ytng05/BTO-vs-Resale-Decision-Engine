@@ -51,6 +51,7 @@ describe('financial dashboard', () => {
 
   it('puts the two flats side by side: size, price and price per m²', () => {
     openDashboard();
+    cy.get('[data-cy=dashboard-section-size] summary').click();
     cy.get('[data-cy=dashboard-size-price]').should('be.visible');
     ['bto', 'resale'].forEach((p) => {
       cy.get(`[data-cy=dashboard-size-price-area-${p}]`).invoke('text').should('match', /\d+(\.\d)?(–\d+)? m²/);
