@@ -1,31 +1,7 @@
 // Smoke test. Needs: `VITE_USE_MOCK=true npm run build` then `npm start`, then `npm run test:e2e`.
 // Selector convention: data-cy="<area>-<element>-<action>" (see docs/CONVENTIONS.md).
 
-const nextYear = new Date().getFullYear() + 1;
-
-// Fills each plan step with valid input so validation lets the stepper move on.
-// Contract v2: exactly two buyers (at least one SC); "compare in year" is optional, so it is left blank.
-function fillSituation() {
-  [1, 2].forEach((n) => {
-    cy.get(`[data-cy=situation-buyer-${n}-age-input]`).type(n === 1 ? '30' : '29');
-    cy.get(`[data-cy=situation-buyer-${n}-citizenship-select]`).select('SC');
-    cy.get(`[data-cy=situation-buyer-${n}-first-timer-switch]`).check();
-    cy.get(`[data-cy=situation-buyer-${n}-income-input]`).type('5000');
-    cy.get(`[data-cy=situation-buyer-${n}-cpf-input]`).type('40000');
-  });
-  cy.get('[data-cy=situation-cash-savings-input]').type('20000');
-  cy.get('[data-cy=situation-price-growth-input]').type('3');
-  cy.get('[data-cy=situation-income-growth-input]').type('2');
-}
-
-function fillPath(prefix, flatType, leaseBand) {
-  cy.get(`[data-cy=${prefix}-year-input]`).type(String(nextYear));
-  cy.get(`[data-cy=${prefix}-town-select]`).select('TAMPINES');
-  cy.get(`[data-cy=${prefix}-flat-type-select]`).select(flatType);
-  if (leaseBand) {
-    cy.get(`[data-cy=${prefix}-lease-band-select]`).select(leaseBand);
-  }
-}
+import { fillPath, fillSituation, next } from './helpers/plan.js';
 
 describe('smoke', () => {
   it('loads the home page and shows the disclaimer', () => {
@@ -42,19 +18,21 @@ describe('smoke', () => {
 
   it('blocks the stepper until the current step is valid', () => {
     cy.visit('/plan');
-    cy.get('[data-cy=plan-step-next]').click();
+    next(); // step 1 (what matters most) is optional
+    next();
     cy.get('[data-cy=plan-step-errors]').should('be.visible');
-    cy.get('[data-cy=plan-step-1-panel]').should('exist'); // still on Situation
+    cy.get('[data-cy=plan-step-2-panel]').should('exist'); // still on About you
   });
 
   it('walks through the stepper to the results page (mock data)', () => {
     cy.visit('/plan');
+    next(); // what matters most -> about you
     fillSituation();
-    cy.get('[data-cy=plan-step-next]').click(); // situation -> path A
-    fillPath('patha', '4 ROOM');
-    cy.get('[data-cy=plan-step-next]').click(); // path A -> path B
-    fillPath('pathb', '4 ROOM', '80-89');
-    cy.get('[data-cy=plan-step-next]').click(); // path B -> results
+    next(); // about you -> your BTO
+    fillPath('patha');
+    next(); // your BTO -> resale flat
+    fillPath('pathb');
+    next(); // resale flat -> results
     cy.location('pathname').should('eq', '/results');
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
     cy.get('[data-cy^=heatmap-cell-]').should('have.length.greaterThan', 0);
@@ -75,12 +53,13 @@ describe('smoke', () => {
 
     // Build both paths and save the result.
     cy.visit('/plan');
+    next();
     fillSituation();
-    cy.get('[data-cy=plan-step-next]').click();
-    fillPath('patha', '4 ROOM');
-    cy.get('[data-cy=plan-step-next]').click();
-    fillPath('pathb', '4 ROOM', '80-89');
-    cy.get('[data-cy=plan-step-next]').click();
+    next();
+    fillPath('patha');
+    next();
+    fillPath('pathb');
+    next();
     cy.location('pathname').should('eq', '/results');
     cy.get('[data-cy=results-save-button]').click();
     cy.get('[data-cy=results-save-name-input]').clear().type('Smoke scenario');
@@ -99,10 +78,10 @@ describe('smoke', () => {
     cy.get('[data-cy=scenarios-open-button]').click();
     cy.location('pathname').should('eq', '/results');
     cy.get('[data-cy=results-edit-button]').click();
-    cy.get('[data-cy=plan-step-3-panel]').should('exist');
+    cy.get('[data-cy=plan-step-4-panel]').should('exist');
     cy.get('[data-cy=pathb-town-select]').should('have.value', 'TAMPINES');
-    cy.get('[data-cy=pathb-flat-type-select]').should('have.value', '4 ROOM');
-    cy.get('[data-cy=pathb-lease-band-select]').should('have.value', '80-89');
+    cy.get('[data-cy=pathb-flat-type-4-room-input]').should('be.checked');
+    cy.get('[data-cy=pathb-lease-band-80-89-input]').should('be.checked');
     cy.get('[data-cy=plan-step-back]').click();
     cy.get('[data-cy=plan-step-back]').click();
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');

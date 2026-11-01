@@ -1,7 +1,7 @@
 <script setup>
 // Presentational only. The store owns the step; this just renders progress.
-// Desktop (>= md): the four-box stepper. Mobile (< md): "Step X of N · <label>" + a progress bar.
-// Both are rendered; visibility is handled by _components.scss (.stepper / .stepper-mobile).
+// Desktop (>= md): the numbered step track (design system Stepper). Mobile (< md): "Step X of N · <label>"
+// + a progress bar. Both are rendered; CSS shows one.
 import { computed } from 'vue';
 
 const props = defineProps({
@@ -16,17 +16,18 @@ const progressPercent = computed(() =>
 </script>
 
 <template>
-  <!-- Desktop / tablet: box stepper -->
-  <ol class="stepper" data-cy="stepper" aria-label="Progress">
+  <!-- Desktop / tablet: numbered track -->
+  <ol class="step-track app-stepper__track" data-cy="stepper" aria-label="Progress">
     <li
       v-for="(label, i) in steps"
       :key="label"
-      class="stepper__item"
-      :class="{ 'stepper__item--active': i === current, 'stepper__item--done': i < current }"
+      class="step-track__item"
+      :class="{ 'step-track__item--current': i === current, 'step-track__item--done': i < current }"
       :aria-current="i === current ? 'step' : null"
       :data-cy="`stepper-step-${i + 1}`"
     >
-      {{ label }}
+      <span class="step-track__num" aria-hidden="true">{{ i + 1 }}</span>
+      <span>{{ label }}<span v-if="i < current" class="visually-hidden">, done</span></span>
     </li>
   </ol>
 
@@ -47,3 +48,10 @@ const progressPercent = computed(() =>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Below md the mobile label and bar take over (the same split as .stepper / .stepper-mobile). */
+@media (max-width: 767.98px) {
+  .app-stepper__track { display: none; }
+}
+</style>

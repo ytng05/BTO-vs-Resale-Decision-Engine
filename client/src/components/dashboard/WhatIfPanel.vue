@@ -5,6 +5,8 @@
 // Rent while waiting = contract v2's assumptions.monthlyHousingCostWhileWaitingCents (one figure for both
 // paths, paid until each path's keys); renovation = choiceA/choiceB.renovationCents (paid at keys).
 // Compare in = assumptions.horizonYear: both paths are measured in that year (D1); it can't be before the keys.
+// BTO price = choiceA.btoPriceCents, within the launch's HDB range (D26); shown once a result names the launch.
+// Resale price = choiceB.resalePriceCents (D39), 80% to 130% of the median; the median stays the valuation.
 import { computed } from 'vue';
 import { formatMoney } from '../../utils/format.js';
 import { RENT_GUIDE_URL } from '../../constants/planOptions.js';
@@ -16,6 +18,10 @@ const props = defineProps({
   horizonShown: { type: Number, default: null },
   horizonMin: { type: Number, required: true },
   horizonMax: { type: Number, required: true },
+  // { name, min, max, used } in dollars: the BTO launch's HDB price range and the price the last result used.
+  btoRange: { type: Object, default: null },
+  // { median, used } in dollars: the resale median (the valuation, D39) and the price the last result used.
+  resaleMedian: { type: Object, default: null },
 });
 const emit = defineEmits(['update:modelValue', 'reset']);
 
@@ -31,6 +37,31 @@ const sliders = computed(() => {
   const v = props.modelValue;
   const horizon = v.horizonYear ?? props.horizonShown ?? props.horizonMin;
   return [
+    { key: 'applicationYear', id: 'whatif-year', label: 'Apply / buy in', hint: 'Both paths move together', min: thisYear, max: thisYear + 6, step: 1, scale: 1, value: v.applicationYear, text: String(v.applicationYear) },
+    { key: 'annualPriceGrowth', id: 'whatif-price-growth', label: 'Flat price growth', min: -2, max: 8, step: 0.5, scale: 100, value: pct(v.annualPriceGrowth), text: `${pct(v.annualPriceGrowth)}% / yr` },
+    { key: 'annualIncomeGrowth', id: 'whatif-income-growth', label: 'Income growth', min: 0, max: 10, step: 0.5, scale: 100, value: pct(v.annualIncomeGrowth), text: `${pct(v.annualIncomeGrowth)}% / yr` },
+    { key: 'horizonYear', id: 'whatif-horizon', label: 'Compare in', hint: 'Not before both sets of keys', min: props.horizonMin, max: props.horizonMax, step: 1, scale: 1, value: horizon, text: String(horizon) },
+    { key: 'monthlyHousingCostWhileWaiting', id: 'whatif-rent', label: 'Rent while waiting for keys', hint: '0 = living with parents.', link: { href: RENT_GUIDE_URL, text: 'Median rents by town' }, min: 0, max: 5000, step: 100, scale: 1, value: v.monthlyHousingCostWhileWaiting, text: `${formatMoney(v.monthlyHousingCostWhileWaiting)}/mo` },
+    ...(props.btoRange
+      ? [{
+        group: 'Housing costs', key: 'btoPrice', id: 'whatif-bto-price', label: 'BTO price',
+        hint: `${props.btoRange.name}: HDB's range ${formatMoney(props.btoRange.min)} to ${formatMoney(props.btoRange.max)}. Starts at the middle.`,
+        min: props.btoRange.min, max: props.btoRange.max, step: 1000, scale: 1,
+        value: v.btoPrice ?? props.btoRange.used, text: formatMoney(v.btoPrice ?? props.btoRange.used),
+      }]
+      : []),
+    ...(props.resaleMedian
+      ? [{
+        group: 'Housing costs', key: 'resalePrice', id: 'whatif-resale-price', label: 'Resale price',
+        hint: `Median of recent sales ${formatMoney(props.resaleMedian.median)}. Anything above it is paid in cash.`,
+        min: Math.round((props.resaleMedian.median * 0.8) / 1000) * 1000,
+        max: Math.round((props.resaleMedian.median * 1.3) / 1000) * 1000,
+        step: 1000, scale: 1,
+        value: v.resalePrice ?? props.resaleMedian.used, text: formatMoney(v.resalePrice ?? props.resaleMedian.used),
+      }]
+      : []),
+    { key: 'renovationA', id: 'whatif-reno-bto', label: 'Renovation, BTO', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationA, text: formatMoney(v.renovationA) },
+    { key: 'renovationB', id: 'whatif-reno-resale', label: 'Renovation, resale', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationB, text: formatMoney(v.renovationB) },
     { group: 'Timing', key: 'applicationYear', id: 'whatif-year', label: 'Apply / buy in', hint: 'Both paths move together', min: thisYear, max: thisYear + 6, step: 1, scale: 1, value: v.applicationYear, text: String(v.applicationYear) },
     { group: 'Market', key: 'annualPriceGrowth', id: 'whatif-price-growth', label: 'Flat price growth', min: -2, max: 8, step: 0.5, scale: 100, value: pct(v.annualPriceGrowth), text: `${pct(v.annualPriceGrowth)}% / yr` },
     { group: 'Market', key: 'annualIncomeGrowth', id: 'whatif-income-growth', label: 'Income growth', min: 0, max: 10, step: 0.5, scale: 100, value: pct(v.annualIncomeGrowth), text: `${pct(v.annualIncomeGrowth)}% / yr` },
@@ -74,7 +105,7 @@ const groups = computed(() => ['Timing', 'Market', 'Housing costs'].map((title) 
           :aria-describedby="s.hint ? `${s.id}-hint` : undefined"
           @input="set(s.key, $event.target.value, s.scale)"
         />
-        <div v-if="s.hint" :id="`${s.id}-hint`" class="form-text mt-0">
+        <div v-if="s.hint" :id="`${s.id}-hint`" class="form-text mt-0" :data-cy="`${s.id}-hint`">
           {{ s.hint }}
           <a v-if="s.link" :href="s.link.href" target="_blank" rel="noopener noreferrer">{{ s.link.text }}<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
         </div>

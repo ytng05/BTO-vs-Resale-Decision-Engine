@@ -6,6 +6,7 @@ import { next } from '../e2e/helpers/plan.js';
 describe('Journey 5: can they afford it?', () => {
   it('blocks two PRs, then shows both paths over the loan limit with warnings', () => {
     cy.visit('/plan');
+    next(); // nothing picked in 'What matters most'
     fillSituation(J5);
     // At least one buyer must be a Singapore Citizen (D21).
     cy.get('[data-cy=situation-buyer-1-citizenship-select]').select('PR');

@@ -13,12 +13,14 @@ const isSet = (v) => v !== null && v !== undefined && v !== '';
 // Leaves out optional fields the user did not fill in, so the server applies its own defaults.
 const withoutUnset = (obj) => Object.fromEntries(Object.entries(obj).filter(([, v]) => isSet(v)));
 
-// One choice as the contract's RequestChoice: dollars become …Cents (renovationCents, btoPriceCents).
+// One choice as the contract's RequestChoice: dollars become …Cents (renovationCents, btoPriceCents,
+// resalePriceCents).
 function toRequestChoice(choice) {
-  const { btoPrice, renovation, ...rest } = choice;
+  const { btoPrice, resalePrice, renovation, ...rest } = choice;
   return withoutUnset({
     ...rest,
     btoPriceCents: isSet(btoPrice) ? toCents(btoPrice) : null,
+    resalePriceCents: isSet(resalePrice) ? toCents(resalePrice) : null,
     renovationCents: toCents(renovation ?? 0),
   });
 }
@@ -100,6 +102,32 @@ export async function getRpi(params = {}) {
 export async function grants(payload) {
   if (USE_MOCK) return mockGrants(payload);
   return (await http.post('/grants', payload)).data;
+}
+
+// Onboarding's early EHG estimate (D38): the household as typed so far, applying for a BTO flat this year.
+// The flat isn't chosen yet, so it uses the BTO choice so far (4-room Standard if blank); the EHG doesn't
+// depend on the town. An estimate only: Results checks the grants again with the real choices.
+export async function ehgEstimate(store) {
+  const a = store.choiceA;
+  return grants({
+    profile: {
+      applicants: store.profile.applicants.map((p) => ({
+        age: p.age,
+        citizenship: p.citizenship,
+        firstTimer: p.firstTimer,
+        monthlyIncomeCents: toCents(p.monthlyIncome),
+        cpfOaBalanceCents: toCents(p.cpfOaBalance ?? 0),
+      })),
+      cashSavingsCents: toCents(store.profile.cashSavings ?? 0),
+    },
+    choice: withoutUnset({
+      path: 'BTO',
+      applicationYear: new Date().getFullYear(),
+      town: a.town,
+      flatType: a.flatType ?? '4 ROOM',
+      classification: a.classification ?? 'STANDARD',
+    }),
+  });
 }
 
 // Converts the store's shape into the /api/timing TimingRequest (contract "POST /api/timing").

@@ -164,6 +164,11 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   const marketValueAtKeysCents = grow(choice.marketValueAtKeysCents, g, keyMonth - startMonth);
   const marketValueAt = (asOfMonth) =>
     keyMonth < asOfMonth ? grow(marketValueAtKeysCents, g, asOfMonth - keyMonth) : 0;
+  // Part B: resale only. The median at purchase stands in for HDB's valuation; resale keys = purchase, so
+  // it is marketValueAtKeysCents. The loan (and D37's CPF limit) work from the lower of price and valuation,
+  // and anything above it is cash over valuation. BTO has no valuation, so no cash over valuation.
+  const valuationLimitCents = isBto ? priceCents : Math.min(priceCents, marketValueAtKeysCents);
+  const cashOverValuationCents = priceCents - valuationLimitCents;
 
   // -------------------------------------------------------------------------
   // 5. Rates and affordability (NOTE ON HDB RATE, NOTE ON AFFORDABILITY)
@@ -185,7 +190,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
       loanType: assumptions.loanType,
       loanRate: hdbConcessionaryRate,
       tenureAskedYears: assumptions.loanTenureYears,
-      purchasePriceCents: priceCents,
+      purchasePriceCents: valuationLimitCents, // lower of price and valuation (Part B), not the price paid
       remainingLeaseYears: choice.remainingLeaseYears,
       applicants: projected
     },
@@ -198,7 +203,7 @@ export function evaluate(profile, choice, assumptions, ruleset) {
   const youngestAtPurchase = Math.min(...projected.map((p) => p.age));
   const yearsShort = Math.max(0, usageRule.leaseMustCoverYoungestToAge - (youngestAtPurchase + choice.remainingLeaseYears));
   const factorPercent = Math.max(0, 100 - usageRule.leaseProRating.percentPerYearShort * yearsShort);
-  let cpfCapLeftCents = yearsShort > 0 ? Math.floor((priceCents * factorPercent) / 100) : Infinity;
+  let cpfCapLeftCents = yearsShort > 0 ? Math.floor((valuationLimitCents * factorPercent) / 100) : Infinity;
 
   const loanRate = hdbConcessionaryRate; // HDB loans only (D32)
 
@@ -248,7 +253,12 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     return 'CASH';
   };
 
-  const bsdCents = computeBuyerStampDuty(priceCents, ruleset);
+  // D39: resale stamp duty on the higher of price paid and HDB's valuation (IRAS; HDB acceptance page).
+  // BTO has no valuation step, so the price stands.
+  const bsdBaseCents = isBto
+    ? priceCents
+    : Math.max(priceCents, marketValueAtKeysCents ?? priceCents); // valuation grown to keys (D31), as used for COV
+  const bsdCents = computeBuyerStampDuty(bsdBaseCents, ruleset);
   // A path's own fees override the shared assumption: the route sets them per path, since resale and BTO
   // defaults differ, and the solvers pass one assumptions object to both paths (D17, D33).
   const legalCents = choice.legalFeesCents ?? assumptions.legalFeesCents ?? 0;
@@ -282,8 +292,11 @@ export function evaluate(profile, choice, assumptions, ruleset) {
     legalPaidFrom = payFee(signingMonth, legalCents);
   }
 
-  // At keys: grants, then OA above the retention, then the loan, then the retained OA (D28 v3), then cash
+  // At keys: cash over valuation in cash (Part B), then grants, then OA above the retention, then the loan,
+  // then the retained OA (D28 v3), then cash
   let remainingCents = priceDueAtKeysCents;
+  payCash(keyMonth, cashOverValuationCents);
+  remainingCents -= cashOverValuationCents;
   remainingCents -= useGrants(keyMonth, remainingCents);
   // Grants left over after the price (grantsLeftCents) go to the CPF Special/Retirement and MediSave
   // accounts (HDB Sign Agreement for Lease page; seat 2 on #46), so they never reach the OA: they can't pay

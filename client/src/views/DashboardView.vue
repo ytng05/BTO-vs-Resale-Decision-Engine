@@ -10,7 +10,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
-import { validateStep } from '../validation/planValidation.js';
+import { isPlanComplete } from '../validation/planValidation.js';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
 import { costsTakeaway, grantsTakeaway, monthYear } from '../utils/dashboardFormat.js';
@@ -27,7 +27,7 @@ const store = useScenarioStore();
 const thisYear = new Date().getFullYear();
 
 // Same rule the stepper uses before it lets anyone reach the results.
-const hasInputs = computed(() => [0, 1, 2].every((step) => Object.keys(validateStep(step, store)).length === 0));
+const hasInputs = computed(() => isPlanComplete(store));
 
 // The two paths may start in different years; the year slider moves both and keeps the gap.
 const yearGap = computed(() => (store.choiceB.applicationYear ?? 0) - (store.choiceA.applicationYear ?? 0));
@@ -43,6 +43,10 @@ function fromPlan() {
     monthlyHousingCostWhileWaiting: store.assumptions.monthlyHousingCostWhileWaiting ?? 0,
     renovationA: store.choiceA.renovation ?? 0,
     renovationB: store.choiceB.renovation ?? 0,
+    // null = the middle of HDB's range for the launch (D26).
+    btoPrice: store.choiceA.btoPrice ?? null,
+    // null = the median of recent sales (D39).
+    resalePrice: store.choiceB.resalePrice ?? null,
   };
 }
 const whatIf = reactive(fromPlan());
@@ -58,8 +62,8 @@ const reset = () => Object.assign(whatIf, fromPlan());
 // A copy of the plan with the what-if values swapped in. compare() turns it into the contract's request.
 const whatIfPlan = computed(() => ({
   profile: store.profile,
-  choiceA: { ...store.choiceA, applicationYear: whatIf.applicationYear, renovation: whatIf.renovationA },
-  choiceB: { ...store.choiceB, applicationYear: whatIf.applicationYear + yearGap.value, renovation: whatIf.renovationB },
+  choiceA: { ...store.choiceA, applicationYear: whatIf.applicationYear, renovation: whatIf.renovationA, btoPrice: whatIf.btoPrice },
+  choiceB: { ...store.choiceB, applicationYear: whatIf.applicationYear + yearGap.value, renovation: whatIf.renovationB, resalePrice: whatIf.resalePrice },
   assumptions: {
     ...store.assumptions,
     annualPriceGrowth: whatIf.annualPriceGrowth,
@@ -70,6 +74,18 @@ const whatIfPlan = computed(() => ({
 }));
 
 const result = ref(null);
+
+// The BTO launch the comparison used and HDB's price range for the flat, in dollars (D26), for the price slider.
+// The resale median (the flat's valuation, D39) in dollars, for the resale price slider.
+const resaleMedian = computed(() => {
+  const r = result.value?.resolvedB;
+  return r?.medianPriceCents ? { median: r.medianPriceCents / 100, used: r.purchasePriceCents / 100 } : null;
+});
+const btoRange = computed(() => {
+  const p = result.value?.btoProjectA;
+  if (!p?.priceMinCents || !p?.priceMaxCents) return null;
+  return { name: p.name, min: p.priceMinCents / 100, max: p.priceMaxCents / 100, used: (result.value.resolvedA?.purchasePriceCents ?? 0) / 100 };
+});
 const error = ref(null);
 const updating = ref(false);
 let timer = null;
@@ -247,6 +263,8 @@ const warningText = (w) =>
             :horizon-shown="horizon"
             :horizon-min="horizonLimits.min"
             :horizon-max="horizonLimits.max"
+            :bto-range="btoRange"
+            :resale-median="resaleMedian"
             @update:model-value="setWhatIf"
             @reset="reset"
           />
