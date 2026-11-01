@@ -49,6 +49,18 @@ describe('financial dashboard', () => {
     cy.get('[data-cy=dashboard-costs], [data-cy=dashboard-costs-empty]').should('exist');
   });
 
+  it('puts the two flats side by side: size, price and price per m²', () => {
+    openDashboard();
+    cy.get('[data-cy=dashboard-section-size] summary').click();
+    cy.get('[data-cy=dashboard-size-price]').should('be.visible');
+    ['bto', 'resale'].forEach((p) => {
+      cy.get(`[data-cy=dashboard-size-price-area-${p}]`).invoke('text').should('match', /\d+(\.\d)?(–\d+)? m²/);
+      cy.get(`[data-cy=dashboard-size-price-price-${p}]`).invoke('text').should('match', /S\$[\d,]+/);
+      cy.get(`[data-cy=dashboard-size-price-per-sqm-${p}]`).invoke('text').should('match', /S\$[\d,]+/);
+    });
+    cy.get('[data-cy=dashboard-size-price-lease-bto]').should('contain', '99 years');
+  });
+
   it('re-runs when the comparison year moves, and resets to the plan', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-headline]').invoke('text').then((before) => {
@@ -61,5 +73,39 @@ describe('financial dashboard', () => {
         cy.get('[data-cy=dashboard-headline]').should('contain', `by ${startYear}`);
       });
     });
+  });
+
+  it('moves the BTO price within HDB\'s range for the launch (D26)', () => {
+    openDashboard();
+    cy.get('[data-cy=dashboard-whatif-more] summary').click(); // housing-cost sliders sit under "More assumptions"
+    cy.get('[data-cy=whatif-bto-price-value]').should('contain', 'S$540,500'); // the midpoint
+    cy.get('[data-cy=whatif-bto-price-hint]').should('contain', 'MOCK Tampines Bliss');
+    cy.get('[data-cy=whatif-bto-price-slider]').invoke('val', 600000).trigger('input');
+    cy.get('[data-cy=whatif-bto-price-value]').should('contain', 'S$600,000');
+    cy.get('[data-cy=dashboard-updating]', { timeout: 10000 }).should('not.exist');
+    cy.get('[data-cy=dashboard-whatif-reset]').click();
+    cy.get('[data-cy=whatif-bto-price-value]').should('contain', 'S$540,500');
+  });
+
+  it('moves the resale price around the median, which stays the valuation (D39)', () => {
+    openDashboard();
+    cy.get('[data-cy=dashboard-whatif-more] summary').click(); // housing-cost sliders sit under "More assumptions"
+    cy.get('[data-cy=whatif-resale-price-value]').should('contain', 'S$665,000');
+    cy.get('[data-cy=whatif-resale-price-hint]').should('contain', 'Median of recent sales S$665,000');
+    cy.get('[data-cy=whatif-resale-price-slider]').invoke('val', 700000).trigger('input');
+    cy.get('[data-cy=whatif-resale-price-value]').should('contain', 'S$700,000');
+    cy.get('[data-cy=dashboard-updating]', { timeout: 10000 }).should('not.exist');
+    cy.get('[data-cy=dashboard-update-error]').should('not.exist');
+  });
+
+  it('shows how many hidden assumptions have changed', () => {
+    openDashboard();
+    cy.get('[data-cy=dashboard-whatif-more-count]').should('not.exist');
+    cy.get('[data-cy=dashboard-whatif-more] summary').click();
+    cy.get('[data-cy=whatif-rent-slider]').invoke('val', 1500).trigger('input');
+    cy.get('[data-cy=dashboard-whatif-more] summary').click();
+    cy.get('[data-cy=dashboard-whatif-more-count]').should('contain', '1 changed');
+    cy.get('[data-cy=dashboard-whatif-reset]').click();
+    cy.get('[data-cy=dashboard-whatif-more-count]').should('not.exist');
   });
 });

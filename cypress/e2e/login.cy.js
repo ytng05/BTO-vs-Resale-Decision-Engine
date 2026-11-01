@@ -1,4 +1,4 @@
-// Login page (mock data): Home's "Start planning" leads here; "I have an account" or "I'm new here", then the form,
+// Login page (mock data): Home's "Start planning" leads here; "Log in" or "Create account", then the form,
 // or "Plan without an account" straight to the plan.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`. Login and register are
 // mocked in that build, so nothing is written to a database.
@@ -31,6 +31,10 @@ describe('login page', () => {
     cy.get('[data-cy=login-password-input]').type('short');
     cy.get('[data-cy=login-submit-button]').click();
     cy.get('[data-cy=login-password-error]').should('contain', 'at least 8 characters');
+    // Screen readers: the field is marked wrong and its hint and error are linked to it.
+    cy.get('[data-cy=login-password-input]').should('have.attr', 'aria-invalid', 'true')
+      .and('have.attr', 'aria-describedby', 'login-password-help login-password-error');
+    cy.get('[data-cy=login-email-input]').should('have.attr', 'aria-describedby', 'login-email-error');
     cy.get('[data-cy=login-back-button]').click();
     cy.get('[data-cy=login-form]').should('not.exist');
     cy.get('[data-cy^=login-choice-]').should('have.length', 3);
@@ -76,6 +80,13 @@ describe('login page', () => {
         win.localStorage.setItem('hdb-app:auth', JSON.stringify({ token: 'mock-token', user: { name: 'Test Buyer', email: 'buyer@example.com' } }));
       },
     });
+    cy.location('pathname').should('eq', '/plan');
+  });
+
+  it('ignores a ?redirect= that points to another website', () => {
+    cy.visit('/login?redirect=//example.com');
+    cy.get('[data-cy=login-choice-guest]').click();
+    cy.location('host').should('eq', new URL(Cypress.config('baseUrl')).host);
     cy.location('pathname').should('eq', '/plan');
   });
 });

@@ -29,6 +29,19 @@ describe('toCompareRequest (contract v2/v2.1)', () => {
     expect(req.assumptions.monthlyHousingCostWhileWaitingCents).toBe(250_000);
   });
 
+  it('sends a resale asking price in cents, and leaves it out when blank so the server uses the median (D39)', () => {
+    const s = store();
+    s.choiceB = { ...s.choiceB, resalePrice: 650000 };
+    const req = toCompareRequest(s);
+    expect(req.choiceB.resalePriceCents).toBe(65_000_000);
+    expect(req.choiceB).not.toHaveProperty('resalePrice');
+    for (const blank of [null, '']) {
+      const t = store();
+      t.choiceB = { ...t.choiceB, resalePrice: blank };
+      expect(toCompareRequest(t).choiceB).not.toHaveProperty('resalePriceCents');
+    }
+  });
+
   it('never sends dollar fields, and leaves out optional fields that are not set', () => {
     const req = toCompareRequest(store());
     expect(req.choiceA).not.toHaveProperty('btoPrice');

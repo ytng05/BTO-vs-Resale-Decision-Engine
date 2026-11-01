@@ -7,26 +7,28 @@
 // in the store never changes, and "Reset" goes back to it.
 // Store and sliders hold dollars and fractions; client.js turns them into the contract's cents (D14).
 // All money from the API is integer cents (API_CONTRACT.md); it is divided by 100 only for display.
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
-import { validateStep } from '../validation/planValidation.js';
+import { isPlanComplete } from '../validation/planValidation.js';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
-import { monthYear } from '../utils/dashboardFormat.js';
+import { costsTakeaway, grantsTakeaway, monthYear } from '../utils/dashboardFormat.js';
 import WhatIfPanel from '../components/dashboard/WhatIfPanel.vue';
 import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
 import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
 import DashboardOverview from '../components/dashboard/DashboardOverview.vue';
+import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
 import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
+import SizePriceTable from '../components/dashboard/SizePriceTable.vue';
 
 const store = useScenarioStore();
 const thisYear = new Date().getFullYear();
 
 // Same rule the stepper uses before it lets anyone reach the results.
-const hasInputs = computed(() => [0, 1, 2].every((step) => Object.keys(validateStep(step, store)).length === 0));
+const hasInputs = computed(() => isPlanComplete(store));
 
 // The two paths may start in different years; the year slider moves both and keeps the gap.
 const yearGap = computed(() => (store.choiceB.applicationYear ?? 0) - (store.choiceA.applicationYear ?? 0));
@@ -42,9 +44,15 @@ function fromPlan() {
     monthlyHousingCostWhileWaiting: store.assumptions.monthlyHousingCostWhileWaiting ?? 0,
     renovationA: store.choiceA.renovation ?? 0,
     renovationB: store.choiceB.renovation ?? 0,
+    // null = the middle of HDB's range for the launch (D26).
+    btoPrice: store.choiceA.btoPrice ?? null,
+    // null = the median of recent sales (D39).
+    resalePrice: store.choiceB.resalePrice ?? null,
   };
 }
 const whatIf = reactive(fromPlan());
+// The saved plan's values, so the panel can tell how many hidden assumptions have moved.
+const planValues = computed(() => fromPlan());
 
 function setWhatIf(next) {
   // Moving the start year moves a chosen comparison year with it, so the keys never land after it.
@@ -57,8 +65,8 @@ const reset = () => Object.assign(whatIf, fromPlan());
 // A copy of the plan with the what-if values swapped in. compare() turns it into the contract's request.
 const whatIfPlan = computed(() => ({
   profile: store.profile,
-  choiceA: { ...store.choiceA, applicationYear: whatIf.applicationYear, renovation: whatIf.renovationA },
-  choiceB: { ...store.choiceB, applicationYear: whatIf.applicationYear + yearGap.value, renovation: whatIf.renovationB },
+  choiceA: { ...store.choiceA, applicationYear: whatIf.applicationYear, renovation: whatIf.renovationA, btoPrice: whatIf.btoPrice },
+  choiceB: { ...store.choiceB, applicationYear: whatIf.applicationYear + yearGap.value, renovation: whatIf.renovationB, resalePrice: whatIf.resalePrice },
   assumptions: {
     ...store.assumptions,
     annualPriceGrowth: whatIf.annualPriceGrowth,
@@ -69,6 +77,18 @@ const whatIfPlan = computed(() => ({
 }));
 
 const result = ref(null);
+
+// The BTO launch the comparison used and HDB's price range for the flat, in dollars (D26), for the price slider.
+// The resale median (the flat's valuation, D39) in dollars, for the resale price slider.
+const resaleMedian = computed(() => {
+  const r = result.value?.resolvedB;
+  return r?.medianPriceCents ? { median: r.medianPriceCents / 100, used: r.purchasePriceCents / 100 } : null;
+});
+const btoRange = computed(() => {
+  const p = result.value?.btoProjectA;
+  if (!p?.priceMinCents || !p?.priceMaxCents) return null;
+  return { name: p.name, min: p.priceMinCents / 100, max: p.priceMaxCents / 100, used: (result.value.resolvedA?.purchasePriceCents ?? 0) / 100 };
+});
 const error = ref(null);
 const updating = ref(false);
 let timer = null;
@@ -149,6 +169,29 @@ const warnings = computed(() => [
 ]);
 // A code becomes the server's plain-English sentence (`warningMessages`, docs/API_CONTRACT.md "POST /api/compare");
 // the bare code only if the server sent none for it.
+
+// The detail sections open and close. The chart that explains the result starts open; the rest start closed,
+// each with a one-line takeaway in its header. "Expand all" opens or closes every one.
+const sections = reactive({ cashflow: true, grants: false, costs: false, rpi: false, map: false, size: false });
+const allOpen = computed(() => Object.values(sections).every(Boolean));
+function toggleAll() {
+  const next = !allOpen.value;
+  Object.keys(sections).forEach((key) => { sections[key] = next; });
+}
+// The grants link in the overview: open the section, then bring its heading into view and focus it.
+function showGrants() {
+  sections.grants = true;
+  nextTick(() => {
+    const heading = document.getElementById('grants-heading');
+    heading?.scrollIntoView();
+    heading?.focus({ preventScroll: true });
+  });
+}
+const grantsLine = computed(() => grantsTakeaway(A.value, B.value));
+const costsLine = computed(() => costsTakeaway(A.value, B.value));
+const mapLine = computed(() => (store.choiceB.livingArrangement === 'NEAR'
+  ? "You said you'll live near your parents: check the 4 km rule."
+  : "Only needed if you'll live near your parents."));
 const warningText = (w) =>
   typeof w === 'string' ? result.value?.warningMessages?.[w] ?? w : w?.message ?? w?.code ?? '';
 </script>
@@ -212,19 +255,25 @@ const warningText = (w) =>
         :cash-savings="store.profile.cashSavings"
         :applicants="store.profile.applicants"
         :horizon="horizon"
+        @open-grants="showGrants"
       />
 
       <div class="row g-4" :aria-busy="updating ? 'true' : 'false'">
         <!-- What-if: after the overview on phones, on the right on large screens -->
         <div class="col-12 col-lg-4 order-lg-last">
+          <div class="dash-sticky">
           <WhatIfPanel
             :model-value="whatIf"
             :horizon-shown="horizon"
             :horizon-min="horizonLimits.min"
             :horizon-max="horizonLimits.max"
+            :bto-range="btoRange"
+            :resale-median="resaleMedian"
+            :baseline="planValues"
             @update:model-value="setWhatIf"
             @reset="reset"
           />
+          </div>
         </div>
 
         <div class="col-12 col-lg-8 d-flex flex-column gap-4">
@@ -262,42 +311,88 @@ const warningText = (w) =>
             </ul>
           </div>
 
-          <!-- Beside the sliders (D35): the historical range informs the price growth slider. In this column, not
-               under the sticky what-if panel, which would slide over it on scroll. Fetches on its own. -->
-          <HistoricalRpiChart />
-
-          <section class="card" aria-labelledby="grants-heading">
-            <div class="card-body">
-              <h2 id="grants-heading" tabindex="-1" class="h5">Grants you qualify for</h2>
-              <p class="text-secondary small">
-                Every check says why it passed or failed.
-                <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>.
-              </p>
-              <GrantsTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+          <div class="d-flex align-items-baseline justify-content-between gap-3 mt-2">
+            <div>
+              <h2 class="h5 mb-0">The detail</h2>
+              <p class="text-secondary small mb-0">Open a section to see the numbers behind the result.</p>
             </div>
-          </section>
+            <button type="button" class="btn btn-link p-0" data-cy="dashboard-sections-toggle" @click="toggleAll">
+              {{ allOpen ? 'Collapse all' : 'Expand all' }}
+            </button>
+          </div>
 
-          <section class="card" aria-labelledby="cashflow-heading">
-            <div class="card-body">
-              <h2 id="cashflow-heading" class="h5">How the net position adds up</h2>
-              <p class="text-secondary small">In {{ horizon }}: what the flat is worth, minus what you still owe and the cash you spent on housing. Nothing is sold.</p>
-              <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
-            </div>
-          </section>
+          <DashboardSection
+            v-model:open="sections.cashflow"
+            title="How the net position adds up"
+            :takeaway="`In ${horizon}: what the flat is worth, minus what you still owe and the cash you spent on housing.`"
+            cy="dashboard-section-cashflow"
+          >
+            <p class="text-secondary small">Nothing is sold: this is the position if you stayed in the flat.</p>
+            <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
+          </DashboardSection>
 
-          <section class="card" aria-labelledby="costs-heading">
-            <div class="card-body">
-              <h2 id="costs-heading" class="h5">Costs up to {{ horizon }}</h2>
-              <p class="text-secondary small">Rent while waiting, renovation, fees, loan interest and CPF interest, and how each is paid.</p>
-              <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
-            </div>
-          </section>
+          <DashboardSection
+            v-model:open="sections.grants"
+            heading-id="grants-heading"
+            title="Grants you qualify for"
+            :takeaway="grantsLine"
+            cy="dashboard-section-grants"
+          >
+            <p class="text-secondary small">
+              Every check says why it passed or failed.
+              <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>.
+            </p>
+            <GrantsTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+          </DashboardSection>
 
-          <PhgMapCard
-            :bto-town="store.choiceA.town"
-            :resale-town="store.choiceB.town"
-            :living-arrangement="store.choiceB.livingArrangement"
-          />
+          <DashboardSection
+            v-model:open="sections.costs"
+            heading-id="costs-heading"
+            :title="`Costs up to ${horizon}`"
+            :takeaway="costsLine"
+            cy="dashboard-section-costs"
+          >
+            <p class="text-secondary small">Rent while waiting, renovation, fees, loan interest and CPF interest, and how each is paid.</p>
+            <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+          </DashboardSection>
+
+          <!-- D35: the historical range informs the price growth slider. Fetches on its own, only once opened. -->
+          <DashboardSection
+            v-model:open="sections.rpi"
+            title="Resale price history"
+            takeaway="Historical only, not a prediction of future prices."
+            lazy
+            flat
+            cy="dashboard-section-rpi"
+          >
+            <HistoricalRpiChart />
+          </DashboardSection>
+
+          <DashboardSection
+            v-model:open="sections.map"
+            title="Near your parents? (Proximity Housing Grant)"
+            :takeaway="mapLine"
+            lazy
+            flat
+            cy="dashboard-section-map"
+          >
+            <PhgMapCard
+              :bto-town="store.choiceA.town"
+              :resale-town="store.choiceB.town"
+              :living-arrangement="store.choiceB.livingArrangement"
+            />
+          </DashboardSection>
+
+                    <!-- Fetches the flat sizes and prices only once opened (lazy). -->
+          <DashboardSection
+            v-model:open="sections.size"
+            title="Size and price side by side"
+            takeaway="How much flat each path gets for the money: floor area, price and price per square metre."
+            lazy
+            cy="dashboard-section-size"
+          >
+            <SizePriceTable :choice-a="store.choiceA" :choice-b="store.choiceB" :result="result" />
+          </DashboardSection>
 
           <section class="card" aria-labelledby="notes-heading">
             <div class="card-body">
@@ -306,7 +401,7 @@ const warningText = (w) =>
                 <li class="dash-note" data-cy="dashboard-note-mop">
                   <strong>Minimum Occupation Period:</strong> you cannot sell before
                   {{ monthYear(A?.timeline?.earliestSaleDate) }} (BTO) or {{ monthYear(B?.timeline?.earliestSaleDate) }} (resale).
-                  <RouterLink to="/sources">See the current rule</RouterLink>.
+                  <RouterLink to="/sources#flat-types">See the current rule</RouterLink>.
                 </li>
                 <li class="dash-note" data-cy="dashboard-note-eip">
                   <strong>Ethnic Integration Policy:</strong> some resale blocks may not be open to your household; check a block before you commit.
@@ -322,6 +417,18 @@ const warningText = (w) =>
 </template>
 
 <style scoped>
+/* On large screens the What-if panel follows you down the page, so it is never stranded beside empty space.
+   It scrolls inside itself if the screen is shorter than the panel. */
+@media (min-width: 992px) {
+  .dash-sticky {
+    position: sticky;
+    top: 5rem;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    padding: 4px;
+    margin: -4px;
+  }
+}
 .dash-net {
   font-family: var(--font-heading);
   font-weight: 500;

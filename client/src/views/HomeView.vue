@@ -16,10 +16,10 @@ onMounted(async () => {
 
 <template>
   <section class="py-4">
-    <h1 class="h2" data-cy="home-title">BTO or resale? Find where the two paths break even.</h1>
-    <p class="text-secondary">
-      Enter your situation and compare both paths. The app solves for the assumptions at which they are equal
-      instead of predicting prices.
+    <h1 class="h2" data-cy="home-title">BTO or resale: which leaves you better off?</h1>
+    <p class="text-secondary" data-cy="home-lead">
+      You've got a BTO ballot coming up and a resale listing you keep looking at. Tell us about your situation and
+      we'll compare both, then show where the answer would flip. No sign-up needed to see your result.
     </p>
       <router-link class="btn btn-primary" to="/login?redirect=/plan" data-cy="home-start-button">Start planning</router-link>
 

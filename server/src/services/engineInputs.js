@@ -4,7 +4,7 @@
 // value from data.gov.sg medians (D16, D33); loan, fee and horizon defaults (D17, D22, D33).
 // Money is integer cents throughout (D14).
 import { btoTowns, findBtoProjects, getBtoProject } from './btoProjects.js';
-import { getResalePriceBasis, TOWNS, SUPPORTED_FLAT_TYPES } from './datagov/resalePrice.js';
+import { getResalePriceBasis, NEARBY_TOWNS, TOWNS, SUPPORTED_FLAT_TYPES } from './datagov/resalePrice.js';
 
 // D33 defaults. Estimates, not policy, so not in the ruleset (D17); echoed in the response.
 export const FEE_DEFAULTS = {
@@ -15,6 +15,8 @@ export const DEFAULT_LOAN_TENURE_YEARS = 25;
 export const DEFAULT_LOAN_TYPE = 'HDB';
 export const PRICE_WINDOW_MONTHS = 12;
 export const NEAR_NEW_MIN_LEASE_YEARS = 90;
+// D41: fewer near-new sales than this in the BTO town, and its nearby towns' are pooled in.
+export const MIN_NEAR_NEW_SALES = 5;
 export const HORIZON_YEARS_AFTER_KEYS = 10;
 // Heatmap axes (D33, agreed on #45): price growth −2% to +6% a year (prices can fall), income growth 0% to 5%,
 // in 1-point steps. stepsCovering() widens an axis so the user's own rate always falls inside it.
@@ -105,6 +107,48 @@ async function resaleMedian({ town, flatType, minLeaseYears, maxLeaseYears, getR
   };
 }
 
+/**
+ * The BTO flat's market value at keys (D33, D41): the median of near-new sales (90+ years left) of the flat type,
+ * in the town if it has at least MIN_NEAR_NEW_SALES, else pooled with its nearby towns (NEARBY_TOWNS). Never the
+ * whole town's median: old leases sell far lower, which would understate every BTO. Too few even pooled -> 400.
+ */
+async function btoMarketValue({ town, flatType, getResale }) {
+  const nearNew = { minLeaseYears: NEAR_NEW_MIN_LEASE_YEARS };
+  const fetchBasis = async (where) => {
+    try {
+      return await getResale({ ...where, flatType, months: PRICE_WINDOW_MONTHS, ...nearNew });
+    } catch (err) {
+      throw new DataUnavailableError(`Resale prices for ${where.town ?? where.towns.join(', ')} ${flatType} are unavailable right now (${err.message}).`);
+    }
+  };
+  // A BTO town with no resale stock yet (e.g. Tengah) is not a dataset town, so it is never asked for.
+  let towns = TOWNS.includes(town) ? [town] : [];
+  let basis = towns.length ? await fetchBasis({ town }) : { count: 0 };
+  if ((basis.count ?? 0) < MIN_NEAR_NEW_SALES) {
+    towns = [town, ...(NEARBY_TOWNS[town] ?? [])].filter((t) => TOWNS.includes(t));
+    if (towns.length) basis = await fetchBasis({ towns });
+  }
+  if ((basis.count ?? 0) < MIN_NEAR_NEW_SALES) {
+    const searched = [town, ...(NEARBY_TOWNS[town] ?? [])].join(', ');
+    fail(`Too few near-new ${flatType} resale sales in ${searched} in the last ${PRICE_WINDOW_MONTHS} months to set the BTO flat's market value (D41).`);
+  }
+  return {
+    cents: basis.medianPriceCents,
+    data: {
+      source: basis.source?.name,
+      window: basis.window,
+      transactions: basis.count,
+      leaseFilter: basis.leaseFilter ?? nearNew,
+      fellBackToAllLeases: false,
+      towns, // which towns' sales set the value
+      fellBackToNearbyTowns: towns.length !== 1 || towns[0] !== town,
+      lowSample: Boolean(basis.lowSample),
+      stale: Boolean(basis.stale),
+      fetchedAt: basis.fetchedAt,
+    },
+  };
+}
+
 /** The project a BTO choice uses (D7, D26): the one picked, else the town's newest offering the flat type. */
 function pickProject(req) {
   if (req.btoProjectId !== undefined && req.btoProjectId !== null) {
@@ -151,9 +195,12 @@ export async function resolveChoice(req, { startYear, assumptions = {}, ruleset,
     const living = req.livingArrangement ?? 'NONE';
     if (!['WITH', 'NEAR', 'NONE'].includes(living)) fail(`${label}.livingArrangement must be 'WITH', 'NEAR' or 'NONE'.`);
     const price = await resaleMedian({ town, flatType, ...lease, getResale, what: 'the resale price' });
+    const askingPriceCents = req.resalePriceCents ?? null;
+    if (askingPriceCents !== null && !(isCents(askingPriceCents) && askingPriceCents > 0)) fail(`${label}.resalePriceCents must be a positive integer number of cents.`);
+    const pricePaidCents = askingPriceCents ?? price.cents;
     const choice = {
       path, applicationYear, town, flatType, classification: null,
-      purchasePriceCents: price.cents,
+      purchasePriceCents: pricePaidCents,
       marketValueAtKeysCents: price.cents,
       remainingLeaseYears: lease.minLeaseYears,
       livingArrangement: living,
@@ -164,7 +211,7 @@ export async function resolveChoice(req, { startYear, assumptions = {}, ruleset,
       choice,
       keyYear: applicationYear,
       btoProject: null,
-      resolved: { purchasePriceCents: price.cents, marketValueAtKeysCents: price.cents, remainingLeaseYears: lease.minLeaseYears, ...fees, priceData: price.data },
+      resolved: { purchasePriceCents: pricePaidCents, medianPriceCents: price.cents, marketValueAtKeysCents: price.cents, remainingLeaseYears: lease.minLeaseYears, ...fees, priceData: price.data },
     };
   }
 
@@ -189,7 +236,7 @@ export async function resolveChoice(req, { startYear, assumptions = {}, ruleset,
   if (!Number.isInteger(btoWaitMonths) || btoWaitMonths < 0 || btoWaitMonths > 120) {
     fail(`${label}.btoWaitMonths must be a whole number of months from 0 to 120.`);
   }
-  const value = await resaleMedian({ town, flatType, minLeaseYears: NEAR_NEW_MIN_LEASE_YEARS, getResale, what: 'the BTO flat\'s market value' });
+  const value = await btoMarketValue({ town, flatType, getResale });
   const choice = {
     path, applicationYear, town, flatType,
     classification: project.classification,
