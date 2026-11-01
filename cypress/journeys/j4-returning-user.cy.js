@@ -11,7 +11,7 @@ function save(name) {
 }
 
 describe('Journey 4: returning user compares two saved scenarios', () => {
-  it('logs in, saves Sengkang and Tampines at one horizon, and compares them', () => {
+  it('logs in, saves a 4-room and a 5-room plan in Sengkang, and compares them', () => {
     cy.request('POST', '/api/auth/register', {
       name: 'Journey 4', email: `journey4-${Date.now()}@example.com`, password: 'journey-password-123',
     }).then(({ body }) => {
@@ -19,9 +19,9 @@ describe('Journey 4: returning user compares two saved scenarios', () => {
     });
 
     fillPlan(J4A);
-    save('Sengkang, compared in 2040');
+    save('Sengkang 4-room');
     fillPlan(J4B);
-    save('Tampines, compared in 2040');
+    save('Sengkang 5-room');
 
     cy.get('[data-cy=nav-scenarios-link]').click();
     cy.get('[data-cy=scenarios-list] li').should('have.length', 2);
@@ -32,7 +32,7 @@ describe('Journey 4: returning user compares two saved scenarios', () => {
     cy.get('[data-cy=compare-bar-compare-button]').click();
 
     cy.location('pathname').should('eq', '/scenarios/compare');
-    // Same horizon and ruleset, so the page names which scenario ends ahead.
+    // Same launch, so the same keys year and horizon, and the same ruleset: the page names which ends ahead.
     cy.get('[data-cy=compare-headline-sentence]', { timeout: 60000 }).should('contain', 'ahead of Scenario');
     beat();
     cy.get('[data-cy=compare-open-results-button]').first().click();

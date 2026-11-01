@@ -195,9 +195,12 @@ export async function resolveChoice(req, { startYear, assumptions = {}, ruleset,
     const living = req.livingArrangement ?? 'NONE';
     if (!['WITH', 'NEAR', 'NONE'].includes(living)) fail(`${label}.livingArrangement must be 'WITH', 'NEAR' or 'NONE'.`);
     const price = await resaleMedian({ town, flatType, ...lease, getResale, what: 'the resale price' });
+    const askingPriceCents = req.resalePriceCents ?? null;
+    if (askingPriceCents !== null && !(isCents(askingPriceCents) && askingPriceCents > 0)) fail(`${label}.resalePriceCents must be a positive integer number of cents.`);
+    const pricePaidCents = askingPriceCents ?? price.cents;
     const choice = {
       path, applicationYear, town, flatType, classification: null,
-      purchasePriceCents: price.cents,
+      purchasePriceCents: pricePaidCents,
       marketValueAtKeysCents: price.cents,
       remainingLeaseYears: lease.minLeaseYears,
       livingArrangement: living,
@@ -208,7 +211,7 @@ export async function resolveChoice(req, { startYear, assumptions = {}, ruleset,
       choice,
       keyYear: applicationYear,
       btoProject: null,
-      resolved: { purchasePriceCents: price.cents, marketValueAtKeysCents: price.cents, remainingLeaseYears: lease.minLeaseYears, ...fees, priceData: price.data },
+      resolved: { purchasePriceCents: pricePaidCents, medianPriceCents: price.cents, marketValueAtKeysCents: price.cents, remainingLeaseYears: lease.minLeaseYears, ...fees, priceData: price.data },
     };
   }
 

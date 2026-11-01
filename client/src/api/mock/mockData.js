@@ -148,9 +148,30 @@ export function mockCompare(payload = {}) {
 
   // D34: the real route adds gapBreakdown next to the outcomes (docs/API_CONTRACT.md "POST /api/compare").
   result.gapBreakdown = mockGapBreakdown(result.outcomeA, result.outcomeB);
+  // D26 / D33: which launch and price the route used, and the resale median's basis.
+  const project = mockPickProject(choiceA);
+  const flat = project?.flats.find((f) => f.flatType === choiceA.flatType);
+  if (project && flat) {
+    result.btoProjectA = { id: project.id, name: project.name, launch: project.launch, waitMonths: project.waitMonths, priceMinCents: flat.priceMinCents, priceMaxCents: flat.priceMaxCents, sourceUrl: project.sourceUrl };
+    result.resolvedA = { purchasePriceCents: choiceA.btoPriceCents ?? Math.round((flat.priceMinCents + flat.priceMaxCents) / 2), btoWaitMonths: project.waitMonths };
+  }
+  result.resolvedB = {
+    purchasePriceCents: choiceB.resalePriceCents ?? 66_500_000,
+    medianPriceCents: 66_500_000,
+    priceData: { source: 'MOCK resale prices', window: { from: '2025-10', to: '2026-09', months: 12 }, transactions: 120, leaseFilter: { minLeaseYears: 80, maxLeaseYears: 89 }, fellBackToAllLeases: false, lowSample: false },
+  };
   // ...and warningMessages, a sentence for each warning code that occurs.
   result.warningMessages = mockWarningMessages([...result.outcomeA.warnings, ...result.outcomeB.warnings]);
   return result;
+}
+
+// The route's BTO pick (D33): the chosen launch, else the town's newest offering the flat type (and classification).
+function mockPickProject(choice) {
+  if (choice.btoProjectId) return MOCK_BTO_PROJECTS.find((p) => p.id === choice.btoProjectId) ?? null;
+  return MOCK_BTO_PROJECTS
+    .filter((p) => p.town === choice.town && (!choice.classification || p.classification === choice.classification))
+    .filter((p) => p.flats.some((f) => f.flatType === choice.flatType))
+    .sort((a, b) => String(b.launch).localeCompare(String(a.launch)))[0] ?? null;
 }
 
 // MOCK: /api/compare warningMessages. Wording copied from server/src/services/warningMessages.js, only for the
@@ -385,6 +406,8 @@ const MOCK_BTO_PROJECTS = [
     flats: [{ flatType: '3 ROOM', priceMinCents: 36_300_000, priceMaxCents: 44_400_000 }, { flatType: '4 ROOM', priceMinCents: 48_100_000, priceMaxCents: 60_000_000 }] },
   { id: 'tampines-nova', name: 'MOCK Tampines Nova', town: 'TAMPINES', classification: 'PLUS', launch: '2026-02', waitMonths: 32, subsidyRecoveryRate: 0.06,
     flats: [{ flatType: '4 ROOM', priceMinCents: 45_900_000, priceMaxCents: 60_200_000 }] },
+  { id: 'simei-symphony', name: 'MOCK Simei Symphony', town: 'TAMPINES', classification: 'STANDARD', launch: '2025-07', waitMonths: 42, subsidyRecoveryRate: 0,
+    flats: [{ flatType: '4 ROOM', priceMinCents: 52_900_000, priceMaxCents: 62_500_000 }, { flatType: '5 ROOM', priceMinCents: 68_000_000, priceMaxCents: 79_000_000 }] },
   { id: 'ping-yi-court', name: 'MOCK Ping Yi Court', town: 'BEDOK', classification: 'STANDARD', launch: '2025-10', waitMonths: 33, subsidyRecoveryRate: 0,
     flats: [{ flatType: '4 ROOM', priceMinCents: 49_800_000, priceMaxCents: 62_400_000 }, { flatType: '5 ROOM', priceMinCents: 71_500_000, priceMaxCents: 85_700_000 }] },
 ].map((p) => ({ ...p, priceBasis: 'BEFORE_GRANTS', sourceUrl: 'https://www.hdb.gov.sg', sourceAccessed: '2026-10-11', verified: false }));
@@ -412,7 +435,7 @@ export function mockResalePrice({ town = 'MOCK TOWN', flatType = '4 ROOM' } = {}
     town, flatType,
     window: { from: '2025-10', to: '2026-09', months: 12 },
     count: 100,
-    medianPriceCents: 50_000_000, p25PriceCents: 45_000_000, p75PriceCents: 55_000_000,
+    medianPriceCents: 66_500_000, p25PriceCents: 62_000_000, p75PriceCents: 76_000_000, // as mock compare's resale median
     medianPricePerSqmCents: 500_000, medianFloorAreaSqm: 93, medianRemainingLeaseYears: 72.5,
     lowSample: false,
     source: { datasetId: 'MOCK', name: 'MOCK resale data' },

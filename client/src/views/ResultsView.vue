@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import GapBreakdownPanel from '../components/GapBreakdownPanel.vue';
@@ -10,18 +11,28 @@ import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
-import { validateStep } from '../validation/planValidation.js';
+import { isPlanComplete } from '../validation/planValidation.js';
 
 const store = useScenarioStore();
+const router = useRouter();
+
+// D38: the parents question is only asked if picked in step 1, so say when the Proximity Housing Grant
+// was left out, and offer a way back to it.
+const phgNotAsked = computed(() => store.choiceB.livingArrangement === 'NONE');
+function addParents() {
+  if (!store.wishes.includes('parents')) store.wishes.push('parents');
+  store.step = 3; // the resale step, where the parents question is
+  router.push('/plan');
+}
 const result = ref(null);
 const error = ref(null);
 const loading = ref(false);
 
 // Someone who opens /results directly (or reloads) has no real inputs yet: show an empty state instead
-// of asking the server to compare nothing. "Has inputs" = all three plan steps pass the same validation
-// the stepper enforces before it lets anyone reach /results. (Checking applicants.length is not enough:
-// the store's blank state already seeds one empty buyer.)
-const hasInputs = computed(() => [0, 1, 2].every((step) => Object.keys(validateStep(step, store)).length === 0));
+// of asking the server to compare nothing. "Has inputs" = every input the comparison needs passes the
+// same validation the stepper enforces, defaults included (isPlanComplete). (Checking applicants.length
+// is not enough: the store's blank state already seeds one empty buyer.)
+const hasInputs = computed(() => isPlanComplete(store));
 
 // Contract v2: Outcome.horizonYear is the authoritative value once results load (both paths share it,
 // D1). Before that, fall back to the user's own assumption so the empty/loading states can still size
@@ -46,6 +57,43 @@ const gapSentence = computed(() => {
   if (gap.value === 0) return `${years}both paths end with the same net financial position under your assumptions.`;
   const ahead = gap.value > 0 ? 'BTO' : 'resale';
   return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in net financial position under your assumptions.`;
+});
+
+// Which prices the comparison used (D26, D33), so a default is never hidden: the BTO launch and its price
+// against HDB's range, and the resale median with the sales behind it.
+const monthYear = (ym) => {
+  const [y, m] = String(ym ?? '').split('-').map(Number);
+  return y && m ? new Date(y, m - 1, 1).toLocaleDateString('en-SG', { month: 'short', year: 'numeric' }) : '';
+};
+const btoPriceBasis = computed(() => {
+  const p = result.value?.btoProjectA;
+  const used = result.value?.resolvedA?.purchasePriceCents;
+  if (!p || typeof used !== 'number') return '';
+  const mid = Math.round((p.priceMinCents + p.priceMaxCents) / 2);
+  const where = used === mid ? 'the middle of' : 'within';
+  return `BTO priced as ${p.name} at ${formatMoney(used / 100)}, ${where} HDB's ${formatMoney(p.priceMinCents / 100)} to ${formatMoney(p.priceMaxCents / 100)} range.`;
+});
+const resalePriceBasis = computed(() => {
+  const r = result.value?.resolvedB;
+  const d = r?.priceData;
+  if (!r || typeof r.purchasePriceCents !== 'number' || !d) return '';
+  const lease = d.fellBackToAllLeases
+    ? 'any remaining lease (too few sales in your band)'
+    : `${d.leaseFilter?.minLeaseYears}–${d.leaseFilter?.maxLeaseYears} years left`;
+  const sales = `${d.transactions} sale${d.transactions === 1 ? '' : 's'}`;
+  const when = d.window ? `, ${monthYear(d.window.from)} to ${monthYear(d.window.to)}` : '';
+  const rough = d.lowSample ? ' Few sales, so treat it as rough.' : '';
+  const flats = `${labelOf(TOWNS, store.choiceB.town)} ${labelOf(FLAT_TYPES, store.choiceB.flatType).toLowerCase()} flats with ${lease}${when}`;
+  const medianCents = r.medianPriceCents ?? r.purchasePriceCents;
+  if (r.purchasePriceCents === medianCents) {
+    return `Resale priced at ${formatMoney(medianCents / 100)}, the median of ${sales} of ${flats}. A specific listing can cost more or less.${rough}`;
+  }
+  // D39: an asking price. The flat is valued at the median; anything above it is cash over valuation.
+  const over = r.purchasePriceCents - medianCents;
+  const vsMedian = over > 0
+    ? `${formatMoney(over / 100)} above the median of ${sales} (${formatMoney(medianCents / 100)}), so that part is paid in cash and the flat is valued at the median`
+    : `${formatMoney(-over / 100)} below the median of ${sales} (${formatMoney(medianCents / 100)})`;
+  return `Resale priced at your asking price, ${formatMoney(r.purchasePriceCents / 100)}: ${vsMedian}. Sales of ${flats}.${rough}`;
 });
 
 const labelOf = (options, value) => options.find((o) => o.value === value)?.label ?? value;
@@ -112,6 +160,11 @@ onMounted(load);
       <!-- Lead with the single break-even sentence before any chart (UI.md §8). -->
       <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
       <p v-if="gapSentence" data-cy="results-gap-sentence">{{ gapSentence }}</p>
+      <p v-if="phgNotAsked" class="text-caption mb-2" data-cy="results-phg-note">
+        Not counted: the Proximity Housing Grant (up to S$30,000 on a resale flat). Living with or within 4 km of your
+        parents?
+        <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-cy="results-phg-add" @click="addParents">Add it</button>
+      </p>
       <p class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <span class="badge-version" data-cy="results-ruleset-version">Ruleset {{ result.rulesetVersion }}</span>
         <span class="text-caption">
@@ -133,6 +186,7 @@ onMounted(load);
             :outcome="result.outcomeA"
             :horizon-year="horizonYear"
             cy-prefix="results-patha"
+            tone="bto"
           />
         </div>
         <div class="col-12 col-lg-6">
@@ -142,8 +196,17 @@ onMounted(load);
             :outcome="result.outcomeB"
             :horizon-year="horizonYear"
             cy-prefix="results-pathb"
+            tone="resale"
           />
         </div>
+      </div>
+
+      <div v-if="btoPriceBasis || resalePriceBasis" class="text-caption mb-3" data-cy="results-price-basis">
+        <p v-if="btoPriceBasis" class="mb-1" data-cy="results-price-basis-bto">
+          {{ btoPriceBasis }}
+          <RouterLink to="/dashboard" data-cy="results-price-basis-change">Change the price</RouterLink>
+        </p>
+        <p v-if="resalePriceBasis" class="mb-0" data-cy="results-price-basis-resale">{{ resalePriceBasis }}</p>
       </div>
 
       <!-- Why one path ends ahead, line by line (D34). Arrives with /compare; hidden if an older server omits it. -->
