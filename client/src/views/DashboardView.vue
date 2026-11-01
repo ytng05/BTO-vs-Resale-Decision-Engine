@@ -389,7 +389,7 @@ const warningText = (w) =>
                 <li class="dash-note" data-cy="dashboard-note-mop">
                   <strong>Minimum Occupation Period:</strong> you cannot sell before
                   {{ monthYear(A?.timeline?.earliestSaleDate) }} (BTO) or {{ monthYear(B?.timeline?.earliestSaleDate) }} (resale).
-                  <RouterLink to="/sources">See the current rule</RouterLink>.
+                  <RouterLink to="/sources#flat-types">See the current rule</RouterLink>.
                 </li>
                 <li class="dash-note" data-cy="dashboard-note-eip">
                   <strong>Ethnic Integration Policy:</strong> some resale blocks may not be open to your household; check a block before you commit.
