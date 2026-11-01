@@ -12,7 +12,7 @@ const SCREENS = [
 // Pages that open straight from a URL, each with one element that shows it has finished loading.
 const PAGES = [
   { path: '/', ready: '[data-cy=home-title]' },
-  { path: '/plan', ready: '[data-cy=situation-form]' },
+  { path: '/plan', ready: '[data-cy=wishes-form]' },
   { path: '/sources', ready: '[data-cy=sources-title]' },
   { path: '/login', ready: '[data-cy=login-form]' },
   { path: '/scenarios', ready: '[data-cy=scenarios-view]' },

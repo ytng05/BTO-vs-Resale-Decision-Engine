@@ -62,4 +62,25 @@ describe('financial dashboard', () => {
       });
     });
   });
+
+  it('moves the BTO price within HDB\'s range for the launch (D26)', () => {
+    openDashboard();
+    cy.get('[data-cy=whatif-bto-price-value]').should('contain', 'S$540,500'); // the midpoint
+    cy.get('[data-cy=whatif-bto-price-hint]').should('contain', 'MOCK Tampines Bliss');
+    cy.get('[data-cy=whatif-bto-price-slider]').invoke('val', 600000).trigger('input');
+    cy.get('[data-cy=whatif-bto-price-value]').should('contain', 'S$600,000');
+    cy.get('[data-cy=dashboard-updating]', { timeout: 10000 }).should('not.exist');
+    cy.get('[data-cy=dashboard-whatif-reset]').click();
+    cy.get('[data-cy=whatif-bto-price-value]').should('contain', 'S$540,500');
+  });
+
+  it('moves the resale price around the median, which stays the valuation (D39)', () => {
+    openDashboard();
+    cy.get('[data-cy=whatif-resale-price-value]').should('contain', 'S$665,000');
+    cy.get('[data-cy=whatif-resale-price-hint]').should('contain', 'Median of recent sales S$665,000');
+    cy.get('[data-cy=whatif-resale-price-slider]').invoke('val', 700000).trigger('input');
+    cy.get('[data-cy=whatif-resale-price-value]').should('contain', 'S$700,000');
+    cy.get('[data-cy=dashboard-updating]', { timeout: 10000 }).should('not.exist');
+    cy.get('[data-cy=dashboard-update-error]').should('not.exist');
+  });
 });
