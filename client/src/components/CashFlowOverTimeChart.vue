@@ -27,7 +27,7 @@ let chart = null;
 function themeColour(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(`--bs-${name}`).trim();
 }
-// Resale's colour is the pink accent from the design tokens, as on the heatmap and the path cards.
+// Resale is the pink accent from the design tokens, as on the path cards, the heatmap and the Dashboard charts.
 function resaleColour() {
   return getComputedStyle(document.documentElement).getPropertyValue('--accent-fill-1').trim();
 }
