@@ -61,8 +61,6 @@ describe('financial dashboard', () => {
     cy.get('[data-cy=dashboard-size-price-lease-bto]').should('contain', '99 years');
   });
 
-
-
   it('re-runs when the comparison year moves, and resets to the plan', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-headline]').invoke('text').then((before) => {
