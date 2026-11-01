@@ -56,7 +56,7 @@ describe('login page', () => {
     cy.location('pathname').should('eq', '/plan');
   });
 
-    it('the navbar Log in link opens the log-in form straight away', () => {
+  it('the navbar Log in link opens the log-in form straight away', () => {
     cy.visit('/');
     cy.get('[data-cy=nav-login-link]').click({ force: true }); // force: on phones the link sits in the closed menu
     cy.get('[data-cy=login-title]').should('contain', 'Welcome back');
