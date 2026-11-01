@@ -6,6 +6,8 @@
 // `amounts` ({ EHG: cents, ... }) decides a grant's status when given (a grant is eligible when it pays
 // out, as on the Dashboard); without it a grant is eligible when every one of its tests passed.
 // data-cy keeps one item per TEST, numbered across the whole list, as the Results spec expects.
+// Progressive disclosure: each grant shows its status and amount, and a grant that doesn't apply also shows the
+// first check it failed; the full list of checks, with sources, opens from "Why: N checks".
 import { computed } from 'vue';
 import { formatMoney } from '../utils/format.js';
 
@@ -37,6 +39,7 @@ const groups = computed(() => {
       name: grantName(g.id),
       eligible: known ? cents > 0 : g.tests.every((t) => t.passed),
       amount: known && cents > 0 ? cents / 100 : null,
+      firstFailed: g.tests.find((t) => !t.passed) ?? null,
     };
   });
 });
@@ -52,6 +55,12 @@ const groups = computed(() => {
         </span>
         <span v-if="g.amount !== null" class="elig__amount text-numeric">{{ formatMoney(g.amount) }}</span>
       </div>
+      <p v-if="!g.eligible && g.firstFailed" class="elig__why-not" :data-cy="`${cyPrefix}-eligibility-why-not-${g.id.toLowerCase()}`">
+        {{ g.firstFailed.reason }}
+      </p>
+        <!-- A lone failed check is already said in full above: no toggle that only repeats it. -->
+        <details v-if="g.eligible || g.tests.length > 1" class="elig__more" :data-cy="`${cyPrefix}-eligibility-more-${g.id.toLowerCase()}`">
+        <summary class="elig__more-toggle">Why: {{ g.tests.length }} check{{ g.tests.length === 1 ? '' : 's' }}</summary>
       <ul class="elig__tests list-unstyled mb-0">
         <li v-for="t in g.tests" :key="t.index" :data-cy="`${cyPrefix}-eligibility-item-${t.index}`">
           <span :data-cy="`${cyPrefix}-eligibility-status-${t.index}`">
@@ -62,6 +71,7 @@ const groups = computed(() => {
           <a v-if="t.sourceUrl" :href="t.sourceUrl" target="_blank" rel="noopener noreferrer" :data-cy="`${cyPrefix}-eligibility-source-${t.index}`">Source<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
         </li>
       </ul>
+      </details>
     </section>
   </div>
   <p v-else class="text-secondary mb-0" :data-cy="`${cyPrefix}-eligibility-empty`">
@@ -80,4 +90,12 @@ const groups = computed(() => {
 .elig__tests li { font-size: 0.875rem; color: var(--text-secondary); padding: 0.125rem 0; }
 .elig__tests li > span:first-child { display: inline-block; width: 1.25rem; }
 .elig__tests a { margin-left: 0.375rem; white-space: nowrap; }
+.elig__why-not { font-size: 0.875rem; color: var(--text-secondary); margin: 0 0 var(--space-1); }
+.elig__more-toggle { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 32px; font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; list-style: none; }
+.elig__more-toggle::-webkit-details-marker { display: none; }
+.elig__more-toggle::after { content: '›'; display: inline-block; transform: rotate(90deg); }
+.elig__more[open] > .elig__more-toggle::after { transform: rotate(-90deg); }
+.elig__more-toggle:hover { color: var(--text-primary); }
+.elig__more-toggle:focus-visible { outline: 2px solid var(--focus-ring, var(--primary)); outline-offset: 2px; border-radius: 4px; }
+.elig__more[open] > .elig__tests { margin-top: var(--space-1); }
 </style>

@@ -7,7 +7,7 @@
 // Compare in = assumptions.horizonYear: both paths are measured in that year (D1); it can't be before the keys.
 // BTO price = choiceA.btoPriceCents, within the launch's HDB range (D26); shown once a result names the launch.
 // Resale price = choiceB.resalePriceCents (D39), 80% to 130% of the median; the median stays the valuation.
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { formatMoney } from '../../utils/format.js';
 import { RENT_GUIDE_URL } from '../../constants/planOptions.js';
 
@@ -73,10 +73,17 @@ const sliders = computed(() => {
 });
 
 // The sliders in three groups, in the order above, so the panel reads as three short questions.
-const groups = computed(() => ['Timing', 'Market', 'Housing costs'].map((title) => ({
-  title,
-  items: sliders.value.filter((s) => s.group === title),
-})));
+// Progressive disclosure: the sliders that move the answer most stay in view; the year, the comparison year and
+// renovation open from "More what-ifs". A group with nothing in view is left out.
+const EXTRA = new Set(['applicationYear', 'horizonYear', 'renovationA', 'renovationB']);
+const showMore = ref(false);
+const extraCount = computed(() => sliders.value.filter((s) => EXTRA.has(s.key)).length);
+const groups = computed(() => ['Timing', 'Market', 'Housing costs']
+  .map((title) => ({
+    title,
+    items: sliders.value.filter((s) => s.group === title && (showMore.value || !EXTRA.has(s.key))),
+  }))
+  .filter((g) => g.items.length));
 </script>
 
 <template>
@@ -112,6 +119,15 @@ const groups = computed(() => ['Timing', 'Market', 'Housing costs'].map((title) 
       </div>
       </fieldset>
 
+      <button
+        type="button"
+        class="btn btn-link w-100 mb-2"
+        :aria-expanded="showMore ? 'true' : 'false'"
+        data-cy="dashboard-whatif-more"
+        @click="showMore = !showMore"
+      >
+        {{ showMore ? 'Fewer what-ifs' : `More what-ifs (${extraCount})` }}
+      </button>
       <button type="button" class="btn btn-outline-secondary w-100" data-cy="dashboard-whatif-reset" @click="emit('reset')">
         Reset to my inputs
       </button>

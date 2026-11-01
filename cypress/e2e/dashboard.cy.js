@@ -53,6 +53,7 @@ describe('financial dashboard', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-headline]').invoke('text').then((before) => {
       const startYear = before.match(/by (\d{4})/)[1];
+      cy.get('[data-cy=dashboard-whatif-more]').click(); // the year sliders sit behind "More what-ifs"
       cy.get('[data-cy=whatif-horizon-slider]').invoke('attr', 'max').then((max) => {
         cy.get('[data-cy=whatif-horizon-slider]').invoke('val', max).trigger('input');
         cy.get('[data-cy=whatif-horizon-value]').should('contain', max);

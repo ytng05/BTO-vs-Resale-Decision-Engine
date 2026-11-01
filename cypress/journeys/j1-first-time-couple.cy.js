@@ -14,6 +14,7 @@ describe('Journey 1: first-time couple, "BTO or resale?"', () => {
     cy.get('[data-cy=results-gap-card]').scrollIntoView().should('be.visible');
     cy.get('[data-cy=results-gap-list]').should('be.visible');
     beat();
+    cy.get('[data-cy=results-section-heatmap] > summary').click(); // collapsed by default
     cy.get('[data-cy=heatmap-user-marker]').scrollIntoView().should('be.visible');
     beat();
 

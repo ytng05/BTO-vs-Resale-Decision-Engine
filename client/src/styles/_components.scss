@@ -766,3 +766,16 @@ a:focus-visible,
 
   svg { width: 16px; height: 16px; }
 }
+
+// ---- Pressed state (progressive feedback): every button and chip visibly reacts to a click ----
+// A small press-in on top of Bootstrap's active colours; skipped for users who ask for less motion.
+.btn:active:not(:disabled),
+.chip:active .chip__face {
+  transform: translateY(1px) scale(0.98);
+}
+.btn,
+.chip__face { transition-property: color, background-color, border-color, box-shadow, transform; }
+@media (prefers-reduced-motion: reduce) {
+  .btn:active:not(:disabled),
+  .chip:active .chip__face { transform: none; }
+}
