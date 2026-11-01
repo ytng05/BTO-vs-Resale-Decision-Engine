@@ -505,7 +505,7 @@ onMounted(async () => {
 <template>
   <section class="sources-page" aria-labelledby="sources-title">
     <header class="sources-hero">
-      <h1 class="mb-2" id="sources-title" data-cy="sources-title">Where every number comes from</h1>
+      <h1 class="h2 mb-2" id="sources-title" data-cy="sources-title">Where every number comes from</h1>
       <p class="text-secondary mb-4">Every policy value comes from the active, versioned ruleset, with a link to its official source.</p>
       <input
         v-if="!loading && !errorMessage"
@@ -608,7 +608,6 @@ onMounted(async () => {
                       <td class="sources-table__value">
                         {{ row.value }}
                         <small v-if="row.note" class="d-block text-secondary">{{ row.note }}</small>
-                        <a v-if="row.sourceUrl" class="sources-row-source" :href="row.sourceUrl" target="_blank" rel="noopener noreferrer">Source ↗</a>
                       </td>
                     </tr>
                   </tbody>
@@ -997,17 +996,7 @@ onMounted(async () => {
   font-size: 0.875rem;
 }
 
-.sources-row-source {
-  display: block;
-  margin-top: var(--space-1);
-  font-size: 0.8125rem;
-}
-
 @media (max-width: 359.98px) {
-  .sources-ruleset-card {
-    padding: var(--space-3);
-  }
-
   .sources-rule-card__summary {
     padding-inline: var(--space-3);
   }
