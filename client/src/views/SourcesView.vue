@@ -76,10 +76,13 @@ const ruleLabels = {
 
 const tierArrayKeys = new Set(['tiers', 'ehgTiers', 'buyerStampDutyTiers']);
 const omittedRuleKeys = new Set(['appliesTo', 'sources', 'partialMonthTreatment', 'legalFees', 'agentFees']);
-const selectedSectionIds = ref(new Set());
+// Every rule section shows on load. A topic chip filters to its sections (null = no filter: every section).
+const filterChipKey = ref(null);
+// Sections the user collapsed with the chevron or "Collapse all"; every other shown section is open.
+const collapsedSectionIds = ref(new Set());
 const expandedTierKeys = ref(new Set());
 
-// Rule-topic chips toggle their sections (the two Eligibility sections share one chip); the last two only scroll.
+// Rule-topic chips filter to their sections (the two Eligibility sections share one chip); the last two only scroll.
 const ruleChips = [
   { ids: ['ehg'], label: 'EHG' },
   { ids: ['family-grant'], label: 'Family Grant' },
@@ -321,43 +324,56 @@ const ruleGroups = computed(() => {
   ].filter(Boolean);
 });
 
-const allSectionsShown = computed(() => ruleGroups.value.length > 0
-  && ruleGroups.value.every((section) => selectedSectionIds.value.has(section.id)));
-
-function toggleAllSections() {
-  if (allSectionsShown.value) hideSections(ruleGroups.value.map((section) => section.id));
-  else showSections(ruleGroups.value.map((section) => section.id));
-}
+const chipKey = (chip) => chip.ids[0];
+const activeChip = computed(() => ruleChips.find((chip) => chipKey(chip) === filterChipKey.value) ?? null);
 
 function isChipActive(chip) {
-  return chip.ids.some((id) => selectedSectionIds.value.has(id));
+  return filterChipKey.value === chipKey(chip);
 }
 
-// A section is shown exactly when it is selected, and a shown section is always open.
-function showSections(ids) {
-  selectedSectionIds.value = new Set([...selectedSectionIds.value, ...ids]);
+function isSectionOpen(id) {
+  return Boolean(normalizedQuery.value) || !collapsedSectionIds.value.has(id);
 }
 
-// Drops a hash that points at a section being hidden, so it can't reopen it or linger in the URL.
-function hideSections(ids) {
-  selectedSectionIds.value = new Set([...selectedSectionIds.value].filter((id) => !ids.includes(id)));
+function expandSections(ids) {
+  collapsedSectionIds.value = new Set([...collapsedSectionIds.value].filter((id) => !ids.includes(id)));
+}
+
+// Clears the filter, and drops a hash that pointed at the filtered topic so it doesn't linger in the URL.
+function clearFilter() {
+  const chip = activeChip.value;
+  filterChipKey.value = null;
   const hashId = decodeURIComponent(route.hash.replace(/^#/, '')).replace(/^sources-section-/, '');
-  if (hashId && ids.includes(hashId)) router.replace({ path: route.path, query: route.query, hash: '' });
+  if (chip && hashId && chip.ids.includes(hashId)) router.replace({ path: route.path, query: route.query, hash: '' });
 }
 
+// Clicking a chip filters to its topic, open; clicking the active chip again shows every section.
 function toggleChip(chip) {
   if (isChipActive(chip)) {
-    hideSections(chip.ids);
+    clearFilter();
     return;
   }
-  showSections(chip.ids);
+  filterChipKey.value = chipKey(chip);
+  expandSections(chip.ids);
   nextTick(() => scrollToSection(chip.ids[0]));
 }
 
-// Collapsing a section with its chevron hides it and unselects its chip.
+const allShownOpen = computed(() => shownRuleGroups.value.every((section) => isSectionOpen(section.id)));
+
+// "Expand all" / "Collapse all" acts on the sections shown now.
+function toggleAllSections() {
+  const ids = shownRuleGroups.value.map((section) => section.id);
+  if (allShownOpen.value) collapsedSectionIds.value = new Set([...collapsedSectionIds.value, ...ids]);
+  else expandSections(ids);
+}
+
+// Keeps collapsedSectionIds in step with the chevron (ignored while a search opens every match).
 function syncSectionOpen(id, event) {
-  if (normalizedQuery.value || event.currentTarget.open) return;
-  hideSections([id]);
+  if (normalizedQuery.value) return;
+  const open = event.currentTarget.open;
+  if (open === !collapsedSectionIds.value.has(id)) return;
+  if (open) expandSections([id]);
+  else collapsedSectionIds.value = new Set([...collapsedSectionIds.value, id]);
 }
 
 function visibleTierRows(table) {
@@ -457,10 +473,27 @@ async function clearSearch() {
   searchInput.value?.focus();
 }
 
-// A search shows every matching section; otherwise only the sections picked with the chips.
-const shownRuleGroups = computed(() => (normalizedQuery.value
-  ? visibleRuleGroups.value
-  : ruleGroups.value.filter((section) => selectedSectionIds.value.has(section.id))));
+// A search shows every matching section; otherwise every section, or only the active chip's.
+const shownRuleGroups = computed(() => {
+  if (normalizedQuery.value) return visibleRuleGroups.value;
+  const chip = activeChip.value;
+  return chip ? ruleGroups.value.filter((section) => chip.ids.includes(section.id)) : ruleGroups.value;
+});
+
+// Announced to screen readers while searching (the no-match state has its own message).
+const searchStatus = computed(() => {
+  if (!normalizedQuery.value || noMatches.value) return '';
+  const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  return `Showing ${count(visibleRuleGroups.value.length, 'rule section', 'rule sections')}, `
+    + `${count(visibleAssumptions.value.length, 'assumption', 'assumptions')} and `
+    + `${count(datasetCards.value.length, 'dataset', 'datasets')}`;
+});
+
+// Right-align a value column only when every value in it is a plain number (e.g. $9,000, 2.5%, 12 months, age 95).
+const PLAIN_NUMBER = /^(?:[<>≤≥]\s*)?(?:S?\$)?\d[\d,.]*(?:\s*(?:%|months?|years?))?$|^age \d+$/i;
+function isNumericColumn(rows) {
+  return rows.length > 0 && rows.every((row) => !row.note && PLAIN_NUMBER.test(String(row.value).trim()));
+}
 
 function scrollToSection(id) {
   const target = document.getElementById(`sources-section-${id}`);
@@ -472,14 +505,15 @@ function scrollToSection(id) {
 const route = useRoute();
 const router = useRouter();
 
-// /sources#loans (or #sources-section-loans) opens that rule section; #assumptions and #data just scroll.
-// Runs on load and when the hash changes from outside; hiding a section clears its own hash, which does nothing here.
+// /sources#loans (or #sources-section-loans) filters to that topic, open; #assumptions and #data just scroll.
+// Runs on load and when the hash changes from outside; clearing the filter clears its hash, which does nothing here.
 function applyHash() {
   const id = decodeURIComponent(route.hash.replace(/^#/, '')).replace(/^sources-section-/, '');
   if (!id) return;
   const chip = ruleChips.find((item) => item.ids.includes(id));
   if (chip) {
-    showSections(chip.ids);
+    filterChipKey.value = chipKey(chip);
+    expandSections([id]);
     nextTick(() => scrollToSection(id));
   } else if (linkChips.some((item) => item.id === id)) {
     nextTick(() => scrollToSection(id));
@@ -561,6 +595,7 @@ onMounted(async () => {
         {{ metadataValue(response.verifiedOn) }} by {{ metadataValue(response.verifiedBy) }}
       </p>
 
+      <p class="visually-hidden" role="status" aria-live="polite" data-cy="sources-search-status">{{ searchStatus }}</p>
       <div v-if="noMatches" class="sources-no-match" role="status" data-cy="sources-no-match">
         <p class="mb-3">No rules match "{{ query.trim() }}"</p>
         <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" data-cy="sources-search-clear" @click="clearSearch">Clear</button>
@@ -573,20 +608,23 @@ onMounted(async () => {
             class="btn btn-link btn-sm sources-expand-link"
             type="button"
             data-cy="sources-expand-all"
-            :aria-pressed="allSectionsShown"
+            :aria-expanded="allShownOpen"
             @click="toggleAllSections"
           >
-            {{ allSectionsShown ? 'Hide all' : 'Show all' }}
+            {{ allShownOpen ? 'Collapse all' : 'Expand all' }}
           </button>
         </div>
-        <p v-if="!shownRuleGroups.length" class="sources-hint" data-cy="sources-rules-hint">Pick a topic above or search to see its rules and sources.</p>
-        <div v-else data-cy="sources-rules-table" class="sources-rule-cards">
+        <p v-if="activeChip && !normalizedQuery" class="sources-hint" data-cy="sources-rules-hint">
+          Showing {{ activeChip.label }} only.
+          <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-cy="sources-show-all-topics" @click="clearFilter">Show all topics</button>
+        </p>
+        <div data-cy="sources-rules-table" class="sources-rule-cards">
           <details
             v-for="section in shownRuleGroups"
             :id="`sources-section-${section.id}`"
             :key="section.id"
             class="sources-rule-card"
-            open
+            :open="isSectionOpen(section.id)"
             @toggle="syncSectionOpen(section.id, $event)"
           >
             <summary class="sources-rule-card__summary">
@@ -602,11 +640,11 @@ onMounted(async () => {
               <div class="table-responsive sources-table-wrap">
                 <table v-if="section.rows.length" class="table table-hover align-middle sources-table w-100">
                   <colgroup><col class="sources-table__rule-column"><col class="sources-table__value-column"></colgroup>
-                  <thead><tr><th scope="col">Rule</th><th scope="col" class="sources-table__numeric">Value</th></tr></thead>
+                  <thead><tr><th scope="col">Rule</th><th scope="col" :class="{ 'sources-table__numeric': isNumericColumn(section.rows) }">Value</th></tr></thead>
                   <tbody>
                     <tr v-for="row in section.rows" :key="row.rule">
                       <th scope="row" class="sources-table__rule">{{ row.rule }}</th>
-                      <td class="sources-table__value">
+                      <td class="sources-table__value" :class="{ 'sources-table__numeric': isNumericColumn(section.rows) }">
                         {{ row.value }}
                         <small v-if="row.note" class="d-block text-secondary">{{ row.note }}</small>
                       </td>
@@ -759,7 +797,7 @@ onMounted(async () => {
 }
 
 .sources-hint {
-  margin: var(--space-4) 0 0;
+  margin: 0 0 var(--space-3);
   color: var(--text-secondary);
 }
 
@@ -1052,7 +1090,7 @@ onMounted(async () => {
   width: 40%;
 }
 
-.sources-table__numeric {
+.sources-table .sources-table__numeric {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -1082,7 +1120,7 @@ onMounted(async () => {
 
 .sources-table__value {
   min-width: 14rem;
-  text-align: right;
+  text-align: left;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
