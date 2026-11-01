@@ -113,6 +113,8 @@ export function openDashboard() {
 
 // Move a what-if slider (WhatIfPanel ids, e.g. 'whatif-rent') and wait for the comparison to re-run.
 export function setSlider(id, value) {
+  // Housing-cost sliders sit under "More assumptions": open it if it is closed.
+  cy.get('[data-cy=dashboard-whatif-more]').then(($d) => { if (!$d.prop('open')) cy.wrap($d).find('summary').click(); });
   cy.get(`[data-cy=${id}-slider]`).invoke('val', value).trigger('input');
   cy.wait(400); // the dashboard re-runs 250 ms after the last slider move
   cy.get('[data-cy=dashboard-updating]', { timeout: 30000 }).should('not.exist');
