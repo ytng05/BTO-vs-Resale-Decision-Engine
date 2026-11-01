@@ -174,6 +174,8 @@ export function mockCompare(payload = {}) {
     medianPriceCents: 66_500_000,
     priceData: { source: 'MOCK resale prices', window: { from: '2025-10', to: '2026-09', months: 12 }, transactions: 120, leaseFilter: { minLeaseYears: 80, maxLeaseYears: 89 }, fellBackToAllLeases: false, lowSample: false },
   };
+  // ...and warningMessages, a sentence for each warning code that occurs.
+  result.warningMessages = mockWarningMessages([...result.outcomeA.warnings, ...result.outcomeB.warnings]);
   return result;
 }
 
@@ -184,6 +186,17 @@ function mockPickProject(choice) {
     .filter((p) => p.town === choice.town && (!choice.classification || p.classification === choice.classification))
     .filter((p) => p.flats.some((f) => f.flatType === choice.flatType))
     .sort((a, b) => String(b.launch).localeCompare(String(a.launch)))[0] ?? null;
+}
+
+// MOCK: /api/compare warningMessages. Wording copied from server/src/services/warningMessages.js, only for the
+// codes the mock outcomes raise; add a line here if a mock outcome gains another code.
+const MOCK_WARNING_MESSAGES = {
+  BTO_WAIT_ASSUMED:
+    "We don't have this project's waiting time, so the usual BTO wait from the ruleset is assumed. Your key date may differ.",
+};
+
+function mockWarningMessages(codes) {
+  return Object.fromEntries(codes.filter((c) => MOCK_WARNING_MESSAGES[c]).map((c) => [c, MOCK_WARNING_MESSAGES[c]]));
 }
 
 // MOCK: /api/compare gapBreakdown (D34). Same shape as explainGap() in the server: 11 lines in a fixed order,

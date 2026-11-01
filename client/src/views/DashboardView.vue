@@ -1,21 +1,26 @@
 <script setup>
-// Feature 2: the financial dashboard. Both paths side by side, measured in the same year (contract v2, D1):
-// net position, affordability, grants with every test's reason, what makes up the net position,
+// Feature 2: the financial dashboard. Both paths side by side, measured in the same year (contract v2, D1).
+// Top: a friendly overview of what the result is made of (cash cover, savings, grants, cash spent, keys).
+// Below: net position and affordability, grants with every test's reason, what makes up the net position,
 // the cost breakdown, and notes before deciding.
 // What-if sliders re-run the comparison with changed assumptions. They are local only: the saved plan
 // in the store never changes, and "Reset" goes back to it.
 // Store and sliders hold dollars and fractions; client.js turns them into the contract's cents (D14).
 // All money from the API is integer cents (API_CONTRACT.md); it is divided by 100 only for display.
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import { isPlanComplete } from '../validation/planValidation.js';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
+import { costsTakeaway, grantsTakeaway, monthYear } from '../utils/dashboardFormat.js';
 import WhatIfPanel from '../components/dashboard/WhatIfPanel.vue';
 import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
 import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
+import DashboardOverview from '../components/dashboard/DashboardOverview.vue';
+import DashboardSection from '../components/dashboard/DashboardSection.vue';
+import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
 import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
 
 const store = useScenarioStore();
@@ -161,18 +166,37 @@ const paths = computed(() => [
   { key: 'resale', title: 'Path B · Resale', o: B.value },
 ]);
 
-// "2035-05-01" -> "May 2035"
-const monthYear = (date) => {
-  if (typeof date !== 'string') return '—';
-  const [y, m] = date.split('-').map(Number);
-  return new Date(y, (m || 1) - 1, 1).toLocaleDateString('en-SG', { month: 'short', year: 'numeric' });
-};
-
 const warnings = computed(() => [
   ...(A.value?.warnings ?? []).map((w) => ({ path: 'BTO', w })),
   ...(B.value?.warnings ?? []).map((w) => ({ path: 'Resale', w })),
 ]);
-const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ?? '');
+// A code becomes the server's plain-English sentence (`warningMessages`, docs/API_CONTRACT.md "POST /api/compare");
+// the bare code only if the server sent none for it.
+
+// The detail sections open and close. The chart that explains the result starts open; the rest start closed,
+// each with a one-line takeaway in its header. "Expand all" opens or closes every one.
+const sections = reactive({ cashflow: true, grants: false, costs: false, rpi: false, map: false });
+const allOpen = computed(() => Object.values(sections).every(Boolean));
+function toggleAll() {
+  const next = !allOpen.value;
+  Object.keys(sections).forEach((key) => { sections[key] = next; });
+}
+// The grants link in the overview: open the section, then bring its heading into view and focus it.
+function showGrants() {
+  sections.grants = true;
+  nextTick(() => {
+    const heading = document.getElementById('grants-heading');
+    heading?.scrollIntoView();
+    heading?.focus({ preventScroll: true });
+  });
+}
+const grantsLine = computed(() => grantsTakeaway(A.value, B.value));
+const costsLine = computed(() => costsTakeaway(A.value, B.value));
+const mapLine = computed(() => (store.choiceB.livingArrangement === 'NEAR'
+  ? "You said you'll live near your parents: check the 4 km rule."
+  : "Only needed if you'll live near your parents."));
+const warningText = (w) =>
+  typeof w === 'string' ? result.value?.warningMessages?.[w] ?? w : w?.message ?? w?.code ?? '';
 </script>
 
 <template>
@@ -189,7 +213,12 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
     <!-- First load -->
     <div v-else-if="!result && !error" data-cy="dashboard-loading" aria-busy="true">
       <span class="visually-hidden" role="status">Loading your dashboard...</span>
-      <div class="skeleton mb-3 results-skeleton results-skeleton--heading" aria-hidden="true"></div>
+      <div class="skeleton mb-2 results-skeleton results-skeleton--heading" aria-hidden="true"></div>
+      <div class="skeleton mb-4 results-skeleton results-skeleton--line" aria-hidden="true"></div>
+      <div class="row g-3 mb-4" aria-hidden="true">
+        <div class="col-12 col-lg-5"><div class="skeleton results-skeleton results-skeleton--card"></div></div>
+        <div class="col-12 col-lg-7"><div class="skeleton results-skeleton results-skeleton--card"></div></div>
+      </div>
       <div class="row g-3" aria-hidden="true">
         <div v-for="n in 2" :key="n" class="col-12 col-md-6"><div class="skeleton results-skeleton results-skeleton--card"></div></div>
       </div>
@@ -222,8 +251,18 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
         {{ error }} Showing your last results.
       </div>
 
+      <DashboardOverview
+        v-if="A && B"
+        :outcome-a="A"
+        :outcome-b="B"
+        :cash-savings="store.profile.cashSavings"
+        :applicants="store.profile.applicants"
+        :horizon="horizon"
+        @open-grants="showGrants"
+      />
+
       <div class="row g-4" :aria-busy="updating ? 'true' : 'false'">
-        <!-- What-if: after the headline on phones, on the right on large screens -->
+        <!-- What-if: after the overview on phones, on the right on large screens -->
         <div class="col-12 col-lg-4 order-lg-last">
           <WhatIfPanel
             :model-value="whatIf"
@@ -242,31 +281,24 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
             <div v-for="p in paths" :key="p.key" class="col-12 col-md-6">
               <div class="card h-100" :class="`dash-card--${p.key}`" :data-cy="`dashboard-summary-${p.key}`">
                 <div class="card-body">
-                  <h2 class="h5">{{ p.title }}</h2>
+                  <h2 class="h5 mb-1"><span class="dash-dot" :class="`dash-dot--${p.key}`" aria-hidden="true"></span>{{ p.title }}</h2>
                   <p class="text-secondary small mb-0">Net financial position in {{ horizon }}</p>
-                  <p class="fs-2 fw-semibold text-numeric mb-2" :data-cy="`dashboard-summary-${p.key}-net`">{{ formatMoney(dollars(p.o.netPositionCents)) }}</p>
+                  <p class="dash-net text-numeric mb-3" :data-cy="`dashboard-summary-${p.key}-net`">{{ formatMoney(dollars(p.o.netPositionCents)) }}</p>
 
-                  <p v-if="p.o.affordability" class="mb-3" :data-cy="`dashboard-summary-${p.key}-affordability`">
-                    <span v-if="p.o.affordability.withinLimit" class="badge text-bg-success">✓ Within your loan limit</span>
-                    <span v-else class="badge text-bg-danger">✗ Loan short by {{ formatMoney(dollars(p.o.affordability.shortfallCents)) }}</span>
-                    <span class="d-block small text-secondary mt-1">
+                  <p v-if="p.o.affordability" class="mb-4" :data-cy="`dashboard-summary-${p.key}-affordability`">
+                    <span v-if="p.o.affordability.withinLimit" class="dash-pill dash-pill--ok">✓ Within your loan limit</span>
+                    <span v-else class="dash-pill dash-pill--bad">✗ Loan short by {{ formatMoney(dollars(p.o.affordability.shortfallCents)) }}</span>
+                    <span class="d-block small text-secondary mt-2">
                       Max loan {{ formatMoney(dollars(p.o.affordability.maxLoanCents)) }}<template v-if="p.o.affordability.limitingRule">, set by {{ p.o.affordability.limitingRule }}</template>
                     </span>
                   </p>
 
-                  <dl class="row small mb-0">
-                    <dt class="col-7 fw-normal text-secondary">Price (before grants)</dt>
-                    <dd class="col-5 text-end text-numeric mb-1" :data-cy="`dashboard-summary-${p.key}-price`">{{ formatMoney(dollars(p.o.purchasePriceCents)) }}</dd>
-                    <dt class="col-7 fw-normal text-secondary">Cash at purchase</dt>
-                    <dd class="col-5 text-end text-numeric mb-1">{{ formatMoney(dollars(p.o.cashRequiredAtPurchaseCents)) }}</dd>
-                    <dt class="col-7 fw-normal text-secondary">CPF at purchase</dt>
-                    <dd class="col-5 text-end text-numeric mb-1">{{ formatMoney(dollars(p.o.cpfUsedAtPurchaseCents)) }}</dd>
-                    <dt class="col-7 fw-normal text-secondary">Housing loan</dt>
-                    <dd class="col-5 text-end text-numeric mb-1">{{ formatMoney(dollars(p.o.loanPrincipalCents)) }}</dd>
-                    <dt class="col-7 fw-normal text-secondary">Grants</dt>
-                    <dd class="col-5 text-end text-numeric mb-1" :data-cy="`dashboard-summary-${p.key}-grants`">{{ formatMoney(dollars(p.o.totalGrantsCents)) }}</dd>
-                    <dt class="col-7 fw-normal text-secondary">Keys</dt>
-                    <dd class="col-5 text-end mb-0">{{ monthYear(p.o.timeline?.keyCollectionDate) }}</dd>
+                  <h3 class="dash-subhead">How the purchase is paid</h3>
+                  <dl class="dash-list mb-0">
+                    <div><dt>Price (before grants)</dt><dd class="text-numeric" :data-cy="`dashboard-summary-${p.key}-price`">{{ formatMoney(dollars(p.o.purchasePriceCents)) }}</dd></div>
+                    <div><dt>Cash at purchase</dt><dd class="text-numeric">{{ formatMoney(dollars(p.o.cashRequiredAtPurchaseCents)) }}</dd></div>
+                    <div><dt>CPF at purchase</dt><dd class="text-numeric">{{ formatMoney(dollars(p.o.cpfUsedAtPurchaseCents)) }}</dd></div>
+                    <div><dt>Housing loan</dt><dd class="text-numeric">{{ formatMoney(dollars(p.o.loanPrincipalCents)) }}</dd></div>
                   </dl>
                 </div>
               </div>
@@ -279,47 +311,88 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
             </ul>
           </div>
 
-          <!-- Beside the sliders (D35): the historical range informs the price growth slider. In this column, not
-               under the sticky what-if panel, which would slide over it on scroll. Fetches on its own. -->
-          <HistoricalRpiChart />
-
-          <section class="card" aria-labelledby="grants-heading">
-            <div class="card-body">
-              <h2 id="grants-heading" class="h5">Grants you qualify for</h2>
-              <p class="text-secondary small">
-                Every check says why it passed or failed.
-                <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>.
-              </p>
-              <GrantsTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+          <div class="d-flex align-items-baseline justify-content-between gap-3 mt-2">
+            <div>
+              <h2 class="h5 mb-0">The detail</h2>
+              <p class="text-secondary small mb-0">Open a section to see the numbers behind the result.</p>
             </div>
-          </section>
+            <button type="button" class="btn btn-link p-0" data-cy="dashboard-sections-toggle" @click="toggleAll">
+              {{ allOpen ? 'Collapse all' : 'Expand all' }}
+            </button>
+          </div>
 
-          <section class="card" aria-labelledby="cashflow-heading">
-            <div class="card-body">
-              <h2 id="cashflow-heading" class="h5">How the net position adds up</h2>
-              <p class="text-secondary small">In {{ horizon }}: what the flat is worth, minus what you still owe and the cash you spent on housing. Nothing is sold.</p>
-              <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
-            </div>
-          </section>
+          <DashboardSection
+            v-model:open="sections.cashflow"
+            title="How the net position adds up"
+            :takeaway="`In ${horizon}: what the flat is worth, minus what you still owe and the cash you spent on housing.`"
+            cy="dashboard-section-cashflow"
+          >
+            <p class="text-secondary small">Nothing is sold: this is the position if you stayed in the flat.</p>
+            <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
+          </DashboardSection>
 
-          <section class="card" aria-labelledby="costs-heading">
-            <div class="card-body">
-              <h2 id="costs-heading" class="h5">Costs up to {{ horizon }}</h2>
-              <p class="text-secondary small">Rent while waiting, renovation, fees, loan interest and CPF interest, and how each is paid.</p>
-              <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
-            </div>
-          </section>
+          <DashboardSection
+            v-model:open="sections.grants"
+            heading-id="grants-heading"
+            title="Grants you qualify for"
+            :takeaway="grantsLine"
+            cy="dashboard-section-grants"
+          >
+            <p class="text-secondary small">
+              Every check says why it passed or failed.
+              <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>.
+            </p>
+            <GrantsTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+          </DashboardSection>
+
+          <DashboardSection
+            v-model:open="sections.costs"
+            heading-id="costs-heading"
+            :title="`Costs up to ${horizon}`"
+            :takeaway="costsLine"
+            cy="dashboard-section-costs"
+          >
+            <p class="text-secondary small">Rent while waiting, renovation, fees, loan interest and CPF interest, and how each is paid.</p>
+            <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+          </DashboardSection>
+
+          <!-- D35: the historical range informs the price growth slider. Fetches on its own, only once opened. -->
+          <DashboardSection
+            v-model:open="sections.rpi"
+            title="Resale price history"
+            takeaway="Historical only, not a prediction of future prices."
+            lazy
+            flat
+            cy="dashboard-section-rpi"
+          >
+            <HistoricalRpiChart />
+          </DashboardSection>
+
+          <DashboardSection
+            v-model:open="sections.map"
+            title="Near your parents? (Proximity Housing Grant)"
+            :takeaway="mapLine"
+            lazy
+            flat
+            cy="dashboard-section-map"
+          >
+            <PhgMapCard
+              :bto-town="store.choiceA.town"
+              :resale-town="store.choiceB.town"
+              :living-arrangement="store.choiceB.livingArrangement"
+            />
+          </DashboardSection>
 
           <section class="card" aria-labelledby="notes-heading">
             <div class="card-body">
               <h2 id="notes-heading" class="h5">Before you decide</h2>
-              <ul class="mb-0 small">
-                <li data-cy="dashboard-note-mop">
+              <ul class="list-unstyled d-flex flex-column gap-2 mb-0 small">
+                <li class="dash-note" data-cy="dashboard-note-mop">
                   <strong>Minimum Occupation Period:</strong> you cannot sell before
                   {{ monthYear(A?.timeline?.earliestSaleDate) }} (BTO) or {{ monthYear(B?.timeline?.earliestSaleDate) }} (resale).
                   <RouterLink to="/sources">See the current rule</RouterLink>.
                 </li>
-                <li data-cy="dashboard-note-eip">
+                <li class="dash-note" data-cy="dashboard-note-eip">
                   <strong>Ethnic Integration Policy:</strong> some resale blocks may not be open to your household; check a block before you commit.
                   <a href="https://www.hdb.gov.sg" target="_blank" rel="noopener noreferrer">HDB EIP checker<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
                 </li>
@@ -331,3 +404,46 @@ const warningText = (w) => (typeof w === 'string' ? w : w?.message ?? w?.code ??
     </template>
   </section>
 </template>
+
+<style scoped>
+.dash-net {
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+.dash-pill {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.dash-pill--ok { background: var(--success-fill); color: var(--success); }
+.dash-pill--bad { background: var(--danger-fill); color: var(--danger); }
+.dash-subhead {
+  font-family: var(--font-heading);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-2);
+}
+.dash-list > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.875rem;
+}
+.dash-list dt { font-weight: 400; color: var(--text-secondary); }
+.dash-list dd { margin: 0; text-align: right; font-weight: 500; }
+.dash-note {
+  background: var(--accent-fill-3);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+}
+</style>

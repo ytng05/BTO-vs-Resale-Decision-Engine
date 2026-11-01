@@ -91,11 +91,44 @@ expectations must come from hand-worked examples in official material, recorded 
 
 
 ## Test accounts
-TODO: list demo credentials here once auth is implemented.
+Use the demo account on the live site, or register your own (any email; no verification):
+- Email: `demo@btoresale.test`
+- Password: `DemoBTO2026!`
+
+It already has one saved scenario under **My scenarios**. Demo data only; it holds nothing personal.
 
 ## Deployment
-TODO (seat 3): hosting choice, environment variables, cache pre-warm on deploy, URL of the first page.
-After deploy: npm run warm -w server (need MONGODB_URI and DATAGOV_API_KEY)
+**Live app: https://<your-url>.onrender.com** (first page: `/`, the home page)
+
+Hosted on Render (free web service) with MongoDB Atlas. One Express server serves both the API (`/api/*`)
+and the built Vue app, so there is one URL.
+
+- **Build command:** `npm ci --include=dev && npm run build` (Vite is a dev dependency, so dev deps are included)
+- **Start command:** `npm start`
+- **Health check:** `/api/health`
+- **Auto-deploy:** every merge to `main` redeploys within about 3 minutes; a failed build keeps the previous version live.
+- **Free plan:** the service sleeps after 15 minutes idle, so the first visit afterwards takes about a minute.
+
+**Environment variables** (set in Render, never committed; see `.env.example`):
+
+| Variable | Value |
+|---|---|
+| `NODE_ENV` | `production` (the server refuses to start with a missing or short `JWT_SECRET`) |
+| `NODE_VERSION` | `22` (same as CI) |
+| `MONGODB_URI` | Atlas connection string for a dedicated app user, database `bto_resale` |
+| `JWT_SECRET` | 32+ random characters, different from any local `.env` |
+| `DATAGOV_API_KEY` | data.gov.sg API key |
+| `ONEMAP_EMAIL`, `ONEMAP_PASSWORD` | OneMap account (for the PHG distance endpoints) |
+| `FEATURE_TIMING_OPTIMISER`, `FEATURE_STRATEGY_SEARCH`, `FEATURE_BACKTEST` | feature flags |
+| `CYPRESS_INSTALL_BINARY` | `0` (skips the Cypress download during the build) |
+
+Atlas **Network Access** allows `0.0.0.0/0`, because Render's free plan has no fixed outbound IP; access is
+protected by the database user's password instead.
+
+**Cache pre-warm:** after a deploy, run `npm run refresh-data` from a machine whose `.env` points at the same
+Atlas database. It fetches the resale prices and RPI from data.gov.sg into the cache, so the first visitor does not
+wait, and prints a `[warm] ... data as of ...` line per town (the visible daily refresh).
+
 
 ## Rulesets and rule volatility
 All policy rules live in `server/src/config/rulesets/`, versioned and date-stamped. Rules moved in Aug 2024, Oct 2024,
@@ -110,7 +143,7 @@ The active ruleset is the dated `2026-08-24` snapshot. `ruleset.template.json` r
 
 ## Libraries and credits
 Vue, Pinia, Vue Router (MIT), Bootstrap (MIT), Chart.js (MIT), Axios (MIT), Express (MIT), Mongoose (MIT),
-jsonwebtoken (MIT), bcryptjs (MIT/BSD), dotenv (BSD-2), Vitest (MIT), Supertest (MIT), Cypress (MIT), concurrently (MIT), Vite (MIT), Sass (MIT).
+jsonwebtoken (MIT), bcryptjs (MIT/BSD), dotenv (BSD-2), Vitest (MIT), Supertest (MIT), Cypress (MIT), concurrently (MIT), Vite (MIT), Sass (MIT), Leaflet (BSD-2-Clause). Map tiles: OneMap (Singapore Land Authority).
 Font: Plus Jakarta Sans (SIL OFL 1.1, Google Fonts).
 Credit each library again in code comments where it is used, and in the presentation.
 Data: data.gov.sg (Singapore Open Data Licence). Confirm licence wording before submission.

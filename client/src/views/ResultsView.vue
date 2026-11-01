@@ -191,6 +191,7 @@ onMounted(load);
             :outcome="result.outcomeA"
             :horizon-year="horizonYear"
             cy-prefix="results-patha"
+            tone="bto"
           />
         </div>
         <div class="col-12 col-lg-6">
@@ -200,6 +201,7 @@ onMounted(load);
             :outcome="result.outcomeB"
             :horizon-year="horizonYear"
             cy-prefix="results-pathb"
+            tone="resale"
           />
         </div>
       </div>
