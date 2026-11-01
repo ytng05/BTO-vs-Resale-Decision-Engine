@@ -50,6 +50,8 @@ function fromPlan() {
   };
 }
 const whatIf = reactive(fromPlan());
+// The saved plan's values, so the panel can tell how many hidden assumptions have moved.
+const planValues = computed(() => fromPlan());
 
 function setWhatIf(next) {
   // Moving the start year moves a chosen comparison year with it, so the keys never land after it.
@@ -258,6 +260,7 @@ const warningText = (w) =>
       <div class="row g-4" :aria-busy="updating ? 'true' : 'false'">
         <!-- What-if: after the overview on phones, on the right on large screens -->
         <div class="col-12 col-lg-4 order-lg-last">
+          <div class="dash-sticky">
           <WhatIfPanel
             :model-value="whatIf"
             :horizon-shown="horizon"
@@ -265,9 +268,11 @@ const warningText = (w) =>
             :horizon-max="horizonLimits.max"
             :bto-range="btoRange"
             :resale-median="resaleMedian"
+            :baseline="planValues"
             @update:model-value="setWhatIf"
             @reset="reset"
           />
+          </div>
         </div>
 
         <div class="col-12 col-lg-8 d-flex flex-column gap-4">
@@ -400,6 +405,18 @@ const warningText = (w) =>
 </template>
 
 <style scoped>
+/* On large screens the What-if panel follows you down the page, so it is never stranded beside empty space.
+   It scrolls inside itself if the screen is shorter than the panel. */
+@media (min-width: 992px) {
+  .dash-sticky {
+    position: sticky;
+    top: 5rem;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    padding: 4px;
+    margin: -4px;
+  }
+}
 .dash-net {
   font-family: var(--font-heading);
   font-weight: 500;
