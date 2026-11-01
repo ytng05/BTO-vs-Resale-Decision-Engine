@@ -148,5 +148,9 @@ jsonwebtoken (MIT), bcryptjs (MIT/BSD), dotenv (BSD-2), Vitest (MIT), Supertest 
 Font: Plus Jakarta Sans (SIL OFL 1.1, Google Fonts).
 Credit each library again in code comments where it is used, and in the presentation.
 Data: data.gov.sg (Singapore Open Data Licence). Confirm licence wording before submission.
+Login page icons (`client/public/icons/`):
+[login.png](https://www.flaticon.com/free-icon/login_5087579) and [createaccount.png](https://www.flaticon.com/free-icon/create-account_6799093): icons by Graphix Dxinerz from [Flaticon](https://www.flaticon.com) (free licence with attribution);
+[arrow.png](https://www.iconpacks.net/free-icon/arrow-next-2825.html): IconPacks (iconpacks.net), free licence.
+
 
 
