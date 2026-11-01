@@ -10,6 +10,24 @@ const app = createApp();
 describe('GET /api/data/resale-price (mocked data.gov.sg)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  it('filters to a remaining-lease band when given one, as /api/compare does', async () => {
+    const records = [['400000', '72 years'], ['500000', '81 years 06 months'], ['600000', '85 years'], ['700000', '95 years']]
+      .map(([p, lease]) => ({ month: '2026-09', resale_price: p, floor_area_sqm: '100.00', remaining_lease: lease }));
+    vi.stubGlobal('fetch', vi.fn(async () =>
+      new Response(JSON.stringify({ success: true, result: { records, total: records.length } }), { status: 200 })));
+
+    const res = await request(app).get('/api/data/resale-price?town=TAMPINES&flatType=4%20ROOM&leaseBand=80-89');
+    expect(res.status).toBe(200);
+    expect(res.body.count).toBe(2); // only the 81y 6m and 85y sales
+    expect(res.body.medianPriceCents).toBe(55_000_000);
+  });
+
+  it('400 for a lease band that is not like 80-89', async () => {
+    const res = await request(app).get('/api/data/resale-price?town=TAMPINES&flatType=4%20ROOM&leaseBand=eighty');
+    expect(res.status).toBe(400);
+    expect(res.body.error.message).toMatch(/leaseBand/);
+  });
+
   it('returns the summary built from the upstream records', async () => {
     const records = [400000, 500000, 600000, 700000].map((p) => ({
       month: '2026-09', resale_price: String(p), floor_area_sqm: '100.00', remaining_lease: '80 years',

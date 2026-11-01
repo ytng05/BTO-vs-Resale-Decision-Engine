@@ -1,10 +1,14 @@
 <script setup>
-// Step 1 of the plan stepper: who is buying, their money, and the assumptions.
+// Step 2 of the plan stepper, "About you" (D38): the two buyers, cash savings, and the move-in year when
+// the household picked "moving in by a date" in step 1. Price and income growth, the comparison year and
+// rent while waiting are not asked here: they have defaults and are changed on the Dashboard (D35).
 // Reads and writes the Pinia store directly; PlanView owns validation and passes errors in.
 // Field names follow the store (contract v2/v2.1). Money is in dollars here; client.js sends cents.
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
-import { CITIZENSHIPS, REQUIRED_APPLICANTS, RENT_GUIDE_URL, blankApplicant } from '../constants/planOptions.js';
+import { ehgEstimate } from '../api/client.js';
+import { formatMoney } from '../utils/format.js';
+import { CITIZENSHIPS, REQUIRED_APPLICANTS, blankApplicant } from '../constants/planOptions.js';
 
 const props = defineProps({
   errors: { type: Object, default: () => ({}) },
@@ -20,22 +24,6 @@ while (store.profile.applicants.length < REQUIRED_APPLICANTS) {
 }
 if (!store.profile.constraints) store.profile.constraints = { moveInByYear: null };
 
-// The contract stores growth rates as decimals (0.03), but people think in percent (3).
-function percentOf(key) {
-  return computed({
-    get() {
-      const v = store.assumptions[key];
-      return v === null || v === undefined ? '' : Math.round(v * 10000) / 100;
-    },
-    set(pct) {
-      store.assumptions[key] = pct === '' || pct === null ? null : Number(pct) / 100;
-    },
-  });
-}
-
-const priceGrowthPct = percentOf('annualPriceGrowth');
-const incomeGrowthPct = percentOf('annualIncomeGrowth');
-
 // Optional number inputs: an emptied box means "not set" (null), not 0 or ''.
 function optional(get, set) {
   return computed({
@@ -43,21 +31,51 @@ function optional(get, set) {
     set: (v) => set(v === '' || v === null ? null : Number(v)),
   });
 }
-const horizonYear = optional(() => store.assumptions.horizonYear, (v) => { store.assumptions.horizonYear = v; });
 const moveInByYear = optional(() => store.profile.constraints.moveInByYear, (v) => { store.profile.constraints.moveInByYear = v; });
-const rentWhileWaiting = optional(
-  () => store.assumptions.monthlyHousingCostWhileWaiting,
-  (v) => { store.assumptions.monthlyHousingCostWhileWaiting = v ?? 0; },
-);
+// Shown when picked in step 1, or when a saved plan already has a year.
+const askMoveIn = computed(() => store.wishes.includes('moveby') || store.profile.constraints.moveInByYear != null);
 
 const err = (key) => props.errors[key];
+
+// ---- Early EHG estimate from seat 2's grant rules (POST /api/grants), once both buyers' ages and
+// incomes are in. Worded as an estimate: the year and flat come later. Hidden on mock data.
+const ehg = ref(null); // { cents, reason } or null
+const ready = computed(() => applicants.value.length === REQUIRED_APPLICANTS && applicants.value.every(
+  (a) => Number.isInteger(a.age) && a.age >= 18 && typeof a.monthlyIncome === 'number' && a.monthlyIncome >= 0,
+));
+let timer = null;
+let requestId = 0;
+async function refreshEhg() {
+  if (!ready.value) { ehg.value = null; return; }
+  const id = ++requestId;
+  try {
+    const res = await ehgEstimate(store);
+    if (id !== requestId) return; // a newer edit is already on its way
+    const grant = res.mock ? null : res.grants?.find((g) => g.id === 'EHG');
+    if (!grant) { ehg.value = null; return; }
+    const band = grant.tests.find((t) => t.id === 'EHG_INCOME_BAND' && t.passed);
+    const failed = grant.tests.find((t) => !t.passed);
+    ehg.value = { cents: grant.amountCents, reason: (grant.amountCents > 0 ? band : failed)?.reason ?? '' };
+  } catch {
+    if (id === requestId) ehg.value = null; // the hint is a bonus: no error message for it
+  }
+}
+watch(
+  () => applicants.value.map((a) => [a.age, a.citizenship, a.firstTimer, a.monthlyIncome]),
+  () => { clearTimeout(timer); timer = setTimeout(refreshEhg, 400); },
+  { deep: true, immediate: true },
+);
+onBeforeUnmount(() => clearTimeout(timer));
 </script>
 
 <template>
   <div data-cy="situation-form">
     <!-- Buyers -->
+    <p class="text-secondary mb-3" data-cy="situation-intro">
+      Have your CPF statement handy, or estimate. You can change these later.
+    </p>
     <h3 class="h6 mt-2">Buyers</h3>
-    <p class="text-secondary small mb-2">This version compares two buyers buying together; at least one must be a Singapore Citizen.</p>
+    <p class="text-secondary small mb-2">Two buyers buying together; at least one must be a Singapore Citizen.</p>
     <p v-if="err('applicants')" class="text-danger small" role="alert" data-cy="situation-applicants-error">{{ err('applicants') }}</p>
 
     <div
@@ -164,9 +182,16 @@ const err = (key) => props.errors[key];
       </div>
     </div>
 
-    <!-- Savings and timing -->
-    <h3 class="h6 mt-4">Savings and timing</h3>
-    <div class="row g-3 mb-4">
+    <!-- Early estimate: the EHG at today's income (D38) -->
+    <div v-if="ehg" class="alert alert-info small mb-4" role="status" aria-live="polite" data-cy="situation-ehg-hint">
+      <strong v-if="ehg.cents > 0">At today's income, you'd likely get up to {{ formatMoney(ehg.cents / 100) }} in Enhanced CPF Housing Grant.</strong>
+      <strong v-else>At today's income, the Enhanced CPF Housing Grant likely doesn't apply.</strong>
+      {{ ehg.reason }} We check all your grants again once you choose your flats.
+    </div>
+
+    <!-- Household -->
+    <h3 class="h6 mt-4">Household</h3>
+    <div class="row g-3">
       <div class="col-12 col-md-6">
         <label for="cash-savings" class="form-label">Cash savings now</label>
         <div class="input-group has-validation">
@@ -187,8 +212,8 @@ const err = (key) => props.errors[key];
           <div class="invalid-feedback">{{ err('cashSavings') }}</div>
         </div>
       </div>
-      <div class="col-12 col-md-6">
-        <label for="move-in-by" class="form-label">Must move in by <span class="text-secondary fw-normal">(optional)</span></label>
+      <div v-if="askMoveIn" class="col-12 col-md-6">
+        <label for="move-in-by" class="form-label">Must move in by</label>
         <input
           id="move-in-by"
           v-model="moveInByYear"
@@ -203,97 +228,8 @@ const err = (key) => props.errors[key];
           :class="{ 'is-invalid': err('moveInByYear') }"
           data-cy="situation-move-in-by-input"
         />
-        <div id="move-in-by-help" class="form-text">We'll warn you if a path's keys come later than this.</div>
+        <div id="move-in-by-help" class="form-text">We'll tell you if a path's keys come later than this. Leave blank for no deadline.</div>
         <div class="invalid-feedback">{{ err('moveInByYear') }}</div>
-      </div>
-    </div>
-
-    <!-- Assumptions -->
-    <h3 class="h6">Assumptions</h3>
-    <p class="text-secondary small">
-      These are your own guesses, not forecasts. The results show how the answer changes if they are wrong.
-    </p>
-    <div class="row g-3">
-      <div class="col-12 col-md-6 col-lg-3">
-        <label for="price-growth" class="form-label">Flat price growth per year</label>
-        <div class="input-group has-validation">
-          <input
-            id="price-growth"
-            v-model.number="priceGrowthPct"
-            type="number"
-            step="0.5"
-            placeholder="e.g. 3"
-            :aria-invalid="err('annualPriceGrowth') ? 'true' : null"
-            class="form-control"
-            :class="{ 'is-invalid': err('annualPriceGrowth') }"
-            data-cy="situation-price-growth-input"
-          />
-          <span class="input-group-text">%</span>
-          <div class="invalid-feedback">{{ err('annualPriceGrowth') }}</div>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-3">
-        <label for="income-growth" class="form-label">Income growth per year</label>
-        <div class="input-group has-validation">
-          <input
-            id="income-growth"
-            v-model.number="incomeGrowthPct"
-            type="number"
-            step="0.5"
-            placeholder="e.g. 2"
-            :aria-invalid="err('annualIncomeGrowth') ? 'true' : null"
-            class="form-control"
-            :class="{ 'is-invalid': err('annualIncomeGrowth') }"
-            data-cy="situation-income-growth-input"
-          />
-          <span class="input-group-text">%</span>
-          <div class="invalid-feedback">{{ err('annualIncomeGrowth') }}</div>
-        </div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-3">
-        <label for="horizon-year" class="form-label">Compare in year <span class="text-secondary fw-normal">(optional)</span></label>
-        <input
-          id="horizon-year"
-          v-model="horizonYear"
-          type="number"
-          :min="currentYear + 1"
-          step="1"
-          inputmode="numeric"
-          :placeholder="`e.g. ${currentYear + 15}`"
-          aria-describedby="horizon-year-help"
-          :aria-invalid="err('horizonYear') ? 'true' : null"
-          class="form-control"
-          :class="{ 'is-invalid': err('horizonYear') }"
-          data-cy="situation-horizon-year-input"
-        />
-        <div id="horizon-year-help" class="form-text">Leave blank to compare 10 years after the later move-in.</div>
-        <div class="invalid-feedback">{{ err('horizonYear') }}</div>
-      </div>
-      <div class="col-12 col-md-6 col-lg-3">
-        <label for="rent-while-waiting" class="form-label">Rent while waiting for keys</label>
-        <div class="input-group has-validation">
-          <span class="input-group-text">$</span>
-          <input
-            id="rent-while-waiting"
-            v-model="rentWhileWaiting"
-            type="number"
-            min="0"
-            step="100"
-            inputmode="numeric"
-            placeholder="0"
-            aria-describedby="rent-while-waiting-help"
-            :aria-invalid="err('monthlyHousingCostWhileWaiting') ? 'true' : null"
-            class="form-control"
-            :class="{ 'is-invalid': err('monthlyHousingCostWhileWaiting') }"
-            data-cy="situation-rent-input"
-          />
-          <span class="input-group-text">/mo</span>
-          <div class="invalid-feedback">{{ err('monthlyHousingCostWhileWaiting') }}</div>
-        </div>
-        <div id="rent-while-waiting-help" class="form-text">
-          Leave at 0 if you'll live with your parents. This makes a big difference to BTO.
-          <a :href="RENT_GUIDE_URL" target="_blank" rel="noopener noreferrer">HDB median rents by town<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
-        </div>
       </div>
     </div>
   </div>
