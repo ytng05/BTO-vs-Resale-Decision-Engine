@@ -22,6 +22,7 @@ import DashboardOverview from '../components/dashboard/DashboardOverview.vue';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
 import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
+import SizePriceTable from '../components/dashboard/SizePriceTable.vue';
 
 const store = useScenarioStore();
 const thisYear = new Date().getFullYear();
@@ -171,7 +172,7 @@ const warnings = computed(() => [
 
 // The detail sections open and close. The chart that explains the result starts open; the rest start closed,
 // each with a one-line takeaway in its header. "Expand all" opens or closes every one.
-const sections = reactive({ cashflow: true, grants: false, costs: false, rpi: false, map: false });
+const sections = reactive({ cashflow: true, grants: false, costs: false, rpi: false, map: false, size: false });
 const allOpen = computed(() => Object.values(sections).every(Boolean));
 function toggleAll() {
   const next = !allOpen.value;
@@ -380,6 +381,17 @@ const warningText = (w) =>
               :resale-town="store.choiceB.town"
               :living-arrangement="store.choiceB.livingArrangement"
             />
+          </DashboardSection>
+
+                    <!-- Fetches the flat sizes and prices only once opened (lazy). -->
+          <DashboardSection
+            v-model:open="sections.size"
+            title="Size and price side by side"
+            takeaway="How much flat each path gets for the money: floor area, price and price per square metre."
+            lazy
+            cy="dashboard-section-size"
+          >
+            <SizePriceTable :choice-a="store.choiceA" :choice-b="store.choiceB" :result="result" />
           </DashboardSection>
 
           <section class="card" aria-labelledby="notes-heading">

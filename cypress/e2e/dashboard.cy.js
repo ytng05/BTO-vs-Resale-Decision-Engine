@@ -49,6 +49,18 @@ describe('financial dashboard', () => {
     cy.get('[data-cy=dashboard-costs], [data-cy=dashboard-costs-empty]').should('exist');
   });
 
+  it('puts the two flats side by side: size, price and price per m²', () => {
+    openDashboard();
+    cy.get('[data-cy=dashboard-section-size] summary').click();
+    cy.get('[data-cy=dashboard-size-price]').should('be.visible');
+    ['bto', 'resale'].forEach((p) => {
+      cy.get(`[data-cy=dashboard-size-price-area-${p}]`).invoke('text').should('match', /\d+(\.\d)?(–\d+)? m²/);
+      cy.get(`[data-cy=dashboard-size-price-price-${p}]`).invoke('text').should('match', /S\$[\d,]+/);
+      cy.get(`[data-cy=dashboard-size-price-per-sqm-${p}]`).invoke('text').should('match', /S\$[\d,]+/);
+    });
+    cy.get('[data-cy=dashboard-size-price-lease-bto]').should('contain', '99 years');
+  });
+
   it('re-runs when the comparison year moves, and resets to the plan', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-headline]').invoke('text').then((before) => {
