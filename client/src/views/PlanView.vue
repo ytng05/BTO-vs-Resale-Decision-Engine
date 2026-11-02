@@ -104,6 +104,8 @@ function back() {
     :class="isSideStep ? 'side-step' : 'plan-scene'"
   >
     <div :class="{ 'side-step__grid': isSideStep, 'side-step__grid--stacked': isStackedStep }">
+      <!-- The page's name for screen readers (and where focus lands on arriving); each step's own title is an h2. -->
+      <h1 class="visually-hidden" data-cy="plan-page-title">Plan your comparison</h1>
       <section v-if="isSideStep" class="side-step__art" data-cy="plan-step-art">
         <!-- About you: the step's title and intro sit on the banner's left (the card repeats them on phones). -->
         <div v-if="isStackedStep" class="side-step__banner-text">
