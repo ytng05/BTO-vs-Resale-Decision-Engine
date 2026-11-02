@@ -17,6 +17,40 @@ export const TOWNS = [
   'SERANGOON', 'TAMPINES', 'TOA PAYOH', 'WOODLANDS', 'YISHUN',
 ];
 
+// D41: the towns whose near-new sales stand in for a BTO town's when it has too few of its own (engineInputs.js).
+// Chosen by hand: next to each other, and similar estates. Clementi is left out of Jurong East's list on purpose:
+// its near-new flats sell far higher (5-room about S$1.45M against S$0.74-0.83M in Jurong West and Bukit Batok).
+// TENGAH is not a dataset town yet: its first flats are not old enough to resell.
+export const NEARBY_TOWNS = {
+  'ANG MO KIO': ['BISHAN', 'SERANGOON'],
+  BEDOK: ['TAMPINES', 'GEYLANG'],
+  BISHAN: ['TOA PAYOH', 'ANG MO KIO'],
+  'BUKIT BATOK': ['BUKIT PANJANG', 'JURONG WEST', 'CHOA CHU KANG'],
+  'BUKIT MERAH': ['QUEENSTOWN', 'CENTRAL AREA'],
+  'BUKIT PANJANG': ['CHOA CHU KANG', 'BUKIT BATOK'],
+  'BUKIT TIMAH': ['QUEENSTOWN', 'CLEMENTI'],
+  'CENTRAL AREA': ['BUKIT MERAH', 'KALLANG/WHAMPOA'],
+  'CHOA CHU KANG': ['BUKIT PANJANG', 'BUKIT BATOK'],
+  CLEMENTI: ['JURONG EAST', 'QUEENSTOWN'],
+  GEYLANG: ['KALLANG/WHAMPOA', 'MARINE PARADE'],
+  HOUGANG: ['SERANGOON', 'SENGKANG'],
+  'JURONG EAST': ['JURONG WEST', 'BUKIT BATOK'],
+  'JURONG WEST': ['JURONG EAST', 'BUKIT BATOK'],
+  'KALLANG/WHAMPOA': ['GEYLANG', 'TOA PAYOH'],
+  'MARINE PARADE': ['BEDOK', 'GEYLANG'],
+  'PASIR RIS': ['TAMPINES', 'PUNGGOL'],
+  PUNGGOL: ['SENGKANG', 'PASIR RIS'],
+  QUEENSTOWN: ['BUKIT MERAH', 'CLEMENTI'],
+  SEMBAWANG: ['YISHUN', 'WOODLANDS'],
+  SENGKANG: ['PUNGGOL', 'HOUGANG'],
+  SERANGOON: ['HOUGANG', 'ANG MO KIO'],
+  TAMPINES: ['PASIR RIS', 'BEDOK'],
+  TENGAH: ['BUKIT BATOK', 'JURONG WEST', 'CHOA CHU KANG'],
+  'TOA PAYOH': ['BISHAN', 'KALLANG/WHAMPOA'],
+  WOODLANDS: ['SEMBAWANG', 'YISHUN'],
+  YISHUN: ['SEMBAWANG', 'ANG MO KIO'],
+};
+
 
 /** The `months` calendar months ending at asOf, as 'YYYY-MM', newest first. */
 export function monthWindow(asOf, months) {
@@ -84,21 +118,10 @@ export function summariseResale(records) {
   };
 }
 
-/**
- * Median resale price (and spread) for a town + flat type over the last `months` months. Optional
- * minLeaseYears / maxLeaseYears narrow it to a remaining-lease band (filterByLease); the cache holds the
- * whole town + flat type, so a band never needs its own fetch.
- */
-export async function getResalePriceBasis({ town, flatType, months, minLeaseYears, maxLeaseYears, asOf = new Date(), force = false }) {
-    // End at the last full month: the current month is still being reported.
-  const lastFullMonth = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() - 1, 1));
-  const window = monthWindow(lastFullMonth, months);
-
-  const from = window.at(-1);
-  const to = window[0];
-  const key = `${DATASETS.resaleTransactions}:${town}:${flatType}:${from}..${to}`;
-
-  const { payload: records, fetchedAt, cached: fromCache, stale } = await cached(key, DATASETS.resaleTransactions, async () => {
+/** One town + flat type's sales for the window, cached per town (so pooling towns reuses each town's entry). */
+async function townRecords(town, flatType, window, force) {
+  const key = `${DATASETS.resaleTransactions}:${town}:${flatType}:${window.at(-1)}..${window[0]}`;
+  return cached(key, DATASETS.resaleTransactions, async () => {
     const raw = await fetchAllRecords({
       datasetId: DATASETS.resaleTransactions,
       filters: { town, flat_type: flatType, month: window },
@@ -106,16 +129,37 @@ export async function getResalePriceBasis({ town, flatType, months, minLeaseYear
     // Keep only the fields we use so cache entries stay small.
     return raw.map(({ month, resale_price, floor_area_sqm, remaining_lease }) => ({ month, resale_price, floor_area_sqm, remaining_lease }));
   }, { force });
+}
+
+/**
+ * Median resale price (and spread) for a town + flat type over the last `months` months. Optional
+ * minLeaseYears / maxLeaseYears narrow it to a remaining-lease band (filterByLease); the cache holds the
+ * whole town + flat type, so a band never needs its own fetch.
+ * `towns` (instead of `town`) pools several towns' sales into one median (D41): the response then lists them,
+ * is only `cached` if every town was, is `stale` if any was, and is as of the oldest town's fetch.
+ */
+export async function getResalePriceBasis({ town, towns, flatType, months, minLeaseYears, maxLeaseYears, asOf = new Date(), force = false }) {
+  // End at the last full month: the current month is still being reported.
+  const lastFullMonth = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() - 1, 1));
+  const window = monthWindow(lastFullMonth, months);
+
+  const from = window.at(-1);
+  const to = window[0];
+  const list = towns ?? [town];
+  const parts = await Promise.all(list.map((t) => townRecords(t, flatType, window, force)));
+  const records = parts.flatMap((p) => p.payload);
+  const oldest = parts.reduce((a, b) => (new Date(b.fetchedAt) < new Date(a.fetchedAt) ? b : a));
 
   return {
-    town,
+    town: list[0],
+    ...(towns ? { towns: list } : {}),
     flatType,
     window: { from, to, months },
     ...(minLeaseYears !== undefined || maxLeaseYears !== undefined ? { leaseFilter: { minLeaseYears, maxLeaseYears } } : {}),
     ...summariseResale(filterByLease(records, { minLeaseYears, maxLeaseYears })),
     source: { datasetId: DATASETS.resaleTransactions, name: 'Resale flat prices (HDB, data.gov.sg)' },
-    cached: fromCache,
-    stale, // true = data.gov.sg was unreachable and this is the last good copy
-    fetchedAt, // "data as of" in the app
+    cached: parts.every((p) => p.cached),
+    stale: parts.some((p) => p.stale), // true = data.gov.sg was unreachable and this is the last good copy
+    fetchedAt: oldest.fetchedAt, // "data as of" in the app
   };
 }

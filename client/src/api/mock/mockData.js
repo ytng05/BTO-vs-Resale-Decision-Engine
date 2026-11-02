@@ -414,16 +414,16 @@ export function mockGrants(payload) {
 }
 
 // MOCK BTO projects (real one: GET /api/data/bto-projects, seat 3). Same shape as the route: prices in cents,
-// before grants; top-level priceMinCents/priceMaxCents when one flatType is asked for. Filtered like the route.
+// before grants, floor area as { min, max } m^2 ; top-level priceMinCents/priceMaxCents when one flatType is asked for. Filtered like the route.
 const MOCK_BTO_PROJECTS = [
   { id: 'tampines-bliss', name: 'MOCK Tampines Bliss', town: 'TAMPINES', classification: 'STANDARD', launch: '2026-02', waitMonths: 23, subsidyRecoveryRate: 0,
-    flats: [{ flatType: '3 ROOM', priceMinCents: 36_300_000, priceMaxCents: 44_400_000 }, { flatType: '4 ROOM', priceMinCents: 48_100_000, priceMaxCents: 60_000_000 }] },
+    flats: [{ flatType: '3 ROOM', floorAreaSqm: { min: 67, max: 68 }, priceMinCents: 36_300_000, priceMaxCents: 44_400_000 }, { flatType: '4 ROOM', floorAreaSqm: { min: 92, max: 93 }, priceMinCents: 48_100_000, priceMaxCents: 60_000_000 }] },
   { id: 'tampines-nova', name: 'MOCK Tampines Nova', town: 'TAMPINES', classification: 'PLUS', launch: '2026-02', waitMonths: 32, subsidyRecoveryRate: 0.06,
-    flats: [{ flatType: '4 ROOM', priceMinCents: 45_900_000, priceMaxCents: 60_200_000 }] },
+    flats: [{ flatType: '4 ROOM', floorAreaSqm: { min: 90, max: 90 }, priceMinCents: 45_900_000, priceMaxCents: 60_200_000 }] },
   { id: 'simei-symphony', name: 'MOCK Simei Symphony', town: 'TAMPINES', classification: 'STANDARD', launch: '2025-07', waitMonths: 42, subsidyRecoveryRate: 0,
-    flats: [{ flatType: '4 ROOM', priceMinCents: 52_900_000, priceMaxCents: 62_500_000 }, { flatType: '5 ROOM', priceMinCents: 68_000_000, priceMaxCents: 79_000_000 }] },
+    flats: [{ flatType: '4 ROOM', floorAreaSqm: { min: 93, max: 93 }, priceMinCents: 52_900_000, priceMaxCents: 62_500_000 }, { flatType: '5 ROOM', floorAreaSqm: { min: 113, max: 113 }, priceMinCents: 68_000_000, priceMaxCents: 79_000_000 }] },
   { id: 'ping-yi-court', name: 'MOCK Ping Yi Court', town: 'BEDOK', classification: 'STANDARD', launch: '2025-10', waitMonths: 33, subsidyRecoveryRate: 0,
-    flats: [{ flatType: '4 ROOM', priceMinCents: 49_800_000, priceMaxCents: 62_400_000 }, { flatType: '5 ROOM', priceMinCents: 71_500_000, priceMaxCents: 85_700_000 }] },
+    flats: [{ flatType: '4 ROOM', floorAreaSqm: { min: 93, max: 93 }, priceMinCents: 49_800_000, priceMaxCents: 62_400_000 }, { flatType: '5 ROOM', floorAreaSqm: { min: 113, max: 113 }, priceMinCents: 71_500_000, priceMaxCents: 85_700_000 }] },
 ].map((p) => ({ ...p, priceBasis: 'BEFORE_GRANTS', sourceUrl: 'https://www.hdb.gov.sg', sourceAccessed: '2026-10-11', verified: false }));
 
 export function mockBtoProjects({ town, flatType, classification } = {}) {

@@ -78,6 +78,7 @@ npm run test:e2e                                  # terminal 2  (or npm run cy:o
 | `scenario-compare.cy.js` | side-by-side compare page (mock scenarios) |
 | `responsive.cy.js` | every page at 375 / 768 / 1280 px with no sideways scrolling |
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, safe https source links, assumptions and datasets |
+| `login.cy.js` | Start planning → login page: the three choices, the create-account and log-in forms, Back, planning without an account, and going on to the plan |
 
 
 Demo user journeys (five households, one per presenter) live in `cypress/journeys/` and run against a **live**
@@ -147,3 +148,6 @@ jsonwebtoken (MIT), bcryptjs (MIT/BSD), dotenv (BSD-2), Vitest (MIT), Supertest 
 Font: Plus Jakarta Sans (SIL OFL 1.1, Google Fonts).
 Credit each library again in code comments where it is used, and in the presentation.
 Data: data.gov.sg (Singapore Open Data Licence). Confirm licence wording before submission.
+Login page icons (`client/public/icons/`):
+[login.png](https://www.flaticon.com/free-icon/login_5087579) and [createaccount.png](https://www.flaticon.com/free-icon/create-account_6799093): icons by Graphix Dxinerz from [Flaticon](https://www.flaticon.com) (free licence with attribution);
+[arrow.png](https://www.iconpacks.net/free-icon/arrow-next-2825.html): IconPacks (iconpacks.net), free licence.
