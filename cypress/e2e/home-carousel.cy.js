@@ -54,3 +54,19 @@ describe('home: how it works', () => {
     });
   });
 });
+
+describe('home: example and sources', () => {
+  it('See an example opens a full Results page with no form to fill in', () => {
+    cy.visit('/');
+    cy.get('[data-cy=home-example-button]').click();
+    cy.location('pathname').should('eq', '/results');
+    cy.get('[data-cy=results-breakeven-sentence]', { timeout: 10000 }).should('be.visible');
+  });
+
+  it('says where the prices come from, and links to the sources', () => {
+    cy.visit('/');
+    cy.get('[data-cy=home-trust]').should('contain', 'data.gov.sg');
+    cy.get('[data-cy=home-sources-link]').click();
+    cy.location('pathname').should('eq', '/sources');
+  });
+});
