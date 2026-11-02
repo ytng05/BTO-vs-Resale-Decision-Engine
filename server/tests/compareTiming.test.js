@@ -36,7 +36,7 @@ vi.mock('../src/services/datagov/resalePrice.js', async (importOriginal) => {
 
 
 const { createApp } = await import('../src/app.js');
-const { breakEvenSentence } = await import('../src/routes/analysis.js');
+const { breakEvenSentence, btoPriceSentence } = await import('../src/routes/analysis.js');
 const { evaluate } = await import('../src/engine/index.js');
 const { explainGap } = await import('../src/engine/explainGap.js');
 const { WARNINGS } = await import('../src/engine/evaluate.contract.js');
@@ -204,6 +204,24 @@ describe('POST /api/compare', () => {
     expect(res.body.outcomeA.netPositionCents).toBe(direct.netPositionCents);
   });
 
+  it('returns the BTO price at which the verdict flips, against the launch\'s HDB range (D40)', () => {
+    const be = res.body.btoPriceBreakEven;
+    expect(be).not.toBeNull();
+    expect(be.hdbRangeCents).toEqual({ min: res.body.btoProjectA.priceMinCents, max: res.body.btoProjectA.priceMaxCents });
+    // The winner at the price used agrees with the outcomes: BTO is ahead at or below the flip price.
+    const margin = res.body.outcomeA.netPositionCents - res.body.outcomeB.netPositionCents;
+    if (be.priceCents !== null) expect(margin >= 0).toBe(res.body.resolvedA.purchasePriceCents <= be.priceCents);
+    expect(res.body.btoPriceSentence).toMatch(/net financial position/);
+    expect(res.body.btoPriceSentence).toMatch(/not a price forecast/);
+  });
+
+  it('no BTO price break-even when path A is not a BTO (D40)', async () => {
+    const r = await compare(body({ choiceA: resale }));
+    expect(r.status).toBe(200);
+    expect(r.body.btoPriceBreakEven).toBeNull();
+    expect(r.body.btoPriceSentence).toBeNull();
+  });
+
   it('uses the price slider when it is inside the range, and a picked project (D26)', async () => {
     const r = await compare(body({ choiceA: { ...bto, btoProjectId: 'tampines-bliss', btoPriceCents: 50000000 } }));
     expect(r.status).toBe(200);
@@ -320,6 +338,45 @@ describe('POST /api/timing', () => {
     const r = await timing({ profile, choiceBase: bto, candidateYears: years, assumptions, ...over });
     expect(r.status).toBe(400);
     expect(r.body.error.message).toMatch(message);
+  });
+});
+
+describe('btoPriceSentence (D40)', () => {
+  const range = { min: 48_100_000, max: 60_000_000 };
+  const opts = { horizonYear: 2040, flatType: '4 ROOM', projectName: 'Tampines Bliss' };
+  const be = (over) => ({ priceCents: null, atHdbMin: 'A', atHdbMax: 'B', hdbRangeCents: range, bracketCents: { min: 24_050_000, max: 90_000_000 }, ...over });
+
+  it('inside the range: BTO ahead under the flip price, rounded down to the $1,000', () => {
+    const s = btoPriceSentence(be({ priceCents: 58_579_900 }), opts);
+    expect(s).toContain('as long as the 4-room costs under $585,000; above that, resale does');
+    expect(s).toContain("HDB's range for Tampines Bliss ($481,000 to $600,000)");
+    expect(s).toMatch(/at the end of 2040/);
+    expect(s).toMatch(/today's terms\. This is not a price forecast\.$/);
+  });
+
+  it('BTO ahead across the whole range, and how far above it', () => {
+    const s = btoPriceSentence(be({ priceCents: 71_234_500, atHdbMax: 'A' }), opts);
+    expect(s).toMatch(/^BTO leaves the household with at least as high a net financial position as resale/);
+    expect(s).toContain('at any price in HDB\'s range');
+    expect(s).toContain('up to about $712,000');
+    expect(btoPriceSentence(be({ atHdbMax: 'A' }), opts)).not.toContain('up to about');
+  });
+
+  it('a tie at HDB\'s maximum reads as "at least as high", not as resale ahead', () => {
+    expect(btoPriceSentence(be({ priceCents: 60_000_000, atHdbMax: 'TIE' }), opts)).toContain('at least as high');
+  });
+
+  it('resale ahead even at HDB\'s minimum, and what BTO would need to cost', () => {
+    const s = btoPriceSentence(be({ priceCents: 41_299_900, atHdbMin: 'B' }), opts);
+    expect(s).toMatch(/^Resale leaves the household with the higher net financial position at the end of 2040 even at the cheapest price/);
+    expect(s).toContain('would need to cost under $412,000');
+    expect(btoPriceSentence(be({ atHdbMin: 'B' }), opts)).not.toContain('would need to cost');
+  });
+
+  it('never uses forbidden wording', () => {
+    for (const over of [{ priceCents: 50_000_000 }, { atHdbMax: 'A' }, { atHdbMin: 'B' }]) {
+      expect(btoPriceSentence(be(over), opts)).not.toMatch(/profit|probability|predict|will be/i);
+    }
   });
 });
 

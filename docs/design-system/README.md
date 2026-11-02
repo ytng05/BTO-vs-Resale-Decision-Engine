@@ -14,7 +14,7 @@ The look of the BTO vs resale break-even decision engine: soft, friendly and rea
 ## Content and tone
 
 - Warm and plain, written to one person: "Welcome back, Cadence!", "How are you feeling about your next home?", "Which BTO are you eyeing?". Short sentences.
-- Sentence case everywhere, including buttons and nav ("Next: a resale flat", "Save to dashboard").
+- Sentence case everywhere, including buttons and nav ("Next", "See results", "Save to dashboard").
 - Currency always `S$`, thousands separators, no decimals on whole amounts: `S$120,000`.
 - Dates as `D Month YYYY`: `21 Sep 2026`. Durations in plain words: "About 5 minutes", "About 14 months to go".
 - Errors say what is wrong and how to fix it: "Enter an amount of S$0 or more", never "Invalid".
