@@ -8,6 +8,7 @@
 // Layout (Calm, UI.md §8): the path is named with a dot AND its title (colour is never the only signal),
 // the net position is the big figure, the totals sit in a short list, and the grants are listed
 // once each with a single status (EligibilityList).
+import Term from './Term.vue';
 import { computed } from 'vue';
 import { formatMoney } from '../utils/format.js';
 import EligibilityList from './EligibilityList.vue';
@@ -62,7 +63,7 @@ const grantAmounts = computed(() =>
           <dd class="text-numeric">{{ formatMoney(dollars(cpfOwedTotalCents)) }}</dd>
         </div>
         <div v-if="outcome.clawbackCents > 0" :data-cy="`${cyPrefix}-clawback`">
-          <dt>Subsidy clawback at the horizon</dt>
+          <dt><Term id="clawback">Subsidy clawback</Term> at the horizon</dt>
           <dd class="text-numeric">{{ formatMoney(dollars(outcome.clawbackCents)) }}</dd>
         </div>
       </dl>

@@ -1,4 +1,5 @@
 <script setup>
+import Term from '../components/Term.vue';
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { compare } from '../api/client.js';
@@ -173,7 +174,7 @@ onMounted(load);
       <p class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <span class="badge-version" data-cy="results-ruleset-version">Ruleset {{ result.rulesetVersion }}</span>
         <span class="text-caption">
-          The break-even line is not a prediction of prices.
+          The <Term id="break-even">break-even</Term> line is not a prediction of prices.
           <span v-if="result.mock" data-cy="results-mock-notice">Showing mock data.</span>
         </span>
       </p>
@@ -219,7 +220,7 @@ onMounted(load);
 
       <div v-if="result.outcomeA && result.outcomeB" class="card mb-3">
         <div class="card-body">
-          <h2 class="h5">Net position over time</h2>
+          <h2 class="h5"><Term id="net-position">Net position</Term> over time</h2>
           <p class="text-secondary">
             How much you'd own outright each year, before selling. For what makes up the figure at
             {{ horizonYear }} itself, see the

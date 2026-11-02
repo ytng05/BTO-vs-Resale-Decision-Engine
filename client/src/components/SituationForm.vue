@@ -4,6 +4,7 @@
 // rent while waiting are not asked here: they have defaults and are changed on the Dashboard (D35).
 // Reads and writes the Pinia store directly; PlanView owns validation and passes errors in.
 // Field names follow the store (contract v2/v2.1). Money is in dollars here; client.js sends cents.
+import Term from './Term.vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
 import { ehgEstimate } from '../api/client.js';
@@ -192,8 +193,8 @@ onBeforeUnmount(() => clearTimeout(timer));
 
     <!-- Early estimate: the EHG in the application year, incomes grown as on Results (D38) -->
     <div v-if="ehg" class="alert alert-info small py-2 mb-3" role="status" aria-live="polite" data-cy="situation-ehg-hint">
-      <strong v-if="ehg.cents > 0">Applying in {{ ehg.year }}, you'd likely get up to {{ formatMoney(ehg.cents / 100) }} in Enhanced CPF Housing Grant.</strong>
-      <strong v-else>Applying in {{ ehg.year }}, the Enhanced CPF Housing Grant likely doesn't apply.</strong>
+      <strong v-if="ehg.cents > 0">Applying in {{ ehg.year }}, you'd likely get up to {{ formatMoney(ehg.cents / 100) }} in <Term id="ehg">Enhanced CPF Housing Grant</Term>.</strong>
+      <strong v-else>Applying in {{ ehg.year }}, the <Term id="ehg">Enhanced CPF Housing Grant</Term> likely doesn't apply.</strong>
       <template v-if="ehg.years > 0">We grow your incomes {{ ehg.growthPct }}% a year to then, as the results do. </template>
       {{ ehg.reason }} We check all your grants again once you choose your flats.
     </div>
