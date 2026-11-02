@@ -32,3 +32,26 @@ export function mockDistance(from, to) {
   const b = mockGeocode(to);
   return { from: a, to: b, km: Math.round(haversineKm(a, b) * 100) / 100, mock: true };
 }
+// MOCK resale-flat lookup (GET /api/data/resale-flat). Any query finds one made-up Tampines block, except
+// 000000 (nothing found) and 111111 (found, but not an HDB block with resale sales), so the specs reach every state.
+export function mockResaleFlat(q) {
+  const query = String(q ?? '').trim();
+  if (query === '000000') throw notFound('We could not find that postal code or address.');
+  if (query === '111111') {
+    const message = "That address isn't an HDB block with resale sales. Pick the town and lease by hand.";
+    throw Object.assign(new Error(message), { response: { status: 404, data: { error: { code: 'NOT_HDB', message } } } });
+  }
+  return {
+    address: `MOCK 123 SIMEI STREET 1 SINGAPORE ${/^\d{6}$/.test(query) ? query : '520123'}`,
+    postal: /^\d{6}$/.test(query) ? query : '520123',
+    block: '123',
+    street: 'SIMEI ST 1',
+    town: 'TAMPINES',
+    leaseCommenceYear: 1988,
+    remainingLeaseYears: 61,
+    leaseBand: '60-69',
+    flatTypes: ['3 ROOM', '4 ROOM'],
+    lastSaleMonth: '2026-07',
+    mock: true,
+  };
+}

@@ -3,6 +3,7 @@ import axios from 'axios';
 import {
   mockBtoProjects, mockCompare, mockGrants, mockLogin, mockRegister, mockResalePrice, mockRpi, mockRuleset, mockTiming,
 } from './mock/mockData.js';
+import { mockResaleFlat } from './mock/mockOneMap.js';
 
 // VITE_USE_MOCK=true serves clearly-labelled MOCK data so the UI can be built before the backend exists.
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
@@ -91,6 +92,12 @@ export async function getBtoProjects(filters = {}) {
 export async function getResalePrice(params) {
   if (USE_MOCK) return mockResalePrice(params);
   return (await http.get('/data/resale-price', { params })).data;
+}
+
+// The HDB block at a postal code or address, to fill the Resale flat step (GET /api/data/resale-flat).
+export async function findResaleFlat(q) {
+  if (USE_MOCK) return mockResaleFlat(q);
+  return (await http.get('/data/resale-flat', { params: { q } })).data;
 }
 
 // Resale Price Index series (seat 3, GET /api/data/rpi).

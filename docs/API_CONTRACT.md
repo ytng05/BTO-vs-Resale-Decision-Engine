@@ -21,6 +21,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | future work: off by default (`FEATURE_STRATEGY_SEARCH`), returns 501 `FEATURE_DISABLED` |
 | POST | `/api/backtest` | seat 1 + 3 | FEATURE 3 (later): historical range | off (`FEATURE_BACKTEST`) |
 | GET | `/api/data/resale-price?town=&flatType=&leaseBand=` | seat 3 | resale price basis from data.gov.sg (cents, cached daily) | working |
+| GET | `/api/data/resale-flat?q=` | seat 1 | the HDB block at a postal code or address: town, lease start, remaining-lease band (fills the Resale flat step) | in progress |
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached daily) | working |
 | GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects (31, from HDB launch tables) + BTO town list | working |
 | GET | `/api/data/bto-projects/:id` | seat 3 | one seeded BTO project | working |
@@ -209,6 +210,22 @@ Errors: 400 BAD_REQUEST, 502 UPSTREAM_ERROR, 503 UPSTREAM_RATE_LIMITED.
 
 The map shows the parents' postal code and the chosen town with a 4 km circle. None of these decide PHG eligibility: `livingArrangement` is declared by the user (D15). OneMap results stay fresh for 30 days.
 Errors: 400 BAD_REQUEST (not a 6-digit postal code / unknown town), 404 NOT_FOUND, 502 UPSTREAM_ERROR, 503 ONEMAP_NOT_CONFIGURED (no `ONEMAP_EMAIL` / `ONEMAP_PASSWORD` in `.env`).
+
+### GET /api/data/resale-flat?q=520123
+Fills the Resale flat step from a listing's postal code or address. OneMap finds the block and road; HDB's resale
+transactions (data.gov.sg) give the block's town and lease start from its past sales, matched on block **and** street
+(OneMap's road name is abbreviated to HDB's spelling first: STREET -> ST, AVENUE -> AVE, ...). Display and form-filling
+only: it prices nothing (the median is still `/api/data/resale-price`). Cached per query for 7 days.
+```json
+{ "address": "123 SIMEI STREET 1 SINGAPORE 520123", "postal": "520123", "block": "123", "street": "SIMEI ST 1",
+  "town": "TAMPINES", "leaseCommenceYear": 1988, "remainingLeaseYears": 61, "leaseBand": "60-69",
+  "flatTypes": ["3 ROOM", "4 ROOM"], "lastSaleMonth": "2026-07",
+  "cached": false, "fetchedAt": "2026-11-02T04:00:00.000Z", "source": "OneMap (Singapore Land Authority); HDB resale flat prices (data.gov.sg)" }
+```
+`remainingLeaseYears` = 99 - (this year - lease start), whole years. `leaseBand` is null when that falls outside the
+bands the form offers (50-59 to 90-99). Errors: 400 `BAD_REQUEST` (empty or over 100 characters); 404 `NOT_FOUND`
+(OneMap found nothing); 404 `NOT_HDB` (no HDB resale sales at that block and street: a condo, a block never resold, or
+a spelling not yet abbreviated); 503 `UPSTREAM_RATE_LIMITED`; 502 `UPSTREAM_ERROR`; 503 `ONEMAP_NOT_CONFIGURED`.
 
 ## POST /api/cpf/accrued-interest
 Request: `{ withdrawals: [{ date: "YYYY-MM-DD", amountCents, kind? }], asOfDate: "YYYY-MM-DD" }`. `kind` is free text (e.g. `LUMP_SUM`, `INSTALMENT`, `GRANT`, `STAMP_DUTY`).

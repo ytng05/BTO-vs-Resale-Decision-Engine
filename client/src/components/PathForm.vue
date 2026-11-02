@@ -12,7 +12,7 @@
 // Field names follow the store (contract v2/v2.1). The path ('BTO' / 'RESALE') is fixed in the store.
 import { computed, onMounted, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
-import { getBtoProjects, getResalePrice } from '../api/client.js';
+import { findResaleFlat, getBtoProjects, getResalePrice } from '../api/client.js';
 import { formatMoney } from '../utils/format.js';
 import {
   TOWNS,
@@ -150,6 +150,51 @@ watch(() => choice.value.flatType, () => { if (isBto.value) settlePrice(); });
 watch(() => choice.value.btoProjectId, (now, before) => { if (isBto.value && before !== undefined && now !== before) choice.value.btoPrice = null; });
 
 // ---- Resale: the median for the town, flat type and lease band, beside the optional asking price (D39) ----
+// ---- Resale: find the listing by postal code or address (GET /api/data/resale-flat) ----
+// The search box, its loading line and its messages. What gets filled in is applyFlat's job (seat 1).
+const flatQuery = ref('');
+const flatSearching = ref(false);
+const flatError = ref(null);
+const flatFound = ref(null); // { flat, filled } after a successful lookup
+let latestFlatSearch = 0;
+
+/**
+ * Fill the Resale flat step from a lookup result. Returns the names of the fields it filled, for the message
+ * under the search box (e.g. ['town', 'remaining lease']).
+ * @param {{ town: string, leaseBand: string|null, flatTypes: string[] }} flat
+ * @returns {string[]}
+ */
+function applyFlat(flat) {
+  // TODO (Cadence):
+  // 1. If TOWNS (planOptions) has flat.town: choice.value.town = flat.town; filled.push('town').
+  // 2. If flat.leaseBand is one of LEASE_BANDS' values: choice.value.leaseBand = flat.leaseBand; filled.push('remaining lease').
+  // 3. Flat type: only if flat.flatTypes has exactly one of 3/4/5 ROOM (D27), set choice.value.flatType and
+  //    filled.push('flat type'). A block usually has several sizes; the user knows which one the listing is.
+  // 4. Leave everything else alone (asking price, parents). Return filled.
+  return [];
+}
+
+async function searchFlat() {
+  const q = flatQuery.value.trim();
+  if (!q || flatSearching.value) return;
+  const id = ++latestFlatSearch;
+  flatSearching.value = true;
+  flatError.value = null;
+  flatFound.value = null;
+  try {
+    const flat = await findResaleFlat(q);
+    if (id !== latestFlatSearch) return;
+    flatFound.value = { flat, filled: applyFlat(flat) };
+  } catch (e) {
+    if (id !== latestFlatSearch) return;
+    flatError.value = e?.response?.data?.error?.message
+      || 'The lookup is unavailable right now. Pick the town and lease below, or try again in a minute.';
+  } finally {
+    if (id === latestFlatSearch) flatSearching.value = false;
+  }
+}
+const filledText = (filled) => (filled.length ? `We've filled in the ${new Intl.ListFormat('en', { type: 'conjunction' }).format(filled)}: change them below if they're wrong.` : 'Check the town and remaining lease below.');
+
 const median = ref(null); // GET /api/data/resale-price summary, or null
 let latestMedian = 0;
 async function loadMedian() {
@@ -189,6 +234,44 @@ const LIVING = [
     <p v-if="!isBto" class="text-secondary">The resale flat you're looking at.</p>
 
     <div class="row g-4">
+      <!-- Resale: find the listing by postal code or address. Optional; inside the plan's form, so Enter searches
+           here instead of moving to the next step. -->
+      <div v-if="!isBto" class="col-12" role="search" aria-label="Find the resale flat" :data-cy="`${prefix}-flat-search`">
+        <label :for="`${prefix}-flat-search-input`" class="form-label">Have a listing? Find it by postal code or address</label>
+        <div class="d-flex gap-2">
+          <input
+            :id="`${prefix}-flat-search-input`"
+            v-model="flatQuery"
+            type="search"
+            class="form-control"
+            placeholder="e.g. 520123 or 123 Simei Street 1"
+            autocomplete="off"
+            :aria-describedby="`${prefix}-flat-search-help`"
+            :data-cy="`${prefix}-flat-search-input`"
+            @keydown.enter.prevent="searchFlat"
+          />
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            :disabled="!flatQuery.trim() || flatSearching"
+            :data-cy="`${prefix}-flat-search-button`"
+            @click="searchFlat"
+          >
+            Find
+          </button>
+        </div>
+        <div :id="`${prefix}-flat-search-help`" class="form-text">Optional: or choose the town and lease yourself below.</div>
+        <div v-if="flatSearching" class="form-text" role="status" :data-cy="`${prefix}-flat-search-loading`">
+          <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Looking up the block…
+        </div>
+        <div v-else-if="flatError" class="text-danger small mt-1" role="alert" :data-cy="`${prefix}-flat-search-error`">{{ flatError }}</div>
+        <div v-else-if="flatFound" class="alert alert-info small mt-2 mb-0" role="status" :data-cy="`${prefix}-flat-search-found`">
+          <strong>Blk {{ flatFound.flat.block }} {{ toTitleCase(flatFound.flat.street) }}, {{ toTitleCase(flatFound.flat.town) }}.</strong>
+          Lease from {{ flatFound.flat.leaseCommenceYear }}, about {{ flatFound.flat.remainingLeaseYears }} years left.
+          {{ filledText(flatFound.filled) }}
+        </div>
+      </div>
+
       <div class="col-12 col-md-6">
         <label :for="`${prefix}-town`" class="form-label">Town</label>
         <select

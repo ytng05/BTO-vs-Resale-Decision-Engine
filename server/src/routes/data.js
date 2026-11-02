@@ -9,6 +9,8 @@
 //   GET /api/data/geocode?postal=460123              -> { lat, lng, address } for the PHG map
 //   GET /api/data/town-point?town=TAMPINES           -> an approximate point for a town, for the PHG map
 //   GET /api/data/distance?from=460123&to=529510     -> straight-line km between two postal codes
+//   GET /api/data/resale-flat?q=520123               -> the HDB block at a postal code or address: town, lease start
+//     and remaining-lease band from its past resale sales, to fill the Resale flat step (services/datagov/resaleFlat.js)
 //
 // The OneMap routes feed a DISPLAY-ONLY map (D15). PHG eligibility is declared, never measured here.
 // Errors follow docs/API_CONTRACT.md: { error: { code, message } }.
@@ -18,6 +20,8 @@ import { QUARTER_RE, getRpiSeries } from '../services/datagov/rpi.js';
 import { btoTowns, CLASSIFICATIONS, findBtoProjects, getBtoProject, latestLaunch } from '../services/btoProjects.js';
 import { geocode, townPoint, locateAndMeasure } from '../services/onemap/client.js';
 import { cached } from '../services/cache.js';
+import { FlatLookupError, findResaleFlat } from '../services/datagov/resaleFlat.js';
+import { DATASETS, UpstreamError } from '../services/datagov/client.js';
 
 const POSTAL = /^\d{6}$/;
 const ONEMAP_FRESH_MS = 30 * 24 * 60 * 60 * 1000; // addresses barely change: refresh monthly
@@ -160,6 +164,32 @@ router.get('/distance', async (req, res) => {
     return res.json({ ...payload, cached: fromCache, fetchedAt, source: 'OneMap (Singapore Land Authority)' });
   } catch (err) {
     return oneMapError(res, err, 'One of those postal codes was not found.');
+  }
+});
+
+// The Resale flat step's search box. Cached per query for a week: a block's town and lease never change, and a week
+// keeps "last sold" fresh enough. The lookup only fills the form; nothing here is priced.
+const FLAT_FRESH_MS = 7 * 24 * 60 * 60 * 1000;
+router.get('/resale-flat', async (req, res) => {
+  const q = String(req.query.q ?? '').trim().replace(/\s+/g, ' ');
+  if (!q) return badRequest(res, 'Give a postal code or address, e.g. ?q=520123');
+  if (q.length > 100) return badRequest(res, 'That search is too long: use a postal code or a block and street.');
+  try {
+    const { payload, fetchedAt, cached: fromCache } = await cached(
+      `resale-flat:${q.toUpperCase()}`, DATASETS.resaleTransactions, () => findResaleFlat(q), { freshMs: FLAT_FRESH_MS },
+    );
+    return res.json({ ...payload, cached: fromCache, fetchedAt, source: 'OneMap (Singapore Land Authority); HDB resale flat prices (data.gov.sg)' });
+  } catch (err) {
+    if (err instanceof FlatLookupError) {
+      return res.status(404).json({ error: { code: err.code, message: err.message } });
+    }
+    if (err instanceof UpstreamError) {
+      console.error('[data] resale-flat:', err.message);
+      return res.status(err.status).json({ error: { code: err.code, message: err.code === 'UPSTREAM_RATE_LIMITED'
+        ? 'Too many lookups just now. Try again in a few seconds.'
+        : 'HDB resale records are unavailable right now. Pick the town and lease by hand, or try again in a minute.' } });
+    }
+    return oneMapError(res, err, 'We could not find that postal code or address.');
   }
 });
 
