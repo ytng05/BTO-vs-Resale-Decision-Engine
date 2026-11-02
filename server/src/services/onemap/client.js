@@ -153,7 +153,7 @@ export async function locateAndMeasure(fromAddress, toAddress) {
   return client().locateAndMeasure(fromAddress, toAddress);
 }
 
-/** Postal code -> { lat, lng, address, postal }. */
+/** Postal code or address -> { lat, lng, address, postal, block, road } (block and road '' when not a block). */
 export async function geocode(query) {
   return client().geocode(query);
 }

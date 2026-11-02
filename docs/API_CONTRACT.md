@@ -21,7 +21,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | POST | `/api/strategy` | seat 1 | FEATURE 2: ranked top 3 strategies | future work: off by default (`FEATURE_STRATEGY_SEARCH`), returns 501 `FEATURE_DISABLED` |
 | POST | `/api/backtest` | seat 1 + 3 | FEATURE 3 (later): historical range | off (`FEATURE_BACKTEST`) |
 | GET | `/api/data/resale-price?town=&flatType=&leaseBand=` | seat 3 | resale price basis from data.gov.sg (cents, cached daily) | working |
-| GET | `/api/data/resale-flat?q=` | seat 1 | the HDB block at a postal code or address: town, lease start, remaining-lease band (fills the Resale flat step) | in progress |
+| GET | `/api/data/resale-flat?q=` | seat 1 | the HDB block at a postal code or address: town, lease start, remaining-lease band (fills the Resale flat step) | working |
 | GET | `/api/data/rpi` | seat 3 | Resale Price Index series (cached daily) | working |
 | GET | `/api/data/bto-projects` | seat 3 | seeded BTO projects (31, from HDB launch tables) + BTO town list | working |
 | GET | `/api/data/bto-projects/:id` | seat 3 | one seeded BTO project | working |
@@ -204,7 +204,7 @@ Response: `{ base, latest: { quarter, index }, historicalAnnualGrowth: { 5y, 10y
 Errors: 400 BAD_REQUEST, 502 UPSTREAM_ERROR, 503 UPSTREAM_RATE_LIMITED.
 
 ### GET /api/data/geocode, /api/data/town-point, /api/data/distance (display-only PHG map, D15)
-- `geocode?postal=460123` -> `{ lat, lng, address, postal, cached, fetchedAt, source }`
+- `geocode?postal=460123` -> `{ lat, lng, address, postal, block, road, cached, fetchedAt, source }` (`block` and `road` are `''` when the place is not an HDB-style block; used by `/api/data/resale-flat`)
 - `town-point?town=TAMPINES` -> `{ town, lat, lng, label, approximate: true, cached, fetchedAt, source }` (OneMap's first search hit for the town name; for centring the map only)
 - `distance?from=460123&to=529510` -> `{ from: { lat, lng, address, postal }, to: { … }, km, cached, fetchedAt, source }`
 
