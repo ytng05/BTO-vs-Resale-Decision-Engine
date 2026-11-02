@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
@@ -10,6 +10,7 @@ import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
 import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
 import ResultsNextSteps from '../components/ResultsNextSteps.vue';
+import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, LEASE_BANDS, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
 import { isPlanComplete } from '../validation/planValidation.js';
@@ -41,8 +42,12 @@ const hasInputs = computed(() => isPlanComplete(store));
 // things sensibly.
 const horizonYear = computed(() => result.value?.horizonYear ?? store.assumptions.horizonYear ?? null);
 
-// Print or save as PDF: the browser's own dialog; styles/_print.scss lays the page out for paper.
-function printPage() {
+// Print or save as PDF: the browser's own dialog; styles/_print.scss lays the page out for paper. The chart and
+// heatmap sections only draw once opened, so open them first and give the chart a moment to draw.
+async function printPage() {
+  sections.value = { ...sections.value, chart: true, heatmap: true };
+  await nextTick();
+  await new Promise((resolve) => { setTimeout(resolve, 400); });
   window.print();
 }
 const printedOn = new Date().toLocaleDateString('en-SG', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -60,6 +65,28 @@ const userPoint = computed(() => ({
 }));
 
 // Positive when Path A ends ahead. Cents, per the contract.
+// Progressive disclosure: the verdict, the two paths and why the gap stay open; the chart over time, the heatmap
+// and the timing panel open on request (DashboardSection, as on the Dashboard), each with a one-line takeaway.
+// The heatmap starts open: it is the app's central idea (where the paths are equal) and part of the verdict (D35).
+const sections = ref({ chart: false, heatmap: true, timing: false });
+// Filled once the timing panel has loaded (it only loads when its section is first opened).
+const timingResult = ref(null);
+const timingTakeaway = computed(() => {
+  const best = timingResult.value?.best?.year;
+  if (best) return `Applying in ${best} ends with the highest net position of the years checked.`;
+  if (timingResult.value) return 'None of the years checked work with your cash and move-in year.';
+  return 'Which application year ends with the highest net position, and which miss your move-in year.';
+});
+const heatmapTakeaway = computed(() => {
+  const cells = (result.value?.grid ?? []).flat();
+  if (!cells.length) return '';
+  const a = cells.filter((c) => c.winner === 'A').length;
+  const b = cells.filter((c) => c.winner === 'B').length;
+  if (a === cells.length) return `BTO ends ahead in all ${cells.length} combinations of price and income growth tested.`;
+  if (b === cells.length) return `Resale ends ahead in all ${cells.length} combinations of price and income growth tested.`;
+  return `BTO ends ahead in ${a} of ${cells.length} combinations of price and income growth tested, resale in ${b}.`;
+});
+
 const gap = computed(() => {
   const a = result.value?.outcomeA?.netPositionCents;
   const b = result.value?.outcomeB?.netPositionCents;
@@ -235,21 +262,29 @@ onMounted(load);
       <!-- Why one path ends ahead, line by line (D34). Arrives with /compare; hidden if an older server omits it. -->
       <GapBreakdownPanel v-if="result.gapBreakdown" :gap="result.gapBreakdown" />
 
-      <div v-if="result.outcomeA && result.outcomeB" class="card mb-3">
-        <div class="card-body">
-          <h2 class="h5">Net position over time</h2>
+      <h2 class="h5 mt-4 mb-2">More detail</h2>
+      <div class="results-sections">
+        <DashboardSection
+          v-if="result.outcomeA && result.outcomeB"
+          v-model:open="sections.chart"
+          title="Net position over time"
+          takeaway="How much you'd own outright each year, BTO against resale."
+          lazy
+          cy="results-section-chart"
+        >
           <p class="text-secondary">
-            How much you'd own outright each year, before selling. For what makes up the figure at
-            {{ horizonYear }} itself, see the
+            Before selling. For what makes up the figure at {{ horizonYear }} itself, see the
             <RouterLink to="/dashboard" data-cy="results-cashflow-dashboard-link">financial dashboard</RouterLink>.
           </p>
           <CashFlowOverTimeChart :outcome-a="result.outcomeA" :outcome-b="result.outcomeB" :horizon-year="horizonYear" />
-        </div>
-      </div>
+        </DashboardSection>
 
-      <div class="card mb-3">
-        <div class="card-body">
-          <h2 class="h5">Where each path ends ahead</h2>
+        <DashboardSection
+          v-model:open="sections.heatmap"
+          title="Where each path ends ahead"
+          :takeaway="heatmapTakeaway"
+          cy="results-section-heatmap"
+        >
           <p class="text-secondary">Select a square to see the difference. "You" marks your own assumptions.</p>
           <HeatmapGrid
             :grid="result.grid"
@@ -258,11 +293,22 @@ onMounted(load);
             label-a="BTO"
             label-b="Resale"
           />
-        </div>
-      </div>
+        </DashboardSection>
 
-      <!-- Part of the plan, fetches independently of /compare: which BTO application year ends highest (POST /api/timing). -->
-      <TimingOptimiserPanel class="d-print-none" />
+        <!-- Part of the plan, fetches independently of /compare: which BTO application year ends highest (POST /api/timing).
+             Lazy: it only asks the server once the section is opened. -->
+        <DashboardSection
+          v-model:open="sections.timing"
+          class="d-print-none"
+          title="When to apply"
+          :takeaway="timingTakeaway"
+          lazy
+          flat
+          cy="results-section-timing"
+        >
+          <TimingOptimiserPanel @loaded="timingResult = $event" />
+        </DashboardSection>
+      </div>
 
       <ResultsNextSteps />
 
@@ -270,3 +316,7 @@ onMounted(load);
     </template>
   </section>
 </template>
+
+<style scoped>
+.results-sections { display: flex; flex-direction: column; gap: var(--space-3); }
+</style>
