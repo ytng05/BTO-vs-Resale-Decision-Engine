@@ -11,19 +11,19 @@ const STEPS = [
   {
     id: 'hfe',
     title: 'Get an HDB Flat Eligibility (HFE) letter',
-    text: 'You need one before you apply for a BTO flat, or before you get an option to buy a resale flat with an HDB loan. It confirms the grants and the loan you can get.',
+    text: 'You need one before you apply for a BTO flat, and before you get an Option to Purchase for a resale flat. It tells you whether you can buy, and which CPF housing grants and HDB loan you can get, with the amounts. It is valid for 9 months.',
     link: { href: 'https://www.mynicehome.gov.sg/get-started/hdb-loans-guide/', label: 'HDB loans guide (MyNiceHome)' },
   },
   {
     id: 'grants',
     title: 'Check the grants with CPF',
-    text: 'Our grant figures are estimates from your answers. CPF and HDB confirm the actual amounts when you apply.',
+    text: 'Our grant figures are estimates from your answers. CPF and HDB confirm the actual amounts when you buy.',
     link: { href: 'https://www.cpf.gov.sg/member/infohub/educational-resources/a-guide-to-enhanced-cpf-housing-and-proximity-housing-grant', label: 'CPF guide to the EHG and PHG' },
   },
   {
     id: 'afford',
     title: 'Work out a budget you are comfortable with',
-    text: 'Keep a buffer for monthly instalments, renovation and emergencies, beyond what the comparison needs.',
+    text: 'Keep a buffer for monthly instalments, renovation and emergencies, beyond what the comparison needs. An HDB loan\'s monthly instalment can\'t exceed 30% of your income (the Mortgage Servicing Ratio).',
     link: { href: 'https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/', label: 'MoneySense: how much can you afford' },
   },
   {
