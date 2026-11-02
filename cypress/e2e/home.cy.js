@@ -1,0 +1,57 @@
+// Home page (Calm home board): the two ways in, the crossing scene, how it works, what you'll get, the FAQ and
+// the closing call to action.
+
+describe('home', () => {
+  it('offers Start planning and See an example, and says it takes four short steps', () => {
+    cy.visit('/');
+    cy.get('[data-cy=home-title]').should('contain', 'BTO or resale');
+    cy.get('[data-cy=home-start-button]').should('have.attr', 'href').and('include', '/login');
+    cy.get('[data-cy=home-example-button]').should('be.visible');
+    cy.contains('4 short steps').should('be.visible');
+  });
+
+  it('See an example opens a full Results page with no form to fill in', () => {
+    cy.visit('/');
+    cy.get('[data-cy=home-example-button]').click();
+    cy.location('pathname').should('eq', '/results');
+    cy.get('[data-cy=results-breakeven-sentence]', { timeout: 10000 }).should('be.visible');
+  });
+
+  it('lists the four plan steps, each with what to have to hand', () => {
+    cy.visit('/');
+    cy.get('[data-cy^=home-step-]').should('have.length', 4);
+    ['What matters', 'About you', 'Your BTO', 'Resale flat'].forEach((t, i) => {
+      cy.get(`[data-cy=home-step-${i + 1}]`).scrollIntoView().should('contain', t);
+    });
+  });
+
+  it('opens and closes the FAQ answers, the first one open', () => {
+    cy.visit('/');
+    cy.get('[data-cy=home-faq-1]').should('have.attr', 'open');
+    cy.get('[data-cy=home-faq-2]').should('not.have.attr', 'open');
+    cy.get('[data-cy=home-faq-2] summary').scrollIntoView().click();
+    cy.get('[data-cy=home-faq-2]').should('have.attr', 'open');
+    cy.get('[data-cy=home-sources-link]').click();
+    cy.location('pathname').should('eq', '/sources');
+  });
+
+  it('holds the scene still under prefers-reduced-motion', () => {
+    cy.visit('/');
+    // Cypress can't switch the media feature on in Electron, so check the scene's reduced-motion rule is loaded.
+    cy.document().then((doc) => {
+      const rules = [...doc.styleSheets].flatMap((s) => { try { return [...s.cssRules]; } catch { return []; } });
+      const reduce = rules.filter((r) => r.media && /prefers-reduced-motion:\s*reduce/.test(r.media.mediaText));
+      expect(reduce.map((r) => r.cssText).join(' ')).to.match(/cs-goR/);
+    });
+  });
+
+  it('fits a 375px phone screen without sideways scrolling, bubbles hidden', () => {
+    cy.viewport(375, 667);
+    cy.visit('/');
+    cy.get('[data-cy=hero-scene]').should('be.visible');
+    cy.get('[data-cy=hero-scene] .cs-bubbles').should('have.css', 'display', 'none'); // Cypress misjudges visibility on SVG groups
+    cy.document().then((doc) => {
+      expect(doc.documentElement.scrollWidth).to.be.at.most(doc.documentElement.clientWidth);
+    });
+  });
+});

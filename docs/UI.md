@@ -375,10 +375,12 @@ inline — never a single generic message covering several failed items at once.
 
 ### Illustrations
 
-- Decorative SVG only (`HeroScene` on the home page): fills use the Calm palette through CSS custom
+- Decorative SVG only (`CrossingScene` on the home page, after the Calm home board; `HeroScene` stays as the
+  design-system reference): fills use the Calm palette through CSS custom
   properties (a fallback hex inside `var()` is allowed so the scene still renders if a token is missing); one
   `role="img"` and `aria-label` on the whole scene, nothing focusable.
-- Ambient looping motion is allowed here as an exception to the §9 durations, using `transform` only. It
+- Ambient looping motion is allowed here as an exception to the §9 durations, using `transform`, `opacity` and
+  palette fills only. It
   stops under `prefers-reduced-motion: reduce`, pauses when off-screen or in a background tab, and never
   carries information. `data-cy="hero-scene"`.
 
