@@ -69,7 +69,14 @@ export function fillSituation(p) {
 export function fillPaths(p) {
   const a = p.pathA;
   cy.get('[data-cy=patha-town-select]').select(a.town);
-  if (a.project) cy.get(`[data-cy=patha-project-${a.project}]`, { timeout: 15000 }).click();
+  if (a.project) {
+    // When the town's launches are all one classification they sit behind "Change launch": open them first.
+    cy.get('[data-cy=patha-project-summary], [data-cy=patha-project]', { timeout: 15000 }).first().then(($el) => {
+      const change = $el.find('[data-cy=patha-project-change]');
+      if (change.length) cy.wrap(change).click();
+    });
+    cy.get(`[data-cy=patha-project-${a.project}]`, { timeout: 15000 }).click();
+  }
   // The chips load from the server once the town is chosen: only what that town's launches offer.
   cy.get(`[data-cy=patha-flat-type-${slug(a.flatType)}]`, { timeout: 15000 }).click();
   beat();

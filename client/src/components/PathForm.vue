@@ -61,6 +61,24 @@ const launchOptions = computed(() =>
     || x.name.localeCompare(y.name)),
 );
 const activeProject = computed(() => launchOptions.value.find((p) => p.id === choice.value.btoProjectId) ?? null);
+
+// Progressive disclosure: the launches have all closed, so most people can't judge between them. Use the newest
+// and say so in one line, with "Change launch" for anyone who wants another. The chips open by themselves when the
+// town mixes Standard, Plus and Prime (that changes the rules, not just the price) or the choice has an error.
+const pickingLaunch = ref(false);
+watch(() => choice.value.town, () => { pickingLaunch.value = false; });
+const mixedClasses = computed(() => new Set(launchOptions.value.map((p) => p.classification)).size > 1);
+const showLaunches = computed(() => pickingLaunch.value || mixedClasses.value || Boolean(err('classification')));
+const isPlusOrPrime = (p) => p?.classification === 'PLUS' || p?.classification === 'PRIME';
+// 'S$481k–S$600k' for the chosen flat type at that launch, else 'from S$350k' across its flats: enough to
+// tell launches apart on a chip.
+const kDollars = (cents) => `S$${Math.round(cents / 100000)}k`;
+const chipPrice = (p) => {
+  const flats = p.flats ?? [];
+  const f = flats.find((x) => x.flatType === choice.value.flatType);
+  if (f) return `${kDollars(f.priceMinCents)}–${kDollars(f.priceMaxCents)}`;
+  return flats.length ? `from ${kDollars(Math.min(...flats.map((x) => x.priceMinCents)))}` : '';
+};
 watch(activeProject, (p) => { if (isBto.value) emit('project', p); }, { immediate: true });
 
 // Flat types the chosen launch offers (BTO), or all three (resale).
@@ -223,8 +241,30 @@ const LIVING = [
         </div>
       </div>
 
-      <!-- BTO: which launch. It fixes the classification and which flat types there are. -->
-      <fieldset v-if="isBto && choice.town && launchOptions.length" class="col-12" :data-cy="`${prefix}-project`">
+      <!-- BTO: which launch, in one line unless the user asks to change it (it fixes the classification and
+           which flat types there are). -->
+      <div v-if="isBto && choice.town && activeProject && !showLaunches" class="col-12" :data-cy="`${prefix}-project-summary`">
+        <p class="small mb-0">
+          Estimated from <strong>{{ activeProject.name }}</strong> ({{ monthYear(activeProject.launch) }} ·
+          {{ labelOf(CLASSIFICATIONS, activeProject.classification) }}), {{ launchOptions.length > 1 ? 'the newest launch here' : 'the launch here' }}:
+          {{ keysIn(activeProject.waitMonths) }} after you apply.
+          <button
+            v-if="launchOptions.length > 1"
+            type="button"
+            class="btn btn-link btn-sm p-0 align-baseline"
+            :aria-controls="`${prefix}-project`"
+            aria-expanded="false"
+            :data-cy="`${prefix}-project-change`"
+            @click="pickingLaunch = true"
+          >
+            Change launch
+          </button>
+        </p>
+        <p v-if="isPlusOrPrime(activeProject)" class="form-text mt-1 mb-0">
+          {{ labelOf(CLASSIFICATIONS, activeProject.classification) }} flats have a longer minimum occupation period and a subsidy clawback when sold.
+        </p>
+      </div>
+      <fieldset v-if="isBto && choice.town && launchOptions.length && showLaunches" :id="`${prefix}-project`" class="col-12" :data-cy="`${prefix}-project`">
         <legend class="form-label fs-6">Which launch should we estimate from?</legend>
         <div class="chip-group">
           <label v-for="p in launchOptions" :key="p.id" class="chip" :data-cy="`${prefix}-project-${p.id}`">
@@ -236,14 +276,16 @@ const LIVING = [
               :value="p.id"
               :data-cy="`${prefix}-project-${p.id}-input`"
             />
-            <span class="chip__face">{{ p.name }} · {{ monthYear(p.launch) }} · {{ labelOf(CLASSIFICATIONS, p.classification) }}</span>
+            <span class="chip__face">
+              {{ p.name }} · {{ monthYear(p.launch) }} · {{ labelOf(CLASSIFICATIONS, p.classification) }}
+              <span v-if="chipPrice(p)" class="text-secondary" :data-cy="`${prefix}-project-${p.id}-price`">· {{ chipPrice(p) }}</span>
+            </span>
           </label>
         </div>
         <div class="form-text" :data-cy="`${prefix}-project-help`">
           <!-- D40: these launches have closed; one stands in for the launch the user will apply to. -->
-          These launches have closed. We use one as an estimate of the price and wait for your own application.
-          <template v-if="activeProject">{{ activeProject.name }}: {{ keysIn(activeProject.waitMonths) }} after you apply. </template>
-          Plus and Prime flats have a longer minimum occupation period and a subsidy clawback when sold.
+          These launches have closed; we use one to estimate your price and wait.
+          <template v-if="launchOptions.some(isPlusOrPrime)">Plus and Prime flats have a longer minimum occupation period and a subsidy clawback when sold.</template>
         </div>
         <div v-if="err('classification')" class="invalid-feedback d-block">{{ err('classification') }}</div>
       </fieldset>

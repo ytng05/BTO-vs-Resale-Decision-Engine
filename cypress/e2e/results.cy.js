@@ -104,7 +104,9 @@ describe('results page', () => {
     fillSituation();
     next();
     cy.get('[data-cy=patha-town-select]').select('TAMPINES');
+    // Tampines mixes Standard and Plus, so the launches are listed straight away, each with a price.
     cy.get('[data-cy=patha-project-tampines-bliss-input]').should('be.checked'); // newest first
+    cy.get('[data-cy=patha-project-simei-symphony-price]').invoke('text').should('match', /S\$\d+k/);
     cy.get('[data-cy=patha-project-simei-symphony]').click();
     next();
     fillPath('pathb', { town: 'BEDOK' });
@@ -118,8 +120,10 @@ describe('results page', () => {
     fillSituation();
     next();
     cy.get('[data-cy=patha-town-select]').select('BEDOK');
-    cy.get('[data-cy=patha-project-ping-yi-court-input]').should('be.checked'); // the only launch, preselected
-    cy.get('[data-cy=patha-project-ping-yi-court]').should('contain', 'Oct 2025').and('contain', 'Standard');
+    // The only launch: said in one line, with nothing to change.
+    cy.get('[data-cy=patha-project-summary]').should('contain', 'MOCK Ping Yi Court').and('contain', 'Oct 2025').and('contain', 'Standard');
+    cy.get('[data-cy=patha-project-change]').should('not.exist');
+    cy.get('[data-cy=patha-project]').should('not.exist');
     cy.get('[data-cy=patha-flat-type-5-room]').click(); // Ping Yi Court offers 4- and 5-room
     cy.get('[data-cy=patha-flat-type-3-room]').should('not.exist');
     cy.get('[data-cy=patha-price-basis]')
