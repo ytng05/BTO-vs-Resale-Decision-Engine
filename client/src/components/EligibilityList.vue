@@ -55,22 +55,30 @@ const groups = computed(() => {
         </span>
         <span v-if="g.amount !== null" class="elig__amount text-numeric">{{ formatMoney(g.amount) }}</span>
       </div>
+      <!-- Why not, in one line, with its official source (the brief: eligibility reasons with sources). -->
       <p v-if="!g.eligible && g.firstFailed" class="elig__why-not" :data-cy="`${cyPrefix}-eligibility-why-not-${g.id.toLowerCase()}`">
         {{ g.firstFailed.reason }}
+        <a
+          v-if="g.firstFailed.sourceUrl"
+          :href="g.firstFailed.sourceUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          :data-cy="`${cyPrefix}-eligibility-why-not-source-${g.id.toLowerCase()}`"
+        >Source<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
       </p>
-        <!-- A lone failed check is already said in full above: no toggle that only repeats it. -->
-        <details v-if="g.eligible || g.tests.length > 1" class="elig__more" :data-cy="`${cyPrefix}-eligibility-more-${g.id.toLowerCase()}`">
+      <!-- A lone failed check is already said in full above: no toggle that only repeats it. -->
+      <details v-if="g.eligible || g.tests.length > 1" class="elig__more" :data-cy="`${cyPrefix}-eligibility-more-${g.id.toLowerCase()}`">
         <summary class="elig__more-toggle">Why: {{ g.tests.length }} check{{ g.tests.length === 1 ? '' : 's' }}</summary>
-      <ul class="elig__tests list-unstyled mb-0">
-        <li v-for="t in g.tests" :key="t.index" :data-cy="`${cyPrefix}-eligibility-item-${t.index}`">
-          <span :data-cy="`${cyPrefix}-eligibility-status-${t.index}`">
-            <span aria-hidden="true">{{ t.passed ? '✓' : '✗' }}</span>
-            <span class="visually-hidden">{{ t.passed ? 'Passed:' : 'Failed:' }}</span>
-          </span>
-          <span :data-cy="`${cyPrefix}-eligibility-reason-${t.index}`">{{ t.reason }}</span>
-          <a v-if="t.sourceUrl" :href="t.sourceUrl" target="_blank" rel="noopener noreferrer" :data-cy="`${cyPrefix}-eligibility-source-${t.index}`">Source<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
-        </li>
-      </ul>
+        <ul class="elig__tests list-unstyled mb-0">
+          <li v-for="t in g.tests" :key="t.index" :data-cy="`${cyPrefix}-eligibility-item-${t.index}`">
+            <span :data-cy="`${cyPrefix}-eligibility-status-${t.index}`">
+              <span aria-hidden="true">{{ t.passed ? '✓' : '✗' }}</span>
+              <span class="visually-hidden">{{ t.passed ? 'Passed:' : 'Failed:' }}</span>
+            </span>
+            <span :data-cy="`${cyPrefix}-eligibility-reason-${t.index}`">{{ t.reason }}</span>
+            <a v-if="t.sourceUrl" :href="t.sourceUrl" target="_blank" rel="noopener noreferrer" :data-cy="`${cyPrefix}-eligibility-source-${t.index}`">Source<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
+          </li>
+        </ul>
       </details>
     </section>
   </div>
@@ -89,7 +97,8 @@ const groups = computed(() => {
 .elig__amount { font-family: var(--font-heading); font-weight: 500; font-size: 1.0625rem; letter-spacing: -0.015em; }
 .elig__tests li { font-size: 0.875rem; color: var(--text-secondary); padding: 0.125rem 0; }
 .elig__tests li > span:first-child { display: inline-block; width: 1.25rem; }
-.elig__tests a { margin-left: 0.375rem; white-space: nowrap; }
+.elig__tests a,
+.elig__why-not a { margin-left: 0.375rem; white-space: nowrap; }
 .elig__why-not { font-size: 0.875rem; color: var(--text-secondary); margin: 0 0 var(--space-1); }
 .elig__more-toggle { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 32px; font-size: 0.8125rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; list-style: none; }
 .elig__more-toggle::-webkit-details-marker { display: none; }
