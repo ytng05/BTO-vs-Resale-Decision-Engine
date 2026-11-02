@@ -33,7 +33,7 @@ describe('results page', () => {
 
   it('marks the user’s own assumptions on the heatmap and explains any square on tap', () => {
     completePlan(); // growth defaults: 3% price, 2% income (D38)
-    cy.get('[data-cy=results-section-heatmap] > summary').click(); // collapsed by default (progressive disclosure)
+    cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open'); // open by default: the central idea (D35)
     cy.get('td[data-cy^=heatmap-cell-]').should('have.length', 36);
     cy.get('[data-cy=heatmap-legend]').should('be.visible');
 
@@ -65,7 +65,6 @@ describe('results page', () => {
   it('fits a 375px phone screen without sideways scrolling', () => {
     cy.viewport(375, 667);
     completePlan();
-    cy.get('[data-cy=results-section-heatmap] > summary').click(); // collapsed by default (progressive disclosure)
     cy.get('[data-cy=heatmap]').should('be.visible');
     cy.document().then((doc) => {
       expect(doc.documentElement.scrollWidth).to.be.at.most(doc.documentElement.clientWidth);

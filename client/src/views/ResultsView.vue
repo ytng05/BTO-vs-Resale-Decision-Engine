@@ -49,7 +49,16 @@ const userPoint = computed(() => ({
 // Positive when Path A ends ahead. Cents, per the contract.
 // Progressive disclosure: the verdict, the two paths and why the gap stay open; the chart over time, the heatmap
 // and the timing panel open on request (DashboardSection, as on the Dashboard), each with a one-line takeaway.
-const sections = ref({ chart: false, heatmap: false, timing: false });
+// The heatmap starts open: it is the app's central idea (where the paths are equal) and part of the verdict (D35).
+const sections = ref({ chart: false, heatmap: true, timing: false });
+// Filled once the timing panel has loaded (it only loads when its section is first opened).
+const timingResult = ref(null);
+const timingTakeaway = computed(() => {
+  const best = timingResult.value?.best?.year;
+  if (best) return `Applying in ${best} ends with the highest net position of the years checked.`;
+  if (timingResult.value) return 'None of the years checked work with your cash and move-in year.';
+  return 'Which application year ends with the highest net position, and which miss your move-in year.';
+});
 const heatmapTakeaway = computed(() => {
   const cells = (result.value?.grid ?? []).flat();
   if (!cells.length) return '';
@@ -269,12 +278,12 @@ onMounted(load);
         <DashboardSection
           v-model:open="sections.timing"
           title="When to apply"
-          takeaway="Which application year ends with the highest net position, and which miss your move-in year."
+          :takeaway="timingTakeaway"
           lazy
           flat
           cy="results-section-timing"
         >
-          <TimingOptimiserPanel />
+          <TimingOptimiserPanel @loaded="timingResult = $event" />
         </DashboardSection>
       </div>
 
