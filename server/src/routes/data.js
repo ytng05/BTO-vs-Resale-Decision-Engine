@@ -189,7 +189,12 @@ router.get('/resale-flat', async (req, res) => {
         ? 'Too many lookups just now. Try again in a few seconds.'
         : 'HDB resale records are unavailable right now. Pick the town and lease by hand, or try again in a minute.' } });
     }
-    return oneMapError(res, err, 'We could not find that postal code or address.');
+    // OneMap itself: same codes as the map routes, but worded for the search box, not the map.
+    console.error('[data] resale-flat OneMap:', err.message);
+    if (/not configured/.test(err.message)) {
+      return res.status(503).json({ error: { code: 'ONEMAP_NOT_CONFIGURED', message: 'Address search is not set up on this server. Pick the town and lease below.' } });
+    }
+    return res.status(502).json({ error: { code: 'UPSTREAM_ERROR', message: 'Address search is unavailable right now. Pick the town and lease below, or try again in a minute.' } });
   }
 });
 
