@@ -1,5 +1,5 @@
-// Home page (Calm home board): the two ways in, the crossing scene, how it works, what you'll get, the FAQ and
-// the closing call to action.
+// Home page (Calm home board): the two ways in, the crossing scene, how it works, what you'll get, the costs
+// people forget, the FAQ and the closing call to action.
 
 describe('home', () => {
   it('offers Start planning and See an example, and says it takes four short steps', () => {
@@ -44,6 +44,15 @@ describe('home', () => {
     ['What matters', 'About you', 'Your BTO', 'Resale flat'].forEach((t, i) => {
       cy.get(`[data-cy=home-step-${i + 1}]`).scrollIntoView().should('contain', t);
     });
+  });
+
+  it('lists the eight costs people forget, each opening its explanation on focus', () => {
+    cy.visit('/');
+    cy.get('[data-cy=home-costs]').scrollIntoView();
+    cy.get('[data-cy^=home-cost-]').should('have.length', 8);
+    cy.get('[data-cy=home-cost-2]').should('contain', 'Rent while you wait')
+      .find('.home-tile__text').should('have.css', 'opacity', '0');
+    cy.get('[data-cy=home-cost-2]').focus().find('.home-tile__text').should('have.css', 'opacity', '1');
   });
 
   it('opens and closes the FAQ answers, the first one open', () => {

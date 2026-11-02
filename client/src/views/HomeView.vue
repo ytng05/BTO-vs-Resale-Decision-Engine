@@ -1,7 +1,7 @@
 <script setup>
 // Home, after the Calm home board (CalmHome.dc.html): the question and the two ways in (start, or see an example),
-// the crossing scene, how it works in four steps, what the results tell you, a short FAQ and a closing call to
-// action. The navbar and the disclaimer footer come from App.vue, as on every page.
+// the crossing scene, how it works in four steps, what the results tell you, the costs people forget, a short FAQ
+// and a closing call to action. The navbar and the disclaimer footer come from App.vue, as on every page.
 import { computed, nextTick, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useScenarioStore } from '../stores/scenario.js';
@@ -47,6 +47,19 @@ const GETS = [
   { tag: 'Break-even year', fill: 'var(--accent-fill-2)', text: 'When both paths leave you equally well off' },
   { tag: 'Net position', fill: 'var(--accent-fill-3)', text: 'How far ahead each path is, year by year' },
   { tag: 'What would flip it', fill: 'var(--bg-page)', text: 'The BTO price at which the answer changes, and how rent and growth move it' },
+];
+
+// "The costs people usually forget": each tile names a cost the engine counts; hover, focus or tap shows what it means.
+// Icons are 24×24 strokes, drawn in .home-tile__icon.
+const TILES = [
+  { title: 'Grants you qualify for', text: 'Checked against your income, citizenship and the flat you pick.', icon: 'M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7c-2-4-6-4-6-1s6 1 6 1 6 2 6-1-4-3-6 1z' },
+  { title: 'Rent while you wait', text: 'What BTO buyers pay before they get their keys, which resale buyers skip.', icon: 'M6 2h12M6 22h12M7 2c0 5 5 6 5 10s-5 5-5 10M17 2c0 5-5 6-5 10s5 5 5 10' },
+  { title: 'CPF interest you give up', text: "What your Ordinary Account would have earned if you hadn't used it.", icon: 'M5 6c0-1.7 3.1-3 7-3s7 1.3 7 3-3.1 3-7 3-7-1.3-7-3zM5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6' },
+  { title: 'Loan limits', text: 'How much you can borrow, based on your income and the lease left.', icon: 'M4 18a8 8 0 1 1 16 0M12 18l4-5M3 18h18' },
+  { title: "Buyer's Stamp Duty", text: 'Worked out on the price you pay, and due soon after you buy.', icon: 'M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h6' },
+  { title: 'Remaining lease', text: 'A shorter lease can limit your loan and how much CPF you can use.', icon: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM12 7v5l3 2' },
+  { title: 'Minimum occupation', text: 'How long you must live there before you can sell or rent out the whole flat.', icon: 'M7 11h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 11V7a4 4 0 0 1 8 0v4' },
+  { title: 'Subsidy clawback', text: 'Plus and Prime flats return part of their subsidy when you sell.', icon: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5' },
 ];
 
 const FAQS = [
@@ -169,6 +182,30 @@ const FAQS = [
       </div>
     </section>
 
+    <!-- The costs people usually forget -->
+    <section class="home-section home-costs" aria-labelledby="costs-title" data-cy="home-costs">
+      <div class="home-reveal home-costs__head">
+        <span class="home-chip home-chip--outlined">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8" /><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9" /></svg>
+          What we count
+        </span>
+        <h2 id="costs-title" class="home-costs__title">The costs people usually forget</h2>
+        <p class="home-lead text-center">Hover or tap a tile to see what it means for you.</p>
+      </div>
+      <!-- Each tile takes focus so keyboard users can open it too; the text is always in the page for screen readers. -->
+      <ul class="home-tiles home-stagger">
+        <li v-for="(t, i) in TILES" :key="t.title" class="home-tile" tabindex="0" :data-cy="`home-cost-${i + 1}`">
+          <div class="home-tile__in">
+            <span class="home-tile__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path :d="t.icon" /></svg>
+            </span>
+            <h3 class="home-tile__title">{{ t.title }}</h3>
+            <p class="home-tile__text">{{ t.text }}</p>
+          </div>
+        </li>
+      </ul>
+    </section>
+
     <!-- FAQ -->
     <section class="home-faq-wrap" aria-labelledby="faq-title" data-cy="home-faq">
       <div class="home-reveal home-head home-faq-wrap__intro">
@@ -270,6 +307,66 @@ const FAQS = [
 .home-pulse { transform-box: fill-box; transform-origin: center; animation: home-pulse 2s ease-out infinite; }
 @keyframes home-pulse { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(2.6); opacity: 0; } }
 
+/* ---- the costs people usually forget: hover tiles ---- */
+.home-costs { gap: calc(var(--space-6) + var(--space-1)); }
+.home-costs__head { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
+.home-costs__title { margin: 0; font-size: clamp(30px, 4vw, 48px); font-weight: 500; letter-spacing: -0.03em; line-height: 1.08; }
+.home-chip--outlined { border: 1px solid var(--border-subtle); box-shadow: 0 1px 2px rgba(29, 29, 36, 0.06); }
+.home-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+/* A dot in each corner, as on the board. */
+.home-tile {
+  --dot: radial-gradient(circle, var(--border) 2.6px, transparent 3.2px);
+  position: relative;
+  overflow: hidden;
+  height: 248px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 2px rgba(29, 29, 36, 0.04), 0 8px 24px rgba(60, 64, 90, 0.05);
+  background:
+    var(--dot) left 14px top 14px / 8px 8px no-repeat,
+    var(--dot) right 14px top 14px / 8px 8px no-repeat,
+    var(--dot) left 14px bottom 14px / 8px 8px no-repeat,
+    var(--dot) right 14px bottom 14px / 8px 8px no-repeat,
+    var(--bg-surface);
+  outline: none;
+}
+.home-tile:focus-visible { box-shadow: 0 0 0 2px var(--bg-page), 0 0 0 4px var(--focus-ring); }
+.home-tile:hover { border-color: var(--accent-fill-1); }
+.home-tile__in { position: absolute; inset: 0; padding: 0 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transform: translateY(39px); transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.home-tile__icon {
+  --d: radial-gradient(circle, var(--border) 2px, transparent 2.5px);
+  width: 72px;
+  height: 72px;
+  margin-bottom: 22px;
+  border-radius: 20px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 2px 6px rgba(60, 64, 90, 0.08);
+  display: grid;
+  place-items: center;
+  background:
+    var(--d) left 6px top 6px / 6px 6px no-repeat,
+    var(--d) right 6px top 6px / 6px 6px no-repeat,
+    var(--d) left 6px bottom 6px / 6px 6px no-repeat,
+    var(--d) right 6px bottom 6px / 6px 6px no-repeat,
+    var(--bg-page);
+  transition: opacity 0.25s, transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.home-tile__icon svg { width: 28px; height: 28px; fill: none; stroke: var(--text-primary); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.home-tile__title { margin: 0; font-size: 17px; font-weight: 500; letter-spacing: -0.01em; }
+.home-tile__text { margin: 10px 0 0; height: 4.5em; font-size: 15px; line-height: 1.5; color: var(--text-secondary); opacity: 0; transform: translateY(10px); transition: opacity 0.25s, transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.home-tile:hover .home-tile__in, .home-tile:focus .home-tile__in { transform: translateY(-47px); }
+.home-tile:hover .home-tile__icon, .home-tile:focus .home-tile__icon { opacity: 0; transform: scale(0.8); }
+.home-tile:hover .home-tile__text, .home-tile:focus .home-tile__text { opacity: 1; transform: none; transition-delay: 0.05s; }
+/* Touch screens can't hover: every tile shows its text. */
+@media (hover: none) {
+  .home-tile { height: auto; min-height: 220px; }
+  .home-tile__in { position: static; padding: 28px; transform: none; }
+  .home-tile__icon { width: 56px; height: 56px; margin-bottom: 14px; }
+  .home-tile__text { opacity: 1; transform: none; height: auto; }
+  .home-tile:focus .home-tile__in { transform: none; }
+  .home-tile:focus .home-tile__icon { opacity: 1; transform: none; }
+}
+
 /* ---- FAQ ---- */
 .home-faq-wrap { display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start; }
 .home-faq-wrap__intro { flex: 1 1 300px; }
@@ -324,6 +421,7 @@ const FAQS = [
 
 @media (prefers-reduced-motion: reduce) {
   .home-pulse, .home-lit { animation: none; }
+  .home-tile__in, .home-tile__icon, .home-tile__text { transition: none; }
   .home-faq summary::after { transition: none; }
 }
 </style>
