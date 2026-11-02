@@ -13,7 +13,7 @@ describe('dashboard sections', () => {
   it('starts with the cash-flow section open and the others closed', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-section-cashflow]').should('have.attr', 'open');
-    ['grants', 'costs', 'rpi', 'map'].forEach((key) => {
+    ['grants', 'costs', 'rpi', 'map', 'size'].forEach((key) => {
       cy.get(`[data-cy=dashboard-section-${key}]`).should('not.have.attr', 'open');
     });
   });
@@ -30,7 +30,7 @@ describe('dashboard sections', () => {
   it('expands and collapses every section at once', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-sections-toggle]').should('contain', 'Expand all').click();
-    ['cashflow', 'grants', 'costs', 'rpi', 'map'].forEach((key) => {
+    ['cashflow', 'grants', 'costs', 'rpi', 'map', 'size'].forEach((key) => {
       cy.get(`[data-cy=dashboard-section-${key}]`).should('have.attr', 'open');
     });
     cy.get('[data-cy=dashboard-sections-toggle]').should('contain', 'Collapse all').click();

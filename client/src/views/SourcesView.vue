@@ -1,5 +1,6 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { getRuleset } from '../api/client.js';
 import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption, sourceTitle, statedAssumptionText } from './sourcesFormatting.js';
 
@@ -75,22 +76,27 @@ const ruleLabels = {
 
 const tierArrayKeys = new Set(['tiers', 'ehgTiers', 'buyerStampDutyTiers']);
 const omittedRuleKeys = new Set(['appliesTo', 'sources', 'partialMonthTreatment', 'legalFees', 'agentFees']);
-const expandedSectionIds = ref(new Set(['ehg']));
+// Every rule section shows on load. A topic chip filters to its sections (null = no filter: every section).
+const filterChipKey = ref(null);
+// Sections the user collapsed with the chevron or "Collapse all"; every other shown section is open.
+const collapsedSectionIds = ref(new Set());
 const expandedTierKeys = ref(new Set());
 
-const navigationItems = [
-  { id: 'ehg', label: 'EHG' },
-  { id: 'family-grant', label: 'Family Grant' },
-  { id: 'phg', label: 'PHG' },
-  { id: 'eligibility', label: 'Eligibility' },
-  { id: 'cpf', label: 'CPF' },
-  { id: 'loans', label: 'Loans' },
-  { id: 'income-eligibility', label: 'Eligibility (new flat)' },
-  { id: 'costs', label: 'Costs' },
-  { id: 'flat-types', label: 'Flat types' },
-  { id: 'bto-waiting', label: 'BTO waiting' },
+// Rule-topic chips filter to their sections (the two Eligibility sections share one chip); the last two only scroll.
+const ruleChips = [
+  { ids: ['ehg'], label: 'EHG' },
+  { ids: ['family-grant'], label: 'Family Grant' },
+  { ids: ['phg'], label: 'PHG' },
+  { ids: ['eligibility', 'income-eligibility'], label: 'Eligibility' },
+  { ids: ['cpf'], label: 'CPF' },
+  { ids: ['loans'], label: 'Loans' },
+  { ids: ['costs'], label: 'Costs' },
+  { ids: ['flat-types'], label: 'Flat types' },
+  { ids: ['bto-waiting'], label: 'BTO waiting' },
+];
+const linkChips = [
   { id: 'assumptions', label: 'Assumptions' },
-  { id: 'data', label: 'Data' },
+  { id: 'data', label: 'Datasets' },
 ];
 
 function fallbackLabel(path) {
@@ -197,6 +203,12 @@ function sectionKeyFact(id, rules, activeRules) {
     return [standard, plus, prime].every((value) => typeof value === 'number')
       ? `MOP ${standard} / ${plus} / ${prime} years (Standard / Plus / Prime)`
       : 'Classification rules not yet verified';
+  }
+  if (id === 'income-eligibility') {
+    const ceiling = rules?.newFlatIncomeCeiling?.family;
+    return typeof ceiling === 'number'
+      ? `New flat income ceiling (families): ${formatRuleValue('eligibility.newFlatIncomeCeiling.family', ceiling)}`
+      : 'Eligibility rules not yet verified';
   }
   if (id === 'bto-waiting') {
     const threshold = rules?.shorterWaitingTimeThresholdMonths;
@@ -312,22 +324,56 @@ const ruleGroups = computed(() => {
   ].filter(Boolean);
 });
 
-const allSectionsExpanded = computed(() => ruleGroups.value.length > 0
-  && ruleGroups.value.every((section) => expandedSectionIds.value.has(section.id)));
+const chipKey = (chip) => chip.ids[0];
+const activeChip = computed(() => ruleChips.find((chip) => chipKey(chip) === filterChipKey.value) ?? null);
 
-function toggleAllSections() {
-  expandedSectionIds.value = allSectionsExpanded.value
-    ? new Set()
-    : new Set(ruleGroups.value.map((section) => section.id));
+function isChipActive(chip) {
+  return filterChipKey.value === chipKey(chip);
 }
 
+function isSectionOpen(id) {
+  return Boolean(normalizedQuery.value) || !collapsedSectionIds.value.has(id);
+}
+
+function expandSections(ids) {
+  collapsedSectionIds.value = new Set([...collapsedSectionIds.value].filter((id) => !ids.includes(id)));
+}
+
+// Clears the filter, and drops a hash that pointed at the filtered topic so it doesn't linger in the URL.
+function clearFilter() {
+  const chip = activeChip.value;
+  filterChipKey.value = null;
+  const hashId = decodeURIComponent(route.hash.replace(/^#/, '')).replace(/^sources-section-/, '');
+  if (chip && hashId && chip.ids.includes(hashId)) router.replace({ path: route.path, query: route.query, hash: '' });
+}
+
+// Clicking a chip filters to its topic, open; clicking the active chip again shows every section.
+function toggleChip(chip) {
+  if (isChipActive(chip)) {
+    clearFilter();
+    return;
+  }
+  filterChipKey.value = chipKey(chip);
+  expandSections(chip.ids);
+  nextTick(() => scrollToSection(chip.ids[0]));
+}
+
+const allShownOpen = computed(() => shownRuleGroups.value.every((section) => isSectionOpen(section.id)));
+
+// "Expand all" / "Collapse all" acts on the sections shown now.
+function toggleAllSections() {
+  const ids = shownRuleGroups.value.map((section) => section.id);
+  if (allShownOpen.value) collapsedSectionIds.value = new Set([...collapsedSectionIds.value, ...ids]);
+  else expandSections(ids);
+}
+
+// Keeps collapsedSectionIds in step with the chevron (ignored while a search opens every match).
 function syncSectionOpen(id, event) {
-  const isOpen = event.currentTarget.open;
-  if (expandedSectionIds.value.has(id) === isOpen) return;
-  const next = new Set(expandedSectionIds.value);
-  if (isOpen) next.add(id);
-  else next.delete(id);
-  expandedSectionIds.value = next;
+  if (normalizedQuery.value) return;
+  const open = event.currentTarget.open;
+  if (open === !collapsedSectionIds.value.has(id)) return;
+  if (open) expandSections([id]);
+  else collapsedSectionIds.value = new Set([...collapsedSectionIds.value, id]);
 }
 
 function visibleTierRows(table) {
@@ -338,11 +384,29 @@ function isTierExpanded(table) {
   return expandedTierKeys.value.has(table.key);
 }
 
-function toggleTierRows(table) {
+const tierTableEls = new Map();
+
+function setTierTableEl(key, el) {
+  if (el) tierTableEls.set(key, el);
+  else tierTableEls.delete(key);
+}
+
+async function toggleTierRows(table) {
+  const collapsing = expandedTierKeys.value.has(table.key);
   const next = new Set(expandedTierKeys.value);
-  if (next.has(table.key)) next.delete(table.key);
+  if (collapsing) next.delete(table.key);
   else next.add(table.key);
   expandedTierKeys.value = next;
+  if (!collapsing) return;
+
+  // The page gets shorter when the bands fold away: bring the table back unless its top is still on screen.
+  await nextTick();
+  const el = tierTableEls.get(table.key);
+  if (!el) return;
+  const { top } = el.getBoundingClientRect();
+  if (top >= 0 && top < window.innerHeight) return;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
 }
 
 const assumptions = computed(() => [
@@ -351,7 +415,8 @@ const assumptions = computed(() => [
   { title: 'Income averaging', description: 'Monthly income is treated as the 12-month average at assessment.' },
   { title: 'EHG lease pro-rating', description: 'Pro-rating is not applied; actual EHG may be lower when the lease does not cover the youngest buyer to age 95.' },
   { title: 'HDB loan LTV lease pro-rating', description: 'HDB does not publish a formula. We assume LTV falls 2% for each year the lease is short of 95, using the 2019 MOM/CPF examples for CPF usage limits (two data points).' },
-  { title: 'PHG near distance', description: 'Whether your home is near your parents or child is declared by you; no distance is measured.' },
+  { title: 'PHG near distance', description: 'Whether your home is near your parents or child is declared by you. The Dashboard map shows the distance as a guide only and never decides eligibility (D15).' },
+  { title: 'BTO value from nearby towns', description: 'A new BTO flat is valued from near-new resale sales (90+ years left) in its town. When the town has fewer than 5 in the last 12 months, sales from a fixed, hand-picked list of nearby towns are pooled in (e.g. Bishan uses Toa Payoh and Ang Mo Kio; Tengah uses Bukit Batok, Jurong West and Choa Chu Kang). Decision D41.' },
   { title: 'Rules held constant', description: `Current rules (ruleset ${response.value?.version ?? 'not yet verified'}) are held constant in projections.` },
   { title: 'Legal & agent fees', description: 'Estimates; these are not verified policy values.' },
 ]);
@@ -366,6 +431,99 @@ function metadataValue(value) {
   return value ?? 'Not yet verified';
 }
 
+const query = ref('');
+const searchInput = ref(null);
+const normalizedQuery = computed(() => query.value.trim().toLowerCase());
+
+function matches(...parts) {
+  const q = normalizedQuery.value;
+  return parts.some((part) => typeof part === 'string' && part.toLowerCase().includes(q));
+}
+
+// Rule labels, values, notes and section titles; a title match keeps the whole section.
+const visibleRuleGroups = computed(() => {
+  if (!normalizedQuery.value) return ruleGroups.value;
+  return ruleGroups.value.flatMap((section) => {
+    if (matches(section.title)) return [section];
+    const rows = section.rows.filter((row) => matches(row.rule, row.value, row.note));
+    const tierTables = section.tierTables.filter((table) => matches(table.title) || table.rows.some((cells) => matches(...cells)));
+    return rows.length || tierTables.length ? [{ ...section, rows, tierTables }] : [];
+  });
+});
+
+const visibleAssumptions = computed(() => (normalizedQuery.value
+  ? assumptions.value.filter((item) => matches(item.title, item.description))
+  : assumptions.value));
+
+const datasetCards = computed(() => datasets
+  .map((dataset) => ({
+    ...dataset,
+    url: dataset.identifier.startsWith('d_') ? `https://data.gov.sg/datasets/${dataset.identifier}/view` : null,
+  }))
+  .filter((dataset) => !normalizedQuery.value || matches(dataset.name, dataset.provider, dataset.identifier, dataset.licence)));
+
+const noMatches = computed(() => Boolean(normalizedQuery.value)
+  && !visibleRuleGroups.value.length
+  && !visibleAssumptions.value.length
+  && !datasetCards.value.length);
+
+async function clearSearch() {
+  query.value = '';
+  await nextTick();
+  searchInput.value?.focus();
+}
+
+// A search shows every matching section; otherwise every section, or only the active chip's.
+const shownRuleGroups = computed(() => {
+  if (normalizedQuery.value) return visibleRuleGroups.value;
+  const chip = activeChip.value;
+  return chip ? ruleGroups.value.filter((section) => chip.ids.includes(section.id)) : ruleGroups.value;
+});
+
+// Announced to screen readers while searching (the no-match state has its own message).
+const searchStatus = computed(() => {
+  if (!normalizedQuery.value || noMatches.value) return '';
+  const count = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+  return `Showing ${count(visibleRuleGroups.value.length, 'rule section', 'rule sections')}, `
+    + `${count(visibleAssumptions.value.length, 'assumption', 'assumptions')} and `
+    + `${count(datasetCards.value.length, 'dataset', 'datasets')}`;
+});
+
+// Right-align a value column only when every value in it is a plain number (e.g. $9,000, 2.5%, 12 months, age 95).
+const PLAIN_NUMBER = /^(?:[<>≤≥]\s*)?(?:S?\$)?\d[\d,.]*(?:\s*(?:%|months?|years?))?$|^age \d+$/i;
+function isNumericColumn(rows) {
+  return rows.length > 0 && rows.every((row) => !row.note && PLAIN_NUMBER.test(String(row.value).trim()));
+}
+
+function scrollToSection(id) {
+  const target = document.getElementById(`sources-section-${id}`);
+  if (!target) return;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+}
+
+const route = useRoute();
+const router = useRouter();
+
+// /sources#loans (or #sources-section-loans) filters to that topic, open; #assumptions and #data just scroll.
+// Runs on load and when the hash changes from outside; clearing the filter clears its hash, which does nothing here.
+function applyHash() {
+  const id = decodeURIComponent(route.hash.replace(/^#/, '')).replace(/^sources-section-/, '');
+  if (!id) return;
+  const chip = ruleChips.find((item) => item.ids.includes(id));
+  if (chip) {
+    filterChipKey.value = chipKey(chip);
+    expandSections([id]);
+    nextTick(() => scrollToSection(id));
+  } else if (linkChips.some((item) => item.id === id)) {
+    nextTick(() => scrollToSection(id));
+  }
+}
+
+watch(() => route.hash, () => {
+  if (response.value) applyHash();
+});
+
 onMounted(async () => {
   try {
     response.value = await getRuleset();
@@ -375,14 +533,26 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+  if (response.value?.rules) await nextTick(applyHash);
 });
 </script>
 
 <template>
   <section class="sources-page" aria-labelledby="sources-title">
-    <header class="sources-heading">
-      <h1 class="h2 mb-2" id="sources-title" data-cy="sources-title">Data sources and rules</h1>
-      <p class="text-secondary mb-0">Policy values are loaded from the active, versioned ruleset.</p>
+    <header class="sources-hero">
+      <h1 class="h2 mb-2" id="sources-title" data-cy="sources-title">Where every number comes from</h1>
+      <p class="text-secondary mb-4">Every policy value comes from the active, versioned ruleset, with a link to its official source.</p>
+      <input
+        v-if="!loading && !errorMessage"
+        ref="searchInput"
+        v-model="query"
+        type="search"
+        class="form-control form-control-lg rounded-pill sources-search"
+        placeholder="Search rules, e.g. EHG, LTV, stamp duty"
+        aria-label="Search rules"
+        autocomplete="off"
+        data-cy="sources-search-input"
+      >
     </header>
 
     <p v-if="loading" class="sources-state" role="status">Loading ruleset information…</p>
@@ -391,48 +561,70 @@ onMounted(async () => {
     </div>
 
     <template v-else>
-      <section class="sources-section sources-ruleset-card" aria-labelledby="ruleset-info-title">
-        <div class="sources-section__heading">
-          <h2 class="h4 mb-0" id="ruleset-info-title">Ruleset information</h2>
-          <span v-if="response.status === 'TEMPLATE'" class="badge text-bg-warning" data-cy="sources-template-badge">
-            Template / not fully verified
-          </span>
-          <span v-else class="badge sources-verified-badge">
-            <span aria-hidden="true">✓</span> Verified
-          </span>
-        </div>
-        <dl class="sources-metadata" data-cy="sources-ruleset-version">
-          <div><dt>Version</dt><dd>{{ metadataValue(response.version) }}</dd></div>
-          <div><dt>Effective date</dt><dd>{{ metadataValue(response.effectiveDate) }}</dd></div>
-          <div><dt>Verified on</dt><dd>{{ metadataValue(response.verifiedOn) }}</dd></div>
-          <div><dt>Verified by</dt><dd>{{ metadataValue(response.verifiedBy) }}</dd></div>
-        </dl>
-      </section>
-
-      <nav class="sources-quick-nav" aria-label="Jump to Sources sections">
-        <a v-for="item in navigationItems" :key="item.id" :href="`#sources-section-${item.id}`">{{ item.label }}</a>
+      <nav class="sources-chips" aria-label="Rule topics and sections">
+        <button
+          v-for="chip in ruleChips"
+          :key="chip.ids[0]"
+          type="button"
+          class="btn btn-sm rounded-pill sources-chip"
+          :class="isChipActive(chip) ? 'btn-primary' : 'btn-outline-primary'"
+          :aria-pressed="isChipActive(chip)"
+          @click="toggleChip(chip)"
+        >
+          {{ chip.label }}
+        </button>
+        <button
+          v-for="chip in linkChips"
+          :key="chip.id"
+          type="button"
+          class="btn btn-outline-primary btn-sm rounded-pill sources-chip"
+          @click="scrollToSection(chip.id)"
+        >
+          {{ chip.label }}
+        </button>
       </nav>
 
-      <section class="sources-section" aria-labelledby="rules-title">
+      <p class="sources-ruleset-line" data-cy="sources-ruleset-version">
+        Ruleset <span class="visually-hidden">Version: </span>{{ metadataValue(response.version) }}
+        · effective {{ metadataValue(response.effectiveDate) }}
+        ·
+        <span v-if="response.status === 'TEMPLATE'" class="badge text-bg-warning" data-cy="sources-template-badge">
+          Template / not fully verified
+        </span>
+        <span v-else class="sources-verified-badge"><span aria-hidden="true">✓</span> Verified</span>
+        {{ metadataValue(response.verifiedOn) }} by {{ metadataValue(response.verifiedBy) }}
+      </p>
+
+      <p class="visually-hidden" role="status" aria-live="polite" data-cy="sources-search-status">{{ searchStatus }}</p>
+      <div v-if="noMatches" class="sources-no-match" role="status" data-cy="sources-no-match">
+        <p class="mb-3">No rules match "{{ query.trim() }}"</p>
+        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" data-cy="sources-search-clear" @click="clearSearch">Clear</button>
+      </div>
+
+      <section v-if="!normalizedQuery || visibleRuleGroups.length" class="sources-section" aria-labelledby="rules-title">
         <div class="sources-section__heading">
           <h2 class="h4 mb-0" id="rules-title">Rules and sources</h2>
           <button
-            class="btn btn-outline-primary btn-sm"
+            class="btn btn-link btn-sm sources-expand-link"
             type="button"
             data-cy="sources-expand-all"
-            :aria-expanded="allSectionsExpanded"
+            :aria-expanded="allShownOpen"
             @click="toggleAllSections"
           >
-            {{ allSectionsExpanded ? 'Collapse all' : 'Expand all' }}
+            {{ allShownOpen ? 'Collapse all' : 'Expand all' }}
           </button>
         </div>
+        <p v-if="activeChip && !normalizedQuery" class="sources-hint" data-cy="sources-rules-hint">
+          Showing {{ activeChip.label }} only.
+          <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-cy="sources-show-all-topics" @click="clearFilter">Show all topics</button>
+        </p>
         <div data-cy="sources-rules-table" class="sources-rule-cards">
           <details
-            v-for="section in ruleGroups"
+            v-for="section in shownRuleGroups"
             :id="`sources-section-${section.id}`"
             :key="section.id"
             class="sources-rule-card"
-            :open="expandedSectionIds.has(section.id)"
+            :open="isSectionOpen(section.id)"
             @toggle="syncSectionOpen(section.id, $event)"
           >
             <summary class="sources-rule-card__summary">
@@ -448,11 +640,11 @@ onMounted(async () => {
               <div class="table-responsive sources-table-wrap">
                 <table v-if="section.rows.length" class="table table-hover align-middle sources-table w-100">
                   <colgroup><col class="sources-table__rule-column"><col class="sources-table__value-column"></colgroup>
-                  <thead><tr><th scope="col">Rule</th><th scope="col">Value</th></tr></thead>
+                  <thead><tr><th scope="col">Rule</th><th scope="col" :class="{ 'sources-table__numeric': isNumericColumn(section.rows) }">Value</th></tr></thead>
                   <tbody>
                     <tr v-for="row in section.rows" :key="row.rule">
                       <th scope="row" class="sources-table__rule">{{ row.rule }}</th>
-                      <td class="sources-table__value">
+                      <td class="sources-table__value" :class="{ 'sources-table__numeric': isNumericColumn(section.rows) }">
                         {{ row.value }}
                         <small v-if="row.note" class="d-block text-secondary">{{ row.note }}</small>
                       </td>
@@ -460,7 +652,7 @@ onMounted(async () => {
                   </tbody>
                 </table>
                 <template v-for="tierTable in section.tierTables" :key="tierTable.key">
-                  <table class="table table-hover align-middle sources-table sources-table--tiers w-100">
+                  <table :ref="(el) => setTierTableEl(tierTable.key, el)" class="table table-hover align-middle sources-table sources-table--tiers w-100">
                     <caption class="sources-table__caption">{{ tierTable.title }}</caption>
                     <colgroup><col class="sources-table__rule-column"><col class="sources-table__value-column"></colgroup>
                     <thead><tr><th v-for="header in tierTable.headers" :key="header" scope="col">{{ header }}</th></tr></thead>
@@ -504,31 +696,39 @@ onMounted(async () => {
         </div>
       </section>
 
-      <section id="sources-section-assumptions" class="sources-section" aria-labelledby="assumptions-title">
+      <section v-if="visibleAssumptions.length" id="sources-section-assumptions" class="sources-section" aria-labelledby="assumptions-title">
         <h2 class="h4 mb-3" id="assumptions-title">Assumptions</h2>
         <div class="sources-assumptions" data-cy="sources-assumptions">
-          <article v-for="assumption in assumptions" :key="assumption.title" class="sources-assumption-card">
-            <span class="sources-assumption-card__badge">Assumption</span>
-            <h3 class="sources-assumption-card__title">{{ assumption.title }}</h3>
+          <article v-for="assumption in visibleAssumptions" :key="assumption.title" class="sources-assumption-card">
+            <div class="sources-assumption-card__head">
+              <span class="sources-assumption-card__badge">Assumption</span>
+              <h3 class="sources-assumption-card__title">{{ assumption.title }}</h3>
+            </div>
             <p class="sources-assumption-card__description">{{ assumption.description }}</p>
           </article>
         </div>
       </section>
 
-      <section id="sources-section-data" class="sources-section" aria-labelledby="datasets-title" data-cy="sources-datasets">
+      <section v-if="datasetCards.length" id="sources-section-data" class="sources-section" aria-labelledby="datasets-title" data-cy="sources-datasets">
         <h2 class="h4 mb-3" id="datasets-title">Datasets and services</h2>
-        <div class="table-responsive sources-table-wrap">
-          <table class="table align-middle sources-table">
-            <thead><tr><th scope="col">Dataset / service</th><th scope="col">Provider / identifier</th><th scope="col">Licence</th></tr></thead>
-            <tbody>
-              <tr v-for="dataset in datasets" :key="dataset.name">
-                <th scope="row">{{ dataset.name }}</th>
-                <td>{{ dataset.provider }}<span class="d-block text-secondary small">{{ dataset.identifier }}</span></td>
-                <td>{{ dataset.licence }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <table class="sources-dataset-table" role="table">
+          <thead class="visually-hidden" role="rowgroup">
+            <tr role="row"><th scope="col" role="columnheader">Dataset / service</th><th scope="col" role="columnheader">Provider / identifier</th><th scope="col" role="columnheader">Licence</th></tr>
+          </thead>
+          <tbody class="sources-dataset-grid" role="rowgroup">
+            <tr v-for="dataset in datasetCards" :key="dataset.name" class="sources-dataset-card" role="row">
+              <th scope="row" class="sources-dataset-card__name" role="rowheader">{{ dataset.name }}</th>
+              <td class="sources-dataset-card__provider" role="cell">
+                {{ dataset.provider }}
+                <span class="sources-dataset-card__id font-monospace">{{ dataset.identifier }}</span>
+              </td>
+              <td class="sources-dataset-card__licence" role="cell">{{ dataset.licence }}</td>
+              <td v-if="dataset.url" class="sources-dataset-card__link" role="cell">
+                <a :href="dataset.url" target="_blank" rel="noopener noreferrer">View on data.gov.sg ↗</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </section>
     </template>
   </section>
@@ -536,12 +736,51 @@ onMounted(async () => {
 
 <style scoped>
 .sources-page {
+  max-width: 64rem;
+  margin-inline: auto;
   color: var(--text-primary);
 }
 
-.sources-heading {
-  margin-bottom: var(--space-6);
-  max-width: 75ch;
+.sources-hero {
+  margin-bottom: var(--space-4);
+  text-align: center;
+}
+
+.sources-hero p {
+  max-width: 60ch;
+  margin-inline: auto;
+}
+
+.sources-search {
+  width: 100%;
+  max-width: 40rem;
+  margin-inline: auto;
+  padding-inline: var(--space-5);
+}
+
+.sources-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.sources-chip {
+  font-weight: 500;
+}
+
+.sources-ruleset-line {
+  margin-bottom: var(--space-5);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.sources-no-match {
+  padding-block: var(--space-6);
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 .sources-section {
@@ -550,49 +789,29 @@ onMounted(async () => {
   scroll-margin-top: var(--space-6);
 }
 
-.sources-ruleset-card {
-  padding: var(--space-4);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--bg-surface);
-  box-shadow: var(--shadow-sm);
+.sources-section__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.sources-hint {
+  margin: 0 0 var(--space-3);
+  color: var(--text-secondary);
+}
+
+.sources-expand-link {
+  padding-inline: var(--space-2);
+  font-size: 0.875rem;
 }
 
 .sources-verified-badge {
-  background: var(--success-fill);
   color: var(--success);
-}
-
-.sources-quick-nav {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  gap: var(--space-2);
-  margin-inline: calc(-1 * var(--space-3));
-  padding: var(--space-2) var(--space-3);
-  overflow-x: auto;
-  border-block: 1px solid var(--border-subtle);
-  background: var(--bg-surface-raised);
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
-}
-
-.sources-quick-nav a {
-  flex: 0 0 auto;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: 0.875rem;
   font-weight: 600;
-  text-decoration: none;
 }
 
-.sources-quick-nav a:hover {
-  background: var(--accent-fill-3);
-}
-
-.sources-quick-nav a:focus-visible,
+.sources-chip:focus-visible,
 .sources-source-chip:focus-visible,
 .sources-rule-card__summary:focus-visible,
 .sources-tier-toggle:focus-visible {
@@ -709,38 +928,14 @@ onMounted(async () => {
   padding-inline: var(--space-2);
 }
 
-.sources-metadata {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
-  gap: var(--space-4) var(--space-5);
-  margin: 0;
-}
-
-.sources-metadata dt {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.sources-metadata dd {
-  margin: 0.25rem 0 0;
-  overflow-wrap: anywhere;
-}
-
 .sources-assumptions {
   display: grid;
-  max-width: 900px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-  grid-auto-rows: 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: var(--space-4);
 }
 
 .sources-assumption-card {
-  display: flex;
   min-width: 0;
-  height: 100%;
-  flex-direction: column;
-  align-items: flex-start;
   padding: var(--space-4);
   border: 1px solid var(--border-subtle);
   border-left: 4px solid var(--accent-fill-2);
@@ -758,10 +953,17 @@ onMounted(async () => {
   box-shadow: var(--shadow-md);
 }
 
+.sources-assumption-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
 .sources-assumption-card__badge {
   display: inline-flex;
   align-items: center;
-  margin-bottom: var(--space-3);
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-pill);
   background: var(--accent-fill-2);
@@ -771,7 +973,7 @@ onMounted(async () => {
 }
 
 .sources-assumption-card__title {
-  margin: 0 0 var(--space-2);
+  margin: 0;
   color: var(--text-primary);
   font-size: 1rem;
   font-weight: 700;
@@ -782,11 +984,58 @@ onMounted(async () => {
   color: var(--text-secondary);
 }
 
-@media (max-width: 359.98px) {
-  .sources-ruleset-card {
-    padding: var(--space-3);
-  }
+.sources-dataset-table,
+.sources-dataset-table tbody,
+.sources-dataset-table tr,
+.sources-dataset-table th,
+.sources-dataset-table td {
+  display: block;
+}
 
+.sources-dataset-table .sources-dataset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-4);
+}
+
+.sources-dataset-card {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-raised);
+  box-shadow: var(--shadow-sm);
+}
+
+.sources-dataset-card__name {
+  margin-bottom: var(--space-2);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.sources-dataset-card__provider {
+  color: var(--text-primary);
+}
+
+.sources-dataset-card__id {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.sources-dataset-card__licence {
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.sources-dataset-card__link {
+  margin-top: var(--space-3);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 359.98px) {
   .sources-rule-card__summary {
     padding-inline: var(--space-3);
   }
@@ -830,6 +1079,7 @@ onMounted(async () => {
 
 .sources-table--tiers {
   min-width: 32rem;
+  scroll-margin-top: var(--space-6);
 }
 
 .sources-table__rule-column {
@@ -840,7 +1090,7 @@ onMounted(async () => {
   width: 40%;
 }
 
-.sources-table__numeric {
+.sources-table .sources-table__numeric {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -870,6 +1120,7 @@ onMounted(async () => {
 
 .sources-table__value {
   min-width: 14rem;
+  text-align: left;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -877,5 +1128,22 @@ onMounted(async () => {
 .sources-state {
   padding-block: var(--space-5);
   color: var(--text-secondary);
+}
+
+@media (max-width: 575.98px) {
+  .sources-table,
+  .sources-table--tiers {
+    min-width: 0;
+  }
+
+  .sources-table__rule,
+  .sources-table__value {
+    min-width: 0;
+  }
+
+  .sources-table th,
+  .sources-table td {
+    padding: var(--space-3);
+  }
 }
 </style>

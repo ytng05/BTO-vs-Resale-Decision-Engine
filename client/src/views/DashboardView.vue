@@ -22,6 +22,7 @@ import DashboardOverview from '../components/dashboard/DashboardOverview.vue';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
 import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
+import SizePriceTable from '../components/dashboard/SizePriceTable.vue';
 
 const store = useScenarioStore();
 const thisYear = new Date().getFullYear();
@@ -50,6 +51,8 @@ function fromPlan() {
   };
 }
 const whatIf = reactive(fromPlan());
+// The saved plan's values, so the panel can tell how many hidden assumptions have moved.
+const planValues = computed(() => fromPlan());
 
 function setWhatIf(next) {
   // Moving the start year moves a chosen comparison year with it, so the keys never land after it.
@@ -169,7 +172,7 @@ const warnings = computed(() => [
 
 // The detail sections open and close. The chart that explains the result starts open; the rest start closed,
 // each with a one-line takeaway in its header. "Expand all" opens or closes every one.
-const sections = reactive({ cashflow: true, grants: false, costs: false, rpi: false, map: false });
+const sections = reactive({ cashflow: true, grants: false, costs: false, rpi: false, map: false, size: false });
 const allOpen = computed(() => Object.values(sections).every(Boolean));
 function toggleAll() {
   const next = !allOpen.value;
@@ -258,6 +261,7 @@ const warningText = (w) =>
       <div class="row g-4" :aria-busy="updating ? 'true' : 'false'">
         <!-- What-if: after the overview on phones, on the right on large screens -->
         <div class="col-12 col-lg-4 order-lg-last">
+          <div class="dash-sticky">
           <WhatIfPanel
             :model-value="whatIf"
             :horizon-shown="horizon"
@@ -265,9 +269,11 @@ const warningText = (w) =>
             :horizon-max="horizonLimits.max"
             :bto-range="btoRange"
             :resale-median="resaleMedian"
+            :baseline="planValues"
             @update:model-value="setWhatIf"
             @reset="reset"
           />
+          </div>
         </div>
 
         <div class="col-12 col-lg-8 d-flex flex-column gap-4">
@@ -377,6 +383,17 @@ const warningText = (w) =>
             />
           </DashboardSection>
 
+                    <!-- Fetches the flat sizes and prices only once opened (lazy). -->
+          <DashboardSection
+            v-model:open="sections.size"
+            title="Size and price side by side"
+            takeaway="How much flat each path gets for the money: floor area, price and price per square metre."
+            lazy
+            cy="dashboard-section-size"
+          >
+            <SizePriceTable :choice-a="store.choiceA" :choice-b="store.choiceB" :result="result" />
+          </DashboardSection>
+
           <section class="card" aria-labelledby="notes-heading">
             <div class="card-body">
               <h2 id="notes-heading" class="h5">Before you decide</h2>
@@ -384,7 +401,7 @@ const warningText = (w) =>
                 <li class="dash-note" data-cy="dashboard-note-mop">
                   <strong>Minimum Occupation Period:</strong> you cannot sell before
                   {{ monthYear(A?.timeline?.earliestSaleDate) }} (BTO) or {{ monthYear(B?.timeline?.earliestSaleDate) }} (resale).
-                  <RouterLink to="/sources">See the current rule</RouterLink>.
+                  <RouterLink to="/sources#flat-types">See the current rule</RouterLink>.
                 </li>
                 <li class="dash-note" data-cy="dashboard-note-eip">
                   <strong>Ethnic Integration Policy:</strong> some resale blocks may not be open to your household; check a block before you commit.
@@ -400,6 +417,18 @@ const warningText = (w) =>
 </template>
 
 <style scoped>
+/* On large screens the What-if panel follows you down the page, so it is never stranded beside empty space.
+   It scrolls inside itself if the screen is shorter than the panel. */
+@media (min-width: 992px) {
+  .dash-sticky {
+    position: sticky;
+    top: 5rem;
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    padding: 4px;
+    margin: -4px;
+  }
+}
 .dash-net {
   font-family: var(--font-heading);
   font-weight: 500;

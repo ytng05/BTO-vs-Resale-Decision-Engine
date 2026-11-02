@@ -19,9 +19,9 @@ onMounted(async () => {
     <h1 class="h2" data-cy="home-title">BTO or resale: which leaves you better off?</h1>
     <p class="text-secondary" data-cy="home-lead">
       You've got a BTO ballot coming up and a resale listing you keep looking at. Tell us about your situation and
-      we'll compare both, then show where the answer would flip. No sign-up needed to see your result.
+      we'll compare both, then show where the answer would flip. No sign-up needed: you can plan without an account.
     </p>
-    <router-link class="btn btn-primary" to="/plan" data-cy="home-start-button">Start planning</router-link>
+      <router-link class="btn btn-primary" to="/login?redirect=/plan" data-cy="home-start-button">Start planning</router-link>
     <div class="mt-3">
       <RulesetBadge v-if="ruleset" v-bind="ruleset" />
     </div>
