@@ -57,8 +57,8 @@ Separate pages: Sources (`/sources`, always in the nav), My scenarios (`/scenari
 | Periwinkle | `$color-periwinkle` | `#E9ECF6` | The one feature card on a screen, hover, info fill |
 | Blush | `$color-blush` | `#FBD5E5` | Soft pink fills: selected chips, step halo, version badge |
 | Pink | `$color-pink` | `#F5A3C7` | Accent fill, and resale in charts |
-| Pink deep | `$color-pink-deep` | `#F08AB6` | Edge of the accent disc |
-| Berry | `$color-berry` | `#B23A78` | The only pink allowed as text or a thin mark |
+| Pink deep | `$color-pink-deep` / `--color-pink-deep` | `#F08AB6` | Edge of the accent disc |
+| Berry | `$color-berry` / `--color-berry` | `#B23A78` | The only pink allowed as text or a thin mark |
 | Ink | `$color-ink` | `#1D1D24` | Primary text, primary buttons, BTO in charts |
 | Slate | `$color-slate` | `#5F6373` | Secondary text and labels |
 
@@ -375,10 +375,12 @@ inline — never a single generic message covering several failed items at once.
 
 ### Illustrations
 
-- Decorative SVG only (`HeroScene` on the home page): fills use the Calm palette through CSS custom
+- Decorative SVG only (`CrossingScene` on the home page, after the Calm home board; `HeroScene` stays as the
+  design-system reference): fills use the Calm palette through CSS custom
   properties (a fallback hex inside `var()` is allowed so the scene still renders if a token is missing); one
   `role="img"` and `aria-label` on the whole scene, nothing focusable.
-- Ambient looping motion is allowed here as an exception to the §9 durations, using `transform` only. It
+- Ambient looping motion is allowed here as an exception to the §9 durations, using `transform`, `opacity` and
+  palette fills only. It
   stops under `prefers-reduced-motion: reduce`, pauses when off-screen or in a background tab, and never
   carries information. `data-cy="hero-scene"`.
 

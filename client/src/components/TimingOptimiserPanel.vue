@@ -11,6 +11,8 @@ import { useScenarioStore } from '../stores/scenario.js';
 import { formatMoney } from '../utils/format.js';
 import { skipReasonText, timingHeadline, timingRows } from '../utils/timingFormat.js';
 
+// 'loaded' carries the result up, so Results can name the best year in the section's one-line takeaway.
+const emit = defineEmits(['loaded']);
 const store = useScenarioStore();
 const result = ref(null);
 const error = ref(null);
@@ -28,6 +30,7 @@ async function load() {
   error.value = null;
   try {
     result.value = await timing(store, 'choiceA');
+    emit('loaded', result.value);
   } catch (e) {
     error.value =
       e?.response?.data?.error?.message || 'The timing search could not be loaded. Check your connection and try again.';
