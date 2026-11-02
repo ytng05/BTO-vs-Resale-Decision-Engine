@@ -84,4 +84,14 @@ describe('buyers on the About you step', () => {
     cy.get('[data-cy=situation-buyer-2-age-input]').should('have.value', '29');
     citizenship(2).should('have.value', 'PR');
   });
+
+  it('shows a six-figure CPF balance in full on a phone', () => {
+    cy.viewport(390, 844);
+    cy.get('[data-cy=situation-buyer-1-cpf-input]').type('190000');
+    // The text fits its box: nothing is scrolled out of view.
+    cy.get('[data-cy=situation-buyer-1-cpf-input]').should(($el) => {
+      expect($el[0].scrollWidth, 'text width').to.be.at.most($el[0].clientWidth);
+    });
+  });
 });
+

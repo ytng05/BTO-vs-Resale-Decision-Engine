@@ -7,6 +7,7 @@
  *
  *   timing optimiser      → varies choice.applicationYear
  *   break-even solver     → varies assumptions, solves for equality (bisection)
+ *   BTO price break-even  → varies choice.purchasePriceCents, solves for equality (bisection, D40)
  *   what-if sliders       → vary assumptions, renovation and the BTO price, one call per change
  *   backtest (later)      → varies assumptions (historical growth rates)
  *   (strategy recommender: dropped to future work, per the prof's feedback)
@@ -643,6 +644,19 @@ const WARNINGS = Object.freeze({
  * @property {{ aCents: number, bCents: number }} totalGrants - each path's totalGrantsCents, for information
  *
  * @throws {RangeError} when the two outcomes have different horizonYears
+ */
+
+/**
+ * D40: the BTO price at which the verdict flips (solvers/btoPriceBreakEven.js). Path A is the BTO path; every
+ * other input is the user's own. Prices are today's (D31), like choice.purchasePriceCents and HDB's range.
+ *
+ * @typedef {Object} BtoPriceBreakEven
+ * @property {number|null} priceCents         - highest whole-dollar BTO price at which A's net position is at least
+ *                                              B's; null when one path is ahead across the whole bracket
+ * @property {'A'|'B'|'TIE'} atHdbMin         - which path is ahead at HDB's minimum price
+ * @property {'A'|'B'|'TIE'} atHdbMax         - which path is ahead at HDB's maximum price
+ * @property {{ min: number, max: number }} hdbRangeCents  - HDB's range for the launch and flat type
+ * @property {{ min: number, max: number }} bracketCents   - the prices searched (half HDB's min to 1.5 × its max)
  */
 
 // ---------------------------------------------------------------------------

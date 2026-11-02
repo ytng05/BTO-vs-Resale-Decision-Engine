@@ -225,7 +225,7 @@ const LIVING = [
 
       <!-- BTO: which launch. It fixes the classification and which flat types there are. -->
       <fieldset v-if="isBto && choice.town && launchOptions.length" class="col-12" :data-cy="`${prefix}-project`">
-        <legend class="form-label fs-6">Which launch?</legend>
+        <legend class="form-label fs-6">Which launch should we estimate from?</legend>
         <div class="chip-group">
           <label v-for="p in launchOptions" :key="p.id" class="chip" :data-cy="`${prefix}-project-${p.id}`">
             <input
@@ -239,7 +239,9 @@ const LIVING = [
             <span class="chip__face">{{ p.name }} · {{ monthYear(p.launch) }} · {{ labelOf(CLASSIFICATIONS, p.classification) }}</span>
           </label>
         </div>
-        <div class="form-text">
+        <div class="form-text" :data-cy="`${prefix}-project-help`">
+          <!-- D40: these launches have closed; one stands in for the launch the user will apply to. -->
+          These launches have closed. We use one as an estimate of the price and wait for your own application.
           <template v-if="activeProject">{{ activeProject.name }}: {{ keysIn(activeProject.waitMonths) }} after you apply. </template>
           Plus and Prime flats have a longer minimum occupation period and a subsidy clawback when sold.
         </div>
@@ -268,9 +270,10 @@ const LIVING = [
 
       <!-- BTO: the price, as HDB publishes it: a range for the launch and flat type (D26) -->
       <p v-if="isBto && activeFlat" class="col-12 mb-0 small" :data-cy="`${prefix}-price-basis`">
-        HDB's range for a {{ labelOf(FLAT_TYPES, choice.flatType).toLowerCase() }} at {{ activeProject.name }} is
-        {{ formatMoney(activeFlat.priceMinCents / 100) }} to {{ formatMoney(activeFlat.priceMaxCents / 100) }}; the actual price
-        depends on the unit you pick. We use the middle, {{ formatMoney(midpointCents / 100) }}. You can change it on the dashboard.
+        HDB's range for a {{ labelOf(FLAT_TYPES, choice.flatType).toLowerCase() }} at {{ activeProject.name }} ({{ monthYear(activeProject.launch) }}) was
+        {{ formatMoney(activeFlat.priceMinCents / 100) }} to {{ formatMoney(activeFlat.priceMaxCents / 100) }}; your own price
+        depends on the launch and the unit you pick. We use the middle, {{ formatMoney(midpointCents / 100) }}, and the results say at what
+        price the answer would change.
       </p>
 
       <!-- Resale: remaining lease -->
