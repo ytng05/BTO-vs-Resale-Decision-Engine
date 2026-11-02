@@ -4,6 +4,7 @@ import { J3, beat, fillPlan } from './personas.js';
 describe('Journey 3: move-in deadline, "when should we apply?"', () => {
   it('ranks the application years, names the best one and says which years miss the deadline', () => {
     fillPlan(J3);
+    cy.get('[data-cy=results-section-timing] > summary').click(); // collapsed by default
     cy.get('[data-cy=results-timing-card]').scrollIntoView().should('be.visible');
     cy.get('[data-cy=results-timing-loading]', { timeout: 60000 }).should('not.exist');
     cy.get('[data-cy=results-timing-headline]').should('be.visible');
