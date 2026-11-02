@@ -13,8 +13,9 @@ function reply(status, body) {
 function fakeOneMap({ expiry = 2_000_000_000, rejectFirstSearch = false } = {}) {
   const calls = { token: 0, search: [] };
   const places = {
-    '460123': { LATITUDE: '1.3245', LONGITUDE: '103.9300', ADDRESS: '123 BEDOK NORTH ST 2', POSTAL: '460123' },
-    '529510': { LATITUDE: '1.3526', LONGITUDE: '103.9447', ADDRESS: '510 TAMPINES CENTRAL 1', POSTAL: '529510' },
+    '460123': { LATITUDE: '1.3245', LONGITUDE: '103.9300', ADDRESS: '123 BEDOK NORTH ST 2', POSTAL: '460123', BLK_NO: '123', ROAD_NAME: 'BEDOK NORTH STREET 2' },
+    // A building, not a block: OneMap sends 'NIL' for the block number.
+    '529510': { LATITUDE: '1.3526', LONGITUDE: '103.9447', ADDRESS: '510 TAMPINES CENTRAL 1', POSTAL: '529510', BLK_NO: 'NIL', ROAD_NAME: 'TAMPINES CENTRAL 1' },
   };
   let rejected = !rejectFirstSearch;
   const fetchImpl = async (url, init) => {
@@ -51,7 +52,8 @@ describe('OneMap client', () => {
     const out = await om.locateAndMeasure('460123', '529510');
     expect(calls.token).toBe(1);
     expect(calls.search.every((s) => s.auth === 'tok1')).toBe(true);
-    expect(out.from).toEqual({ lat: 1.3245, lng: 103.93, address: '123 BEDOK NORTH ST 2', postal: '460123' });
+    expect(out.from).toEqual({ lat: 1.3245, lng: 103.93, address: '123 BEDOK NORTH ST 2', postal: '460123', block: '123', road: 'BEDOK NORTH STREET 2' });
+    expect(out.to.block).toBe(''); // 'NIL' (no block number) comes back empty, for the resale-flat lookup
     expect(out.km).toBeGreaterThan(3);
     expect(out.km).toBeLessThan(4);
   });

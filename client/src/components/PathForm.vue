@@ -149,9 +149,8 @@ watch(() => choice.value.flatType, () => { if (isBto.value) settlePrice(); });
 // A different launch has a different range: start again from its midpoint.
 watch(() => choice.value.btoProjectId, (now, before) => { if (isBto.value && before !== undefined && now !== before) choice.value.btoPrice = null; });
 
-// ---- Resale: the median for the town, flat type and lease band, beside the optional asking price (D39) ----
 // ---- Resale: find the listing by postal code or address (GET /api/data/resale-flat) ----
-// The search box, its loading line and its messages. What gets filled in is applyFlat's job (seat 1).
+// The search box, its loading line and its messages; applyFlat fills the form from what was found.
 const flatQuery = ref('');
 const flatSearching = ref(false);
 const flatError = ref(null);
@@ -165,13 +164,22 @@ let latestFlatSearch = 0;
  * @returns {string[]}
  */
 function applyFlat(flat) {
-  // TODO (Cadence):
-  // 1. If TOWNS (planOptions) has flat.town: choice.value.town = flat.town; filled.push('town').
-  // 2. If flat.leaseBand is one of LEASE_BANDS' values: choice.value.leaseBand = flat.leaseBand; filled.push('remaining lease').
-  // 3. Flat type: only if flat.flatTypes has exactly one of 3/4/5 ROOM (D27), set choice.value.flatType and
-  //    filled.push('flat type'). A block usually has several sizes; the user knows which one the listing is.
-  // 4. Leave everything else alone (asking price, parents). Return filled.
-  return [];
+  const filled = [];
+  if (TOWNS.some((t) => t.value === flat.town)) {
+    choice.value.town = flat.town;
+    filled.push('town');
+  }
+  if (flat.leaseBand && LEASE_BANDS.some((b) => b.value === flat.leaseBand)) {
+    choice.value.leaseBand = flat.leaseBand;
+    filled.push('remaining lease');
+  }
+  // Only when the block has sold just one of the sizes we model (D27); otherwise the user knows which it is.
+  const sizes = (flat.flatTypes ?? []).filter((t) => FLAT_TYPES.some((f) => f.value === t));
+  if (sizes.length === 1) {
+    choice.value.flatType = sizes[0];
+    filled.push('flat type');
+  }
+  return filled;
 }
 
 async function searchFlat() {
@@ -195,6 +203,7 @@ async function searchFlat() {
 }
 const filledText = (filled) => (filled.length ? `We've filled in the ${new Intl.ListFormat('en', { type: 'conjunction' }).format(filled)}: change them below if they're wrong.` : 'Check the town and remaining lease below.');
 
+// ---- Resale: the median for the town, flat type and lease band, beside the optional asking price (D39) ----
 const median = ref(null); // GET /api/data/resale-price summary, or null
 let latestMedian = 0;
 async function loadMedian() {

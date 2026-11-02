@@ -40,13 +40,13 @@ describe('resale flat search', () => {
     cy.get('[data-cy=pathb-flat-search-error]').should('contain', "isn't an HDB block");
   });
 
-  // Un-skip once seat 1 has written applyFlat (PathForm.vue).
-  it.skip('fills in the town and remaining lease from the block, and leaves the flat type to the user', () => {
+  it('fills in the town and remaining lease from the block, and leaves the flat type to the user', () => {
     toResaleStep();
     cy.get('[data-cy=pathb-flat-search-input]').type('520123{enter}');
     cy.get('[data-cy=pathb-town-select]').should('have.value', 'TAMPINES');
     cy.get('[data-cy=pathb-lease-band-60-69-input]').should('be.checked');
-    cy.get('[data-cy=pathb-flat-search-found]').should('contain', 'filled in the town and remaining lease');
-    cy.get('[data-cy^=pathb-flat-type-][data-cy$=-input]:checked').should('have.length', 0); // Simei block has 3- and 4-room
+    cy.get('[data-cy=pathb-flat-search-found]').should('contain', 'filled in the town and remaining lease').and('not.contain', 'flat type');
+    // The mock block sold 3- and 4-room flats, so the flat type stays as it was (4-room, from the BTO step).
+    cy.get('[data-cy=pathb-flat-type-4-room-input]').should('be.checked');
   });
 });

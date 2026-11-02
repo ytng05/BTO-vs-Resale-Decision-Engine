@@ -4,9 +4,8 @@
 // remaining-lease band, which the user can still change. The lookup never prices the flat: the median is still
 // GET /api/data/resale-price.
 //
-// SEAT 1 (Cadence) writes the three functions below (course rule: core logic is ours). Claude wrote the
-// scaffolding around them: this file's contract, the route, the client, the mock, the UI and the tests.
-// eslint-disable-next-line no-unused-vars -- DATASETS is for findResaleFlat's step 3 (seat 1)
+// Seat 1 (Cadence) wrote the three functions below and STREET_ABBREVIATIONS. Claude wrote the scaffolding around
+// them: this file's contract, the route, the client, the mock, the UI and the tests. See docs/AI_USAGE_LOG.md.
 import { DATASETS, fetchAllRecords } from './client.js';
 import { geocode } from '../onemap/client.js';
 
@@ -24,6 +23,16 @@ export class FlatLookupError extends Error {
   }
 }
 
+// OneMap's full words -> HDB's abbreviations. Each checked against every street_name in the resale dataset
+// (2 Nov 2026, 580 streets): the full word never appears there and the abbreviation does.
+export const STREET_ABBREVIATIONS = {
+  STREET: 'ST', AVENUE: 'AVE', ROAD: 'RD', DRIVE: 'DR', CRESCENT: 'CRES', CENTRAL: 'CTRL', NORTH: 'NTH', SOUTH: 'STH',
+  CLOSE: 'CL', PLACE: 'PL', LORONG: 'LOR', BUKIT: 'BT', JALAN: 'JLN', UPPER: 'UPP', TERRACE: 'TER', HEIGHTS: 'HTS',
+  GARDENS: 'GDNS', COMMONWEALTH: "C'WEALTH", KAMPONG: 'KG', PARK: 'PK', MARKET: 'MKT', TANJONG: 'TG',
+};
+// Whole words only: ROADSIDE keeps its ROAD.
+const STREET_WORD = new RegExp(`\\b(?:${Object.keys(STREET_ABBREVIATIONS).join('|')})\\b`, 'g');
+
 /**
  * OneMap's road name -> the street_name spelling in HDB's resale dataset, which abbreviates:
  * 'TAMPINES STREET 11' -> 'TAMPINES ST 11', 'ANG MO KIO AVENUE 10' -> 'ANG MO KIO AVE 10'.
@@ -31,14 +40,8 @@ export class FlatLookupError extends Error {
  * @returns {string}
  */
 export function normaliseStreet(roadName) {
-  // TODO (Cadence):
-  // 1. Upper-case and trim; collapse repeated spaces.
-  // 2. Replace whole words only (\b...\b), using HDB's abbreviations, e.g. STREET->ST, AVENUE->AVE, ROAD->RD,
-  //    DRIVE->DR, CRESCENT->CRES, CENTRAL->CTRL, NORTH->NTH, SOUTH->STH, CLOSE->CL, PLACE->PL, LORONG->LOR,
-  //    BUKIT->BT, JALAN->JLN, UPPER->UPP, TERRACE->TER, HEIGHTS->HTS, GARDENS->GDNS, COMMONWEALTH->C'WEALTH,
-  //    KAMPONG->KG, PARK->PK. Check each against the dataset (a q= search on data.gov.sg) before adding it.
-  // 3. Return the result. Leave words not in the list as they are.
-  throw new Error('normaliseStreet: not written yet (seat 1)');
+  const road = String(roadName ?? '').toUpperCase().trim().replace(/\s+/g, ' ');
+  return road.replace(STREET_WORD, (word) => STREET_ABBREVIATIONS[word]);
 }
 
 /**
@@ -48,11 +51,10 @@ export function normaliseStreet(roadName) {
  * @returns {string|null} '60-69' etc., or null if the remaining lease is outside the bands offered
  */
 export function leaseBandFor(leaseCommenceYear, asOfYear) {
-  // TODO (Cadence):
-  // 1. remaining = LEASE_YEARS - (asOfYear - leaseCommenceYear)   (whole years; the band is only a guide)
-  // 2. lower = Math.floor(remaining / 10) * 10;  band = `${lower}-${lower + 9}`
-  // 3. Return the band if LEASE_BANDS includes it, else null (e.g. under 50 years left).
-  throw new Error('leaseBandFor: not written yet (seat 1)');
+  const remaining = LEASE_YEARS - (asOfYear - leaseCommenceYear);
+  const lower = Math.floor(remaining / 10) * 10;
+  const band = `${lower}-${lower + 9}`;
+  return LEASE_BANDS.includes(band) ? band : null;
 }
 
 /**
@@ -65,20 +67,42 @@ export function leaseBandFor(leaseCommenceYear, asOfYear) {
  * @throws {FlatLookupError} NOT_FOUND when OneMap finds nothing; NOT_HDB when the block has no HDB resale records
  */
 export async function findResaleFlat(query, { locate = geocode, fetchRecords = fetchAllRecords, asOf = new Date() } = {}) {
-  // TODO (Cadence):
-  // 1. place = await locate(query). OneMap's geocode returns { lat, lng, address, postal } today: add
-  //    block: hit.BLK_NO and road: hit.ROAD_NAME to `place` in services/onemap/client.js (createOneMapClient's
-  //    geocode). If OneMap throws "No location found", throw new FlatLookupError(<message>, 'NOT_FOUND').
-  //    If place.block or place.road is empty (a road or building, not a block), throw NOT_HDB.
-  // 2. street = normaliseStreet(place.road)
-  // 3. records = await fetchRecords({ datasetId: DATASETS.resaleTransactions,
-  //      filters: { block: place.block, street_name: street }, sort: 'month desc', maxRecords: 200 })
-  //    Match on block AND street, not town: the same block number exists on several streets in a town.
-  // 4. No records -> throw new FlatLookupError(<message>, 'NOT_HDB') (private condo, new block not yet resold, or a
-  //    spelling normaliseStreet doesn't cover yet).
-  // 5. From records[0] (the latest sale): town, lease_commence_date (a string: Number() it), month.
-  //    flatTypes = the distinct flat_type values, sorted.
-  // 6. remainingLeaseYears = LEASE_YEARS - (asOf.getFullYear() - leaseCommenceYear); leaseBand = leaseBandFor(...)
-  // 7. Return the object in the @returns above (address and postal from OneMap; block, street, town from HDB).
-  throw new Error('findResaleFlat: not written yet (seat 1)');
+  let place;
+  try {
+    place = await locate(query);
+  } catch (e) {
+    if (/no location found/i.test(e?.message ?? '')) {
+      throw new FlatLookupError('We could not find that postal code or address. Check it, or pick the town and lease below.', 'NOT_FOUND');
+    }
+    throw e; // OneMap down or login failed: the route reports it as an upstream error
+  }
+  if (!place?.block || !place?.road) throw notHdb();
+
+  const street = normaliseStreet(place.road);
+  const records = await fetchRecords({
+    datasetId: DATASETS.resaleTransactions,
+    filters: { block: place.block, street_name: street },
+    sort: 'month desc',
+    maxRecords: 200,
+  });
+  if (!records?.length) throw notHdb();
+
+  const latest = records[0];
+  const leaseCommenceYear = Number(latest.lease_commence_date);
+  const remainingLeaseYears = LEASE_YEARS - (asOf.getFullYear() - leaseCommenceYear);
+  return {
+    address: place.address,
+    postal: place.postal ?? null,
+    block: place.block,
+    street,
+    town: latest.town,
+    leaseCommenceYear,
+    remainingLeaseYears,
+    leaseBand: leaseBandFor(leaseCommenceYear, asOf.getFullYear()),
+    flatTypes: [...new Set(records.map((r) => r.flat_type))].sort(),
+    lastSaleMonth: latest.month,
+  };
 }
+
+// A condo, a building with no block number, a block never resold, or a street spelling not covered yet.
+const notHdb = () => new FlatLookupError("That address isn't an HDB block with resale sales. Pick the town and lease by hand.", 'NOT_HDB');

@@ -88,7 +88,7 @@ export function createOneMapClient({
   }
 
   /**
-   * Postal code (or address text) -> { lat, lng, address, postal }.
+   * Postal code (or address text) -> { lat, lng, address, postal, block, road }.
    * Throws OneMapError if nothing is found.
    */
   async function geocode(query) {
@@ -115,7 +115,9 @@ export function createOneMapClient({
     const lng = Number(hit?.LONGITUDE);
     if (!hit || !Number.isFinite(lat) || !Number.isFinite(lng)) throw new OneMapError(`No location found for "${q}"`);
 
-    const place = { lat, lng, address: hit.ADDRESS ?? q, postal: hit.POSTAL ?? null };
+    // block and road feed the resale-flat lookup; OneMap sends 'NIL' when a hit is a building or road, not a block.
+    const part = (v) => (v && v !== 'NIL' ? String(v) : '');
+    const place = { lat, lng, address: hit.ADDRESS ?? q, postal: hit.POSTAL ?? null, block: part(hit.BLK_NO), road: part(hit.ROAD_NAME) };
     geocodeCache.set(q, place);
     return place;
   }
