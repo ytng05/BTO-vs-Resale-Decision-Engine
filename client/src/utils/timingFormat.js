@@ -43,7 +43,7 @@ export function timingHeadline(result) {
     return 'None of the years checked work with your cash and move-in deadline. Try a later move-in year or more cash savings.';
   }
   const by = result.horizonYear ? ` by ${result.horizonYear}` : '';
-  return `Of the years checked, applying in ${best.year} ends with the highest net financial position${by}: ${formatMoney(
+  return `Of the years checked, applying in ${best.year} ends with the highest net position${by}: ${formatMoney(
     best.outcome.netPositionCents / 100,
   )}.`;
 }

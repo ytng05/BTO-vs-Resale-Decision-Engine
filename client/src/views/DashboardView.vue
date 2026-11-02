@@ -289,7 +289,7 @@ const warningText = (w) =>
               <div class="card h-100" :class="`dash-card--${p.key}`" :data-cy="`dashboard-summary-${p.key}`">
                 <div class="card-body">
                   <h2 class="h5 mb-1"><span class="dash-dot" :class="`dash-dot--${p.key}`" aria-hidden="true"></span>{{ p.title }}</h2>
-                  <p class="text-secondary small mb-0">Net financial position in {{ horizon }}</p>
+                  <p class="text-secondary small mb-0">What you'd own outright in {{ horizon }} (<Term id="net-position">net position</Term>)</p>
                   <p class="dash-net text-numeric mb-3" :data-cy="`dashboard-summary-${p.key}-net`">{{ formatMoney(dollars(p.o.netPositionCents)) }}</p>
 
                   <p v-if="p.o.affordability" class="mb-4" :data-cy="`dashboard-summary-${p.key}-affordability`">

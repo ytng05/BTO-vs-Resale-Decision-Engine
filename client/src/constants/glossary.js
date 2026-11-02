@@ -46,6 +46,11 @@ export const GLOSSARY = [
     section: 'loans',
   },
   {
+    id: 'asking-price',
+    term: 'Asking price',
+    definition: "The price the seller wants for the resale flat, from the listing or your agent. It's optional: leave it blank and we use the median of recent sales of similar flats. Any part above the valuation has to be paid in cash.",
+  },
+  {
     id: 'cov',
     term: 'Cash over valuation (COV)',
     definition: 'The part of a resale price above the valuation. It must be paid in cash: not from CPF and not with the loan.',

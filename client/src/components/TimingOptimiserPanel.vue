@@ -108,7 +108,7 @@ onMounted(load);
         </ul>
 
         <p class="text-caption mb-0">
-          Net financial position after the horizon year, under your assumptions. This is not a prediction of prices.
+          Net position in the comparison year, under your assumptions. This is not a prediction of prices.
           <span v-if="result.mock" data-cy="results-timing-mock-notice">Showing mock data.</span>
         </p>
       </template>

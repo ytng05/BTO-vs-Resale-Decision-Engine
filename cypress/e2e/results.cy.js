@@ -13,7 +13,7 @@ describe('results page', () => {
   it('leads with the break-even sentence and shows the ruleset version', () => {
     completePlan();
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
-    cy.get('[data-cy=results-gap-sentence]').should('contain', 'net financial position');
+    cy.get('[data-cy=results-gap-sentence]').should('contain', 'net position');
     cy.get('[data-cy=results-ruleset-version]').should('contain', 'Ruleset');
   });
 
@@ -122,7 +122,8 @@ describe('results page', () => {
     cy.get('[data-cy=patha-flat-type-5-room]').click(); // Ping Yi Court offers 4- and 5-room
     cy.get('[data-cy=patha-flat-type-3-room]').should('not.exist');
     cy.get('[data-cy=patha-price-basis]')
-      .should('contain', 'S$715,000 to S$857,000').and('contain', 'the middle, S$786,000');
+      .should('contain', 'S$715,000 to').and('contain', 'S$857,000');
+    cy.get('[data-cy=patha-price-estimate]').should('have.text', 'S$786,000'); // the middle of the range
     // A Plus launch sets the classification with it.
     cy.get('[data-cy=patha-town-select]').select('TAMPINES');
     cy.get('[data-cy=patha-project-tampines-nova]').should('contain', 'Plus').click();

@@ -60,11 +60,11 @@ describe('timingRows', () => {
 });
 
 describe('timingHeadline', () => {
-  it('names the best year, the horizon and the net financial position (never "profit")', () => {
+  it('names the best year, the horizon and the net position (never "profit")', () => {
     const text = timingHeadline(RESULT);
     expect(text).toContain('2029');
     expect(text).toContain('by 2040');
-    expect(text).toContain('net financial position');
+    expect(text).toContain('net position');
     expect(text).toContain('164,000');
     expect(text.toLowerCase()).not.toContain('profit');
   });
