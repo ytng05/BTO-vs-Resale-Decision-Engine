@@ -1,9 +1,10 @@
 <script setup>
-// Log in / register. One view, toggled between the two modes, since they share the same fields
-// (email, password) plus `name` on register. Wired to the auth store (stores/auth.js), which talks
-// to POST /api/auth/login and /api/auth/register — see docs/API_CONTRACT.md for the draft shape.
-// data-cy names follow docs/CONVENTIONS.md's examples (login-email-input, login-submit-button).
-import { computed, ref } from 'vue';
+// Log in / create an account, in two steps inside one card: (1) "Log in", "Create account" or "Plan without an
+// account" (which goes straight on), (2) the form for that choice: email and password to log in; name, email and
+// password to create an account.
+// Wired to the auth store (stores/auth.js), which talks to POST /api/auth/login and /api/auth/register
+// (docs/API_CONTRACT.md). Home's "Start planning" comes here with ?redirect=/plan; after logging in the user goes there.
+import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth.js';
 
@@ -11,139 +12,405 @@ const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
-const mode = ref('login'); // 'login' | 'register'
+// Which step to show first: the navbar's "Log in" link (/login?mode=login) goes straight to the log-in form;
+// Home's "Start planning" shows the three choices.
+function firstStep() {
+  if (route.query.mode === 'login') {
+    return 'login';
+  }
+  return 'choose';
+}
+
+const step = ref(firstStep()); // 'choose' | 'login' | 'register'
+
 const name = ref('');
 const email = ref('');
 const password = ref('');
 const attempted = ref(false);
 
-const isRegister = computed(() => mode.value === 'register');
+// The three options: an icon, a short title, and the words in the bubble shown on hover or keyboard focus.
+const choices = [
+  { id: 'login', icon: '/icons/login.png', title: 'Log in', hoverText: 'Log in to see your saved scenarios.' },
+  { id: 'register', icon: '/icons/createaccount.png', title: 'Create account', hoverText: 'Create a free account to save and compare your plans.' },
+  { id: 'guest', icon: '/icons/arrow.png', title: 'Plan without an account', hoverText: "Your plan won't be saved. Try anyway!" },
+];
 
-// Client-side checks only (filled in, email has an @, password length) — the server is the
-// source of truth for "email already registered" / "email or password incorrect" (shown via
-// auth.error after a failed submit, not here).
-const fieldErrors = computed(() => {
+// True when the user picked "Create account".
+const isRegister = computed(function () {
+  return step.value === 'register';
+});
+
+// Where to go afterwards: the ?redirect= in the address (Home sends /plan), else the plan.
+// Only a path on this site is accepted (one "/" at the start), never "//other-site.com", so a link to this page
+// can't send people to another website after they log in.
+function getRedirect() {
+  const target = route.query.redirect;
+  if (typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') && !target.startsWith('/\\')) {
+    return target;
+  }
+  return '/plan';
+}
+
+// The words that change between "log in" and "create an account".
+const formTitle = computed(function () {
+  if (isRegister.value) {
+    return 'Create your account';
+  }
+  return 'Welcome back';
+});
+const formIntro = computed(function () {
+  if (isRegister.value) {
+    return 'Just your name, email and a password.';
+  }
+  return 'Log in with your email and password.';
+});
+const submitLabel = computed(function () {
+  if (auth.pending) {
+    return 'Please wait…';
+  }
+  if (isRegister.value) {
+    return 'Create account';
+  }
+  return 'Log in';
+});
+const passwordAutocomplete = computed(function () {
+  if (isRegister.value) {
+    return 'new-password';
+  }
+  return 'current-password';
+});
+
+// Already logged in: nothing to do here, go straight on.
+onMounted(function () {
+  if (auth.isLoggedIn) {
+    router.replace(getRedirect());
+  }
+});
+
+// Client-side checks only (filled in, email has an @, password length). The server is the source of truth for
+// "email already registered" / "email or password incorrect", shown via auth.error after a failed submit.
+const fieldErrors = computed(function () {
   const errors = {};
-  if (isRegister.value && !name.value.trim()) errors.name = 'Enter your name.';
-  if (!email.value.trim()) errors.email = 'Enter your email.';
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) errors.email = 'Enter a valid email.';
-  if (!password.value) errors.password = 'Enter a password.';
-  else if (isRegister.value && password.value.length < 8) errors.password = 'Password must be at least 8 characters.';
+  if (isRegister.value && name.value.trim() === '') {
+    errors.name = 'Enter your name.';
+  }
+  if (email.value.trim() === '') {
+    errors.email = 'Enter your email.';
+  } else if (!email.value.includes('@') || !email.value.includes('.')) {
+    errors.email = 'Enter a valid email.';
+  }
+  if (password.value === '') {
+    errors.password = 'Enter a password.';
+  } else if (isRegister.value && password.value.length < 8) {
+    errors.password = 'Password must be at least 8 characters.';
+  }
   return errors;
 });
-const isValid = computed(() => Object.keys(fieldErrors.value).length === 0);
-const shownErrors = computed(() => (attempted.value ? fieldErrors.value : {}));
 
-function switchMode(next) {
-  mode.value = next;
+// Errors are only shown after the first "submit", not while the user is still typing.
+const shownErrors = computed(function () {
+  if (attempted.value) {
+    return fieldErrors.value;
+  }
+  return {};
+});
+
+// True when a field's error is showing.
+function hasError(field) {
+  if (shownErrors.value[field]) {
+    return true;
+  }
+  return false;
+}
+
+// Bootstrap's input style, plus the red border when the field has an error.
+function inputClass(field) {
+  if (hasError(field)) {
+    return 'form-control is-invalid';
+  }
+  return 'form-control';
+}
+
+// For screen readers: the ids of the hint and the error under a field, so they are read out with the field.
+function describedBy(field) {
+  const ids = [];
+  if (field === 'password' && isRegister.value) {
+    ids.push('login-password-help');
+  }
+  if (hasError(field)) {
+    ids.push('login-' + field + '-error');
+  }
+  if (ids.length === 0) {
+    return null;
+  }
+  return ids.join(' ');
+}
+
+function choose(next) {
+  // No account: straight on to wherever they were going, nothing to fill in.
+  if (next === 'guest') {
+    router.push(getRedirect());
+    return;
+  }
+  step.value = next;
   attempted.value = false;
   auth.error = null;
 }
 
 async function submit() {
   attempted.value = true;
-  if (!isValid.value) return;
+  if (Object.keys(fieldErrors.value).length > 0) {
+    return;
+  }
 
-  const ok = isRegister.value
-    ? await auth.register({ name: name.value.trim(), email: email.value.trim(), password: password.value })
-    : await auth.login({ email: email.value.trim(), password: password.value });
+  let ok = false;
+  try {
+    if (isRegister.value) {
+      ok = await auth.register({ name: name.value.trim(), email: email.value.trim(), password: password.value });
+    } else {
+      ok = await auth.login({ email: email.value.trim(), password: password.value });
+    }
+  } catch (err) {
+    auth.error = 'Something went wrong. Please try again.';
+  }
 
   if (ok) {
-    // Send the user back to whatever they were trying to reach (router guard sets ?redirect=).
-    router.push(typeof route.query.redirect === 'string' ? route.query.redirect : '/plan');
+    router.push(getRedirect());
   }
 }
 </script>
 
 <template>
-  <section class="col-12 col-md-6 col-lg-5 mx-auto" data-cy="login-view">
-    <h1 class="h4" data-cy="login-title">{{ isRegister ? 'Create an account' : 'Log in' }}</h1>
-    <p class="text-secondary small">
-      An account lets you save and come back to a scenario. You can also
-      <router-link to="/plan" data-cy="login-skip-link">plan without one</router-link> — it won't be saved.
-    </p>
+  <section class="login-page" data-cy="login-view">
+    <div class="card login-card">
+      <div class="card-body">
+        <!-- Progress bar: half full on the choices, full on the form -->
+        <div class="progress-track">
+          <div v-if="step === 'choose'" class="progress-fill progress-half"></div>
+          <div v-else class="progress-fill progress-full"></div>
+        </div>
 
-    <ul class="nav nav-tabs mb-3" data-cy="login-mode-toggle">
-      <li class="nav-item">
-        <button
-          type="button"
-          class="nav-link"
-          :class="{ active: !isRegister }"
-          data-cy="login-mode-login-tab"
-          @click="switchMode('login')"
-        >
-          Log in
-        </button>
-      </li>
-      <li class="nav-item">
-        <button
-          type="button"
-          class="nav-link"
-          :class="{ active: isRegister }"
-          data-cy="login-mode-register-tab"
-          @click="switchMode('register')"
-        >
-          Register
-        </button>
-      </li>
-    </ul>
+        <!-- Step 1: choose how to continue -->
+        <div v-if="step === 'choose'">
+          <h1 class="h2 mb-2" data-cy="login-title">Before you start</h1>
+          <p class="text-secondary mb-4">An account lets you save your plans and come back to them.</p>
+          <p class="form-label">How would you like to continue?</p>
 
-    <form novalidate data-cy="login-form" @submit.prevent="submit">
-      <div v-if="auth.error" class="alert alert-danger py-2" role="alert" data-cy="login-error">
-        {{ auth.error }}
+          <button
+            v-for="c in choices"
+            :key="c.id"
+            type="button"
+            class="choice"
+            :data-cy="'login-choice-' + c.id"
+            @click="choose(c.id)"
+          >
+            <span class="choice-icon">
+              <img :src="c.icon" alt="" :class="'choice-image choice-image-' + c.id" />
+            </span>
+            <span class="choice-text">
+              <span class="choice-title">{{ c.title }}</span>
+              <!-- The bubble: part of the button, so screen readers always read it; shown on hover or keyboard focus -->
+              <span class="choice-bubble" :data-cy="'login-bubble-' + c.id">{{ c.hoverText }}</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Step 2: the form for that choice -->
+        <div v-else>
+          <button type="button" class="btn btn-link p-0 mb-2" data-cy="login-back-button" @click="choose('choose')">← Back</button>
+          <h1 class="h2 mb-2" data-cy="login-title">{{ formTitle }}</h1>
+          <p class="text-secondary mb-4">{{ formIntro }}</p>
+
+          <form novalidate data-cy="login-form" @submit.prevent="submit">
+            <div v-if="auth.error" class="alert alert-danger py-2" role="alert" data-cy="login-error">{{ auth.error }}</div>
+
+            <div v-if="isRegister" class="mb-3">
+              <label for="login-name" class="form-label">Name</label>
+              <input
+                id="login-name"
+                v-model="name"
+                type="text"
+                autocomplete="name"
+                :class="inputClass('name')"
+                :aria-invalid="hasError('name')"
+                :aria-describedby="describedBy('name')"
+                data-cy="login-name-input"
+              />
+              <div v-if="hasError('name')" id="login-name-error" class="invalid-feedback" data-cy="login-name-error">{{ shownErrors.name }}</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="login-email" class="form-label">Email</label>
+              <input
+                id="login-email"
+                v-model="email"
+                type="email"
+                autocomplete="email"
+                :class="inputClass('email')"
+                :aria-invalid="hasError('email')"
+                :aria-describedby="describedBy('email')"
+                data-cy="login-email-input"
+              />
+              <div v-if="hasError('email')" id="login-email-error" class="invalid-feedback" data-cy="login-email-error">{{ shownErrors.email }}</div>
+            </div>
+
+            <div class="mb-3">
+              <label for="login-password" class="form-label">Password</label>
+              <input
+                id="login-password"
+                v-model="password"
+                type="password"
+                :autocomplete="passwordAutocomplete"
+                :class="inputClass('password')"
+                :aria-invalid="hasError('password')"
+                :aria-describedby="describedBy('password')"
+                data-cy="login-password-input"
+              />
+              <div v-if="isRegister" id="login-password-help" class="form-text">At least 8 characters.</div>
+              <div v-if="hasError('password')" id="login-password-error" class="invalid-feedback" data-cy="login-password-error">{{ shownErrors.password }}</div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mt-2" :disabled="auth.pending" data-cy="login-submit-button">
+              {{ submitLabel }}
+            </button>
+          </form>
+        </div>
       </div>
-
-      <div v-if="isRegister" class="mb-3">
-        <label for="login-name" class="form-label">Name</label>
-        <input
-          id="login-name"
-          v-model="name"
-          type="text"
-          autocomplete="name"
-          class="form-control"
-          :class="{ 'is-invalid': shownErrors.name }"
-          :aria-invalid="shownErrors.name ? 'true' : null"
-          data-cy="login-name-input"
-        />
-        <div class="invalid-feedback">{{ shownErrors.name }}</div>
-      </div>
-
-      <div class="mb-3">
-        <label for="login-email" class="form-label">Email</label>
-        <input
-          id="login-email"
-          v-model="email"
-          type="email"
-          autocomplete="email"
-          class="form-control"
-          :class="{ 'is-invalid': shownErrors.email }"
-          :aria-invalid="shownErrors.email ? 'true' : null"
-          data-cy="login-email-input"
-        />
-        <div class="invalid-feedback">{{ shownErrors.email }}</div>
-      </div>
-
-      <div class="mb-3">
-        <label for="login-password" class="form-label">Password</label>
-        <input
-          id="login-password"
-          v-model="password"
-          type="password"
-          :autocomplete="isRegister ? 'new-password' : 'current-password'"
-          class="form-control"
-          :class="{ 'is-invalid': shownErrors.password }"
-          :aria-invalid="shownErrors.password ? 'true' : null"
-          :aria-describedby="isRegister ? 'login-password-help' : undefined"
-          data-cy="login-password-input"
-        />
-        <div v-if="isRegister" id="login-password-help" class="form-text">At least 8 characters.</div>
-        <div class="invalid-feedback">{{ shownErrors.password }}</div>
-      </div>
-
-      <button type="submit" class="btn btn-primary w-100" :disabled="auth.pending" data-cy="login-submit-button">
-        <span v-if="auth.pending" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
-        {{ isRegister ? 'Create account' : 'Log in' }}
-      </button>
-    </form>
+    </div>
   </section>
 </template>
+
+<style scoped>
+/* Colours, spacing, corners and shadows all come from the design tokens (_tokens.scss, UI.md: no hex values). */
+
+/* The card in the middle of the page */
+.login-page {
+  max-width: 40rem;
+  margin: var(--space-6) auto;
+}
+.login-card .card-body {
+  padding: var(--space-8) var(--space-6);
+}
+
+/* Progress bar at the top of the card */
+.progress-track {
+  width: 12rem;
+  height: 4px;
+  margin-bottom: var(--space-6);
+  background: var(--border-subtle);
+  border-radius: var(--radius-pill);
+}
+.progress-fill {
+  height: 4px;
+  background: var(--primary);
+  border-radius: var(--radius-pill);
+}
+.progress-half { width: 50%; }
+.progress-full { width: 100%; }
+
+/* The three options: big rounded "bubbly" buttons */
+.choice {
+  position: relative; /* so the bubble can be placed next to it */
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-5) var(--space-3) var(--space-3);
+  font-size: 1.125rem;
+  font-weight: 500;
+  text-align: left;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+.choice:hover {
+  background: var(--accent-fill-3);
+  border-color: var(--primary);
+}
+.choice:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* The round icon on the left of each option */
+.choice-icon {
+  flex-shrink: 0; /* keep it round when the title is long */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: var(--space-3);
+  background: var(--accent-fill-3);
+  border-radius: 50%;
+  overflow: hidden; /* trim the picture to the round bubble */
+}
+.choice:hover .choice-icon,
+.choice:focus-visible .choice-icon {
+  background: var(--accent-fill-2);
+}
+/* The picture inside each round icon */
+.choice-image {
+  width: 26px;
+  height: 26px;
+}
+/* The log-in picture has its own circle with empty space around it: show it bigger, so that circle
+   lines up with the edge of the round bubble (the circle is about 73% of the picture: 60px x 0.73 ≈ 44px). */
+.choice-image-login {
+  width: 60px;
+  height: 60px;
+}
+.choice-image-register,
+.choice-image-guest {
+  width: 34px;
+  height: 34px;
+}
+/* The person in this picture is drawn left of the middle, so nudge it to look centred. */
+.choice-image-register {
+  position: relative;
+  left: 2px;
+  top: -1px;
+}
+
+/* The bubble: invisible at first, shown to the right of the option on hover or keyboard focus.
+   It is made invisible with opacity (not display: none), so screen readers still read it. */
+.choice-bubble {
+  position: absolute;
+  left: 104%;
+  top: var(--space-2);
+  width: 14rem;
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--on-primary);
+  background: var(--primary);
+  border-radius: var(--radius-md);
+  opacity: 0;
+  pointer-events: none;
+}
+.choice:hover .choice-bubble,
+.choice:focus-visible .choice-bubble {
+  opacity: 1;
+}
+
+/* Small screens: no room beside the card (and no mouse on phones), so show the words under the title instead */
+@media (max-width: 1199px) {
+  .choice {
+    border-radius: var(--radius-lg);
+  }
+  .choice-title {
+    display: block;
+  }
+  .choice-bubble {
+    position: static;
+    width: auto;
+    padding: var(--space-1) 0 0 0;
+    color: var(--text-secondary);
+    background: none;
+    opacity: 1;
+  }
+}
+</style>
