@@ -6,19 +6,19 @@ export const GLOSSARY = [
   {
     id: 'ehg',
     term: 'Enhanced CPF Housing Grant (EHG)',
-    definition: 'A grant for first-timer households buying a new or resale HDB flat. The lower your household income, the bigger the grant. It goes into your CPF account and pays towards the flat.',
+    definition: 'A grant for households with at least one first-timer, buying a new or resale HDB flat: up to $120,000 for families earning up to $9,000 a month (less for a first-timer and second-timer couple). The lower your income, the bigger the grant. It goes into your CPF account and pays towards the flat.',
     section: 'ehg',
   },
   {
     id: 'family-grant',
     term: 'CPF Housing Grant (Family)',
-    definition: 'A grant for first-timer families buying a resale flat. The amount depends on the flat size and whether you are citizens or permanent residents.',
+    definition: 'A grant for first-timer families buying a resale flat. The amount depends on the flat size and whether you are citizens or permanent residents. At least one buyer must be a Singapore Citizen, and household income must be up to $16,000 a month.',
     section: 'family-grant',
   },
   {
     id: 'phg',
     term: 'Proximity Housing Grant (PHG)',
-    definition: 'A grant for buying a resale flat to live with your parents or child, or within 4 km of them. Living with them gives the larger amount.',
+    definition: 'A grant for buying a resale flat to live with your parents or child, or within 4 km of them. Living with them gives the larger amount. Second-timers can get it too. HDB checks the 4 km distance itself.',
     section: 'phg',
   },
   {
@@ -59,7 +59,7 @@ export const GLOSSARY = [
   {
     id: 'oa',
     term: 'CPF Ordinary Account (OA)',
-    definition: 'The part of your CPF savings you can use for housing. Money left in it earns 2.5% a year.',
+    definition: 'The part of your CPF savings you can use for housing. Money left in it earns at least 2.5% a year.',
     section: 'cpf',
   },
   {
@@ -77,12 +77,12 @@ export const GLOSSARY = [
   {
     id: 'net-position',
     term: 'Net position',
-    definition: "What a path leaves you with in the comparison year, without selling: the flat's market value, minus the loan still owed, the CPF you would put back (with interest), any subsidy clawback, and the cash you spent on rent, fees and renovation.",
+    definition: "What a path leaves you with in the comparison year, without selling: the flat's market value, minus the loan still owed, the CPF savings of your own you used (plus the interest they would have earned), any subsidy clawback, and the cash you put into the flat, rent, fees and renovation. Grants are not taken off: they would go back into your own CPF.",
   },
   {
     id: 'break-even',
-    term: 'Break-even year',
-    definition: 'The year both paths leave you with the same net position. Before it one path is ahead; after it, the other one is.',
+    term: 'Break-even line',
+    definition: "The flat price growth at which both paths end level in the comparison year. Above it one path is ahead, below it the other. It's a what-if line, not a price forecast.",
   },
 ];
 
