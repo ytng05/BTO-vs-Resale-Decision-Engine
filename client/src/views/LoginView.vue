@@ -210,7 +210,10 @@ async function submit() {
         <!-- Step 1: choose how to continue -->
         <div v-if="step === 'choose'">
           <h1 class="h2 mb-2" data-cy="login-title">Before you start</h1>
-          <p class="text-secondary mb-4">An account lets you save your plans and come back to them.</p>
+                    <p class="text-secondary mb-2">An account lets you save your plans and come back to them.</p>
+          <p class="text-secondary mb-4" data-cy="login-prepare">
+            Four short steps. Have your incomes and CPF OA balances handy (estimates are fine), and a resale listing if you have one.
+          </p>
           <p class="form-label">How would you like to continue?</p>
 
           <button
