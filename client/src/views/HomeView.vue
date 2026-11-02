@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import { getRuleset } from '../api/client.js';
 import RulesetBadge from '../components/RulesetBadge.vue';
 import HeroScene from '../components/HeroScene.vue';
+import HowItWorksCarousel from '../components/HowItWorksCarousel.vue';
 
 const ruleset = ref(null);
 onMounted(async () => {
@@ -26,5 +27,6 @@ onMounted(async () => {
       <RulesetBadge v-if="ruleset" v-bind="ruleset" />
     </div>
     <HeroScene class="mt-4" />
+    <HowItWorksCarousel class="mt-4" />
   </section>
 </template>
