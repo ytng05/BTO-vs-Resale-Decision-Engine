@@ -2,6 +2,7 @@
 // Home, after the Calm home board (CalmHome.dc.html): the question and the two ways in (start, or see an example),
 // the crossing scene, how it works in four steps, what the results tell you, a short FAQ and a closing call to
 // action. The navbar and the disclaimer footer come from App.vue, as on every page.
+import { computed, nextTick, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useScenarioStore } from '../stores/scenario.js';
 import { EXAMPLE_PLAN } from '../constants/examplePlan.js';
@@ -10,8 +11,26 @@ import CrossingScene from '../components/CrossingScene.vue';
 const store = useScenarioStore();
 const router = useRouter();
 
+// Anything entered in the plan this session: loading the example would replace it, so ask first.
+const hasOwnPlan = computed(() => {
+  const p = store.profile;
+  return store.wishes.length > 0
+    || p.applicants.some((a) => a.age != null || a.monthlyIncome != null || a.cpfOaBalance != null)
+    || p.cashSavings != null
+    || Boolean(store.choiceA.town || store.choiceB.town);
+});
+const confirming = ref(null); // 'hero' | 'get': which "See an example" asked, so the question shows beside it
+
 // Fill the plan with a ready-made couple and open their Results; "Change inputs" there makes it their own.
-function seeExample() {
+// If the user has started a plan, ask before replacing it (the confirm button passes force).
+async function seeExample(from, force = false) {
+  if (hasOwnPlan.value && !force) {
+    confirming.value = from;
+    await nextTick();
+    document.querySelector('[data-cy=home-example-confirm-yes]')?.focus();
+    return;
+  }
+  confirming.value = null;
   store.loadSaved(EXAMPLE_PLAN);
   router.push('/results');
 }
@@ -27,7 +46,7 @@ const STEPS = [
 const GETS = [
   { tag: 'Break-even year', fill: 'var(--accent-fill-2)', text: 'When both paths leave you equally well off' },
   { tag: 'Net position', fill: 'var(--accent-fill-3)', text: 'How far ahead each path is, year by year' },
-  { tag: 'What would flip it', fill: 'var(--bg-page)', text: 'The price, wait or rent at which the answer changes' },
+  { tag: 'What would flip it', fill: 'var(--bg-page)', text: 'The BTO price at which the answer changes, and how rent and growth move it' },
 ];
 
 const FAQS = [
@@ -70,7 +89,14 @@ const FAQS = [
               </span>
               Start planning
             </router-link>
-            <button type="button" class="btn home-btn home-btn--ghost" data-cy="home-example-button" @click="seeExample">See an example</button>
+            <button type="button" class="btn home-btn home-btn--ghost" data-cy="home-example-button" @click="seeExample('hero')">See an example</button>
+          </div>
+          <div v-if="confirming === 'hero'" class="home-confirm" role="group" aria-labelledby="home-confirm-hero" data-cy="home-example-confirm">
+            <p id="home-confirm-hero" class="mb-2">The example replaces what you've entered in your plan so far.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample('hero', true)">Show the example</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
+            </div>
           </div>
           <span class="home-chip">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
@@ -90,7 +116,7 @@ const FAQS = [
       <ol class="home-steps home-stagger">
         <li v-for="(s, i) in STEPS" :key="s.title" class="home-card home-step" :data-cy="`home-step-${i + 1}`">
           <span class="home-step__num" aria-hidden="true">{{ i + 1 }}</span>
-          <b class="home-step__title">{{ s.title }}</b>
+          <h3 class="home-step__title">{{ s.title }}</h3>
           <span class="home-muted">{{ s.text }}</span>
           <span class="home-step__need">{{ s.need }}</span>
         </li>
@@ -103,8 +129,8 @@ const FAQS = [
         <p class="home-eyebrow">What you'll get</p>
         <h2 id="get-title" class="home-h2">Not a price prediction. The point where the answer flips.</h2>
         <p class="home-lead">
-          We don't guess where prices are heading. We follow both paths year by year with today's rules, show when one
-          pulls ahead, and tell you which assumptions would change that.
+          We don't predict prices: we use growth rates you can change. We follow both paths year by year with today's
+          rules, show when one pulls ahead, and tell you which assumptions would change that.
         </p>
         <ul class="home-get__list">
           <li v-for="g in GETS" :key="g.tag">
@@ -112,7 +138,14 @@ const FAQS = [
             <span class="home-muted">{{ g.text }}</span>
           </li>
         </ul>
-        <button type="button" class="btn btn-link p-0 home-get__link" data-cy="home-example-link" @click="seeExample">See an example result</button>
+        <button type="button" class="btn btn-link p-0 home-get__link" data-cy="home-example-link" @click="seeExample('get')">See an example result</button>
+        <div v-if="confirming === 'get'" class="home-confirm" role="group" aria-labelledby="home-confirm-get" data-cy="home-example-confirm">
+          <p id="home-confirm-get" class="mb-2">The example replaces what you've entered in your plan so far.</p>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample('get', true)">Show the example</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
+          </div>
+        </div>
       </div>
       <div class="home-get__chart">
         <div class="home-get__legend">
@@ -179,7 +212,7 @@ const FAQS = [
 </template>
 
 <style scoped>
-.home { display: flex; flex-direction: column; gap: 88px; padding-bottom: var(--space-6); }
+.home { display: flex; flex-direction: column; gap: calc(var(--space-10) + var(--space-5)); padding-bottom: var(--space-6); }
 
 /* ---- shared ---- */
 .home-card { background: var(--bg-surface); border-radius: var(--radius-md); box-shadow: 0 1px 2px rgba(29, 29, 36, 0.05), 0 8px 24px rgba(60, 64, 90, 0.06); }
@@ -196,33 +229,34 @@ const FAQS = [
 .home-berry { fill: var(--color-berry, #b23a78); }
 
 /* ---- hero ---- */
-.home-hero { display: flex; flex-direction: column; gap: 28px; }
+.home-hero { display: flex; flex-direction: column; gap: calc(var(--space-5) + var(--space-1)); }
 .home-hero__row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-5) var(--space-8); }
 .home-hero__copy { display: flex; flex-direction: column; gap: var(--space-4); max-width: 720px; }
 .home-hero__title { margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; }
-.home-hero__actions { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.home-hero__actions { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
+.home-confirm { max-width: 26rem; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--bg-surface); font-size: 0.875rem; }
 .home-btn { min-height: 52px; display: inline-flex; align-items: center; font-weight: 500; }
 .home-btn.btn-disc { padding-right: var(--space-5); }
-.home-btn--ghost { padding: 0 22px; background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary); }
+.home-btn--ghost { padding: 0 var(--space-5); background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary); }
 .home-btn--ghost:hover { background: var(--accent-fill-3); color: var(--text-primary); }
-.home-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) 14px; border-radius: var(--radius-pill); background: var(--bg-surface); font-size: 14px; font-weight: 500; }
+.home-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); background: var(--bg-surface); font-size: 14px; font-weight: 500; }
 
 /* ---- how it works ---- */
 .home-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
-.home-step { padding: 22px; display: flex; flex-direction: column; gap: 10px; }
+.home-step { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
 .home-step__num { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-fill-2); display: grid; place-items: center; font-weight: 600; }
-.home-step__title { font-weight: 500; font-size: 17px; }
-.home-step__need { align-self: flex-start; margin-top: auto; padding: 6px var(--space-3); border-radius: var(--radius-pill); background: var(--bg-page); font-size: 13px; color: var(--text-secondary); }
+.home-step__title { margin: 0; font-weight: 500; font-size: 17px; line-height: 1.3; }
+.home-step__need { align-self: flex-start; margin-top: auto; padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); background: var(--bg-page); font-size: 13px; color: var(--text-secondary); }
 
 /* ---- what you'll get ---- */
 .home-get { border-radius: var(--radius-lg); padding: clamp(24px, 3vw, 40px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: var(--space-6); align-items: center; }
 .home-get__copy { display: flex; flex-direction: column; gap: var(--space-4); }
-.home-get__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.home-get__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-3); }
 .home-get__list li { display: flex; gap: var(--space-3); align-items: baseline; }
-.home-tag { flex: none; display: inline-flex; align-items: center; padding: var(--space-1) 10px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; }
+.home-tag { flex: none; display: inline-flex; align-items: center; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; }
 .home-get__link { align-self: flex-start; font-weight: 500; }
-.home-get__chart { background: var(--accent-fill-3); border-radius: var(--radius-md); padding: 22px 22px 14px; display: flex; flex-direction: column; gap: var(--space-2); }
-.home-get__legend { display: flex; flex-wrap: wrap; gap: var(--space-2) 18px; align-items: center; font-size: 14px; font-weight: 500; }
+.home-get__chart { background: var(--accent-fill-3); border-radius: var(--radius-md); padding: var(--space-5) var(--space-5) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.home-get__legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; font-size: 14px; font-weight: 500; }
 .home-get__key { display: inline-flex; align-items: center; gap: var(--space-2); }
 .home-get__swatch { width: 22px; }
 .home-get__swatch--bto { height: 4px; border-radius: 2px; background: var(--text-primary); }
@@ -240,7 +274,7 @@ const FAQS = [
 .home-faq-wrap { display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start; }
 .home-faq-wrap__intro { flex: 1 1 300px; }
 .home-faq { flex: 2 1 520px; min-width: 0; padding: var(--space-2) var(--space-5); }
-.home-faq details { border-bottom: 1px solid var(--border-subtle); padding: 18px var(--space-1); }
+.home-faq details { border-bottom: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-1); }
 .home-faq details:last-child { border-bottom: 0; }
 .home-faq summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); font-weight: 500; font-size: 16px; }
 .home-faq summary::-webkit-details-marker { display: none; }
@@ -254,7 +288,7 @@ const FAQS = [
   transition: transform 0.2s;
 }
 .home-faq details[open] summary::after { transform: rotate(45deg); }
-.home-faq p { margin: 10px 0 0; color: var(--text-secondary); line-height: 1.6; max-width: 72ch; }
+.home-faq p { margin: var(--space-3) 0 0; color: var(--text-secondary); line-height: 1.6; max-width: 72ch; }
 .home-faq summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; border-radius: 8px; }
 
 /* ---- closing call to action ---- */

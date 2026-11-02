@@ -57,8 +57,8 @@ Separate pages: Sources (`/sources`, always in the nav), My scenarios (`/scenari
 | Periwinkle | `$color-periwinkle` | `#E9ECF6` | The one feature card on a screen, hover, info fill |
 | Blush | `$color-blush` | `#FBD5E5` | Soft pink fills: selected chips, step halo, version badge |
 | Pink | `$color-pink` | `#F5A3C7` | Accent fill, and resale in charts |
-| Pink deep | `$color-pink-deep` | `#F08AB6` | Edge of the accent disc |
-| Berry | `$color-berry` | `#B23A78` | The only pink allowed as text or a thin mark |
+| Pink deep | `$color-pink-deep` / `--color-pink-deep` | `#F08AB6` | Edge of the accent disc |
+| Berry | `$color-berry` / `--color-berry` | `#B23A78` | The only pink allowed as text or a thin mark |
 | Ink | `$color-ink` | `#1D1D24` | Primary text, primary buttons, BTO in charts |
 | Slate | `$color-slate` | `#5F6373` | Secondary text and labels |
 

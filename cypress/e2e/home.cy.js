@@ -17,6 +17,27 @@ describe('home', () => {
     cy.get('[data-cy=results-breakeven-sentence]', { timeout: 10000 }).should('be.visible');
   });
 
+  it('asks before the example replaces a plan the user has started, and keeps it on "Keep my plan"', () => {
+    cy.visit('/plan');
+    cy.get('[data-cy=wish-parents]').click();
+    cy.get('[data-cy=plan-step-next]').click();
+    cy.get('[data-cy=situation-buyer-1-age-input]').type('31');
+    cy.get('[data-cy=nav-brand-home]').click(); // in-app navigation: the plan lives in memory, not across reloads
+    cy.get('[data-cy=home-example-button]').click();
+    cy.get('[data-cy=home-example-confirm]').should('contain', 'replaces what you');
+    cy.focused().should('have.attr', 'data-cy', 'home-example-confirm-yes');
+    cy.get('[data-cy=home-example-confirm-no]').click();
+    cy.get('[data-cy=home-example-confirm]').should('not.exist');
+    cy.location('pathname').should('eq', '/');
+    cy.get('[data-cy=nav-plan-link]').click({ force: true });
+    cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '31');
+
+    cy.get('[data-cy=nav-brand-home]').click();
+    cy.get('[data-cy=home-example-link]').scrollIntoView().click();
+    cy.get('[data-cy=home-example-confirm-yes]').click();
+    cy.location('pathname').should('eq', '/results');
+  });
+
   it('lists the four plan steps, each with what to have to hand', () => {
     cy.visit('/');
     cy.get('[data-cy^=home-step-]').should('have.length', 4);
