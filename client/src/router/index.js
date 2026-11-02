@@ -7,17 +7,27 @@ import LoginView from '../views/LoginView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
+  // meta.title names the page in the browser tab (afterEach below).
   routes: [
-    { path: '/', name: 'home', component: HomeView },
-    { path: '/plan', name: 'plan', component: PlanView },
-    { path: '/results', name: 'results', component: ResultsView },
-    { path: '/dashboard', component: () => import('../views/DashboardView.vue') },
-    { path: '/sources', name: 'sources', component: SourcesView },
-    { path: '/login', name: 'login', component: LoginView },
+    { path: '/', name: 'home', component: HomeView, meta: { title: 'BTO or resale' } },
+    { path: '/plan', name: 'plan', component: PlanView, meta: { title: 'Plan' } },
+    { path: '/results', name: 'results', component: ResultsView, meta: { title: 'Results' } },
+    { path: '/dashboard', component: () => import('../views/DashboardView.vue'), meta: { title: 'Dashboard' } },
+    { path: '/sources', name: 'sources', component: SourcesView, meta: { title: 'Sources' } },
+    { path: '/login', name: 'login', component: LoginView, meta: { title: 'Log in' } },
     // Logged-out visitors see a "Log in" prompt in the view itself (no guard: see the note below).
-    { path: '/scenarios', name: 'scenarios', component: () => import('../views/ScenariosView.vue') },
-    { path: '/scenarios/compare', name: 'scenario-compare', component: () => import('../views/ScenarioCompareView.vue') },
+    { path: '/scenarios', name: 'scenarios', component: () => import('../views/ScenariosView.vue'), meta: { title: 'My scenarios' } },
+    { path: '/scenarios/compare', name: 'scenario-compare', component: () => import('../views/ScenarioCompareView.vue'), meta: { title: 'Compare scenarios' } },
+    // Anything else: a page that says so, with ways back (not a blank page).
+    { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('../views/NotFoundView.vue'), meta: { title: 'Page not found' } },
   ],
+  // A new page starts at the top; Back returns to where you were; /sources#loans scrolls to its section.
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition;
+    if (to.hash) return { el: to.hash, top: 24 };
+    if (to.path !== from.path) return { top: 0 };
+    return false;
+  },
 });
 
 // REVERTED (2026-10-11): a meta.requiresAuth guard on /plan and /results was added and then taken
@@ -37,5 +47,11 @@ const router = createRouter({
 //   if (auth.isLoggedIn) return true;
 //   return { name: 'login', query: { redirect: to.fullPath } };
 // });
+
+const SITE = 'BTO vs Resale';
+router.afterEach((to) => {
+  const page = to.meta.title;
+  document.title = page && page !== 'BTO or resale' ? `${page} · ${SITE}` : SITE;
+});
 
 export default router;
