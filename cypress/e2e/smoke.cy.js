@@ -1,7 +1,7 @@
 // Smoke test. Needs: `VITE_USE_MOCK=true npm run build` then `npm start`, then `npm run test:e2e`.
 // Selector convention: data-cy="<area>-<element>-<action>" (see docs/CONVENTIONS.md).
 
-import { fillPath, fillSituation, next } from './helpers/plan.js';
+import { fillPath, fillSituation, next, seeResults } from './helpers/plan.js';
 
 describe('smoke', () => {
   it('loads the home page and shows the disclaimer', () => {
@@ -32,7 +32,8 @@ describe('smoke', () => {
     fillPath('patha');
     next(); // your BTO -> resale flat
     fillPath('pathb');
-    next(); // resale flat -> results
+    next(); // resale flat -> check your answers
+    seeResults();
     cy.location('pathname').should('eq', '/results');
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
     cy.get('[data-cy^=heatmap-cell-]').should('have.length.greaterThan', 0);
@@ -60,6 +61,7 @@ describe('smoke', () => {
     next();
     fillPath('pathb');
     next();
+    seeResults();
     cy.location('pathname').should('eq', '/results');
     cy.get('[data-cy=results-save-button]').click();
     cy.get('[data-cy=results-save-name-input]').clear().type('Smoke scenario');
