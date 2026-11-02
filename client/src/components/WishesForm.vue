@@ -2,10 +2,19 @@
 // Step 1 of the plan stepper, "What matters most" (D38). Optional: the picks only decide which questions
 // appear later (near my parents → the parents question; moving in by a date → the move-in year; more
 // space → flat type defaults a size up). They are UI only and never sent to the engine.
+import { watch } from 'vue';
 import { useScenarioStore, WISHES } from '../stores/scenario.js';
 
 const store = useScenarioStore();
 const picked = (key) => store.wishes.includes(key);
+
+// "Near my parents" means the resale step must ask, not assume: clear the default 'NONE' so the parents question
+// starts unanswered (and must be answered). Unticking it puts the default back if it was never answered.
+watch(() => store.wishes.includes('parents'), (on) => {
+  const b = store.choiceB;
+  if (on && b.livingArrangement === 'NONE') b.livingArrangement = null;
+  else if (!on && b.livingArrangement == null) b.livingArrangement = 'NONE';
+});
 </script>
 
 <template>

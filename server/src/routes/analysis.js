@@ -10,6 +10,7 @@ import { computeBuyerStampDuty } from '../engine/costs/transactionCosts.js';
 import { evaluate } from '../engine/index.js';
 import { explainGap } from '../engine/explainGap.js';
 import { solveBreakEven } from '../engine/solvers/breakEven.js';
+import { solveBtoPriceBreakEven } from '../engine/solvers/btoPriceBreakEven.js';
 import { optimiseTiming } from '../engine/solvers/timingOptimiser.js';
 import { getResalePriceBasis } from '../services/datagov/resalePrice.js';
 import {
@@ -176,6 +177,14 @@ router.post('/compare', async (req, res, next) => {
       ? { grid: [surface.grid[rowIndex]], frontier: surface.frontier.filter((p) => p.annualIncomeGrowth === userIncome) }
       : solveBreakEven({ ...pair, priceGrowthSteps, incomeGrowthSteps: [userIncome] });
 
+    // D40: the BTO price at which the verdict flips, when path A is a BTO launch.
+    const btoPriceBreakEven = a.choice.path === 'BTO' && a.btoProject
+      ? solveBtoPriceBreakEven({
+        profile, choiceA: a.choice, choiceB: b.choice, assumptions: engineAssumptions, ruleset,
+        hdbRangeCents: { min: a.btoProject.priceMinCents, max: a.btoProject.priceMaxCents },
+      })
+      : null;
+
     return res.json({
       rulesetVersion: version,
       horizonYear: engineAssumptions.horizonYear,
@@ -195,6 +204,10 @@ router.post('/compare', async (req, res, next) => {
       warningMessages: warningMessagesFor([...outcomeA.warnings, ...outcomeB.warnings]),
       btoProjectA: a.btoProject,
       btoProjectB: b.btoProject,
+      btoPriceBreakEven,
+      btoPriceSentence: btoPriceBreakEven && btoPriceSentence(btoPriceBreakEven, {
+        horizonYear: engineAssumptions.horizonYear, flatType: a.choice.flatType, projectName: a.btoProject.name,
+      }),
       assumptions: engineAssumptions, // with the server's defaults filled in (D17, D22)
       resolvedA: a.resolved,
       resolvedB: b.resolved,
@@ -203,6 +216,30 @@ router.post('/compare', async (req, res, next) => {
     return sendError(res, next, err);
   }
 });
+
+/**
+ * D40: one sentence on the BTO price at which the verdict flips, against HDB's range for the launch. Path A is
+ * the BTO path. Prices are today's (D31), so they read against HDB's published range. "Under" a price rounded
+ * DOWN to the $1,000, so the sentence never claims more than the solver found.
+ */
+export function btoPriceSentence(be, { horizonYear, flatType, projectName }) {
+  const under = (cents) => dollars(Math.floor(cents / 100_000) * 100_000);
+  const flat = String(flatType ?? '').toLowerCase().replace(' room', '-room');
+  const end = `at the end of ${horizonYear}`;
+  const hdb = `HDB's range for ${projectName} (${dollars(be.hdbRangeCents.min)} to ${dollars(be.hdbRangeCents.max)})`;
+  const note = "Prices are in today's terms. This is not a price forecast.";
+  if (be.atHdbMax !== 'B') {
+    // BTO ahead, or level, even at HDB's maximum.
+    const further = be.priceCents === null ? '' : `, and up to about ${under(be.priceCents)}`;
+    return `BTO leaves the household with at least as high a net financial position as resale ${end} at any price in ${hdb}${further}. ${note}`;
+  }
+  if (be.atHdbMin === 'B') {
+    // Resale ahead even at HDB's minimum.
+    const needed = be.priceCents === null ? '' : ` The ${flat} would need to cost under ${under(be.priceCents)} for BTO to come out ahead.`;
+    return `Resale leaves the household with the higher net financial position ${end} even at the cheapest price in ${hdb}.${needed} ${note}`;
+  }
+  return `BTO leaves the household with the higher net financial position ${end} as long as the ${flat} costs under ${under(be.priceCents)}; above that, resale does. That is inside ${hdb}. ${note}`;
+}
 
 /** Plain-language lines for the timing result (wording rules: "under these assumptions", never a forecast). */
 export function timingExplanation({ best, all, skipped }, { horizonYear }) {

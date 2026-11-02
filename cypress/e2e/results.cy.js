@@ -85,8 +85,15 @@ describe('results page', () => {
     completePlan();
     // Tampines has two Standard 4-room launches in the mock data; the newest is the default.
     cy.get('[data-cy=results-price-basis-bto]')
-      .should('contain', 'MOCK Tampines Bliss').and('contain', 'the middle of').and('contain', 'S$481,000');
+      .should('contain', 'BTO estimated from MOCK Tampines Bliss').and('contain', 'the middle of').and('contain', 'S$481,000');
     cy.get('[data-cy=results-price-basis-resale]').should('contain', 'the median of 120 sales');
+  });
+
+  it('says at what BTO price the verdict would flip (D40)', () => {
+    completePlan();
+    cy.get('[data-cy=results-bto-price-breakeven]')
+      .should('contain', 'as long as the 4-room costs under $576,000; above that, resale does')
+      .and('contain', 'This is not a price forecast.');
   });
 
   it('asks which launch when the town has more than one, and prices the one picked', () => {
@@ -137,4 +144,26 @@ describe('results page', () => {
     cy.get('[data-cy=results-price-basis-resale]')
       .should('contain', 'your asking price, S$700,000').and('contain', 'S$35,000 above the median').and('contain', 'paid in cash');
   });
+
+  it("asks about parents when 'Near my parents' is picked, instead of assuming 'Neither'", () => {
+    cy.visit('/plan');
+    cy.get('[data-cy=wish-parents]').click();
+    next();
+    fillSituation();
+    next();
+    fillPath('patha');
+    next();
+    fillPath('pathb', { town: 'BEDOK' });
+    cy.get('[data-cy=pathb-living-none-input]').should('not.be.checked');
+    next();
+    cy.get('[data-cy=plan-step-errors]').should('be.visible'); // must answer
+    cy.get('[data-cy=plan-step-4-panel]').should('exist');
+    cy.get('[data-cy=pathb-living-none]').click();
+    next();
+    cy.location('pathname').should('eq', '/results');
+    // They were asked and chose "Neither", so Results doesn't say the grant was left out.
+    cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
+    cy.get('[data-cy=results-phg-note]').should('not.exist');
+  });
 });
+
