@@ -29,10 +29,27 @@ const password = ref('');
 const attempted = ref(false);
 
 // The three options: an icon, a short title, and the words in the bubble shown on hover or keyboard focus.
+// Icons are Lucide's user-round, user-round-plus and arrow-right, inlined as path data like the rest of the app
+// (no icon package): each entry is a list of SVG elements, [tag, attributes].
 const choices = [
-  { id: 'login', icon: '/icons/login.png', title: 'Log in', hoverText: 'Log in to see your saved scenarios.' },
-  { id: 'register', icon: '/icons/createaccount.png', title: 'Create account', hoverText: 'Create a free account to save and compare your plans.' },
-  { id: 'guest', icon: '/icons/arrow.png', title: 'Plan without an account', hoverText: "Your plan won't be saved. Try anyway!" },
+  {
+    id: 'login',
+    icon: [['circle', { cx: 12, cy: 8, r: 5 }], ['path', { d: 'M20 21a8 8 0 0 0-16 0' }]],
+    title: 'Log in',
+    hoverText: 'Log in to see your saved scenarios.',
+  },
+  {
+    id: 'register',
+    icon: [['path', { d: 'M2 21a8 8 0 0 1 13.292-6' }], ['circle', { cx: 10, cy: 8, r: 5 }], ['path', { d: 'M19 16v6' }], ['path', { d: 'M22 19h-6' }]],
+    title: 'Create account',
+    hoverText: 'Create a free account to save and compare your plans.',
+  },
+  {
+    id: 'guest',
+    icon: [['path', { d: 'M5 12h14' }], ['path', { d: 'm12 5 7 7-7 7' }]],
+    title: 'Plan without an account',
+    hoverText: "Your plan won't be saved. Try anyway!",
+  },
 ];
 
 // True when the user picked "Create account".
@@ -204,8 +221,20 @@ async function submit() {
             :data-cy="'login-choice-' + c.id"
             @click="choose(c.id)"
           >
-            <span class="choice-icon">
-              <img :src="c.icon" alt="" :class="'choice-image choice-image-' + c.id" />
+            <span class="choice-icon" aria-hidden="true">
+              <svg
+                class="choice-svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <component :is="tag" v-for="([tag, attrs], i) in c.icon" :key="i" v-bind="attrs" />
+              </svg>
             </span>
             <span class="choice-text">
               <span class="choice-title">{{ c.title }}</span>
@@ -346,33 +375,15 @@ async function submit() {
   margin-right: var(--space-3);
   background: var(--accent-fill-3);
   border-radius: 50%;
-  overflow: hidden; /* trim the picture to the round bubble */
+  color: var(--text-primary);
 }
 .choice:hover .choice-icon,
 .choice:focus-visible .choice-icon {
   background: var(--accent-fill-2);
 }
-/* The picture inside each round icon */
-.choice-image {
-  width: 26px;
-  height: 26px;
-}
-/* The log-in picture has its own circle with empty space around it: show it bigger, so that circle
-   lines up with the edge of the round bubble (the circle is about 73% of the picture: 60px x 0.73 ≈ 44px). */
-.choice-image-login {
-  width: 60px;
-  height: 60px;
-}
-.choice-image-register,
-.choice-image-guest {
-  width: 34px;
-  height: 34px;
-}
-/* The person in this picture is drawn left of the middle, so nudge it to look centred. */
-.choice-image-register {
-  position: relative;
-  left: 2px;
-  top: -1px;
+/* The Lucide icon inside each round icon */
+.choice-svg {
+  flex: none;
 }
 
 /* The bubble: invisible at first, shown to the right of the option on hover or keyboard focus.
