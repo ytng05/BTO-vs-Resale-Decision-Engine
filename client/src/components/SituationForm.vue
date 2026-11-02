@@ -42,14 +42,16 @@ const err = (key) => props.errors[key];
 // incomes are in. Projected to the plan's application year, as Results works it out, so the two agree.
 // Worded as an estimate: the flat comes later. Hidden on mock data.
 const ehg = ref(null); // { cents, reason, year, growthPct, years } or null
+const ehgLoading = ref(false); // the estimate is on its way: a quiet status line, not a blank gap
 const ready = computed(() => applicants.value.length === REQUIRED_APPLICANTS && applicants.value.every(
   (a) => Number.isInteger(a.age) && a.age >= 18 && typeof a.monthlyIncome === 'number' && a.monthlyIncome >= 0,
 ));
 let timer = null;
 let requestId = 0;
 async function refreshEhg() {
-  if (!ready.value) { ehg.value = null; return; }
+  if (!ready.value) { ehg.value = null; ehgLoading.value = false; return; }
   const id = ++requestId;
+  ehgLoading.value = true;
   try {
     const res = await ehgEstimate(store);
     if (id !== requestId) return; // a newer edit is already on its way
@@ -66,6 +68,8 @@ async function refreshEhg() {
     };
   } catch {
     if (id === requestId) ehg.value = null; // the hint is a bonus: no error message for it
+  } finally {
+    if (id === requestId) ehgLoading.value = false;
   }
 }
 watch(
@@ -192,6 +196,9 @@ onBeforeUnmount(() => clearTimeout(timer));
     </div>
 
     <!-- Early estimate: the EHG in the application year, incomes grown as on Results (D38) -->
+    <div v-if="ehgLoading && !ehg" class="form-text mb-3" role="status" data-cy="situation-ehg-loading">
+      <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Checking your housing grant…
+    </div>
     <div v-if="ehg" class="alert alert-info small py-2 mb-3" role="status" aria-live="polite" data-cy="situation-ehg-hint">
       <strong v-if="ehg.cents > 0">Applying in {{ ehg.year }}, you'd likely get up to {{ formatMoney(ehg.cents / 100) }} in <Term id="ehg">Enhanced CPF Housing Grant</Term>.</strong>
       <strong v-else>Applying in {{ ehg.year }}, the <Term id="ehg">Enhanced CPF Housing Grant</Term> likely doesn't apply.</strong>

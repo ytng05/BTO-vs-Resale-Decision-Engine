@@ -89,6 +89,7 @@ const keysIn = (months) => {
 };
 
 let latestRequest = 0;
+const loadingTown = ref(false); // a town's launches are on their way: say so, so the step isn't blank meanwhile
 async function loadTown() {
   if (!isBto.value) return;
   // Remember which town this request is for, and ignore a reply that a newer request has overtaken
@@ -96,13 +97,16 @@ async function loadTown() {
   const town = choice.value.town;
   const id = ++latestRequest;
   loadError.value = null;
+  loadingTown.value = Boolean(town); // the first, town-less load (the town list) needs no message
   try {
     const res = await getBtoProjects({ town: town ?? undefined });
     if (id !== latestRequest) return;
+    loadingTown.value = false;
     btoTowns.value = res.towns ?? btoTowns.value;
     townProjects.value = town ? (res.projects ?? []).filter((p) => p.town === town) : [];
   } catch {
     if (id !== latestRequest) return;
+    loadingTown.value = false;
     loadError.value = 'BTO launches could not be loaded. Check your connection and try again.';
     townProjects.value = [];
   }
@@ -153,18 +157,23 @@ watch(() => choice.value.btoProjectId, (now, before) => { if (isBto.value && bef
 // ---- Resale: the median for the town, flat type and lease band, beside the optional asking price (D39) ----
 const median = ref(null); // GET /api/data/resale-price summary, or null
 let latestMedian = 0;
+const medianLoading = ref(false);
 async function loadMedian() {
   const { town, flatType, leaseBand } = choice.value;
   const id = ++latestMedian;
   if (isBto.value || !town || !flatType || !leaseBand) {
     median.value = null;
+    medianLoading.value = false;
     return;
   }
+  medianLoading.value = true;
   try {
     const res = await getResalePrice({ town, flatType, leaseBand });
     if (id === latestMedian) median.value = res?.medianPriceCents ? res : null;
   } catch {
     if (id === latestMedian) median.value = null; // no sales in the band, or offline: no hint rather than a wrong one
+  } finally {
+    if (id === latestMedian) medianLoading.value = false;
   }
 }
 watch(() => [choice.value.town, choice.value.flatType, choice.value.leaseBand], loadMedian, { immediate: true });
@@ -206,7 +215,13 @@ const LIVING = [
         </select>
         <div v-if="isBto" :id="`${prefix}-town-help`" class="form-text">Towns with a recent BTO launch.</div>
         <div class="invalid-feedback">{{ err('town') }}</div>
-        <div v-if="loadError" class="text-danger small mt-1" role="alert" :data-cy="`${prefix}-projects-error`">{{ loadError }}</div>
+        <div v-if="loadingTown" class="form-text mt-1" role="status" :data-cy="`${prefix}-projects-loading`">
+          <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Loading launches in {{ toTitleCase(choice.town) }}…
+        </div>
+        <div v-if="loadError" class="text-danger small mt-1" role="alert" :data-cy="`${prefix}-projects-error`">
+          {{ loadError }}
+          <button type="button" class="btn btn-link btn-sm p-0 align-baseline" :data-cy="`${prefix}-projects-retry`" @click="loadTown">Try again</button>
+        </div>
       </div>
 
       <!-- BTO: which launch. It fixes the classification and which flat types there are. -->
@@ -308,6 +323,7 @@ const LIVING = [
             Leave blank to use the median of recent sales, {{ formatMoney(median.medianPriceCents / 100) }}
             (the middle half sold for {{ formatMoney(median.p25PriceCents / 100) }} to {{ formatMoney(median.p75PriceCents / 100) }}).
           </template>
+          <template v-else-if="medianLoading"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Looking up recent sales…</template>
           <template v-else>Leave blank to use the median of recent sales.</template>
           <span v-if="overMedian > 0" class="d-block mt-1" :data-cy="`${prefix}-asking-price-cov`">
             {{ formatMoney(overMedian) }} above the median. We treat the median as the <Term id="valuation">valuation</Term>, so that part is paid in cash, not CPF or the loan.

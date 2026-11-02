@@ -3,17 +3,17 @@
 import { completePlan } from './helpers/plan.js';
 
 describe('glossary and terms', () => {
-  it('opens a definition from a term on Results, closes it with Esc, and links to the glossary', () => {
+  it('opens a definition from a grant name on Results, closes it with Esc, and links to the glossary', () => {
     cy.visit('/plan');
     completePlan();
     cy.location('pathname').should('eq', '/results');
-    cy.get('[data-cy=term-net-position-definition]').should('not.be.visible');
-    cy.get('[data-cy=term-net-position-button]').first().click();
-    cy.get('[data-cy=term-net-position-button]').first().should('have.attr', 'aria-expanded', 'true');
-    cy.get('[data-cy=term-net-position-definition]').first().should('be.visible').and('contain', 'loan still owed');
+    cy.get('[data-cy=term-ehg-definition]').first().should('not.be.visible');
+    cy.get('[data-cy=term-ehg-button]').first().scrollIntoView().click();
+    cy.get('[data-cy=term-ehg-button]').first().should('have.attr', 'aria-expanded', 'true');
+    cy.get('[data-cy=term-ehg-definition]').first().should('be.visible').and('contain', 'first-timer');
     cy.get('body').type('{esc}');
-    cy.get('[data-cy=term-net-position-definition]').first().should('not.be.visible');
-    cy.focused().should('have.attr', 'data-cy', 'term-net-position-button');
+    cy.get('[data-cy=term-ehg-definition]').first().should('not.be.visible');
+    cy.focused().should('have.attr', 'data-cy', 'term-ehg-button');
 
     cy.get('[data-cy=term-break-even-button]').first().click();
     cy.get('[data-cy=term-break-even-definition]').first().contains('More in the glossary').click();
