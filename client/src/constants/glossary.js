@@ -82,7 +82,7 @@ export const GLOSSARY = [
   {
     id: 'break-even',
     term: 'Break-even line',
-    definition: "The flat price growth at which both paths end level in the comparison year. Above it one path is ahead, below it the other. It's a what-if line, not a price forecast.",
+    definition: "The flat price growth at which both paths end level in the comparison year. Above it one path is ahead, below it the other. It's a what-if line, not a price forecast. Where it falls depends on how fast your income grows.",
   },
 ];
 

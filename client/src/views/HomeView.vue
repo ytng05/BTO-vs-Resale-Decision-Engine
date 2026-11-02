@@ -44,7 +44,7 @@ const STEPS = [
 ];
 
 const GETS = [
-  { tag: 'Break-even year', fill: 'var(--accent-fill-2)', text: 'When both paths leave you equally well off' },
+  { tag: 'Break-even line', fill: 'var(--accent-fill-2)', text: 'The price growth at which both paths leave you equally well off' },
   { tag: 'Net position', fill: 'var(--accent-fill-3)', text: 'How far ahead each path is, year by year' },
   { tag: 'What would flip it', fill: 'var(--bg-page)', text: 'The BTO price at which the answer changes, and how rent and growth move it' },
 ];
