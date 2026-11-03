@@ -10,10 +10,14 @@ describe('results verdict', () => {
     cy.get('[data-cy=results-verdict]').invoke('text').should('not.match', /profit/i);
   });
 
-  it('tags exactly one path card as ahead, in words', () => {
+  it('names a path as ahead only when the headline does: one tag and label when not close, none when close (D42)', () => {
     completePlan();
-    cy.get('[data-cy$=-ahead-tag]').should('have.length.at.most', 1).each(($tag) => {
-      expect($tag.text()).to.match(/^Ahead/);
+    cy.get('[data-cy=results-verdict-headline]').invoke('text').then((headline) => {
+      const close = /^Too close to call|about the same/.test(headline);
+      cy.get('[data-cy$=-ahead-tag]').should('have.length', close ? 0 : 1);
+      cy.get('[data-cy=results-verdict-eyebrow]').should(close ? 'contain' : 'not.contain', 'Too close to call');
+      if (!close) cy.get('[data-cy=results-verdict-eyebrow]').should('contain', 'comes out ahead');
+      cy.get('[data-cy$=-ahead-tag]').each(($tag) => expect($tag.text()).to.match(/^Ahead/));
     });
   });
 

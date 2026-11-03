@@ -32,11 +32,12 @@ async function jumpToSteps() {
 <template>
   <section aria-labelledby="verdict-headline" class="verdict" data-cy="results-verdict">
     <p class="verdict__eyebrow" data-cy="results-verdict-eyebrow">
-      <template v-if="verdict.winner === 'bto' || verdict.winner === 'resale'">
+      <template v-if="(verdict.winner === 'bto' || verdict.winner === 'resale') && !verdict.close">
         <span class="verdict__dot" :class="`verdict__dot--${verdict.winner}`" aria-hidden="true"></span>
         {{ verdict.winner === 'bto' ? 'BTO' : 'Resale' }} comes out ahead<template v-if="horizonYear"> in {{ horizonYear }}</template>
       </template>
-      <template v-else>Your result<template v-if="horizonYear"> in {{ horizonYear }}</template></template>
+      <!-- Within the "too close to call" line (D42) no path is named as ahead, here or on the cards. -->
+      <template v-else>{{ verdict.close ? 'Too close to call' : 'Your result' }}<template v-if="horizonYear"> in {{ horizonYear }}</template></template>
     </p>
 
     <h1 id="verdict-headline" class="hero-statement mb-2" data-cy="results-verdict-headline">{{ verdict.headline }}</h1>

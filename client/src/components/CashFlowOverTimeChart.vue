@@ -93,7 +93,8 @@ const crosshair = {
     const { ctx, chartArea } = c;
     const first = c.getDatasetMeta(0).data[i];
     if (!first) return;
-    const ink = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#666';
+    const ink = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
+    const ring = themeColour('white'); // the dot's outline, so it stands out from the line
     ctx.save();
     ctx.strokeStyle = ink;
     ctx.lineWidth = 1;
@@ -111,7 +112,7 @@ const crosshair = {
       ctx.fillStyle = ds.borderColor;
       ctx.fill();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = ring;
       ctx.stroke();
     });
     ctx.restore();

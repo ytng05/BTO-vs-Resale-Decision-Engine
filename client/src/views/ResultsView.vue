@@ -223,6 +223,11 @@ onMounted(load);
       <template v-else>
         <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
         <p v-if="gapSentence" data-cy="results-gap-sentence">{{ gapSentence }}</p>
+        <!-- No verdict to show (an outcome has no net position): the way back and on must still be here. -->
+        <div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
+          <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="results-edit-button">Change inputs</RouterLink>
+          <RouterLink to="/dashboard" class="btn btn-outline-primary" data-cy="results-dashboard-button">Open the dashboard</RouterLink>
+        </div>
       </template>
       <!-- D40: the BTO price at which the verdict flips. Absent from older servers and when path A isn't a BTO. -->
       <p v-if="result.btoPriceSentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
@@ -247,7 +252,7 @@ onMounted(load);
             :horizon-year="horizonYear"
             cy-prefix="results-patha"
             tone="bto"
-            :ahead="verdict.winner === 'bto'"
+            :ahead="!verdict.close && verdict.winner === 'bto'"
           />
         </div>
         <div class="col-12 col-lg-6">
@@ -258,7 +263,7 @@ onMounted(load);
             :horizon-year="horizonYear"
             cy-prefix="results-pathb"
             tone="resale"
-            :ahead="verdict.winner === 'resale'"
+            :ahead="!verdict.close && verdict.winner === 'resale'"
           />
         </div>
       </div>
