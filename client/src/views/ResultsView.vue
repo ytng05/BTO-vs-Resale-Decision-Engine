@@ -11,9 +11,11 @@ import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
 import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
 import ResultsNextSteps from '../components/ResultsNextSteps.vue';
+import ResultsVerdict from '../components/ResultsVerdict.vue';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, LEASE_BANDS, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
+import { keyRows, verdict as buildVerdict } from '../utils/resultsVerdict.js';
 import { isPlanComplete } from '../validation/planValidation.js';
 
 const store = useScenarioStore();
@@ -74,9 +76,9 @@ const sections = ref({ chart: false, heatmap: true, timing: false });
 const timingResult = ref(null);
 const timingTakeaway = computed(() => {
   const best = timingResult.value?.best?.year;
-  if (best) return `Applying in ${best} ends with the highest net position of the years checked.`;
+  if (best) return `Applying in ${best} ends with the highest total position of the years checked.`;
   if (timingResult.value) return 'None of the years checked work with your cash and move-in year.';
-  return 'Which application year ends with the highest net position, and which miss your move-in year.';
+  return 'Which application year ends with the highest total position, and which miss your move-in year.';
 });
 const heatmapTakeaway = computed(() => {
   const cells = (result.value?.grid ?? []).flat();
@@ -94,12 +96,16 @@ const gap = computed(() => {
   return typeof a === 'number' && typeof b === 'number' ? a - b : null;
 });
 
+// Who ends ahead, in a plain sentence, and the few numbers side by side (utils/resultsVerdict.js, unit-tested).
+const verdict = computed(() => buildVerdict(result.value?.outcomeA, result.value?.outcomeB, horizonYear.value));
+const keyComparison = computed(() => keyRows(result.value?.outcomeA, result.value?.outcomeB, horizonYear.value));
+
 const gapSentence = computed(() => {
   if (gap.value === null) return '';
   const years = horizonYear.value ? `By ${horizonYear.value}, ` : '';
-  if (gap.value === 0) return `${years}both paths end with the same net financial position under your assumptions.`;
+  if (gap.value === 0) return `${years}both paths end with the same total position under your assumptions.`;
   const ahead = gap.value > 0 ? 'BTO' : 'resale';
-  return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in net financial position under your assumptions.`;
+  return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in total position under your assumptions.`;
 });
 
 // Which prices the comparison used (D26, D33), so a default is never hidden: the BTO launch and its price
@@ -206,8 +212,18 @@ onMounted(load);
       <p class="d-none d-print-block small mb-2" data-cy="results-print-header">
         BTO vs Resale · printed {{ printedOn }} · {{ planLine }}
       </p>
-      <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
-      <p v-if="gapSentence" data-cy="results-gap-sentence">{{ gapSentence }}</p>
+      <ResultsVerdict
+        v-if="verdict.winner"
+        :verdict="verdict"
+        :rows="keyComparison"
+        :gap-sentence="gapSentence"
+        :break-even-sentence="result.breakEvenSentence"
+        :horizon-year="horizonYear"
+      />
+      <template v-else>
+        <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
+        <p v-if="gapSentence" data-cy="results-gap-sentence">{{ gapSentence }}</p>
+      </template>
       <!-- D40: the BTO price at which the verdict flips. Absent from older servers and when path A isn't a BTO. -->
       <p v-if="result.btoPriceSentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
       <p v-if="phgNotAsked" class="text-caption mb-2" data-cy="results-phg-note">
@@ -222,13 +238,6 @@ onMounted(load);
           <span v-if="result.mock" data-cy="results-mock-notice">Showing mock data.</span>
         </span>
       </p>
-      <div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
-        <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="results-edit-button">Change inputs</RouterLink>
-        <RouterLink to="/dashboard" class="btn btn-outline-primary" data-cy="results-dashboard-button">What's this made of?</RouterLink>
-        <button type="button" class="btn btn-outline-secondary" data-cy="results-print-button" @click="printPage">Print or save as PDF</button>
-      </div>
-      <SaveScenarioPanel class="d-print-none" :result="result" />
-
       <div v-if="result.outcomeA && result.outcomeB" class="row g-3 mb-3">
         <div class="col-12 col-lg-6">
           <PathOutcomeCard
@@ -238,6 +247,7 @@ onMounted(load);
             :horizon-year="horizonYear"
             cy-prefix="results-patha"
             tone="bto"
+            :ahead="verdict.winner === 'bto'"
           />
         </div>
         <div class="col-12 col-lg-6">
@@ -248,6 +258,7 @@ onMounted(load);
             :horizon-year="horizonYear"
             cy-prefix="results-pathb"
             tone="resale"
+            :ahead="verdict.winner === 'resale'"
           />
         </div>
       </div>
@@ -263,18 +274,24 @@ onMounted(load);
       <!-- Why one path ends ahead, line by line (D34). Arrives with /compare; hidden if an older server omits it. -->
       <GapBreakdownPanel v-if="result.gapBreakdown" :gap="result.gapBreakdown" />
 
+      <div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
+        <button type="button" class="btn btn-outline-secondary" data-cy="results-print-button" @click="printPage">Print or save as PDF</button>
+      </div>
+      <SaveScenarioPanel class="d-print-none" :result="result" />
+
       <h2 class="h5 mt-4 mb-2">More detail</h2>
       <div class="results-sections">
         <DashboardSection
           v-if="result.outcomeA && result.outcomeB"
           v-model:open="sections.chart"
-          title="Net position over time"
-          takeaway="How much you'd own outright each year, BTO against resale."
+          title="What you'd own over time"
+          takeaway="The flat's value minus what you still owe, year by year. Hover or tap the chart to compare."
           lazy
           cy="results-section-chart"
         >
           <p class="text-secondary">
-            Before selling. For what makes up the figure at {{ horizonYear }} itself, see the
+            What the flat is worth, minus the loan and the CPF you still owe, if you did not sell. The cash you pay in is not
+            counted here, so {{ horizonYear }} differs from "Your total position" above. For what makes up that figure, see the
             <RouterLink to="/dashboard" data-cy="results-cashflow-dashboard-link">financial dashboard</RouterLink>.
           </p>
           <CashFlowOverTimeChart :outcome-a="result.outcomeA" :outcome-b="result.outcomeB" :horizon-year="horizonYear" />

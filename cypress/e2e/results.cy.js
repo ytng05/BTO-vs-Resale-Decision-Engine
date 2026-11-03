@@ -13,7 +13,7 @@ describe('results page', () => {
   it('leads with the break-even sentence and shows the ruleset version', () => {
     completePlan();
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
-    cy.get('[data-cy=results-gap-sentence]').should('contain', 'net financial position');
+    cy.get('[data-cy=results-gap-sentence]').should('contain', 'total position');
     cy.get('[data-cy=results-ruleset-version]').should('contain', 'Ruleset');
   });
 

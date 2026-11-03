@@ -5,6 +5,8 @@
 // never "profit", never "on sale" (v2 measures everything at horizonYear, there is no sale).
 // All Outcome money fields are integer cents (the contract); this component is the one place
 // that converts to dollars, right before formatMoney().
+// Plain wording for first-time readers: "your total position" is the formal net financial position (the glossary
+// term explains it), and the CPF line says what actually happens: you pay your own CPF back.
 // Layout (Calm, UI.md §8): the path is named with a dot AND its title (colour is never the only signal),
 // the net position is the big figure, the totals sit in a short list, and the grants are listed
 // once each with a single status (EligibilityList).
@@ -20,6 +22,7 @@ const props = defineProps({
   horizonYear: { type: Number, default: null },
   cyPrefix: { type: String, required: true }, // 'results-patha' / 'results-pathb'
   tone: { type: String, default: 'bto' }, // 'bto' (ink) | 'resale' (pink): matches the charts and the Dashboard
+  ahead: { type: Boolean, default: false }, // true on the path with the higher total position: outlined and tagged in words
 });
 
 const dollars = (cents) => (typeof cents === 'number' ? cents / 100 : cents);
@@ -43,13 +46,16 @@ const grantAmounts = computed(() =>
 </script>
 
 <template>
-  <div class="card h-100" :class="`dash-card--${tone}`" :data-cy="`${cyPrefix}-card`">
+  <div class="card h-100" :class="[`dash-card--${tone}`, { 'compare-card--winner': ahead }]" :data-cy="`${cyPrefix}-card`">
     <div class="card-body">
-      <h2 class="h5 mb-1"><span class="dash-dot" :class="`dash-dot--${tone}`" aria-hidden="true"></span>{{ title }}</h2>
+      <h2 class="h5 mb-1 d-flex flex-wrap align-items-center gap-2">
+        <span><span class="dash-dot" :class="`dash-dot--${tone}`" aria-hidden="true"></span>{{ title }}</span>
+        <span v-if="ahead" class="path-ahead" :data-cy="`${cyPrefix}-ahead-tag`">Ahead<template v-if="horizonYear"> in {{ horizonYear }}</template></span>
+      </h2>
       <p v-if="subtitle" class="text-secondary small mb-3">{{ subtitle }}</p>
 
       <p class="text-secondary small mb-0">
-        Net financial position<template v-if="horizonYear"> at {{ horizonYear }}</template>
+        <Term id="net-position">Your total position</Term><template v-if="horizonYear"> in {{ horizonYear }}</template>
       </p>
       <p class="path-net text-numeric mb-4" :data-cy="`${cyPrefix}-net-position`">{{ formatMoney(dollars(outcome.netPositionCents)) }}</p>
 
@@ -59,11 +65,11 @@ const grantAmounts = computed(() =>
           <dd class="text-numeric" :data-cy="`${cyPrefix}-grants-total`">{{ formatMoney(dollars(outcome.totalGrantsCents)) }}</dd>
         </div>
         <div :data-cy="`${cyPrefix}-cpf-refund`">
-          <dt>CPF owed back at the horizon, with accrued interest</dt>
+          <dt>CPF you pay back, with interest</dt>
           <dd class="text-numeric">{{ formatMoney(dollars(cpfOwedTotalCents)) }}</dd>
         </div>
         <div v-if="outcome.clawbackCents > 0" :data-cy="`${cyPrefix}-clawback`">
-          <dt><Term id="clawback">Subsidy clawback</Term> at the horizon</dt>
+          <dt>Subsidy you repay (<Term id="clawback">clawback</Term>)</dt>
           <dd class="text-numeric">{{ formatMoney(dollars(outcome.clawbackCents)) }}</dd>
         </div>
       </dl>
@@ -93,6 +99,16 @@ const grantAmounts = computed(() =>
 }
 .path-list dt { font-weight: 400; color: var(--text-secondary); }
 .path-list dd { margin: 0; text-align: right; font-weight: 500; white-space: nowrap; }
+.path-ahead {
+  padding: 0 0.625rem;
+  border-radius: var(--radius-pill);
+  background: var(--success-fill);
+  color: var(--success);
+  font-family: var(--font-body, inherit);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
 .path-subhead {
   font-family: var(--font-heading);
   font-size: 0.8125rem;
