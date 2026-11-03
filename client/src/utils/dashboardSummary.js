@@ -194,7 +194,7 @@ export function groupWarnings(outcomeA, outcomeB, messages = {}) {
     (o?.warnings ?? []).forEach((w) => {
       const c = code(w);
       if (!c) return;
-      if (!byCode.has(c)) byCode.set(c, { code: c, paths: [], text: messages?.[c] ?? (typeof w === 'object' && w?.message) ?? c });
+      if (!byCode.has(c)) byCode.set(c, { code: c, paths: [], text: messages?.[c] ?? (typeof w === 'object' ? w?.message : null) ?? c });
       if (!byCode.get(c).paths.includes(path)) byCode.get(c).paths.push(path);
     });
   });

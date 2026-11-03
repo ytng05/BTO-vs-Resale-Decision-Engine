@@ -213,11 +213,12 @@ const cpfOa = computed(() => totalCpfOa(store.profile.applicants));
 // already says, one per code (groupWarnings).
 const warningGroups = computed(() => groupWarnings(A.value, B.value, result.value?.warningMessages ?? {}));
 
-// "Try a later year in What if": bring the panel into view and move focus to its first slider.
+// "Try a later year in What if": bring the panel into view and move focus to the application year's + button (the
+// years are − / + steppers, so the panel's first slider would be flat price growth).
 function jumpToWhatIf() {
   const panel = document.querySelector('[data-cy=dashboard-whatif]');
   panel?.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-  panel?.querySelector('input')?.focus({ preventScroll: true });
+  (panel?.querySelector('[data-cy=whatif-year-plus]') ?? panel?.querySelector('button, input'))?.focus({ preventScroll: true });
 }
 // A code becomes the server's plain-English sentence (`warningMessages`, docs/API_CONTRACT.md "POST /api/compare");
 // the bare code only if the server sent none for it.

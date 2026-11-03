@@ -120,4 +120,8 @@ describe('groupWarnings', () => {
     expect(g.notes.map((x) => [x.code, x.label])).toEqual([['HDB_LOAN_INCOME_CEILING_BREACHED', 'Both paths'], ['BTO_WAIT_ASSUMED', 'BTO']]);
     expect(g.notes[1].text).toBe('Wait assumed.');
   });
+  it('falls back to the code, never "false", when a warning has no sentence', () => {
+    const n = groupWarnings({ warnings: ['NEW_CODE', { code: 'OBJ_CODE' }, { code: 'OBJ_MSG', message: 'From the object.' }] }, {}, {}).notes;
+    expect(n.map((x) => x.text)).toEqual(['NEW_CODE', 'OBJ_CODE', 'From the object.']);
+  });
 });
