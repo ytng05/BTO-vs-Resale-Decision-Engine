@@ -1,19 +1,25 @@
 // Journey 5 (docs/JOURNEYS.md): an SC + PR couple with little cash. Two PRs are blocked; both paths are over
 // the loan limit and short of cash at purchase, and the app says so. Live build only.
-import { J5, beat, fillPaths, fillSituation, openDashboard, waitForResults } from './personas.js';
+import { J5, beat, fillAges, fillCitizenship, fillIncomes, fillPaths, fillSavings, openDashboard, waitForResults } from './personas.js';
 import { next } from '../e2e/helpers/plan.js';
 
 describe('Journey 5: can they afford it?', () => {
   it('blocks two PRs, then shows both paths over the loan limit with warnings', () => {
     cy.visit('/plan');
     next(); // nothing picked in 'What matters most'
-    fillSituation(J5);
+    fillAges(J5);
+    next();
+    fillCitizenship(J5);
     // At least one buyer must be a Singapore Citizen (D21).
-    cy.get('[data-cy=situation-buyer-1-citizenship-select]').select('PR');
+    cy.get('[data-cy=situation-buyer-1-citizenship-PR]').check({ force: true });
     next();
     cy.get('[data-cy=situation-applicants-error]').should('contain', 'Singapore Citizen');
     beat();
-    cy.get('[data-cy=situation-buyer-1-citizenship-select]').select('SC');
+    cy.get('[data-cy=situation-buyer-1-citizenship-SC]').check({ force: true });
+    next();
+    fillIncomes(J5);
+    next();
+    fillSavings(J5);
     next();
     fillPaths(J5);
     waitForResults();

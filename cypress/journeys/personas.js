@@ -3,7 +3,7 @@
 // Run against a LIVE build (VITE_USE_MOCK=false): the journeys show the real engine's results.
 // Onboarding (D38) leaves growth (3% prices, 2% income), the years (next year), rent while waiting (0) and the
 // BTO project (the town's newest launch) at their defaults; journeys change those on the Dashboard.
-import { next, pickWishes, seeResults } from '../e2e/helpers/plan.js';
+import { next, pickWishes, seeResults, showsPreview } from '../e2e/helpers/plan.js';
 
 const sc = (age, monthlyIncome, cpfOa) => ({ age, citizenship: 'SC', monthlyIncome, cpfOa });
 const pr = (age, monthlyIncome, cpfOa) => ({ age, citizenship: 'PR', monthlyIncome, cpfOa });
@@ -54,22 +54,39 @@ const typeInto = (hook, value) => cy.get(`[data-cy=${hook}]`).clear().type(Strin
 // '4 ROOM' -> '4-room', 'NEAR' -> 'near': the chips' data-cy suffixes.
 const slug = (v) => String(v).toLowerCase().replace(/\s+/g, '-');
 
-export function fillSituation(p) {
-  p.buyers.forEach((b, i) => {
-    const n = i + 1;
-    typeInto(`situation-buyer-${n}-age-input`, b.age);
-    cy.get(`[data-cy=situation-buyer-${n}-citizenship-select]`).select(b.citizenship);
-    typeInto(`situation-buyer-${n}-income-input`, b.monthlyIncome);
-    typeInto(`situation-buyer-${n}-cpf-input`, b.cpfOa);
-  });
+// About you asks one question per screen: ages, then citizenship, then incomes, then CPF, cash and move-in year.
+// fillSituation fills all four and stops on the last; the next next() goes to Your BTO.
+export function fillAges(p) {
+  p.buyers.forEach((b, i) => typeInto(`situation-buyer-${i + 1}-age-input`, b.age));
+}
+export function fillCitizenship(p) {
+  p.buyers.forEach((b, i) => cy.get(`[data-cy=situation-buyer-${i + 1}-citizenship-${b.citizenship}]`).check({ force: true }));
+}
+export function fillIncomes(p) {
+  p.buyers.forEach((b, i) => typeInto(`situation-buyer-${i + 1}-income-input`, b.monthlyIncome));
+}
+export function fillSavings(p) {
+  p.buyers.forEach((b, i) => typeInto(`situation-buyer-${i + 1}-cpf-input`, b.cpfOa));
   typeInto('situation-cash-savings-input', p.cash);
   if (p.moveInBy) typeInto('situation-move-in-by-input', p.moveInBy);
+}
+export function fillSituation(p) {
+  fillAges(p);
+  next();
+  fillCitizenship(p);
+  next();
+  fillIncomes(p);
+  next();
+  fillSavings(p);
 }
 
 export function fillPaths(p) {
   const a = p.pathA;
   cy.get('[data-cy=patha-town-select]').select(a.town);
-  if (a.project) cy.get(`[data-cy=patha-project-${a.project}]`, { timeout: 15000 }).click();
+  if (a.project) {
+    cy.get('[data-cy=patha-project-more]', { timeout: 15000 }).click(); // Use a different launch
+    cy.get(`[data-cy=patha-project-${a.project}]`).click();
+  }
   // The chips load from the server once the town is chosen: only what that town's launches offer.
   cy.get(`[data-cy=patha-flat-type-${slug(a.flatType)}]`, { timeout: 15000 }).click();
   beat();
@@ -83,7 +100,7 @@ export function fillPaths(p) {
   beat();
   next();
   beat();
-  seeResults();
+  seeResults({ preview: showsPreview(p.wishes) });
 }
 
 // The whole plan, from a fresh /plan to the Results page.

@@ -12,6 +12,8 @@ const router = createRouter({
     { path: '/', name: 'home', component: HomeView, meta: { title: 'BTO or resale' } },
     { path: '/plan', name: 'plan', component: PlanView, meta: { title: 'Plan' } },
     { path: '/results', name: 'results', component: ResultsView, meta: { title: 'Results' } },
+    // The results teaser between the last plan step and Results, for the picks it has figures for.
+    { path: '/preview', name: 'preview', component: () => import('../views/PreviewView.vue'), meta: { title: 'Your priorities' } },
     { path: '/dashboard', component: () => import('../views/DashboardView.vue'), meta: { title: 'Dashboard' } },
     { path: '/sources', name: 'sources', component: SourcesView, meta: { title: 'Sources' } },
     { path: '/login', name: 'login', component: LoginView, meta: { title: 'Log in' } },

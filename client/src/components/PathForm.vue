@@ -11,6 +11,8 @@
 // the Dashboard (D26).
 // Field names follow the store (contract v2/v2.1). The path ('BTO' / 'RESALE') is fixed in the store.
 import Term from './Term.vue';
+import NumberField from './NumberField.vue';
+import WhyWeAsk from './WhyWeAsk.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
 import { getBtoProjects, getResalePrice } from '../api/client.js';
@@ -21,6 +23,7 @@ import {
   BTO_FLAT_TYPES,
   CLASSIFICATIONS,
   LEASE_BANDS,
+  btoKeysYear,
   toTitleCase,
 } from '../constants/planOptions.js';
 
@@ -64,12 +67,26 @@ const launchOptions = computed(() =>
 const activeProject = computed(() => launchOptions.value.find((p) => p.id === choice.value.btoProjectId) ?? null);
 watch(activeProject, (p) => { if (isBto.value) emit('project', p); }, { immediate: true });
 
-// Flat types the chosen launch offers (BTO), or all three (resale).
+// Flat types the chosen launch offers (BTO), or all three (resale). The BTO step shows all three, the ones the
+// launch doesn't offer greyed out (offeredTypes), so the choice doesn't seem to be missing.
+const offeredTypes = computed(() => new Set((activeProject.value?.flats ?? []).map((f) => f.flatType)));
 const flatTypeOptions = computed(() => {
   if (!isBto.value) return FLAT_TYPES;
-  const offered = new Set((activeProject.value?.flats ?? []).map((f) => f.flatType));
-  return BTO_FLAT_TYPES.filter((f) => offered.has(f.value));
+  return BTO_FLAT_TYPES.filter((f) => offeredTypes.value.has(f.value));
 });
+// "Only 4-room in this launch." / "Only 4-room and 5-room in this launch.", when one or more types are missing.
+const offeredHint = computed(() => {
+  const offered = flatTypeOptions.value.map((f) => f.label.toLowerCase());
+  if (!activeProject.value || offered.length === BTO_FLAT_TYPES.length || !offered.length) return null;
+  return `Only ${offered.join(' and ')} in this launch.`;
+});
+// Newest first, so the first launch is the one we pick for you.
+const newestId = computed(() => launchOptions.value[0]?.id ?? null);
+// "Use a different launch" starts open when the user already picked another one.
+const launchesOpen = ref(false);
+watch(() => [choice.value.btoProjectId, newestId.value], ([id, newest]) => {
+  if (id && newest && id !== newest) launchesOpen.value = true;
+}, { immediate: true });
 // HDB's range for the chosen launch and flat type, in cents.
 const activeFlat = computed(() => (activeProject.value?.flats ?? []).find((f) => f.flatType === choice.value.flatType) ?? null);
 const midpointCents = computed(() => (activeFlat.value ? Math.round((activeFlat.value.priceMinCents + activeFlat.value.priceMaxCents) / 2) : null));
@@ -79,13 +96,13 @@ const monthYear = (ym) => {
   const [y, m] = String(ym ?? '').split('-').map(Number);
   return y && m ? new Date(y, m - 1, 1).toLocaleDateString('en-SG', { month: 'short', year: 'numeric' }) : '';
 };
-// '4 years', '4½ years', 'under a year': from HDB's waiting time for the launch.
-const keysIn = (months) => {
+// '4 yrs', '4½ yrs': the short form, for the launch list.
+const yrsToKeys = (months) => {
   if (typeof months !== 'number') return '';
   const half = Math.round(months / 6) / 2;
-  if (half < 1) return 'keys in under a year';
+  if (half < 1) return 'under a year to keys';
   const whole = Math.floor(half);
-  return `keys in about ${whole}${half > whole ? '½' : ''} year${half === 1 ? '' : 's'}`;
+  return `${whole}${half > whole ? '½' : ''} yrs to keys`;
 };
 
 let latestRequest = 0;
@@ -195,170 +212,227 @@ const LIVING = [
 
 <template>
   <div :data-cy="`${prefix}-form`">
-    <!-- The BTO step's intro is in PlanView's heading. -->
-    <p v-if="!isBto" class="text-secondary">The resale flat you're looking at.</p>
 
-    <div class="row g-4">
-      <div class="col-12 col-md-6">
-        <label :for="`${prefix}-town`" class="form-label">Town</label>
+    <!-- Your BTO (Calm board): town, then the launch we estimate from (the newest, or another), then flat type. -->
+    <div v-if="isBto" class="pf">
+      <div class="pf__field">
+        <label :for="`${prefix}-town`" class="pf__label">Town</label>
         <select
           :id="`${prefix}-town`"
           v-model="choice.town"
-          class="form-select"
+          class="form-select pf__select"
           :class="{ 'is-invalid': err('town') }"
           :aria-invalid="err('town') ? 'true' : null"
-          :aria-describedby="isBto ? `${prefix}-town-help` : undefined"
           :data-cy="`${prefix}-town-select`"
         >
           <option :value="null" disabled>Choose a town</option>
           <option v-for="t in townOptions" :key="t.value" :value="t.value">{{ t.label }}</option>
         </select>
-        <div v-if="isBto" :id="`${prefix}-town-help`" class="form-text">Towns with a recent BTO launch.</div>
-        <div class="invalid-feedback">{{ err('town') }}</div>
-        <div v-if="loadingTown" class="form-text mt-1" role="status" :data-cy="`${prefix}-projects-loading`">
+        <div v-if="err('town')" class="invalid-feedback d-block">{{ err('town') }}</div>
+        <div v-if="loadingTown" class="form-text" role="status" :data-cy="`${prefix}-projects-loading`">
           <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Loading launches in {{ toTitleCase(choice.town) }}…
         </div>
-        <div v-if="loadError" class="text-danger small mt-1" role="alert" :data-cy="`${prefix}-projects-error`">
+        <div v-if="loadError" class="text-danger small" role="alert" :data-cy="`${prefix}-projects-error`">
           {{ loadError }}
           <button type="button" class="btn btn-link btn-sm p-0 align-baseline" :data-cy="`${prefix}-projects-retry`" @click="loadTown">Try again</button>
         </div>
       </div>
 
-      <!-- BTO: which launch. It fixes the classification and which flat types there are. -->
-      <fieldset v-if="isBto && choice.town && launchOptions.length" class="col-12" :data-cy="`${prefix}-project`">
-        <legend class="form-label fs-6">Which launch should we estimate from?</legend>
-        <div class="chip-group">
-          <label v-for="p in launchOptions" :key="p.id" class="chip" :data-cy="`${prefix}-project-${p.id}`">
-            <input
-              v-model="choice.btoProjectId"
-              type="radio"
-              class="chip__input"
-              :name="`${prefix}-project`"
-              :value="p.id"
-              :data-cy="`${prefix}-project-${p.id}-input`"
-            />
-            <span class="chip__face">{{ p.name }} · {{ monthYear(p.launch) }} · {{ labelOf(CLASSIFICATIONS, p.classification) }}</span>
-          </label>
+      <!-- The launch. These launches have closed (D40): one stands in for the price and wait of your own. -->
+      <div v-if="activeProject" class="est" :data-cy="`${prefix}-project`">
+        <div class="est__line">
+          <span class="est__ic" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3d4a8f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21v-9h7v9M8 15h1M8 18h1M16 21V4M16 4H9M16 4l4 3M9 4v4" /></svg>
+          </span>
+          <p :data-cy="`${prefix}-project-help`">
+            We'll estimate from <b>{{ activeProject.name }}</b>, a past launch<br />
+            <span class="est__meta">
+              {{ monthYear(activeProject.launch) }} ·
+              <button
+                v-if="activeProject.classification !== 'STANDARD'"
+                type="button"
+                class="est__cls"
+                :popovertarget="`${prefix}-cls-tip`"
+              >{{ labelOf(CLASSIFICATIONS, activeProject.classification) }}</button>
+              <template v-else>{{ labelOf(CLASSIFICATIONS, activeProject.classification) }}</template>
+              <template v-if="btoKeysYear(choice.applicationYear, activeProject.waitMonths)"> · keys around {{ btoKeysYear(choice.applicationYear, activeProject.waitMonths) }}</template>
+            </span>
+            <!-- The price the comparison uses: the middle of HDB's range for this launch and flat type (D26). -->
+            <template v-if="activeFlat">
+              <br /><span class="est__meta" :data-cy="`${prefix}-price-basis`">
+                Price used: <strong class="est__price" :data-cy="`${prefix}-price-estimate`">{{ formatMoney(midpointCents / 100) }}</strong>, the middle of HDB's
+                <span class="est__range">{{ formatMoney(activeFlat.priceMinCents / 100) }}–{{ formatMoney(activeFlat.priceMaxCents / 100).replace('S$', '') }} range</span>
+              </span>
+            </template>
+          </p>
+          <div :id="`${prefix}-cls-tip`" popover class="est__tip">
+            {{ labelOf(CLASSIFICATIONS, activeProject.classification) }} flats have a longer minimum occupation period than
+            Standard ones, and some of the subsidy is paid back when you sell.
+          </div>
         </div>
-        <div class="form-text" :data-cy="`${prefix}-project-help`">
-          <!-- D40: these launches have closed; one stands in for the launch the user will apply to. -->
-          These launches have closed. We use one as an estimate of the price and wait for your own application.
-          <template v-if="activeProject">{{ activeProject.name }}: {{ keysIn(activeProject.waitMonths) }} after you apply. </template>
-          Plus and Prime flats have a longer <Term id="mop">minimum occupation period</Term> and a <Term id="clawback">subsidy clawback</Term> when sold.
-        </div>
+        <details v-if="launchOptions.length > 1" class="est__more" :open="launchesOpen" @toggle="launchesOpen = $event.target.open">
+          <summary :data-cy="`${prefix}-project-more`">
+            {{ launchesOpen ? 'Keep this launch' : 'Use a different launch' }}
+            <svg class="est__chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+          </summary>
+          <fieldset class="launches">
+            <legend class="visually-hidden">Launch to estimate from</legend>
+            <label v-for="p in launchOptions" :key="p.id" class="launch" :data-cy="`${prefix}-project-${p.id}`">
+              <input
+                v-model="choice.btoProjectId"
+                type="radio"
+                class="visually-hidden"
+                :name="`${prefix}-project`"
+                :value="p.id"
+                :data-cy="`${prefix}-project-${p.id}-input`"
+              />
+              <span class="launch__face">
+                <span>
+                  <b>{{ p.name }}</b>
+                  <small>{{ monthYear(p.launch) }} · {{ labelOf(CLASSIFICATIONS, p.classification) }} · {{ yrsToKeys(p.waitMonths) }}</small>
+                </span>
+                <span v-if="p.id === newestId" class="launch__new">Newest</span>
+              </span>
+            </label>
+          </fieldset>
+        </details>
         <div v-if="err('classification')" class="invalid-feedback d-block">{{ err('classification') }}</div>
-      </fieldset>
+      </div>
 
-      <!-- Flat type -->
-      <fieldset v-if="!isBto || activeProject" class="col-12" :data-cy="`${prefix}-flat-type`">
-        <legend class="form-label fs-6">Flat type</legend>
-        <p v-if="isBto && !choice.town" class="form-text mt-0">Choose a town to see the flat types on offer.</p>
-        <div v-else class="chip-group">
-          <label v-for="f in flatTypeOptions" :key="f.value" class="chip" :data-cy="`${prefix}-flat-type-${slug(f.value)}`">
+      <!-- Flat type: all three, the ones this launch doesn't offer greyed out. -->
+      <fieldset v-if="activeProject" class="pf__field" :data-cy="`${prefix}-flat-type`">
+        <legend class="pf__label">Flat type</legend>
+        <div class="choice-row">
+          <label v-for="f in BTO_FLAT_TYPES" :key="f.value" class="choice" :data-cy="`${prefix}-flat-type-${slug(f.value)}`">
             <input
               v-model="choice.flatType"
               type="radio"
-              class="chip__input"
+              class="visually-hidden"
+              :name="`${prefix}-flat-type`"
+              :value="f.value"
+              :disabled="!offeredTypes.has(f.value)"
+              :data-cy="`${prefix}-flat-type-${slug(f.value)}-input`"
+            />
+            <span class="choice__face">{{ f.label }}</span>
+          </label>
+        </div>
+        <p v-if="offeredHint" class="pf__hint" :data-cy="`${prefix}-flat-type-hint`">{{ offeredHint }}</p>
+        <div v-if="err('flatType')" class="invalid-feedback d-block">{{ err('flatType') }}</div>
+      </fieldset>
+    </div>
+
+    <!-- Resale flat (same controls as Your BTO): town, flat type, remaining lease, asking price, parents. -->
+    <div v-else class="pf">
+      <!-- SLOT: "Have a listing? Find it by postal code or address" goes here, first, once feature/resale-flat-search is
+           merged to main; the fields below then sit under a small "Or pick by hand" label. -->
+      <div class="pf__field">
+        <label :for="`${prefix}-town`" class="pf__label">Town</label>
+        <select
+          :id="`${prefix}-town`"
+          v-model="choice.town"
+          class="form-select pf__select"
+          :class="{ 'is-invalid': err('town') }"
+          :aria-invalid="err('town') ? 'true' : null"
+          :data-cy="`${prefix}-town-select`"
+        >
+          <option :value="null" disabled>Choose a town</option>
+          <option v-for="t in townOptions" :key="t.value" :value="t.value">{{ t.label }}</option>
+        </select>
+        <div v-if="err('town')" class="invalid-feedback d-block">{{ err('town') }}</div>
+      </div>
+
+      <fieldset class="pf__field" :data-cy="`${prefix}-flat-type`">
+        <legend class="pf__label">Flat type</legend>
+        <div class="choice-row">
+          <label v-for="f in flatTypeOptions" :key="f.value" class="choice" :data-cy="`${prefix}-flat-type-${slug(f.value)}`">
+            <input
+              v-model="choice.flatType"
+              type="radio"
+              class="visually-hidden"
               :name="`${prefix}-flat-type`"
               :value="f.value"
               :data-cy="`${prefix}-flat-type-${slug(f.value)}-input`"
             />
-            <span class="chip__face">{{ f.label }}</span>
+            <span class="choice__face">{{ f.label }}</span>
           </label>
         </div>
         <div v-if="err('flatType')" class="invalid-feedback d-block">{{ err('flatType') }}</div>
       </fieldset>
 
-      <!-- BTO: the price, as HDB publishes it: a range for the launch and flat type (D26) -->
-      <!-- The price the comparison uses, as a figure: easy to miss when it was only a sentence. -->
-      <div v-if="isBto && activeFlat" class="col-12">
-        <div class="bto-price" :data-cy="`${prefix}-price-basis`">
-          <p class="bto-price__label mb-0">Estimated price we'll use</p>
-          <p class="bto-price__figure text-numeric mb-1" :data-cy="`${prefix}-price-estimate`">{{ formatMoney(midpointCents / 100) }}</p>
-          <p class="bto-price__note mb-0">
-            The middle of HDB's range for a {{ labelOf(FLAT_TYPES, choice.flatType).toLowerCase() }} at {{ activeProject.name }}
-            ({{ monthYear(activeProject.launch) }}): {{ formatMoney(activeFlat.priceMinCents / 100) }} to
-            {{ formatMoney(activeFlat.priceMaxCents / 100) }}. Your own price depends on the launch and the unit you pick; you
-            can change it on the dashboard, and the results say at what price the answer would change.
-          </p>
-        </div>
-      </div>
-
-      <!-- Resale: remaining lease -->
-      <fieldset v-if="!isBto" class="col-12" :data-cy="`${prefix}-lease-band`">
-        <legend class="form-label fs-6">Remaining lease</legend>
-        <div class="chip-group">
-          <label v-for="b in LEASE_BANDS" :key="b.value" class="chip" :data-cy="`${prefix}-lease-band-${b.value}`">
+      <fieldset class="pf__field" :data-cy="`${prefix}-lease-band`">
+        <legend class="pf__label">Remaining lease (years)</legend>
+        <div class="choice-row choice-row--five">
+          <label v-for="b in LEASE_BANDS" :key="b.value" class="choice" :data-cy="`${prefix}-lease-band-${b.value}`">
             <input
               v-model="choice.leaseBand"
               type="radio"
-              class="chip__input"
+              class="visually-hidden"
               :name="`${prefix}-lease-band`"
               :value="b.value"
+              :aria-label="b.label"
               :data-cy="`${prefix}-lease-band-${b.value}-input`"
             />
-            <span class="chip__face">{{ b.label }}</span>
+            <span class="choice__face" aria-hidden="true">{{ b.value.replace('-', '–') }}</span>
           </label>
         </div>
-        <div class="form-text">From the listing. It sets the price we look up, the loan limit and how much CPF you can use.</div>
+        <p class="pf__hint">Check the listing.</p>
+        <WhyWeAsk :id="`${prefix}-lease-why`" text="It sets the price we look up, the loan limit and how much CPF you can use." />
         <div v-if="err('leaseBand')" class="invalid-feedback d-block">{{ err('leaseBand') }}</div>
       </fieldset>
 
-      <!-- Resale: the listing's asking price, optional (D39) -->
-      <div v-if="!isBto" class="col-12 col-md-6">
-        <!-- The (i) sits beside the label, not inside it, so tapping it doesn't focus the field. -->
-        <div class="form-label d-flex align-items-center gap-1">
-          <label :for="`${prefix}-asking-price`" class="mb-0">Asking price <span class="text-secondary">(optional)</span></label>
-          <Term id="asking-price" icon ask="What is the asking price?" />
-        </div>
-        <div class="input-group has-validation">
-          <span class="input-group-text">$</span>
-          <input
+      <!-- The listing's asking price, optional (D39) -->
+      <div class="pf__field">
+        <label :for="`${prefix}-asking-price`" class="pf__label">Asking price <span class="pf__optional">(optional)</span></label>
+        <div class="pf__box" :class="{ 'pf__box--invalid': err('resalePrice') }">
+          <span class="pf__unit" aria-hidden="true">S$</span>
+          <NumberField
             :id="`${prefix}-asking-price`"
-            v-model.number="choice.resalePrice"
-            type="number"
-            min="0"
-            step="1000"
-            inputmode="numeric"
-            :placeholder="median ? `e.g. ${Math.round(median.medianPriceCents / 100)}` : 'e.g. 650000'"
-            class="form-control"
+            v-model="choice.resalePrice"
+            class="pf__input"
             :class="{ 'is-invalid': err('resalePrice') }"
             :aria-invalid="err('resalePrice') ? 'true' : null"
             :aria-describedby="`${prefix}-asking-price-help`"
             :data-cy="`${prefix}-asking-price-input`"
           />
-          <div class="invalid-feedback">{{ err('resalePrice') }}</div>
         </div>
-        <div :id="`${prefix}-asking-price-help`" class="form-text" :data-cy="`${prefix}-asking-price-help`">
-          <template v-if="median">
-            Leave blank to use the median of recent sales, {{ formatMoney(median.medianPriceCents / 100) }}
-            (the middle half sold for {{ formatMoney(median.p25PriceCents / 100) }} to {{ formatMoney(median.p75PriceCents / 100) }}).
-          </template>
+        <div v-if="err('resalePrice')" class="invalid-feedback d-block">{{ err('resalePrice') }}</div>
+        <!-- One line for the box's state: empty, what blank means; above the median, the cash it takes (D39). -->
+        <p v-if="choice.resalePrice == null" :id="`${prefix}-asking-price-help`" class="pf__hint" :data-cy="`${prefix}-asking-price-help`">
+          <template v-if="median">Leave blank to use recent sales (median {{ formatMoney(median.medianPriceCents / 100) }}).</template>
           <template v-else-if="medianLoading"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Looking up recent sales…</template>
-          <template v-else>Leave blank to use the median of recent sales.</template>
-          <span v-if="overMedian > 0" class="d-block mt-1" :data-cy="`${prefix}-asking-price-cov`">
-            {{ formatMoney(overMedian) }} above the median. We treat the median as the <Term id="valuation">valuation</Term>, so that part is paid in cash, not CPF or the loan.
-          </span>
+          <template v-else>Leave blank to use recent sales.</template>
+        </p>
+        <div
+          v-else-if="overMedian > 0"
+          :id="`${prefix}-asking-price-help`"
+          class="alert alert-info small py-2 mb-0 pf__note"
+          role="status"
+          aria-live="polite"
+          :data-cy="`${prefix}-asking-price-cov`"
+        >
+          <!-- Lucide "info" -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>
+          <span>{{ formatMoney(overMedian) }} above the <Term id="valuation">median</Term>. That part is paid in cash, not CPF or the loan.</span>
         </div>
       </div>
 
-      <!-- Resale: living with or near parents (only if picked in step 1) -->
-      <fieldset v-if="!isBto && askParents" class="col-12" :data-cy="`${prefix}-living`">
-        <legend class="form-label fs-6">Your parents</legend>
-        <div class="chip-group">
-          <label v-for="l in LIVING" :key="l.value" class="chip" :data-cy="`${prefix}-living-${slug(l.value)}`">
+      <!-- Living with or near parents (only if picked in step 1) -->
+      <fieldset v-if="askParents" class="pf__field" :data-cy="`${prefix}-living`">
+        <legend class="pf__label">Your parents</legend>
+        <div class="choice-row choice-row--wrap">
+          <label v-for="l in LIVING" :key="l.value" class="choice" :data-cy="`${prefix}-living-${slug(l.value)}`">
             <input
               v-model="choice.livingArrangement"
               type="radio"
-              class="chip__input"
+              class="visually-hidden"
               :name="`${prefix}-living`"
               :value="l.value"
               :data-cy="`${prefix}-living-${slug(l.value)}-input`"
             />
-            <span class="chip__face">{{ l.label }}</span>
+            <span class="choice__face">{{ l.label }}</span>
           </label>
         </div>
-        <div class="form-text">For the Proximity Housing Grant on a resale flat. You declare this; the map is for reference only.</div>
+        <p class="pf__hint">For the Proximity Housing Grant on a resale flat. You declare this; the map is for reference only.</p>
         <div v-if="err('livingArrangement')" class="invalid-feedback d-block">{{ err('livingArrangement') }}</div>
       </fieldset>
     </div>
@@ -366,9 +440,85 @@ const LIVING = [
 </template>
 
 <style scoped>
-/* "Estimated price we'll use": the BTO price as a figure, on the periwinkle fill the Calm cards use for facts. */
-.bto-price { padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--accent-fill-3); }
-.bto-price__label { font-size: 0.875rem; color: var(--text-secondary); }
-.bto-price__figure { font-family: var(--font-heading); font-size: 1.75rem; font-weight: 500; line-height: 1.15; letter-spacing: -0.02em; }
-.bto-price__note { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; }
+/* Your BTO and Resale flat (Calm boards). Picked choices are pink with a dark border, as on About you. */
+.pf { display: flex; flex-direction: column; gap: 26px; }
+.pf__field { margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.pf__field > legend { float: none; width: auto; padding: 0; margin: 0 0 8px; }
+.pf__label { margin: 0; font-size: 16px; font-weight: 600; }
+.pf__select { height: 56px; border-radius: 14px; border: 1.5px solid #dfe2ea; font-size: 17px; font-weight: 500; padding-inline: 16px 44px; }
+.pf__select:focus { border-color: #dfe2ea; box-shadow: none; outline: 2px solid #1d1d24; outline-offset: 2px; }
+.pf__hint { margin: 0; font-size: 14px; color: var(--text-secondary, #5f6373); }
+
+.est { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: 20px; background: #f3f5fb; }
+.est__line { display: flex; gap: 14px; align-items: flex-start; }
+.est__ic { flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; background: #e3e6f4; display: grid; place-items: center; }
+.est__line p { margin: 0; font-size: 16px; line-height: 1.5; }
+.est__meta { font-size: 15px; color: var(--text-secondary, #5f6373); }
+.est__price { color: var(--text-primary, #1d1d24); font-weight: 600; } /* the figure the comparison uses (#107) */
+.est__range { white-space: nowrap; } /* the range never splits at its dash */
+.est__cls {
+  padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--text-primary, #1d1d24);
+  text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer;
+}
+.est__cls:focus-visible { outline: 2px solid #1d1d24; outline-offset: 2px; border-radius: 4px; }
+.est__tip {
+  margin: auto; max-width: 320px; padding: 16px 18px; border: 0; border-radius: 16px;
+  background: #1d1d24; color: #ffffff; font-size: 14px; line-height: 1.45; box-shadow: 0 16px 40px rgba(29, 29, 36, 0.25);
+}
+.est__tip::backdrop { background: rgba(29, 29, 36, 0.12); }
+.est__more summary {
+  display: inline-flex; align-items: center; gap: 6px; width: max-content; margin-left: 54px; cursor: pointer; list-style: none;
+  font-size: 15px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+}
+.est__more summary::-webkit-details-marker { display: none; }
+.est__more summary:focus-visible { outline: 2px solid #1d1d24; outline-offset: 3px; border-radius: 4px; }
+.est__chev { transition: transform 0.15s; }
+.est__more[open] .est__chev { transform: rotate(180deg); }
+.launches { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 0 54px; padding: 0; border: 0; }
+.launch { position: relative; display: block; margin: 0; }
+.launch__face {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; cursor: pointer;
+  border-radius: 14px; border: 1.5px solid #dfe2ea; background: #ffffff;
+}
+.launch:hover .launch__face { border-color: #b9bfcd; }
+.launch input:checked + .launch__face { background: #fdf0f6; border-color: #1d1d24; }
+.launch input:focus-visible + .launch__face { outline: 2px solid #1d1d24; outline-offset: 3px; }
+.launch b { display: block; font-size: 15px; font-weight: 600; }
+.launch small { font-size: 13px; color: var(--text-secondary, #5f6373); }
+.launch__new { padding: 3px 9px; border-radius: 999px; background: #f3f3f5; color: var(--text-secondary, #5f6373); font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+.choice-row { display: flex; gap: 8px; }
+.choice-row--wrap { flex-wrap: wrap; }
+.choice-row--wrap .choice { flex: 1 1 160px; }
+.pf__optional { font-weight: 400; color: var(--text-secondary, #5f6373); }
+.pf__note { display: flex; gap: 10px; align-items: flex-start; }
+.pf__note svg { flex-shrink: 0; margin-top: 1px; }
+.pf__box {
+  display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; border-radius: 14px;
+  border: 1.5px solid #dfe2ea; background: #ffffff; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pf__box:focus-within { border-color: #1d1d24; box-shadow: 0 0 0 4px var(--color-blush, #fbd5e5); }
+.pf__box--invalid { border-color: var(--bs-form-invalid-border-color, #dc3545); }
+.pf__unit { font-size: 16px; font-weight: 500; color: var(--text-secondary, #5f6373); }
+.pf__input { flex: 1; min-width: 0; padding: 0; border: 0; outline: none; background: transparent; font-size: 18px; font-weight: 600; color: var(--text-primary, #1d1d24); }
+/* Five lease bands on one row from a small laptop up; two rows on phones. */
+@media (max-width: 575.98px) {
+  .choice-row--five { flex-wrap: wrap; }
+  .choice-row--five .choice { flex: 1 1 calc(33% - 8px); }
+}
+.choice { position: relative; flex: 1 1 0; min-width: 0; margin: 0; } /* three across at every width */
+.choice__face {
+  display: flex; align-items: center; justify-content: center; height: 54px; padding: 0 12px; cursor: pointer;
+  border-radius: 14px; border: 1.5px solid #dfe2ea; background: #ffffff; font-size: 16px; font-weight: 500; white-space: nowrap;
+}
+.choice:hover .choice__face { border-color: #b9bfcd; }
+.choice input:checked + .choice__face { background: #fdf0f6; border-color: #1d1d24; }
+.choice input:disabled + .choice__face { background: #f7f8fa; color: #6b7080; border-style: dashed; cursor: not-allowed; }
+.choice input:focus-visible + .choice__face { outline: 2px solid #1d1d24; outline-offset: 3px; }
+@media (max-width: 767.98px) {
+  .est__more summary, .launches { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .est__chev { transition: none; }
+}
 </style>
