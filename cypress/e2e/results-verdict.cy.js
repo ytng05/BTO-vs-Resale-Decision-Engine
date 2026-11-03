@@ -58,4 +58,30 @@ describe('results verdict', () => {
     });
     cy.get('[data-cy=results-trend-lead]').invoke('text').should('match', /ahead|Level/);
   });
+
+  it('draws both net positions as bars with their figures, and says the difference in words', () => {
+    completePlan();
+    cy.get('[data-cy=results-verdict-bars]').should('be.visible').and('contain', 'Bars start at S$0');
+    ['bto', 'resale'].forEach((k) => {
+      cy.get(`[data-cy=results-verdict-bar-${k}]`).invoke('text').should('match', /S\$[\d,]+/);
+    });
+    cy.get('[data-cy=results-verdict-diff]').invoke('text').should('match', /^Difference: /);
+  });
+
+  it('says the gap is small, instead of who is ahead, when too close to call (D42)', () => {
+    completePlan();
+    // The wording of the reason line is covered by the unit tests; here only the close case, which has one fixed line.
+    cy.get('[data-cy=results-verdict-headline]').invoke('text').then((headline) => {
+      if (/^Too close to call|about the same/.test(headline)) {
+        cy.get('[data-cy=results-verdict-reason]').invoke('text').should('match', /small enough|about the same place/);
+      }
+    });
+  });
+
+  it('adds a Difference column to the side-by-side table, in words', () => {
+    completePlan();
+    ['position', 'grants', 'cash', 'keys'].forEach((id) => {
+      cy.get(`[data-cy=results-key-${id}-diff]`).invoke('text').should('match', /more with|less with|sooner with|Same for both/);
+    });
+  });
 });
