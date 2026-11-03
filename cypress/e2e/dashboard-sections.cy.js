@@ -12,8 +12,8 @@ function openDashboard() {
 describe('dashboard sections', () => {
   it('leads with the verdict, the cash card, side by side and how each purchase is paid; every section closed', () => {
     openDashboard();
-    ['dashboard-verdict', 'dashboard-cash-card', 'dashboard-side-by-side', 'dashboard-paid', 'dashboard-whatif'].forEach((cy) => {
-      cy.get(`[data-cy=${cy}]`).should('be.visible');
+    ['dashboard-verdict', 'dashboard-cash-card', 'dashboard-side-by-side', 'dashboard-paid', 'dashboard-whatif'].forEach((hook) => {
+      cy.get(`[data-cy=${hook}]`).should('be.visible');
     });
     cy.get('[data-cy=dashboard-more-detail]').should('not.have.attr', 'open');
     ['overview', 'cashflow', 'grants', 'costs', 'rpi', 'map', 'size'].forEach((key) => {
@@ -58,7 +58,9 @@ describe('dashboard sections', () => {
   it('shows how each purchase is paid, down to the cash needed', () => {
     openDashboard();
     ['bto', 'resale'].forEach((p) => {
-      cy.get(`[data-cy=dashboard-paid-${p}]`).should('contain', 'Price before grants').and('contain', 'Cash needed');
+      // The mock outcomes have no purchase price, so the card leaves out the price and fees lines (hasPrice guard);
+      // the grants, CPF, loan and cash lines are always there.
+      cy.get(`[data-cy=dashboard-paid-${p}]`).should('contain', 'Grants').and('contain', 'Housing loan').and('contain', 'Cash needed');
     });
     cy.get('[data-cy=dashboard-paid-sentence]').invoke('text').should('match', /cash up front/);
   });
