@@ -502,7 +502,7 @@ const mapLine = computed(() => (store.choiceB.livingArrangement === 'NEAR'
 }
 /* Version E's colours: BTO indigo and resale berry for text, with pale tints behind (all pass 4.5:1). */
 .dash-e {
-  --dash-bto: #3e4a8a; --dash-bto-tint: var(--accent-fill-3); --dash-bto-pale: #f4f5fb;
+  --dash-bto: var(--accent-deep); --dash-bto-tint: var(--accent-fill-3); --dash-bto-pale: #f4f5fb;
   --dash-resale: var(--color-berry); --dash-resale-tint: var(--accent-fill-2); --dash-resale-pale: #fdeef5;
   display: flex; flex-direction: column; gap: var(--space-5);
 }

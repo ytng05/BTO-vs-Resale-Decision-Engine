@@ -53,3 +53,6 @@ Rename one only in the same PR that updates the specs. `{n}` = buyer 1/2, `{pref
 ### Results verdict
 `results-verdict`, `results-verdict-eyebrow`, `results-verdict-headline`, `results-key-comparison`, `results-key-row-<position|grants|cash|keys>`, `results-key-<row>-<bto|resale>`, `results-verdict-next`, `results-steps-jump`, `results-<patha|pathb>-ahead-tag`, `results-trend-readout`, `results-trend-stage`, `results-trend-year`, `results-trend-bto`, `results-trend-resale`, `results-trend-lead`.
 Moved into the verdict: `results-gap-sentence`, `results-breakeven-sentence`, `results-dashboard-button`, `results-edit-button`.
+
+### Results verdict, bars and difference
+`results-verdict-reason`, `results-verdict-bars`, `results-verdict-bar-<bto|resale>`, `results-verdict-diff`, `results-key-<position|grants|cash|keys>-diff`.
