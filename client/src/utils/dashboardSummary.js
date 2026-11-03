@@ -4,6 +4,7 @@
 // Wording follows the guardrails: net position (D1), never "profit"; nothing here is a prediction.
 import { formatMoney } from './format.js';
 import { monthYear } from './dashboardFormat.js';
+import { verdict } from './resultsVerdict.js';
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const k = (cents) => formatMoney(Math.round(cents / 100 / 1000) * 1000); // nearest S$1,000
@@ -34,7 +35,8 @@ export function cashCard(outcomeA, outcomeB, cashSavingsDollars) {
 }
 
 // "Side by side": a row per figure; `favours` 'a' | 'b' | null and a sentence saying which path is ahead.
-// Grants are never favoured: they are already inside each net position (D1).
+// Grants are never favoured: they are already inside each net position (D1). Net position uses the Results page's
+// rule (verdict() in resultsVerdict.js, D42): within 2% of the larger figure neither path is called ahead.
 export function sideBySide(outcomeA, outcomeB, horizonYear) {
   const A = outcomeA ?? {};
   const B = outcomeB ?? {};
@@ -63,8 +65,14 @@ export function sideBySide(outcomeA, outcomeB, horizonYear) {
     keys = { id: 'keys', label: 'You get the keys', hint: 'BTO: estimated from a recent launch', a: monthYear(keysA), b: monthYear(keysB),
       favours: d === 0 ? null : ma < mb ? 'a' : 'b', diff: d === 0 ? 'Same month' : `${ma < mb ? 'BTO' : 'Resale'} ${span} sooner` };
   }
+  const net = money('net', horizonYear ? `Net position in ${horizonYear}` : 'Net position', 'What this path leaves you with, after costs', A.netPositionCents, B.netPositionCents, 'higher', 'ahead by');
+  const v = verdict(A, B, horizonYear);
+  if (net && v.close && v.winner !== 'level') {
+    net.favours = null;
+    net.diff = `Too close to call (${k(v.gapCents)} apart)`;
+  }
   return [
-    money('net', horizonYear ? `Net position in ${horizonYear}` : 'Net position', 'What you own outright, without selling', A.netPositionCents, B.netPositionCents, 'higher', 'ahead by'),
+    net,
     money('cash', 'Cash needed up front', 'After grants, CPF and the loan', A.cashRequiredAtPurchaseCents, B.cashRequiredAtPurchaseCents, 'lower', 'needs less by'),
     money('spent', horizonYear ? `Cash spent on housing by ${horizonYear}` : 'Cash spent on housing', 'Rent, renovation, fees and loan payments', A.housingCashSpentCents, B.housingCashSpentCents, 'lower', 'spends less by'),
     money('grants', 'Grants you may get', 'Already counted in the net positions', A.totalGrantsCents, B.totalGrantsCents, null, ''),
@@ -76,11 +84,18 @@ export function sideBySide(outcomeA, outcomeB, horizonYear) {
  * "How each purchase is paid", exact to the dollar, from the price down to the cash: price − grants − CPF − loan
  * + stamp duty, fees and other costs (the remainder, so the card adds up to the cash needed). `covCents` is the
  * resale price above the valuation (D39), paid in cash and already inside the cash needed.
+ *
+ * No double count: cpfUsedAtPurchaseCents is the buyers' own OA only (the engine's payOa); grants are separate GRANT
+ * ledger entries. That OA figure also includes any stamp duty and legal fees paid from CPF, so the remainder is exactly
+ * stamp duty + legal + agent fees (tested on E1-E3 in dashboardSummary.engine.test.js). The grants line is the grants
+ * used on this flat (grantRefundPrincipalCents), not the total: a grant can be capped by the CPF usage limit (D37) or
+ * be more than the price needs; the part not used on the flat is unusedGrantsCents.
  */
 export function purchaseCard(outcome, { covCents = 0 } = {}) {
   const o = outcome ?? {};
   const price = o.purchasePriceCents ?? 0;
-  const grants = o.totalGrantsCents ?? 0;
+  const totalGrants = o.totalGrantsCents ?? 0;
+  const grants = isNum(o.grantRefundPrincipalCents) ? o.grantRefundPrincipalCents : totalGrants; // older server or mock: the total
   const cpf = o.cpfUsedAtPurchaseCents ?? 0;
   const loan = o.loanPrincipalCents ?? 0;
   const cash = o.cashRequiredAtPurchaseCents ?? 0;
@@ -90,10 +105,11 @@ export function purchaseCard(outcome, { covCents = 0 } = {}) {
   const funded = Math.max(1, loan + grants + cpf + cash);
   const pct = (v) => Math.round((Math.max(0, v) / funded) * 100);
   return {
-    hasPrice, priceCents: price, grantsCents: grants, cpfCents: cpf, loanCents: loan, otherCents: other, cashCents: cash,
+    hasPrice, priceCents: price, grantsCents: grants, unusedGrantsCents: Math.max(0, totalGrants - grants), cpfCents: cpf, loanCents: loan, otherCents: other, cashCents: cash,
     covCents: covCents > 0 ? covCents : 0,
     shares: { loan: pct(loan), aid: pct(grants + cpf), cash: Math.max(0, 100 - pct(loan) - pct(grants + cpf)) },
     lines: {
+      unusedGrants: totalGrants - grants > 0 ? `${exact(totalGrants - grants)} of your grants isn't used on this flat` : '',
       price: exact(price), grants: `−${exact(grants)}`, cpf: `−${exact(cpf)}`, loan: `−${exact(loan)}`,
       other: `${other < 0 ? '−' : '+'}${exact(Math.abs(other))}`, cash: exact(cash),
     },

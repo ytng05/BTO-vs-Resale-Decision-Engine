@@ -27,6 +27,7 @@ import DashboardSideBySide from '../components/dashboard/DashboardSideBySide.vue
 import DashboardPaid from '../components/dashboard/DashboardPaid.vue';
 import DashboardNotes from '../components/dashboard/DashboardNotes.vue';
 import { groupWarnings, priceFlip, whatIfChanges } from '../utils/dashboardSummary.js';
+import { verdict } from '../utils/resultsVerdict.js';
 import { totalCpfOa } from '../utils/dashboardFormat.js';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
@@ -163,9 +164,13 @@ const gapCents = computed(() => {
   return typeof a === 'number' && typeof b === 'number' ? a - b : null;
 });
 
+// Who ends ahead, by the Results page's rule (D42): within 2% of the larger net position neither path is called
+// ahead, so the two pages never disagree.
+const call = computed(() => verdict(A.value, B.value, horizon.value));
+
 const headline = computed(() => {
   if (gapCents.value === null) return 'Your financial dashboard';
-  if (gapCents.value === 0) return `Both paths end level by ${horizon.value}`;
+  if (call.value.close) return call.value.headline; // "Too close to call: …" or "… about the same by …", as on Results
   // Rounded to S$1,000 like every summary on the page; the exact figures are in "How each purchase is paid".
   return `${gapCents.value > 0 ? 'BTO' : 'Resale'} ends ${formatMoney(Math.round(Math.abs(gapCents.value) / 100 / 1000) * 1000)} ahead by ${horizon.value}`;
 });
@@ -181,7 +186,9 @@ const sinceInputs = computed(() => {
   const now = gapCents.value;
   const leaderNow = now === 0 ? null : now > 0 ? 'BTO' : 'Resale';
   const leaderBefore = before === 0 ? null : before > 0 ? 'BTO' : 'Resale';
-  const status = !leaderNow ? 'Now level' : leaderNow === leaderBefore ? `${leaderNow} still ahead` : `Now ${leaderNow.toLowerCase()} is ahead`;
+  const status = !leaderNow ? 'Now level'
+    : call.value.close ? 'Now too close to call'
+      : leaderNow === leaderBefore ? `${leaderNow} still ahead` : `Now ${leaderNow.toLowerCase()} is ahead`;
   return { status, before: k(before), now: k(now), tone: leaderNow === 'Resale' ? 'resale' : 'bto' };
 });
 
@@ -293,7 +300,7 @@ const mapLine = computed(() => (store.choiceB.livingArrangement === 'NEAR'
         </div>
 
         <div v-if="A && B" class="dash-top">
-          <DashboardVerdict :outcome-a="A" :outcome-b="B" :headline="headline" :horizon="horizon" :blocked-year="warningGroups.blocking.length ? whatIf.applicationYear : null" />
+          <DashboardVerdict :outcome-a="A" :outcome-b="B" :headline="headline" :call="call" :horizon="horizon" :blocked-year="warningGroups.blocking.length ? whatIf.applicationYear : null" />
           <DashboardCashCard :outcome-a="A" :outcome-b="B" :cash-savings="store.profile.cashSavings" @jump-whatif="jumpToWhatIf" />
         </div>
         <h1 v-else id="dashboard-heading" class="hero-statement" data-cy="dashboard-headline">{{ headline }}</h1>

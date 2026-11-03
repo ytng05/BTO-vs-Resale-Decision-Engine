@@ -35,6 +35,15 @@ describe('sideBySide', () => {
   it('never favours grants (D1)', () => {
     expect(row('grants')).toMatchObject({ favours: null, diff: 'S$80,000 more with resale' });
   });
+  it('describes net position in the D1 wording', () => {
+    expect(row('net').hint).toBe('What this path leaves you with, after costs');
+  });
+  it('calls no path ahead within 2% of the larger net position, as Results does (D42)', () => {
+    const close = sideBySide({ netPositionCents: 30_000_000 }, { netPositionCents: 29_600_000 }, 2041).find((r) => r.id === 'net');
+    expect(close).toMatchObject({ favours: null, diff: 'Too close to call (S$4,000 apart)' });
+    const clear = sideBySide({ netPositionCents: 30_000_000 }, { netPositionCents: 29_000_000 }, 2041).find((r) => r.id === 'net');
+    expect(clear).toMatchObject({ favours: 'a', diff: 'BTO ahead by S$10,000' });
+  });
 });
 
 describe('purchaseCard', () => {
@@ -44,6 +53,16 @@ describe('purchaseCard', () => {
     expect(c.lines).toMatchObject({ price: 'S$657,140', loan: '−S$492,855', other: '+S$16,314', cash: 'S$164,599' });
     expect(c.shares.loan + c.shares.aid + c.shares.cash).toBe(100);
     expect(c.hasPrice).toBe(true);
+  });
+  it('uses the grants used on the flat, not the total, and says what is left over', () => {
+    const base = { purchasePriceCents: 50_000_000, totalGrantsCents: 12_000_000, cpfUsedAtPurchaseCents: 10_000_000, loanPrincipalCents: 30_000_000 };
+    // Only S$100,000 of the S$120,000 is used (e.g. the CPF usage limit, D37); fees S$20,000; cash = 0 + 20,000.
+    const c = purchaseCard({ ...base, grantRefundPrincipalCents: 10_000_000, cashRequiredAtPurchaseCents: 2_000_000 });
+    expect(c.grantsCents).toBe(10_000_000);
+    expect(c.otherCents).toBe(2_000_000); // with the total it would read −S$0 + … and hide S$20,000 of fees
+    expect(c.unusedGrantsCents).toBe(2_000_000);
+    expect(c.lines.unusedGrants).toBe("S$20,000 of your grants isn't used on this flat");
+    expect(purchaseCard({ ...base, grantRefundPrincipalCents: 12_000_000, cashRequiredAtPurchaseCents: 0 }).lines.unusedGrants).toBe('');
   });
   it('leaves out the price and the remainder when there is no price', () => {
     const c = purchaseCard({ totalGrantsCents: 1_000_000, cashRequiredAtPurchaseCents: 4_500_000 });

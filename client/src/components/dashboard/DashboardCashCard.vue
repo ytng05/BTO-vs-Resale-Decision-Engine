@@ -37,8 +37,8 @@ const rows = computed(() => (card.value?.rows ?? []).map((r) => ({ ...r, key: r.
 
 <style scoped>
 .dash-cash { display: flex; flex-direction: column; gap: var(--space-3); height: 100%; padding: clamp(24px, 3vw, 36px); border-radius: var(--radius-lg); }
-.dash-cash--short { background: var(--warning-fill); border: 1.5px solid #eed9b3; }
-.dash-cash--ok { background: var(--success-fill); border: 1.5px solid #c6e0d2; }
+.dash-cash--short { background: var(--warning-fill); border: 1.5px solid var(--warning-border); }
+.dash-cash--ok { background: var(--success-fill); border: 1.5px solid var(--success-border); }
 .dash-cash__title { margin: 0; font-size: clamp(1.25rem, 2vw, 1.5rem); font-weight: 600; letter-spacing: -0.01em; }
 .dash-cash__row { display: flex; flex-direction: column; gap: var(--space-1); }
 .dash-cash__head { display: flex; justify-content: space-between; gap: var(--space-3); }

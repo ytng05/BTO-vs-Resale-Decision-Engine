@@ -111,5 +111,5 @@ const emit = defineEmits(['change']);
 .whatif-keys__mine { display: inline-block; width: 2px; height: 12px; border-radius: 1px; background: var(--text-secondary); }
 .whatif-keys__zone { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--accent-fill-1); }
 /* The zone takes the colour of the path that wins in it: resale pink, BTO soft indigo. */
-.whatif-track__zone--bto, .whatif-keys__zone--bto { background: #8e97c9; }
+.whatif-track__zone--bto, .whatif-keys__zone--bto { background: var(--bar-indigo); }
 </style>

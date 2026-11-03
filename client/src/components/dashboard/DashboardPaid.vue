@@ -79,7 +79,7 @@ const cards = computed(() => [
           <p class="small text-secondary mb-2">Loan {{ p.c.shares.loan }}% · grants and CPF {{ p.c.shares.aid }}% · your cash {{ p.c.shares.cash }}%</p>
           <dl class="dash-paid__lines mb-0">
             <div v-if="p.c.hasPrice"><dt>Price before grants</dt><dd><span class="text-numeric" :class="{ 'is-strong': p.vsPrice }" :data-cy="`dashboard-summary-${p.key}-price`">{{ p.c.lines.price }}</span><small v-if="p.vsPrice" class="is-vs">{{ p.vsPrice }}</small></dd></div>
-            <div><dt>Grants<small>Paid towards the price</small></dt><dd><span class="text-numeric">{{ p.c.lines.grants }}</span><small v-if="p.vsGrants" class="is-vs is-vs--quiet">{{ p.vsGrants }}</small></dd></div>
+            <div><dt>Grants<small>Paid towards the price</small></dt><dd><span class="text-numeric">{{ p.c.lines.grants }}</span><small v-if="p.vsGrants" class="is-vs is-vs--quiet">{{ p.vsGrants }}</small><small v-if="p.c.lines.unusedGrants" class="is-vs is-vs--quiet" :data-cy="`dashboard-paid-${p.key}-unused-grants`">{{ p.c.lines.unusedGrants }}</small></dd></div>
             <div><dt>CPF Ordinary Account</dt><dd><span class="text-numeric">{{ p.c.lines.cpf }}</span></dd></div>
             <div>
               <dt>Housing loan<small :data-cy="`dashboard-summary-${p.key}-affordability`">{{ p.limit }}</small></dt>
@@ -103,9 +103,9 @@ const cards = computed(() => [
 .dash-paid__legend { display: flex; flex-wrap: wrap; gap: var(--space-4); font-size: 0.8125rem; color: var(--text-secondary); }
 .dash-paid__legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
 .dash-paid__swatch { width: 12px; height: 12px; border-radius: 3px; }
-.dash-paid__swatch--loan, .dash-paid__seg--loan { background: #8e97c9; }
+.dash-paid__swatch--loan, .dash-paid__seg--loan { background: var(--bar-indigo); }
 .dash-paid__swatch--aid, .dash-paid__seg--aid { background: var(--accent-fill-1); }
-.dash-paid__swatch--cash, .dash-paid__seg--cash { background: #f2c66d; }
+.dash-paid__swatch--cash, .dash-paid__seg--cash { background: var(--bar-amber); }
 .dash-paid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--space-4); }
 .dash-paid__card { border-radius: var(--radius-md); overflow: hidden; background: var(--bg-surface); border: 1.5px solid var(--dash-tint); }
 .dash-paid__card--bto { --dash-tint: var(--dash-bto-tint); --dash-pale: var(--dash-bto-pale); --dash-ink: var(--dash-bto); }
@@ -124,6 +124,6 @@ const cards = computed(() => [
 .is-vs--quiet { color: var(--text-secondary); font-weight: 400; }
 .dash-paid__total { display: flex; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-1); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--dash-pale); color: var(--dash-ink); font-weight: 700; font-size: 1.0625rem; }
 .dash-paid__total > span:first-child { display: flex; flex-direction: column; }
-.dash-paid__note { margin-top: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: #fafafb; border: 1px solid var(--border-subtle); font-size: 0.875rem; color: var(--text-secondary); }
+.dash-paid__note { margin-top: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--bg-page); border: 1px solid var(--border-subtle); font-size: 0.875rem; color: var(--text-secondary); }
 .dash-paid__sentence { padding: var(--space-4) var(--space-5); border-radius: var(--radius-sm); background: var(--dash-resale-pale); font-weight: 500; }
 </style>

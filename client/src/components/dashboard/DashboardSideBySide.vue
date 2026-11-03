@@ -80,7 +80,7 @@ const topDrivers = computed(() => drivers.value.slice(0, 3));
 <style scoped>
 .dash-sbs { border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); overflow: hidden; }
 .dash-sbs__row { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.35fr); align-items: stretch; border-top: 1px solid var(--border-subtle); }
-.dash-sbs__row--head { border-top: 0; background: #fafafb; }
+.dash-sbs__row--head { border-top: 0; background: var(--bg-page); }
 .dash-sbs__row > * { padding: var(--space-4) var(--space-4); display: flex; align-items: center; }
 .dash-sbs__label { flex-direction: column; align-items: flex-start !important; justify-content: center; gap: 2px; }
 .dash-sbs__label strong { font-weight: 600; }
@@ -93,7 +93,7 @@ const topDrivers = computed(() => drivers.value.slice(0, 3));
 .dash-chip--resale { background: var(--dash-resale-tint); color: var(--dash-resale); }
 .dash-chip--none { background: var(--bg-page); color: var(--text-secondary); }
 .dash-why { display: flex; flex-direction: column; gap: var(--space-2); }
-.dash-why__top { display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: #fafafb; border: 1px solid var(--border-subtle); }
+.dash-why__top { display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--bg-page); border: 1px solid var(--border-subtle); }
 .dash-why__amount--bto { color: var(--dash-bto); }
 .dash-why__amount--resale { color: var(--dash-resale); }
 .dash-why__all summary { cursor: pointer; font-weight: 500; padding: var(--space-2) 0; }
