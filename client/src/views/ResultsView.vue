@@ -1,6 +1,6 @@
 <script setup>
 import Term from '../components/Term.vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
@@ -10,8 +10,9 @@ import PathOutcomeCard from '../components/PathOutcomeCard.vue';
 import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
 import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
+import ResultsNextSteps from '../components/ResultsNextSteps.vue';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
-import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
+import { CLASSIFICATIONS, FLAT_TYPES, LEASE_BANDS, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
 import { isPlanComplete } from '../validation/planValidation.js';
 
@@ -41,6 +42,23 @@ const hasInputs = computed(() => isPlanComplete(store));
 // D1). Before that, fall back to the user's own assumption so the empty/loading states can still size
 // things sensibly.
 const horizonYear = computed(() => result.value?.horizonYear ?? store.assumptions.horizonYear ?? null);
+
+// Print or save as PDF: the browser's own dialog; styles/_print.scss lays the page out for paper. The chart and
+// heatmap sections only draw once opened, so open them first and give the chart a moment to draw.
+async function printPage() {
+  sections.value = { ...sections.value, chart: true, heatmap: true };
+  await nextTick();
+  await new Promise((resolve) => { setTimeout(resolve, 400); });
+  window.print();
+}
+const printedOn = new Date().toLocaleDateString('en-SG', { day: 'numeric', month: 'long', year: 'numeric' });
+// One line naming what was compared, for the top of the printout.
+const planLine = computed(() => {
+  const lease = labelOf(LEASE_BANDS, store.choiceB.leaseBand);
+  const a = `${labelOf(TOWNS, store.choiceA.town)} ${labelOf(FLAT_TYPES, store.choiceA.flatType).toLowerCase()} BTO`;
+  const b = `${labelOf(TOWNS, store.choiceB.town)} ${labelOf(FLAT_TYPES, store.choiceB.flatType).toLowerCase()} resale${lease ? ` (${lease} left)` : ''}`;
+  return `${a} compared with ${b}${horizonYear.value ? `, in ${horizonYear.value}` : ''}.`;
+});
 
 const userPoint = computed(() => ({
   priceGrowth: store.assumptions.annualPriceGrowth,
@@ -185,6 +203,9 @@ onMounted(load);
 
     <template v-else-if="result">
       <!-- Lead with the single break-even sentence before any chart (UI.md §8). -->
+      <p class="d-none d-print-block small mb-2" data-cy="results-print-header">
+        BTO vs Resale · printed {{ printedOn }} · {{ planLine }}
+      </p>
       <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
       <p v-if="gapSentence" data-cy="results-gap-sentence">{{ gapSentence }}</p>
       <!-- D40: the BTO price at which the verdict flips. Absent from older servers and when path A isn't a BTO. -->
@@ -201,11 +222,12 @@ onMounted(load);
           <span v-if="result.mock" data-cy="results-mock-notice">Showing mock data.</span>
         </span>
       </p>
-      <div class="d-flex flex-wrap gap-2 mb-3">
+      <div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
         <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="results-edit-button">Change inputs</RouterLink>
         <RouterLink to="/dashboard" class="btn btn-outline-primary" data-cy="results-dashboard-button">What's this made of?</RouterLink>
+        <button type="button" class="btn btn-outline-secondary" data-cy="results-print-button" @click="printPage">Print or save as PDF</button>
       </div>
-      <SaveScenarioPanel :result="result" />
+      <SaveScenarioPanel class="d-print-none" :result="result" />
 
       <div v-if="result.outcomeA && result.outcomeB" class="row g-3 mb-3">
         <div class="col-12 col-lg-6">
@@ -278,6 +300,7 @@ onMounted(load);
              Lazy: it only asks the server once the section is opened. -->
         <DashboardSection
           v-model:open="sections.timing"
+          class="d-print-none"
           title="When to apply"
           :takeaway="timingTakeaway"
           lazy
@@ -287,6 +310,8 @@ onMounted(load);
           <TimingOptimiserPanel @loaded="timingResult = $event" />
         </DashboardSection>
       </div>
+
+      <ResultsNextSteps />
 
       <!-- TODO (seat 5): strategy top 3 once /api/strategy exists (future work, off by default). -->
     </template>
