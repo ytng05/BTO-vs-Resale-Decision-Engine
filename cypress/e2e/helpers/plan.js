@@ -6,14 +6,10 @@ export const nextYear = new Date().getFullYear() + 1;
 // The stepper's Next and Back buttons.
 export const next = () => cy.get('[data-cy=plan-step-next]').click();
 export const back = () => cy.get('[data-cy=plan-step-back]').click();
-// After Next on the last step. Picking moving in by a date, keeping cash in hand or a low monthly loan adds the
-// results teaser (/preview) before Results: pass { preview: true } to go through it. Without it, nothing to do.
-// True when these picks add the teaser (as PlanView decides, with PREVIEW_WISHES in planOptions.js).
-export const showsPreview = (wishes = []) => wishes.some((k) => ['moveby', 'cash', 'monthly'].includes(k));
-export const seeResults = ({ preview = false } = {}) => {
-  if (preview) {
-    cy.get('[data-cy=preview-see-results]', { timeout: 10000 }).click();
-  }
+// After Next on the last step.
+// Every plan now passes through /preview, which checks the answers (#110): click through it to Results.
+export const seeResults = () => {
+  cy.get('[data-cy=preview-see-results]', { timeout: 10000 }).click();
 };
 
 // '4 ROOM' -> '4-room', 'PLUS' -> 'plus', 'NEAR' -> 'near': the chips' data-cy suffixes.
@@ -77,6 +73,6 @@ export function completePlan({ wishes = [], ...situation } = {}) {
   next();
   fillPath('pathb', { town: 'BEDOK' });
   next();
-  seeResults({ preview: showsPreview(wishes) });
+  seeResults();
   cy.location('pathname').should('eq', '/results');
 }

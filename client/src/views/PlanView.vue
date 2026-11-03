@@ -16,7 +16,7 @@ import WhyWeAsk from '../components/WhyWeAsk.vue';
 import ResaleScene from '../components/ResaleScene.vue';
 import { useAuthStore } from '../stores/auth.js';
 import { ABOUT_PARTS, validateAboutPart, validateStep } from '../validation/planValidation.js';
-import { LEASE_BANDS, PREVIEW_WISHES, btoKeysYear } from '../constants/planOptions.js';
+import { LEASE_BANDS, btoKeysYear } from '../constants/planOptions.js';
 
 const store = useScenarioStore();
 const auth = useAuthStore();
@@ -100,8 +100,8 @@ async function next() {
     return;
   }
   if (isLastInput.value) {
-    // Last input step done: the results teaser first when a pick has figures to show there, else Results.
-    router.push(store.wishes.some((k) => PREVIEW_WISHES.includes(k)) ? '/preview' : '/results');
+    // Last input step done: /preview, which checks the answers (and shows the picks' figures) before Results.
+    router.push('/preview');
     return;
   }
   store.next();

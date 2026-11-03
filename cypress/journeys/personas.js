@@ -3,7 +3,7 @@
 // Run against a LIVE build (VITE_USE_MOCK=false): the journeys show the real engine's results.
 // Onboarding (D38) leaves growth (3% prices, 2% income), the years (next year), rent while waiting (0) and the
 // BTO project (the town's newest launch) at their defaults; journeys change those on the Dashboard.
-import { next, pickWishes, seeResults, showsPreview } from '../e2e/helpers/plan.js';
+import { next, pickWishes, seeResults } from '../e2e/helpers/plan.js';
 
 const sc = (age, monthlyIncome, cpfOa) => ({ age, citizenship: 'SC', monthlyIncome, cpfOa });
 const pr = (age, monthlyIncome, cpfOa) => ({ age, citizenship: 'PR', monthlyIncome, cpfOa });
@@ -100,7 +100,7 @@ export function fillPaths(p) {
   beat();
   next();
   beat();
-  seeResults({ preview: showsPreview(p.wishes) });
+  seeResults();
 }
 
 // The whole plan, from a fresh /plan to the Results page.

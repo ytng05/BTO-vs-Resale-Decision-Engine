@@ -7,6 +7,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { compareReusing } from '../api/client.js';
+import PlanReview from '../components/PlanReview.vue';
 import { useScenarioStore, WISHES } from '../stores/scenario.js';
 import BtoScene from '../components/BtoScene.vue';
 import { formatMoney } from '../utils/format.js';
@@ -83,13 +84,14 @@ function editAnswers() {
   store.step = 0;
   router.push('/plan');
 }
+// "Change" in Check your answers: back to that step of the plan, answers kept.
+function editStep(step) {
+  store.step = step;
+  router.push('/plan');
+}
 
 onMounted(() => {
   if (!hasInputs.value) return;
-  if (!shown.value.length) {
-    router.replace('/results');
-    return;
-  }
   load();
 });
 </script>
@@ -130,16 +132,16 @@ onMounted(() => {
         </RouterLink>
       </div>
       <div class="preview__head">
-        <h1 class="preview__title">How BTO and resale compare on what matters to you</h1>
+        <h1 class="preview__title">{{ cards.length ? 'How BTO and resale compare on what matters to you' : 'Check your answers' }}</h1>
         <p v-if="result?.mock" class="small text-secondary mb-0" data-cy="preview-mock-notice">Showing mock data.</p>
-        <div class="preview__answers">
+        <div v-if="cards.length" class="preview__answers">
           <span class="preview__answers-label">From your answers:</span>
           <span v-for="a in answers" :key="a" class="preview__chip">{{ a }}</span>
           <button type="button" class="btn btn-link preview__edit" data-cy="preview-edit" @click="editAnswers">Edit</button>
         </div>
       </div>
 
-      <div class="preview__cards">
+      <div v-if="cards.length" class="preview__cards">
         <article v-for="c in cards" :key="c.key" class="fit-card" :data-cy="`preview-card-${c.key}`">
           <div class="fit-card__hd">
             <h2 class="fit-card__title">{{ c.title }}</h2>
@@ -164,6 +166,16 @@ onMounted(() => {
       <p v-if="notShown.length" class="preview__lead" data-cy="preview-not-shown">
         {{ notShown.join(', ') }}: see the full comparison for {{ notShown.length === 1 ? 'this' : 'these' }}.
       </p>
+
+      <!-- Every answer, with Change links: the check before Results (#110). One tap away under the figures; the page's
+           main content when there are no figures to show. -->
+      <details v-if="cards.length" class="preview__review" data-cy="preview-review">
+        <summary class="preview__review-toggle">Check your answers</summary>
+        <PlanReview :bto-project="result.btoProjectA ?? null" @edit="editStep" />
+      </details>
+      <section v-else class="preview__review" aria-label="Your answers" data-cy="preview-review">
+        <PlanReview :bto-project="result.btoProjectA ?? null" @edit="editStep" />
+      </section>
 
       <div class="preview__cta">
         <div>
@@ -197,6 +209,9 @@ onMounted(() => {
   background: var(--bg-page); color: var(--text-primary);
 }
 .preview__iconbtn:hover { background: var(--accent-fill-3); }
+.preview__review { border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); }
+.preview__review-toggle { cursor: pointer; font-weight: 600; margin-bottom: var(--space-3); }
+.preview__review-toggle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 4px; }
 .preview__answers { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .preview__answers-label { font-size: 14px; color: var(--text-secondary); margin-right: 4px; }
 .preview__chip { padding: 8px 14px; border-radius: 999px; background: var(--bg-page); font-size: 14px; font-weight: 500; }

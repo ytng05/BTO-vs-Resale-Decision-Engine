@@ -33,9 +33,23 @@ describe('results teaser', () => {
     cy.location('pathname').should('eq', '/results');
   });
 
-  it('goes straight to Results when no pick has figures to show', () => {
+  it('checks the answers before Results even when no pick has figures to show, and Change goes back to that step', () => {
     planWith(['space']);
-    cy.location('pathname').should('eq', '/results');
+    cy.location('pathname').should('eq', '/preview');
+    cy.get('[data-cy=preview]').should('contain', 'Check your answers');
+    cy.get('[data-cy^=preview-card-]').should('not.exist');
+    cy.get('[data-cy=preview-review]').should('be.visible').and('not.contain', 'Details');
+    cy.get('[data-cy=plan-review-step-4]').should('contain', 'Bedok');
+    cy.get('[data-cy=plan-review-change-4]').click();
+    cy.location('pathname').should('eq', '/plan');
+    cy.get('[data-cy=plan-step-4-panel]').should('exist');
+  });
+
+  it('keeps Check your answers one tap away when there are figures to show', () => {
+    planWith(['monthly']);
+    cy.get('[data-cy=preview-review]').should('not.have.attr', 'open');
+    cy.get('[data-cy=preview-review] summary').click();
+    cy.get('[data-cy=plan-review-step-2]').should('contain', 'The other buyer');
   });
 
   it('Edit goes back to the start of the plan with the answers kept', () => {
