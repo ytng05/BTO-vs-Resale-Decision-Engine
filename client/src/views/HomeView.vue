@@ -169,7 +169,7 @@ const FAQS = [
           </span>
         </div>
       </div>
-        <svg viewBox="0 0 440 330" class="home-hero__art" role="img" aria-label="Illustration: a new BTO block and a resale block, with trees">
+        <svg viewBox="0 0 440 330" class="home-hero__art" data-cy="hero-scene" role="img" aria-label="Illustration: a new BTO block and a resale block, with trees">
           <circle cx="240" cy="160" r="150" fill="#E9ECF6" />
           <rect x="44" y="110" width="40" height="180" rx="4" fill="#DDE0EC" /><rect x="352" y="80" width="46" height="210" rx="4" fill="#DDE0EC" />
           <!-- BTO block (left) -->
@@ -348,7 +348,17 @@ const FAQS = [
 </template>
 
 <style scoped>
-.home { display: flex; flex-direction: column; gap: calc(var(--space-10) + var(--space-5)); padding-bottom: var(--space-6); }
+/* --bleed-gutter: the gap left at each screen edge by the full-width parts (the hero and the costs strip). */
+.home { --bleed-gutter: clamp(12px, 2.5vw, 40px); display: flex; flex-direction: column; gap: calc(var(--space-10) + var(--space-5)); padding-bottom: var(--space-6); }
+
+/* ---- full width: the hero box and the costs strip stretch across the whole screen, not just the page column.
+   They start half a screen left of the column's centre and are one screen wide, minus the gutter on each side.
+   The gutter is wider than half a desktop scrollbar, so this never causes sideways scrolling. ---- */
+.home-hero, .home-marquee {
+  width: calc(100vw - 2 * var(--bleed-gutter));
+  max-width: none;
+  margin-left: calc(50% - 50vw + var(--bleed-gutter));
+}
 
 /* ---- shared ---- */
 .home-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: 0 1px 2px rgba(29, 29, 36, 0.05), 0 8px 24px rgba(60, 64, 90, 0.06); }
@@ -404,8 +414,19 @@ const FAQS = [
 /* Wide screens: copy and buttons on the left, the illustration in the space on the right. */
 .home-hero__art { display: block; width: 100%; max-width: 360px; height: auto; align-self: center; }
 @media (min-width: 992px) {
-  .home-hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: center; gap: var(--space-6); }
-  .home-hero__art { max-width: 460px; justify-self: end; }
+  /* Desktop: text on the left, picture on the right, centred vertically. */
+  .home-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-8);
+    padding: clamp(40px, 4.5vw, 72px) clamp(32px, 4vw, 64px);
+    /* On very wide screens, keep the text and picture lined up with the page column instead of the screen edges. */
+    padding-inline: max(clamp(32px, 4vw, 64px), calc((100vw - 2 * var(--bleed-gutter) - 1200px) / 2));
+  }
+  .home-hero__art { max-width: 480px; justify-self: end; }
+  .home-hero__title { font-size: clamp(40px, 4.2vw, 62px); }
+  .home-hero .home-lead--lg { font-size: 18px; }
 }
 .home-hero__row { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-5); }
 .home-hero__copy { display: flex; flex-direction: column; gap: var(--space-4); max-width: 720px; }

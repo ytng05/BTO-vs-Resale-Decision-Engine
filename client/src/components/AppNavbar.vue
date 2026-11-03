@@ -115,8 +115,28 @@ function logout() {
 </template>
 
 <style scoped>
-/* Three slots: brand (left), links (centre, always in the middle), account (right). */
-.pill-nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+/* Three slots: brand (left), links (centre, always in the middle), account (right).
+   The bar runs the full screen width (logo and Log in at the ends, lined up with the home page's hero box) and stays
+   at the top while you scroll. Its white background reaches the screen edges through a large box-shadow, with a
+   1px line underneath; clip-path stops that shadow spilling above or below the bar. */
+.pill-nav {
+  --nav-gutter: clamp(12px, 2.5vw, 40px);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  width: calc(100vw - 2 * var(--nav-gutter));
+  max-width: none;
+  margin-left: calc(50% - 50vw + var(--nav-gutter));
+  margin-right: 0;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 0 100vmax rgba(255, 255, 255, 0.92), 0 1px 0 100vmax var(--border-subtle);
+  clip-path: inset(0 -100vmax -1px);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
 .pill-nav > :first-child { justify-self: start; }
 .pill-nav > :last-child { justify-self: end; }
 /* Signed in: the My scenarios link and the account button share one pill. */
