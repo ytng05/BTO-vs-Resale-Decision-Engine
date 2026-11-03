@@ -12,6 +12,7 @@ import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
 import ResultsNextSteps from '../components/ResultsNextSteps.vue';
 import ResultsVerdict from '../components/ResultsVerdict.vue';
+import BackToTop from '../components/BackToTop.vue';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, LEASE_BANDS, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
@@ -245,6 +246,7 @@ onMounted(load);
           <span v-if="result.mock" data-cy="results-mock-notice">Showing mock data.</span>
         </span>
       </p>
+      <h2 id="path-details-title" class="h5 mb-2">Each path in detail</h2>
       <div v-if="result.outcomeA && result.outcomeB" class="row g-3 mb-3">
         <div class="col-12 col-lg-6">
           <PathOutcomeCard
@@ -355,15 +357,18 @@ onMounted(load);
         </DashboardSection>
       </div>
 
-      <ResultsNextSteps />
+      <ResultsNextSteps class="results-next" />
 
       <!-- TODO (seat 5): strategy top 3 once /api/strategy exists (future work, off by default). -->
     </template>
+
+    <BackToTop />
   </section>
 </template>
 
 <style scoped>
 .results-sections { display: flex; flex-direction: column; gap: var(--space-3); }
+.results-next { margin-top: var(--space-3); }
 .price-basis__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--space-4); }
 .price-basis__item { min-width: 0; }
 .price-basis__label { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }

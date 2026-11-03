@@ -21,14 +21,30 @@ describe('results verdict', () => {
     });
   });
 
-  it('shows the numbers that matter side by side, with the better side tagged', () => {
+  it('shows the numbers that matter side by side, with the better side tinted', () => {
     completePlan();
     cy.get('[data-cy=results-key-comparison]').should('be.visible');
-    ['position', 'grants', 'cash', 'keys'].forEach((id) => {
+    ['position', 'cash', 'spent', 'grants', 'keys'].forEach((id) => {
       cy.get(`[data-cy=results-key-row-${id}]`).should('be.visible');
       cy.get(`[data-cy=results-key-${id}-bto]`).invoke('text').should('not.be.empty');
       cy.get(`[data-cy=results-key-${id}-resale]`).invoke('text').should('not.be.empty');
     });
+  });
+
+  it('links the grants row to the reasons on the path cards', () => {
+    completePlan();
+    cy.get('[data-cy=results-key-grants-link]').click();
+    cy.get('[data-cy=results-patha-card]').should('be.visible');
+    cy.focused().should('have.attr', 'id', 'path-details-title');
+  });
+
+  it('shows a Back to top button after scrolling, and it returns to the top', () => {
+    completePlan();
+    cy.get('[data-cy=back-to-top]').should('not.exist');
+    cy.scrollTo('bottom');
+    cy.get('[data-cy=back-to-top]').should('be.visible').click();
+    cy.window().its('scrollY').should('eq', 0);
+    cy.get('[data-cy=back-to-top]').should('not.exist');
   });
 
   it('uses the team name, "net position", in the table and on the path cards', () => {
@@ -80,7 +96,7 @@ describe('results verdict', () => {
 
   it('adds a Difference column to the side-by-side table, in words', () => {
     completePlan();
-    ['position', 'grants', 'cash', 'keys'].forEach((id) => {
+    ['position', 'cash', 'spent', 'grants', 'keys'].forEach((id) => {
       cy.get(`[data-cy=results-key-${id}-diff]`).invoke('text').should('match', /more with|less with|sooner with|Same for both/);
     });
   });
