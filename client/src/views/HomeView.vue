@@ -69,7 +69,7 @@ const FAQS = [
   },
   {
     q: 'What does "break-even" mean here?',
-    a: "It's the year your net position on both paths is the same. Before it, one path is ahead; after it, the other one is.",
+    a: "The flat price growth at which both paths end level in the comparison year. Above it one path is ahead, below it the other. It's a what-if line, not a price forecast.",
   },
   {
     q: "What if my BTO launch isn't listed?",
@@ -166,7 +166,7 @@ const FAQS = [
           <span class="home-get__key"><span class="home-get__swatch home-get__swatch--bto" aria-hidden="true"></span>BTO</span>
           <span class="home-get__key"><span class="home-get__swatch home-get__swatch--resale" aria-hidden="true"></span>Resale</span>
         </div>
-        <svg viewBox="0 0 520 250" class="home-get__svg" role="img" aria-label="Illustration: resale starts ahead, the BTO line crosses it at the break-even year and stays ahead after that">
+        <svg viewBox="0 0 520 250" class="home-get__svg" role="img" aria-label="Illustration: resale starts ahead, then the BTO line overtakes it and stays ahead">
           <g class="home-grid"><line x1="20" y1="40" x2="500" y2="40" /><line x1="20" y1="100" x2="500" y2="100" /><line x1="20" y1="160" x2="500" y2="160" /><line x1="20" y1="210" x2="500" y2="210" /></g>
           <g class="home-drawline">
             <polyline points="30,150 72,140 114,130 156,122 198,114 240,106 282,98 324,90 366,83 408,76 450,70 492,64" fill="none" class="home-line-resale" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 10" />
@@ -174,7 +174,7 @@ const FAQS = [
           </g>
           <g class="home-meetpop">
             <circle class="home-pulse home-berry" cx="324" cy="90" r="8" /><circle cx="324" cy="90" r="8" class="home-berry" /><circle cx="324" cy="90" r="3" class="home-white" />
-            <rect x="336" y="98" width="118" height="30" rx="15" class="home-white" /><text x="395" y="118" text-anchor="middle" font-size="13" font-weight="600" class="home-berry">Break-even</text>
+            <rect x="336" y="98" width="146" height="30" rx="15" class="home-white" /><text x="409" y="118" text-anchor="middle" font-size="13" font-weight="600" class="home-berry">Where they cross</text>
           </g>
           <g font-size="12" text-anchor="middle" class="home-axis"><text x="30" y="242">Today</text><text x="492" y="242">Years ahead</text></g>
         </svg>
