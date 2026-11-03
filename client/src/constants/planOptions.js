@@ -102,3 +102,12 @@ export function toTitleCase(s) {
     .toLowerCase()
     .replace(/(^|[\s/])([a-z])/g, (m, sep, ch) => sep + ch.toUpperCase());
 }
+// "What matters most" picks the results teaser (PreviewView) has an engine figure for: keys year, cash at purchase,
+// loan amount. The others (near my parents, more space, good resale value) point to the full comparison instead.
+export const PREVIEW_WISHES = ['moveby', 'cash', 'monthly'];
+
+// The year a BTO's keys come: the application (1 January) plus HDB's waiting time for the launch, in whole years
+// (D7). Used by the Your BTO card ("keys around 2031") and the scene's bubble ("Keys in 2031"), so they agree.
+export function btoKeysYear(applicationYear, waitMonths) {
+  return typeof waitMonths === 'number' && Number.isInteger(applicationYear) ? applicationYear + Math.floor(waitMonths / 12) : null;
+}
