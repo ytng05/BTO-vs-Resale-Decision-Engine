@@ -1,0 +1,17 @@
+// Print / Save as PDF (Results' "Print or save as PDF" button): the page content only, in ink on white,
+// with sections kept whole. Interactive parts carry Bootstrap's .d-print-none; this hides the app chrome.
+@media print {
+  @page { margin: 14mm; }
+
+  body { background: #fff !important; }
+  .pill-nav, .skip-link { display: none !important; }
+  .app-shell { padding: 0 !important; gap: 12px !important; max-width: none !important; }
+
+  .card { box-shadow: none !important; border: 1px solid #DFE2EA !important; break-inside: avoid; }
+  h1, h2, h3 { break-after: avoid; }
+  a { color: inherit !important; }
+  canvas { max-width: 100% !important; height: auto !important; }
+
+  // Disclosures print open, so nothing is hidden on paper.
+  details > :not(summary) { display: block !important; }
+}
