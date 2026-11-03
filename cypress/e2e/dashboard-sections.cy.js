@@ -13,7 +13,9 @@ describe('dashboard sections', () => {
   it('leads with the verdict, the cash card, side by side and how each purchase is paid; every section closed', () => {
     openDashboard();
     ['dashboard-verdict', 'dashboard-cash-card', 'dashboard-side-by-side', 'dashboard-paid', 'dashboard-whatif'].forEach((hook) => {
-      cy.get(`[data-cy=${hook}]`).should('be.visible');
+      // Scroll first: the What-if panel is sticky, which Cypress treats like position: fixed and calls "not visible"
+      // while it starts below the fold of the 1280x720 test window.
+      cy.get(`[data-cy=${hook}]`).scrollIntoView().should('be.visible');
     });
     cy.get('[data-cy=dashboard-more-detail]').should('not.have.attr', 'open');
     ['overview', 'cashflow', 'grants', 'costs', 'rpi', 'map', 'size'].forEach((key) => {
