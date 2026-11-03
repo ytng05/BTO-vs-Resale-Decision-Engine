@@ -28,7 +28,7 @@ Separate pages: Sources (`/sources`, always in the nav), My scenarios (`/scenari
 
 - A new feature goes on the page whose question it answers. If it answers neither, raise it with the team before
   building it.
-- Results links on to the Dashboard ("What's this made of?"); the Dashboard links back to Results.
+- Results links on to the Dashboard ("Open the dashboard"); the Dashboard links back to Results.
 - The path cards are one component, `PathOutcomeCard`, with a `compact` prop: compact on Results, full on the
   Dashboard, so the two can't drift (agreed in D35; not done yet).
 

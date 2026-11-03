@@ -27,10 +27,10 @@ describe('results verdict', () => {
     });
   });
 
-  it('uses plain words on the path cards', () => {
+  it('uses the team name, "net position", in the table and on the path cards', () => {
     completePlan();
-    cy.get('[data-cy=results-patha-card]').should('contain', 'Your total position').and('not.contain', 'Net financial position');
-    cy.get('[data-cy=results-patha-cpf-refund]').should('not.contain', 'horizon');
+    cy.get('[data-cy=results-key-row-position]').should('contain', 'Net position');
+    cy.get('[data-cy=results-patha-card]').should('contain', 'Net position').and('contain', 'what this path leaves you with, after costs');
   });
 
   it('moves on: opens the dashboard from the main button, and jumps to the official steps', () => {

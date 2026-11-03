@@ -1,8 +1,8 @@
 <script setup>
 // Top of the Results page: who ends ahead, by how much, and the few numbers that decide it, side by side.
 // Everything here is derived from the two Outcomes by utils/resultsVerdict.js (pure, unit-tested); this
-// component only lays it out. Wording follows the guardrails: "total position" (the plain name for net
-// financial position), never "profit". Colour is never the only signal: the leading path is named in words
+// component only lays it out. Wording follows the guardrails: "net position" (what a path leaves you with, after
+// costs), never "profit". Colour is never the only signal: the leading path is named in words
 // and the better side of each row carries a "Better" tag.
 // data-cy names: docs/CONVENTIONS.md "Results verdict".
 import Term from './Term.vue';
@@ -46,7 +46,7 @@ async function jumpToSteps() {
     <div class="card verdict__table-card mb-3">
       <div class="table-responsive">
         <table class="verdict__table" data-cy="results-key-comparison">
-          <caption class="visually-hidden">The numbers that matter, BTO next to resale</caption>
+          <caption class="visually-hidden">The numbers that matter, BTO next to resale. Net position is what each path leaves you with, after costs.</caption>
           <thead>
             <tr>
               <td></td>

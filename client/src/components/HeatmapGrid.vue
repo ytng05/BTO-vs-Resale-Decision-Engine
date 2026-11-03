@@ -51,7 +51,7 @@ const selectedText = computed(() => {
     <div class="table-responsive">
       <table class="heatmap__table">
         <caption class="visually-hidden">
-          Which path ends with the higher net financial position<template v-if="horizonYear">
+          Which path ends with the higher net position<template v-if="horizonYear">
             at {{ horizonYear }}</template>,
           for each combination of yearly flat price growth (columns) and income growth (rows).
         </caption>

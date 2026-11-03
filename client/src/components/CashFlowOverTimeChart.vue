@@ -1,5 +1,5 @@
 <script setup>
-// Results page: how what you'd own under each path builds up year by year, evaluationStartYear to
+// Results page: how each path's net position builds up year by year, evaluationStartYear to
 // horizonYear (contract v2 yearlyCashFlow, docs/API_CONTRACT.md). Distinct from the financial
 // dashboard's CashFlowChart.vue, which breaks down ONE year (the horizon) into its components;
 // this one is a time series across years, so you can see the shape of the climb, not just the end point.
@@ -127,7 +127,7 @@ const short = (v) => {
 
 const summary = computed(() => {
   const when = props.horizonYear ? ` to ${props.horizonYear}` : '';
-  return `Line chart of what you would own under each path, year by year${when}. The table after the chart lists every value.`;
+  return `Line chart of each path's net position building up year by year${when}. The table after the chart lists every value.`;
 });
 
 function data() {
@@ -232,7 +232,7 @@ onBeforeUnmount(() => chart?.destroy());
     <p class="text-caption mt-2 mb-0 d-print-none">Hover, touch or use the arrow keys to compare any year.</p>
     <div class="visually-hidden">
       <table>
-        <caption>What you would own by year</caption>
+        <caption>Net position by year</caption>
         <thead><tr><th scope="col">Year</th><th scope="col">BTO</th><th scope="col">Resale</th></tr></thead>
         <tbody>
           <tr v-for="r in rows" :key="r.year">

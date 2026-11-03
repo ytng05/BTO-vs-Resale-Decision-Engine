@@ -76,9 +76,9 @@ const sections = ref({ chart: false, heatmap: true, timing: false });
 const timingResult = ref(null);
 const timingTakeaway = computed(() => {
   const best = timingResult.value?.best?.year;
-  if (best) return `Applying in ${best} ends with the highest total position of the years checked.`;
+  if (best) return `Applying in ${best} ends with the highest net position of the years checked.`;
   if (timingResult.value) return 'None of the years checked work with your cash and move-in year.';
-  return 'Which application year ends with the highest total position, and which miss your move-in year.';
+  return 'Which application year ends with the highest net position, and which miss your move-in year.';
 });
 const heatmapTakeaway = computed(() => {
   const cells = (result.value?.grid ?? []).flat();
@@ -103,9 +103,9 @@ const keyComparison = computed(() => keyRows(result.value?.outcomeA, result.valu
 const gapSentence = computed(() => {
   if (gap.value === null) return '';
   const years = horizonYear.value ? `By ${horizonYear.value}, ` : '';
-  if (gap.value === 0) return `${years}both paths end with the same total position under your assumptions.`;
+  if (gap.value === 0) return `${years}both paths leave you with the same net position (what each path leaves you with, after costs) under your assumptions.`;
   const ahead = gap.value > 0 ? 'BTO' : 'resale';
-  return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in total position under your assumptions.`;
+  return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in net position (what each path leaves you with, after costs) under your assumptions.`;
 });
 
 // Which prices the comparison used (D26, D33), so a default is never hidden: the BTO launch and its price
@@ -263,13 +263,27 @@ onMounted(load);
         </div>
       </div>
 
-      <div v-if="btoPriceBasis || resalePriceBasis" class="text-caption mb-3" data-cy="results-price-basis">
-        <p v-if="btoPriceBasis" class="mb-1" data-cy="results-price-basis-bto">
-          {{ btoPriceBasis }}
-          <RouterLink to="/dashboard" data-cy="results-price-basis-change">Change the price</RouterLink>
-        </p>
-        <p v-if="resalePriceBasis" class="mb-0" data-cy="results-price-basis-resale">{{ resalePriceBasis }}</p>
-      </div>
+      <!-- The two prices everything rests on, as figures, with where each came from (D26, D39). -->
+      <section v-if="btoPriceBasis || resalePriceBasis" class="card mb-3 price-basis" aria-labelledby="price-basis-title" data-cy="results-price-basis">
+        <div class="card-body">
+          <h2 id="price-basis-title" class="h6 mb-3">The prices we used</h2>
+          <div class="price-basis__grid">
+            <div v-if="btoPriceBasis" class="price-basis__item">
+              <p class="price-basis__label"><span class="dash-dot dash-dot--bto" aria-hidden="true"></span>BTO price (estimated)</p>
+              <p class="price-basis__figure text-numeric" data-cy="results-price-bto">{{ formatMoney(result.resolvedA.purchasePriceCents / 100) }}</p>
+              <p class="price-basis__note" data-cy="results-price-basis-bto">
+                {{ btoPriceBasis }}
+                <RouterLink to="/dashboard" data-cy="results-price-basis-change">Change the price</RouterLink>
+              </p>
+            </div>
+            <div v-if="resalePriceBasis" class="price-basis__item">
+              <p class="price-basis__label"><span class="dash-dot dash-dot--resale" aria-hidden="true"></span>Resale price</p>
+              <p class="price-basis__figure text-numeric" data-cy="results-price-resale">{{ formatMoney(result.resolvedB.purchasePriceCents / 100) }}</p>
+              <p class="price-basis__note" data-cy="results-price-basis-resale">{{ resalePriceBasis }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <!-- Why one path ends ahead, line by line (D34). Arrives with /compare; hidden if an older server omits it. -->
       <GapBreakdownPanel v-if="result.gapBreakdown" :gap="result.gapBreakdown" />
@@ -284,14 +298,15 @@ onMounted(load);
         <DashboardSection
           v-if="result.outcomeA && result.outcomeB"
           v-model:open="sections.chart"
-          title="What you'd own over time"
-          takeaway="The flat's value minus what you still owe, year by year. Hover or tap the chart to compare."
+          title="Net position over time"
+          takeaway="How each path's net position builds up year by year. Hover or tap the chart to compare."
           lazy
           cy="results-section-chart"
         >
           <p class="text-secondary">
-            What the flat is worth, minus the loan and the CPF you still owe, if you did not sell. The cash you pay in is not
-            counted here, so {{ horizonYear }} differs from "Your total position" above. For what makes up that figure, see the
+            A running estimate, without selling: the flat's value minus the loan and the CPF to put back. It does not take off
+            the cash you pay in, so {{ horizonYear }} here differs a little from the net position above. For the exact figure
+            and what it is made of, see the
             <RouterLink to="/dashboard" data-cy="results-cashflow-dashboard-link">financial dashboard</RouterLink>.
           </p>
           <CashFlowOverTimeChart :outcome-a="result.outcomeA" :outcome-b="result.outcomeB" :horizon-year="horizonYear" />
@@ -303,7 +318,12 @@ onMounted(load);
           :takeaway="heatmapTakeaway"
           cy="results-section-heatmap"
         >
-          <p class="text-secondary">Select a square to see the difference. "You" marks your own assumptions.</p>
+          <!-- How to read it, in plain words: the grid is easy to misread without this. -->
+          <ul class="heatmap-guide text-secondary" data-cy="results-heatmap-guide">
+            <li>Nobody knows how fast flat prices or incomes will grow, so each square tries one combination: flat price growth a year across the top, income growth a year down the side.</li>
+            <li>The colour says which path leaves you better off<template v-if="horizonYear"> in {{ horizonYear }}</template>: dark for BTO, pink for resale, grey when they're about level.</li>
+            <li>"You" marks the growth rates in your plan. Select any square to see by how much one path is ahead.</li>
+          </ul>
           <HeatmapGrid
             :grid="result.grid"
             :user-point="userPoint"
@@ -337,4 +357,12 @@ onMounted(load);
 
 <style scoped>
 .results-sections { display: flex; flex-direction: column; gap: var(--space-3); }
+.price-basis__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--space-4); }
+.price-basis__item { min-width: 0; }
+.price-basis__label { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }
+.price-basis__figure { margin: var(--space-1) 0 var(--space-2); font-family: var(--font-heading); font-size: 1.75rem; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em; }
+.price-basis__note { margin: 0; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; }
+.heatmap-guide { margin: 0 0 var(--space-3); padding-left: 1.1rem; font-size: 0.9375rem; line-height: 1.5; }
+.heatmap-guide li + li { margin-top: var(--space-1); }
 </style>
+

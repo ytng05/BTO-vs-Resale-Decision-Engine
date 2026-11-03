@@ -46,6 +46,11 @@ export const GLOSSARY = [
     section: 'loans',
   },
   {
+    id: 'asking-price',
+    term: 'Asking price',
+    definition: "The price the seller wants for the resale flat, from the listing or your agent. It's optional: leave it blank and we use the median of recent sales of similar flats. Any part above the valuation has to be paid in cash.",
+  },
+  {
     id: 'cov',
     term: 'Cash over valuation (COV)',
     definition: 'The part of a resale price above the valuation. It must be paid in cash: not from CPF and not with the loan.',
@@ -76,8 +81,8 @@ export const GLOSSARY = [
   },
   {
     id: 'net-position',
-    term: 'Your total position',
-    definition: "One number for how you stand in the comparison year, without selling. Start with what the flat is worth, then take off the loan you still owe, the CPF savings you used (plus the interest they would have earned), any subsidy clawback, and the cash you put in: down payment, rent, fees and renovation. A higher number means you are better off. Grants are not taken off, because they would go back into your own CPF. The formal name is net financial position.",
+    term: 'Net position',
+    definition: "What a path leaves you with in the comparison year, without selling: the flat's market value, minus the loan still owed, the CPF savings of your own you used (plus the interest they would have earned), any subsidy clawback, and the cash you put into the flat, rent, fees and renovation. Grants are not taken off: they would go back into your own CPF.",
   },
   {
     id: 'break-even',

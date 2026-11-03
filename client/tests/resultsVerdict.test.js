@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { keyRows, verdict } from '../src/utils/resultsVerdict.js';
+import { CLOSE_SHARE, keyRows, verdict } from '../src/utils/resultsVerdict.js';
 
 const out = (net, extra = {}) => ({ netPositionCents: net, ...extra });
 
@@ -28,6 +28,12 @@ describe('verdict', () => {
     expect(v.headline).toBe('Too close to call: BTO is only about S$4,000 ahead by 2041');
   });
 
+  it('treats exactly CLOSE_SHARE as close, and a little more as a clear lead', () => {
+    expect(CLOSE_SHARE).toBe(0.02);
+    expect(verdict(out(30_000_000), out(29_400_000), 2041).close).toBe(true); // S$6,000 on S$300,000 = 2%
+    expect(verdict(out(30_000_000), out(29_300_000), 2041).close).toBe(false); // S$7,000 = 2.3%
+  });
+
   it('leaves the year out when there is none, and never says profit', () => {
     const v = verdict(out(18_500_000), out(17_000_000), null);
     expect(v.headline).toBe('BTO leaves you about S$15,000 better off');
@@ -54,7 +60,7 @@ describe('keyRows', () => {
   it('formats money and key dates', () => {
     const rows = Object.fromEntries(keyRows(a, b, 2041).map((r) => [r.id, r]));
     expect(rows.position.a).toBe('S$185,000');
-    expect(rows.position.label).toBe('Your total position in 2041');
+    expect(rows.position.label).toBe('Net position in 2041');
     expect(rows.keys.a).toBe('May 2031');
     expect(rows.keys.b).toBe('Jan 2027');
   });

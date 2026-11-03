@@ -1,11 +1,14 @@
 // Plain-language summary of a comparison, for the top of the Results page. Pure functions (no Vue), so they are
 // unit-tested. Money in the Outcome is integer cents (docs/API_CONTRACT.md); amounts here stay in cents until
-// formatMoney() at the edge. Wording follows the guardrails: "total position" (the plain name for net financial
-// position), never "profit", and nothing is sold: both paths are measured in the same year (D1).
+// formatMoney() at the edge. Wording follows the guardrails: "net position" (what a path leaves you with, after
+// costs, D1), never "profit", and nothing is sold: both paths are measured in the same year (D1).
 import { formatMoney } from './format.js';
 
-// A gap under this share of the larger position is "about the same": the assumptions matter more than the gap.
-const CLOSE_SHARE = 0.02;
+// Judgement call, not a rule from the ruleset: when the gap between the two net positions is at most this share of
+// the larger one, the headline says "too close to call" instead of naming a winner, because growth and price
+// assumptions move the result by more than that. 2% is a round, cautious figure; change it here (and the test) if
+// the team wants a different line. Recorded in docs/DECISIONS.md.
+export const CLOSE_SHARE = 0.02;
 
 const roundToThousand = (cents) => Math.round(cents / 100 / 1000) * 1000; // dollars, nearest S$1,000
 
@@ -45,7 +48,7 @@ function monthYear(iso) {
 
 /**
  * The few numbers that matter, side by side, with the better side of each marked ('a', 'b' or null when equal or
- * unknown). "Better" is the higher total position, the higher grants, the lower cash up front, the earlier keys.
+ * unknown). "Better" is the higher net position, the higher grants, the lower cash up front, the earlier keys.
  */
 export function keyRows(outcomeA, outcomeB, horizonYear) {
   const money = (cents) => (typeof cents === 'number' ? formatMoney(cents / 100) : '—');
@@ -58,7 +61,7 @@ export function keyRows(outcomeA, outcomeB, horizonYear) {
   return [
     {
       id: 'position',
-      label: horizonYear ? `Your total position in ${horizonYear}` : 'Your total position',
+      label: horizonYear ? `Net position in ${horizonYear}` : 'Net position',
       a: money(outcomeA?.netPositionCents),
       b: money(outcomeB?.netPositionCents),
       better: higher(outcomeA?.netPositionCents, outcomeB?.netPositionCents),
