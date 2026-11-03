@@ -45,6 +45,7 @@ describe('financial dashboard', () => {
 
   it('draws how the net position adds up, and lists the costs', () => {
     openDashboard();
+    cy.get('[data-cy=dashboard-section-cashflow] summary').click(); // under "More detail", closed at first
     cy.get('[data-cy=dashboard-cashflow] canvas').should('be.visible');
     cy.get('[data-cy=dashboard-costs], [data-cy=dashboard-costs-empty]').should('exist');
   });

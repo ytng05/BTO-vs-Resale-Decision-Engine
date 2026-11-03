@@ -14,6 +14,7 @@ describe('Journey 2: living near parents', () => {
     // The grants, with every check's reason: the Proximity Housing Grant only on resale, near parents.
     openDashboard();
     cy.get('[data-cy=dashboard-headline]').should('contain', 'BTO ends');
+    cy.get('[data-cy=dashboard-section-grants] summary').scrollIntoView().click(); // grants sit under "More detail"
     cy.get('[data-cy=dashboard-grant-phg-resale]').scrollIntoView().should('contain', 'Eligible');
     cy.get('[data-cy=dashboard-grant-phg-bto]').should('contain', 'Not eligible');
     beat();

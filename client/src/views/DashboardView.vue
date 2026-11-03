@@ -1,8 +1,9 @@
 <script setup>
 // Feature 2: the financial dashboard. Both paths side by side, measured in the same year (contract v2, D1).
-// Top: a friendly overview of what the result is made of (cash cover, savings, grants, cash spent, keys).
-// Below: net position and affordability, grants with every test's reason, what makes up the net position,
-// the cost breakdown, and notes before deciding.
+// Layout (version E, picked on the design canvas): top, the verdict (indigo) and whether today's savings cover the
+// cash up front; left, "Side by side" (rounded, each row naming the path it favours, with "why" on request) and
+// "How each purchase is paid" (exact, price down to cash); right, what changed since your inputs and the what-if
+// sliders; below, every detail section, closed, and the notes before deciding.
 // What-if sliders re-run the comparison with changed assumptions. They are local only: the saved plan
 // in the store never changes, and "Reset" goes back to it.
 // Store and sliders hold dollars and fractions; client.js turns them into the contract's cents (D14).
@@ -20,6 +21,12 @@ import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
 import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
 import DashboardOverview from '../components/dashboard/DashboardOverview.vue';
+import DashboardVerdict from '../components/dashboard/DashboardVerdict.vue';
+import DashboardCashCard from '../components/dashboard/DashboardCashCard.vue';
+import DashboardSideBySide from '../components/dashboard/DashboardSideBySide.vue';
+import DashboardPaid from '../components/dashboard/DashboardPaid.vue';
+import { whatIfChanges } from '../utils/dashboardSummary.js';
+import { totalCpfOa } from '../utils/dashboardFormat.js';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
 import HistoricalRpiChart from '../components/HistoricalRpiChart.vue';
@@ -78,6 +85,9 @@ const whatIfPlan = computed(() => ({
 }));
 
 const result = ref(null);
+const baselineGapCents = ref(null);
+// What the sliders changed from the saved plan, in words (empty when nothing moved).
+const changes = computed(() => whatIfChanges(whatIf, planValues.value));
 
 // The BTO launch the comparison used and HDB's price range for the flat, in dollars (D26), for the price slider.
 // The resale median (the flat's valuation, D39) in dollars, for the resale price slider.
@@ -107,7 +117,13 @@ async function run() {
   error.value = null;
   try {
     const res = await compare(whatIfPlan.value);
-    if (id === requestId) result.value = res; // ignore answers to older slider positions
+    if (id === requestId) {
+      result.value = res; // ignore answers to older slider positions
+      // The answer at the saved plan's own values, for "since your inputs" once a slider moves.
+      if (changes.value.length === 0 && res?.outcomeA && res?.outcomeB) {
+        baselineGapCents.value = res.outcomeA.netPositionCents - res.outcomeB.netPositionCents;
+      }
+    }
   } catch (e) {
     if (id === requestId) {
       error.value = e?.response?.data?.error?.message || 'The comparison could not be loaded. Check your connection and try again.';
@@ -126,7 +142,6 @@ watch(whatIf, () => {
 });
 onBeforeUnmount(() => clearTimeout(timer));
 
-const dollars = (cents) => (typeof cents === 'number' ? cents / 100 : null);
 const A = computed(() => result.value?.outcomeA);
 const B = computed(() => result.value?.outcomeB);
 // v2: both paths are measured at one calendar year (D1).
@@ -150,7 +165,20 @@ const gapCents = computed(() => {
 const headline = computed(() => {
   if (gapCents.value === null) return 'Your financial dashboard';
   if (gapCents.value === 0) return `Both paths end level by ${horizon.value}`;
-  return `${gapCents.value > 0 ? 'BTO' : 'Resale'} ends ${formatMoney(Math.abs(gapCents.value) / 100)} ahead by ${horizon.value}`;
+  // Rounded to S$1,000 like every summary on the page; the exact figures are in "How each purchase is paid".
+  return `${gapCents.value > 0 ? 'BTO' : 'Resale'} ends ${formatMoney(Math.round(Math.abs(gapCents.value) / 100 / 1000) * 1000)} ahead by ${horizon.value}`;
+});
+
+// "Since your inputs": the answer at the saved plan against the answer now.
+const k = (cents) => formatMoney(Math.round(Math.abs(cents) / 100 / 1000) * 1000);
+const sinceInputs = computed(() => {
+  if (!changes.value.length || baselineGapCents.value === null || gapCents.value === null) return null;
+  const before = baselineGapCents.value;
+  const now = gapCents.value;
+  const leaderNow = now === 0 ? null : now > 0 ? 'BTO' : 'Resale';
+  const leaderBefore = before === 0 ? null : before > 0 ? 'BTO' : 'Resale';
+  const status = !leaderNow ? 'Now level' : leaderNow === leaderBefore ? `${leaderNow} still ahead` : `Now ${leaderNow.toLowerCase()} is ahead`;
+  return { status, before: k(before), now: k(now), tone: leaderNow === 'Resale' ? 'resale' : 'bto' };
 });
 
 // planOptions entries may be plain strings or { value, label }; handle both.
@@ -165,21 +193,31 @@ const subtitle = computed(() => {
   return `${labelOf(TOWNS, a.town)} ${labelOf(FLAT_TYPES, a.flatType)}${cls} BTO vs ${labelOf(TOWNS, b.town)} ${labelOf(FLAT_TYPES, b.flatType)} resale · starting ${whatIf.applicationYear}`;
 });
 
-const paths = computed(() => [
-  { key: 'bto', title: 'Path A · BTO', o: A.value },
-  { key: 'resale', title: 'Path B · Resale', o: B.value },
-]);
+// One line per path for the purchase cards' headers: "Bishan · 4-room · Prime".
+const cardSubtitle = (c, withClass) => [labelOf(TOWNS, c.town), labelOf(FLAT_TYPES, c.flatType), withClass && c.classification ? labelOf(CLASSIFICATIONS, c.classification) : '']
+  .filter(Boolean).join(' · ');
+const cpfOa = computed(() => totalCpfOa(store.profile.applicants));
 
+// The lease-to-95 warning is said in the resale purchase card already, so it isn't repeated in the list.
+const SAID_IN_CARD = new Set(['LEASE_BELOW_95_PRORATION']);
+const codeOf = (w) => (typeof w === 'string' ? w : w?.code);
 const warnings = computed(() => [
   ...(A.value?.warnings ?? []).map((w) => ({ path: 'BTO', w })),
   ...(B.value?.warnings ?? []).map((w) => ({ path: 'Resale', w })),
-]);
+].filter((x) => !SAID_IN_CARD.has(codeOf(x.w))));
+
+// "Try a later year in What if": bring the panel into view and move focus to its first slider.
+function jumpToWhatIf() {
+  const panel = document.querySelector('[data-cy=dashboard-whatif]');
+  panel?.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  panel?.querySelector('input')?.focus({ preventScroll: true });
+}
 // A code becomes the server's plain-English sentence (`warningMessages`, docs/API_CONTRACT.md "POST /api/compare");
 // the bare code only if the server sent none for it.
 
-// The detail sections open and close. The chart that explains the result starts open; the rest start closed,
-// each with a one-line takeaway in its header. "Expand all" opens or closes every one.
-const sections = reactive({ cashflow: true, grants: false, costs: false, rpi: false, map: false, size: false });
+// The detail sections open and close. All start closed (the summary above answers first), each with a one-line
+// takeaway in its header. "Expand all" opens or closes every one.
+const sections = reactive({ overview: false, cashflow: false, grants: false, costs: false, rpi: false, map: false, size: false });
 const allOpen = computed(() => Object.values(sections).every(Boolean));
 function toggleAll() {
   const next = !allOpen.value;
@@ -235,188 +273,197 @@ const warningText = (w) =>
     </div>
 
     <template v-else>
-      <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
-        <div>
-          <p class="text-secondary small mb-1" data-cy="dashboard-subtitle">{{ subtitle }}</p>
-          <h1 id="dashboard-heading" class="hero-statement mb-2" data-cy="dashboard-headline">{{ headline }}</h1>
-          <p class="d-flex flex-wrap align-items-center gap-2 mb-0">
+      <div class="dash-e">
+        <div class="dash-topbar">
+          <p class="dash-topbar__subtitle mb-0">
+            <span data-cy="dashboard-subtitle">{{ subtitle }}</span>
             <span class="badge-version" data-cy="dashboard-ruleset-version">Ruleset {{ result.rulesetVersion }}</span>
-            <span v-if="result.mock" class="text-caption" data-cy="dashboard-mock-notice">Showing mock data.</span>
+            <span v-if="result.mock" class="dash-topbar__chip" data-cy="dashboard-mock-notice">Example data</span>
             <span v-if="updating" class="text-caption" role="status" data-cy="dashboard-updating">Updating…</span>
           </p>
-        </div>
-        <div class="d-flex gap-2">
-          <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="dashboard-edit-button">Edit inputs</RouterLink>
-          <RouterLink to="/results" class="btn btn-primary" data-cy="dashboard-results-button">Back to results</RouterLink>
-        </div>
-      </div>
-
-      <div v-if="error" class="alert alert-warning" role="alert" data-cy="dashboard-update-error">
-        {{ error }} Showing your last results.
-      </div>
-
-      <DashboardOverview
-        v-if="A && B"
-        :outcome-a="A"
-        :outcome-b="B"
-        :cash-savings="store.profile.cashSavings"
-        :applicants="store.profile.applicants"
-        :horizon="horizon"
-        @open-grants="showGrants"
-      />
-
-      <div class="row g-4" :aria-busy="updating ? 'true' : 'false'">
-        <!-- What-if: after the overview on phones, on the right on large screens -->
-        <div class="col-12 col-lg-4 order-lg-last">
-          <div class="dash-sticky">
-          <WhatIfPanel
-            :model-value="whatIf"
-            :horizon-shown="horizon"
-            :horizon-min="horizonLimits.min"
-            :horizon-max="horizonLimits.max"
-            :bto-range="btoRange"
-            :resale-median="resaleMedian"
-            :baseline="planValues"
-            @update:model-value="setWhatIf"
-            @reset="reset"
-          />
+          <div class="d-flex gap-2 d-print-none">
+            <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="dashboard-edit-button">Edit inputs</RouterLink>
+            <RouterLink to="/results" class="btn btn-primary" data-cy="dashboard-results-button">Back to results</RouterLink>
           </div>
         </div>
 
-        <div class="col-12 col-lg-8 d-flex flex-column gap-4">
-          <div v-if="A && B" class="row g-3">
-            <div v-for="p in paths" :key="p.key" class="col-12 col-md-6">
-              <div class="card h-100" :class="`dash-card--${p.key}`" :data-cy="`dashboard-summary-${p.key}`">
-                <div class="card-body">
-                  <h2 class="h5 mb-1"><span class="dash-dot" :class="`dash-dot--${p.key}`" aria-hidden="true"></span>{{ p.title }}</h2>
-                  <p class="text-secondary small mb-0"><Term id="net-position">Net position</Term> in {{ horizon }}: what this path leaves you with, after costs</p>
-                  <p class="dash-net text-numeric mb-3" :data-cy="`dashboard-summary-${p.key}-net`">{{ formatMoney(dollars(p.o.netPositionCents)) }}</p>
+        <div v-if="error" class="alert alert-warning" role="alert" data-cy="dashboard-update-error">
+          {{ error }} Showing your last results.
+        </div>
 
-                  <p v-if="p.o.affordability" class="mb-4" :data-cy="`dashboard-summary-${p.key}-affordability`">
-                    <span v-if="p.o.affordability.withinLimit" class="dash-pill dash-pill--ok">✓ Within your loan limit</span>
-                    <span v-else class="dash-pill dash-pill--bad">✗ Loan short by {{ formatMoney(dollars(p.o.affordability.shortfallCents)) }}</span>
-                    <span class="d-block small text-secondary mt-2">
-                      Max loan {{ formatMoney(dollars(p.o.affordability.maxLoanCents)) }}<template v-if="p.o.affordability.limitingRule">, set by {{ p.o.affordability.limitingRule }}</template>
-                    </span>
-                  </p>
+        <div v-if="A && B" class="dash-top">
+          <DashboardVerdict :outcome-a="A" :outcome-b="B" :headline="headline" :horizon="horizon" />
+          <DashboardCashCard :outcome-a="A" :outcome-b="B" :cash-savings="store.profile.cashSavings" @jump-whatif="jumpToWhatIf" />
+        </div>
+        <h1 v-else id="dashboard-heading" class="hero-statement" data-cy="dashboard-headline">{{ headline }}</h1>
 
-                  <h3 class="dash-subhead">How the purchase is paid</h3>
-                  <dl class="dash-list mb-0">
-                    <div><dt>Price (before grants)</dt><dd class="text-numeric" :data-cy="`dashboard-summary-${p.key}-price`">{{ formatMoney(dollars(p.o.purchasePriceCents)) }}</dd></div>
-                    <div><dt>Cash at purchase</dt><dd class="text-numeric">{{ formatMoney(dollars(p.o.cashRequiredAtPurchaseCents)) }}</dd></div>
-                    <div><dt>CPF at purchase</dt><dd class="text-numeric">{{ formatMoney(dollars(p.o.cpfUsedAtPurchaseCents)) }}</dd></div>
-                    <div><dt>Housing loan</dt><dd class="text-numeric">{{ formatMoney(dollars(p.o.loanPrincipalCents)) }}</dd></div>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="warnings.length" class="alert alert-warning small mb-0" role="status" data-cy="dashboard-warnings">
-            <ul class="mb-0 ps-3">
-              <li v-for="(x, i) in warnings" :key="i"><strong>{{ x.path }}:</strong> {{ warningText(x.w) }}</li>
-            </ul>
-          </div>
-
-          <div class="d-flex align-items-baseline justify-content-between gap-3 mt-2">
-            <div>
-              <h2 class="h5 mb-0">The detail</h2>
-              <p class="text-secondary small mb-0">Open a section to see the numbers behind the result.</p>
-            </div>
-            <button type="button" class="btn btn-link p-0" data-cy="dashboard-sections-toggle" @click="toggleAll">
-              {{ allOpen ? 'Collapse all' : 'Expand all' }}
-            </button>
-          </div>
-
-          <DashboardSection
-            v-model:open="sections.cashflow"
-            title="How the net position adds up"
-            :takeaway="`In ${horizon}: what the flat is worth, minus what you still owe and the cash you spent on housing.`"
-            cy="dashboard-section-cashflow"
-          >
-            <p class="text-secondary small">Nothing is sold: this is the position if you stayed in the flat.</p>
-            <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
-          </DashboardSection>
-
-          <DashboardSection
-            v-model:open="sections.grants"
-            heading-id="grants-heading"
-            title="Grants you qualify for"
-            :takeaway="grantsLine"
-            cy="dashboard-section-grants"
-          >
-            <p class="text-secondary small">
-              Every check says why it passed or failed.
-              <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>.
-            </p>
-            <GrantsTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
-          </DashboardSection>
-
-          <DashboardSection
-            v-model:open="sections.costs"
-            heading-id="costs-heading"
-            :title="`Costs up to ${horizon}`"
-            :takeaway="costsLine"
-            cy="dashboard-section-costs"
-          >
-            <p class="text-secondary small">Rent while waiting, renovation, fees, loan interest and CPF interest, and how each is paid.</p>
-            <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
-          </DashboardSection>
-
-          <!-- D35: the historical range informs the price growth slider. Fetches on its own, only once opened. -->
-          <DashboardSection
-            v-model:open="sections.rpi"
-            title="Resale price history"
-            takeaway="Historical only, not a prediction of future prices."
-            lazy
-            flat
-            cy="dashboard-section-rpi"
-          >
-            <HistoricalRpiChart />
-          </DashboardSection>
-
-          <DashboardSection
-            v-model:open="sections.map"
-            title="Near your parents? (Proximity Housing Grant)"
-            :takeaway="mapLine"
-            lazy
-            flat
-            cy="dashboard-section-map"
-          >
-            <PhgMapCard
-              :bto-town="store.choiceA.town"
-              :resale-town="store.choiceB.town"
-              :living-arrangement="store.choiceB.livingArrangement"
-            />
-          </DashboardSection>
-
-                    <!-- Fetches the flat sizes and prices only once opened (lazy). -->
-          <DashboardSection
-            v-model:open="sections.size"
-            title="Size and price side by side"
-            takeaway="How much flat each path gets for the money: floor area, price and price per square metre."
-            lazy
-            cy="dashboard-section-size"
-          >
-            <SizePriceTable :choice-a="store.choiceA" :choice-b="store.choiceB" :result="result" />
-          </DashboardSection>
-
-          <section class="card" aria-labelledby="notes-heading">
-            <div class="card-body">
-              <h2 id="notes-heading" class="h5">Before you decide</h2>
-              <ul class="list-unstyled d-flex flex-column gap-2 mb-0 small">
-                <li class="dash-note" data-cy="dashboard-note-mop">
-                  <strong><Term id="mop">Minimum Occupation Period</Term>:</strong> you cannot sell before
-                  {{ monthYear(A?.timeline?.earliestSaleDate) }} (BTO) or {{ monthYear(B?.timeline?.earliestSaleDate) }} (resale).
-                  <RouterLink to="/sources#flat-types">See the current rule</RouterLink>.
-                </li>
-                <li class="dash-note" data-cy="dashboard-note-eip">
-                  <strong>Ethnic Integration Policy:</strong> some resale blocks may not be open to your household; check a block before you commit.
-                  <a href="https://www.hdb.gov.sg" target="_blank" rel="noopener noreferrer">HDB EIP checker<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
-                </li>
+        <div class="dash-main" :aria-busy="updating ? 'true' : 'false'">
+          <div class="dash-main__content">
+            <div v-if="warnings.length" class="alert alert-warning small mb-0" role="status" data-cy="dashboard-warnings">
+              <ul class="mb-0 ps-3">
+                <li v-for="(x, i) in warnings" :key="i"><strong>{{ x.path }}:</strong> {{ warningText(x.w) }}</li>
               </ul>
             </div>
-          </section>
+
+            <DashboardSideBySide v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon="horizon" :gap="result.gapBreakdown ?? null" />
+
+            <DashboardPaid
+              v-if="A && B"
+              :outcome-a="A"
+              :outcome-b="B"
+              :resolved-b="result.resolvedB ?? null"
+              :subtitle-a="cardSubtitle(store.choiceA, true)"
+              :subtitle-b="cardSubtitle(store.choiceB, false)"
+              :cash-savings="store.profile.cashSavings ?? null"
+              :cpf-oa="cpfOa"
+            />
+
+            <div class="d-flex align-items-baseline justify-content-between gap-3 mt-2">
+              <div>
+                <h2 class="h4 mb-0">More detail</h2>
+                <p class="text-secondary small mb-0">Open any section for the numbers behind the answer.</p>
+              </div>
+              <button type="button" class="btn btn-link p-0" data-cy="dashboard-sections-toggle" @click="toggleAll">
+                {{ allOpen ? 'Collapse all' : 'Expand all' }}
+              </button>
+            </div>
+
+            <DashboardSection
+              v-model:open="sections.overview"
+              title="Cash, savings and keys"
+              takeaway="How much of the cash up front your savings cover, what you start with, and when the keys come."
+              flat
+              cy="dashboard-section-overview"
+            >
+              <DashboardOverview
+                v-if="A && B"
+                :outcome-a="A"
+                :outcome-b="B"
+                :cash-savings="store.profile.cashSavings"
+                :applicants="store.profile.applicants"
+                :horizon="horizon"
+                @open-grants="showGrants"
+              />
+            </DashboardSection>
+
+            <DashboardSection
+              v-model:open="sections.cashflow"
+              title="How the net position adds up"
+              :takeaway="`In ${horizon}: what the flat is worth, minus what you still owe and the cash you spent on housing.`"
+              lazy
+              cy="dashboard-section-cashflow"
+            >
+              <p class="text-secondary small">Nothing is sold: this is the position if you stayed in the flat.</p>
+              <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
+            </DashboardSection>
+
+            <DashboardSection
+              v-model:open="sections.grants"
+              heading-id="grants-heading"
+              title="Every grant check, with sources"
+              :takeaway="grantsLine"
+              cy="dashboard-section-grants"
+            >
+              <p class="text-secondary small">
+                Every check says why it passed or failed.
+                <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>.
+              </p>
+              <GrantsTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+            </DashboardSection>
+
+            <DashboardSection
+              v-model:open="sections.costs"
+              heading-id="costs-heading"
+              :title="`Every cost up to ${horizon}, and how it's paid`"
+              :takeaway="costsLine"
+              cy="dashboard-section-costs"
+            >
+              <p class="text-secondary small">Rent while waiting, renovation, fees, loan interest and CPF interest, and how each is paid.</p>
+              <CostBreakdownTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
+            </DashboardSection>
+
+            <!-- D35: the historical range informs the price growth slider. Fetches on its own, only once opened. -->
+            <DashboardSection
+              v-model:open="sections.rpi"
+              title="Resale price history"
+              takeaway="Historical only, not a prediction of future prices."
+              lazy
+              flat
+              cy="dashboard-section-rpi"
+            >
+              <HistoricalRpiChart />
+            </DashboardSection>
+
+            <DashboardSection
+              v-model:open="sections.map"
+              title="Near your parents? (Proximity Housing Grant)"
+              :takeaway="mapLine"
+              lazy
+              flat
+              cy="dashboard-section-map"
+            >
+              <PhgMapCard
+                :bto-town="store.choiceA.town"
+                :resale-town="store.choiceB.town"
+                :living-arrangement="store.choiceB.livingArrangement"
+              />
+            </DashboardSection>
+
+            <!-- Fetches the flat sizes and prices only once opened (lazy). -->
+            <DashboardSection
+              v-model:open="sections.size"
+              title="Size and price side by side"
+              takeaway="How much flat each path gets for the money: floor area, price and price per square metre."
+              lazy
+              cy="dashboard-section-size"
+            >
+              <SizePriceTable :choice-a="store.choiceA" :choice-b="store.choiceB" :result="result" />
+            </DashboardSection>
+
+            <section class="card" aria-labelledby="notes-heading">
+              <div class="card-body">
+                <h2 id="notes-heading" class="h5">Before you decide</h2>
+                <ul class="list-unstyled d-flex flex-column gap-2 mb-0 small">
+                  <li class="dash-note" data-cy="dashboard-note-mop">
+                    <strong><Term id="mop">Minimum Occupation Period</Term>:</strong> you cannot sell before
+                    {{ monthYear(A?.timeline?.earliestSaleDate) }} (BTO) or {{ monthYear(B?.timeline?.earliestSaleDate) }} (resale).
+                    <RouterLink to="/sources#flat-types">See the current rule</RouterLink>.
+                  </li>
+                  <li class="dash-note" data-cy="dashboard-note-eip">
+                    <strong>Ethnic Integration Policy:</strong> some resale blocks may not be open to your household; check a block before you commit.
+                    <a href="https://www.hdb.gov.sg" target="_blank" rel="noopener noreferrer">HDB EIP checker<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
+                  </li>
+                </ul>
+              </div>
+            </section>
+          </div>
+
+          <aside class="dash-main__side">
+            <div class="dash-sticky">
+              <div class="dash-since" :class="sinceInputs ? `dash-since--${sinceInputs.tone}` : ''" aria-live="polite" data-cy="dashboard-since-inputs">
+                <template v-if="sinceInputs">
+                  <strong class="dash-since__status">{{ sinceInputs.status }}</strong>
+                  <span class="dash-since__figures"><s>{{ sinceInputs.before }}</s> {{ sinceInputs.now }}</span>
+                  <span class="small text-secondary">You changed: {{ changes.join('; ') }}</span>
+                </template>
+                <template v-else>
+                  <strong class="dash-since__status">Try a what-if</strong>
+                  <span class="small text-secondary">Move a slider and the whole page updates. Your saved plan stays as it is.</span>
+                </template>
+              </div>
+              <WhatIfPanel
+                :model-value="whatIf"
+                :horizon-shown="horizon"
+                :horizon-min="horizonLimits.min"
+                :horizon-max="horizonLimits.max"
+                :bto-range="btoRange"
+                :resale-median="resaleMedian"
+                :baseline="planValues"
+                @update:model-value="setWhatIf"
+                @reset="reset"
+              />
+            </div>
+          </aside>
         </div>
       </div>
     </template>
@@ -436,41 +483,30 @@ const warningText = (w) =>
     margin: -4px;
   }
 }
-.dash-net {
-  font-family: var(--font-heading);
-  font-weight: 500;
-  font-size: 2rem;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+/* Version E's colours: BTO indigo and resale berry for text, with pale tints behind (all pass 4.5:1). */
+.dash-e {
+  --dash-bto: #3e4a8a; --dash-bto-tint: var(--accent-fill-3); --dash-bto-pale: #f4f5fb;
+  --dash-resale: var(--color-berry); --dash-resale-tint: var(--accent-fill-2); --dash-resale-pale: #fdeef5;
+  display: flex; flex-direction: column; gap: var(--space-5);
 }
-.dash-pill {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--radius-pill);
-  font-size: 0.8125rem;
-  font-weight: 500;
+.dash-topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.dash-topbar__subtitle { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); color: var(--text-secondary); font-size: 1.0625rem; }
+.dash-topbar__chip { padding: 0.125rem 0.75rem; border-radius: var(--radius-pill); border: 1px solid var(--border-subtle); background: var(--bg-surface); font-size: 0.8125rem; }
+.dash-top { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--space-5); }
+.dash-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 400px); gap: var(--space-5); align-items: start; }
+.dash-main__content { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
+.dash-main :deep(.dash-panel) { display: flex; flex-direction: column; gap: var(--space-4); padding: clamp(20px, 3vw, 36px); border-radius: var(--radius-lg); background: var(--bg-surface); box-shadow: var(--shadow-sm); }
+.dash-main :deep(.dash-panel__title) { margin: 0; font-family: var(--font-heading); font-size: 1.5rem; font-weight: 600; }
+.dash-since { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); box-shadow: var(--shadow-sm); }
+.dash-since--bto { background: var(--dash-bto-tint); }
+.dash-since--resale { background: var(--dash-resale-tint); }
+.dash-since__status { color: var(--dash-bto); }
+.dash-since--resale .dash-since__status { color: var(--dash-resale); }
+.dash-since__figures { font-family: var(--font-heading); font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
+.dash-since__figures s { font-size: 1.125rem; font-weight: 500; color: var(--text-secondary); margin-right: var(--space-2); }
+@media (max-width: 991.98px) {
+  .dash-top, .dash-main { grid-template-columns: minmax(0, 1fr); }
 }
-.dash-pill--ok { background: var(--success-fill); color: var(--success); }
-.dash-pill--bad { background: var(--danger-fill); color: var(--danger); }
-.dash-subhead {
-  font-family: var(--font-heading);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  color: var(--text-secondary);
-  margin: 0 0 var(--space-2);
-}
-.dash-list > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-3);
-  padding: var(--space-2) 0;
-  border-top: 1px solid var(--border-subtle);
-  font-size: 0.875rem;
-}
-.dash-list dt { font-weight: 400; color: var(--text-secondary); }
-.dash-list dd { margin: 0; text-align: right; font-weight: 500; }
 .dash-note {
   background: var(--accent-fill-3);
   border-radius: var(--radius-sm);
