@@ -63,10 +63,11 @@ const STEPS = [
 
 // "What you'll get": what the app gives a household, from the project report. Icons are 24×24 strokes.
 const FEATURES = [
-  { title: 'Your best year to apply', text: "We test each year and pick the one that leaves you best off, skipping years you can't fund.", icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h3' },
-  { title: 'Every cost and grant counted', text: 'Rent, renovation, stamp duty, fees and interest, plus the grants you qualify for and your loan limit.', icon: 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3' },
-  { title: 'Try what-ifs, then compare', text: 'Move price growth, income or rent and watch the answer change. Save plans and compare them side by side.', icon: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4' },
-  { title: 'Built on real HDB data', text: "Resale prices from data.gov.sg and today's HDB and CPF rules, each linked to its official source.", icon: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4' },
+  { title: 'Find out the best year to apply', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h3' },
+  { title: 'Every cost and grant counted', icon: 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3' },
+  { title: 'Try what-ifs, then compare', icon: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4' },
+  { title: 'Built on real HDB historical data', icon: 'M3 17l6-6 4 4 8-8M15 7h6v6' },
+  { title: 'Personalised dashboards and results', icon: 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z' },
 ];
 
 // "The costs people usually forget": each tile names a cost the engine counts and what it means.
@@ -130,9 +131,6 @@ function setHover(on) {
   hovering = on;
   if (!on && strip.value) pos = strip.value.scrollLeft;
 }
-// "How it works": which step is picked (clicking a step picks it and shows what to have to hand).
-const activeStep = ref(0);
-
 onMounted(() => { frame = requestAnimationFrame(tick); });
 onBeforeUnmount(() => cancelAnimationFrame(frame));
 
@@ -230,64 +228,60 @@ const FAQS = [
         <h2 id="how-title" class="home-title">How it works</h2>
         <p class="home-sub">Four short steps, then your answer.</p>
       </div>
-      <!-- Bootstrap grid: 1 column on phones, 2 on tablets, 4 on laptops. Click a step to pick it. -->
-      <div class="row g-3 home-how">
-        <div v-for="(s, i) in STEPS" :key="s.title" class="col-12 col-md-6 col-lg-3" :data-cy="`home-step-${i + 1}`">
-          <button type="button" class="home-how__step" :class="{ active: activeStep === i }" :aria-pressed="activeStep === i" @click="activeStep = i">
-            <span class="home-how__num" aria-hidden="true">0{{ i + 1 }}</span>
-            <span class="home-how__title">{{ s.title }}</span>
-            <span class="home-how__text">{{ s.text }}</span>
-            <span v-show="activeStep === i" class="home-how__need">✓ {{ s.need }}</span>
-          </button>
-        </div>
-      </div>
+      <ol class="home-steps home-stagger">
+        <li v-for="(s, i) in STEPS" :key="s.title" class="home-card home-step" :data-cy="`home-step-${i + 1}`">
+          <span class="home-step__num" aria-hidden="true">{{ i + 1 }}</span>
+          <h3 class="home-step__title">{{ s.title }}</h3>
+          <span class="home-muted">{{ s.text }}</span>
+          <span class="home-step__need">{{ s.need }}</span>
+        </li>
+      </ol>
     </section>
 
     <!-- What you'll get: one big card with the break-even illustration, and a card per feature around it. -->
     <section class="home-section home-get" aria-labelledby="get-title" data-cy="home-get">
       <div class="home-reveal home-head home-head--center">
         <h2 id="get-title" class="home-title">What you'll get</h2>
-        <p class="home-sub">Everything you need to decide, in one place. Not a price prediction: a clear picture of both paths, built from your own numbers and today's rules.</p>
+        <p class="home-sub">Everything you need to decide, in one place.</p>
       </div>
-      <div class="home-bento">
-        <article class="home-card home-feat home-feat--big home-reveal" data-cy="home-feat-breakeven">
-          <span class="home-tag">Break-even</span>
-          <h3 class="home-feat__title">See where the answer flips</h3>
-          <p class="home-muted home-feat__text">We don't guess future prices. We find the price growth at which both paths leave you equally well off, and show which side your household is on.</p>
-        <div class="home-get__chart">
-          <div class="home-get__legend">
-            <span class="home-muted fw-normal">Illustration of a result</span>
-            <span class="home-get__key"><span class="home-get__swatch home-get__swatch--bto" aria-hidden="true"></span>BTO</span>
-            <span class="home-get__key"><span class="home-get__swatch home-get__swatch--resale" aria-hidden="true"></span>Resale</span>
+      <!-- What you get: a plain list of features (icon + title, thin dividers) beside the break-even illustration. -->
+      <div class="home-get-grid">
+        <ul class="home-feat-list">
+          <li v-for="(f, i) in FEATURES" :key="f.title" class="home-feat" :data-cy="`home-feat-${i + 1}`">
+            <span class="home-feat__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="f.icon" /></svg></span>
+            <span class="home-feat__title">{{ f.title }}</span>
+          </li>
+        </ul>
+        <div class="home-get-panel home-reveal" data-cy="home-feat-breakeven">
+          <div class="home-get__chart">
+            <div class="home-get__legend">
+              <span class="home-muted fw-normal">Illustration of a result</span>
+              <span class="home-get__key"><span class="home-get__swatch home-get__swatch--bto" aria-hidden="true"></span>BTO</span>
+              <span class="home-get__key"><span class="home-get__swatch home-get__swatch--resale" aria-hidden="true"></span>Resale</span>
+            </div>
+            <svg viewBox="0 0 520 250" class="home-get__svg" role="img" aria-label="Illustration: resale starts ahead, then the BTO line overtakes it and stays ahead">
+              <g class="home-grid"><line x1="20" y1="40" x2="500" y2="40" /><line x1="20" y1="100" x2="500" y2="100" /><line x1="20" y1="160" x2="500" y2="160" /><line x1="20" y1="210" x2="500" y2="210" /></g>
+              <g class="home-drawline">
+                <polyline points="30,150 72,140 114,130 156,122 198,114 240,106 282,98 324,90 366,83 408,76 450,70 492,64" fill="none" class="home-line-resale" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 10" />
+                <polyline points="30,205 72,200 114,190 156,175 198,146 240,126 282,108 324,90 366,70 408,52 450,36 492,22" fill="none" class="home-line-bto" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+              </g>
+              <g class="home-meetpop">
+                <circle class="home-pulse home-berry" cx="324" cy="90" r="8" /><circle cx="324" cy="90" r="8" class="home-berry" /><circle cx="324" cy="90" r="3" class="home-white" />
+                <rect x="336" y="98" width="146" height="30" rx="15" class="home-white" /><text x="409" y="118" text-anchor="middle" font-size="13" font-weight="600" class="home-berry">Where they cross</text>
+              </g>
+              <g font-size="12" text-anchor="middle" class="home-axis"><text x="30" y="242">Today</text><text x="500" y="242" text-anchor="end">Years ahead</text></g>
+            </svg>
+            <p class="home-get__note">Example figures. Illustrative projection, not financial advice.</p>
           </div>
-          <svg viewBox="0 0 520 250" class="home-get__svg" role="img" aria-label="Illustration: resale starts ahead, then the BTO line overtakes it and stays ahead">
-            <g class="home-grid"><line x1="20" y1="40" x2="500" y2="40" /><line x1="20" y1="100" x2="500" y2="100" /><line x1="20" y1="160" x2="500" y2="160" /><line x1="20" y1="210" x2="500" y2="210" /></g>
-            <g class="home-drawline">
-              <polyline points="30,150 72,140 114,130 156,122 198,114 240,106 282,98 324,90 366,83 408,76 450,70 492,64" fill="none" class="home-line-resale" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 10" />
-              <polyline points="30,205 72,200 114,190 156,175 198,146 240,126 282,108 324,90 366,70 408,52 450,36 492,22" fill="none" class="home-line-bto" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-            </g>
-            <g class="home-meetpop">
-              <circle class="home-pulse home-berry" cx="324" cy="90" r="8" /><circle cx="324" cy="90" r="8" class="home-berry" /><circle cx="324" cy="90" r="3" class="home-white" />
-              <rect x="336" y="98" width="146" height="30" rx="15" class="home-white" /><text x="409" y="118" text-anchor="middle" font-size="13" font-weight="600" class="home-berry">Where they cross</text>
-            </g>
-            <g font-size="12" text-anchor="middle" class="home-axis"><text x="30" y="242">Today</text><text x="492" y="242">Years ahead</text></g>
-          </svg>
-          <p class="home-get__note">Example figures. Illustrative projection, not financial advice.</p>
-        </div>
-        <button type="button" class="btn btn-link p-0 home-get__link" data-cy="home-example-link" @click="seeExample('get')">See an example result</button>
-        <div v-if="confirming === 'get'" class="home-confirm" role="group" aria-labelledby="home-confirm-get" data-cy="home-example-confirm">
-          <p id="home-confirm-get" class="mb-2">The example replaces what you've entered in your plan so far.</p>
-          <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample('get', true)">Show the example</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
+          <button type="button" class="btn btn-link p-0 home-get__link" data-cy="home-example-link" @click="seeExample('get')">See an example result</button>
+          <div v-if="confirming === 'get'" class="home-confirm" role="group" aria-labelledby="home-confirm-get" data-cy="home-example-confirm">
+            <p id="home-confirm-get" class="mb-2">The example replaces what you've entered in your plan so far.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample('get', true)">Show the example</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
+            </div>
           </div>
         </div>
-        </article>
-        <article v-for="(f, i) in FEATURES" :key="f.title" class="home-card home-feat" :data-cy="`home-feat-${i + 1}`">
-          <span class="home-feat__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="f.icon" /></svg></span>
-          <h3 class="home-feat__title">{{ f.title }}</h3>
-          <p class="home-muted home-feat__text">{{ f.text }}</p>
-        </article>
       </div>
     </section>
 
@@ -481,52 +475,55 @@ const FAQS = [
 .home-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); background: var(--bg-surface); font-size: 14px; font-weight: 500; }
 
 /* ---- how it works ---- */
-/* Each step: no box, just a big number and text. Hover or click tints it pink; the picked step's number turns berry. */
-.home-how__step {
-  width: 100%;
-  height: 100%;
+/* The four step cards (the original design). On hover a card grows a little and turns pink. */
+.home-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+.home-step {
+  position: relative;
+  padding: var(--space-5);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  padding: var(--space-5);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  transition: background 0.2s ease, transform 0.2s ease;
+  gap: var(--space-3);
+  transition: scale 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
 }
-.home-how__step:hover, .home-how__step.active { background: var(--accent-tint); }
-.home-how__step:hover { transform: translateY(-4px); }
-.home-how__step:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.home-how__num { font-size: 48px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: var(--accent-fill-1); }
-.home-how__step.active .home-how__num { color: var(--color-berry); }
-.home-how__title { margin-top: var(--space-2); font-size: 18px; font-weight: 600; }
-.home-how__text { font-size: 15px; line-height: 1.5; color: var(--text-secondary); }
-.home-how__need { font-size: 14px; font-weight: 500; color: var(--color-berry); }
+.home-step__num { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-fill-2); display: grid; place-items: center; font-weight: 600; transition: background 0.25s ease, color 0.25s ease; }
+.home-step__title { margin: 0; font-weight: 500; font-size: 17px; line-height: 1.3; transition: color 0.25s ease; }
+.home-step__need { align-self: flex-start; margin-top: auto; padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); background: var(--bg-page); font-size: 13px; color: var(--text-secondary); }
+/* `scale`, not `transform`, so it doesn't clash with the scroll-in animation (which uses transform). */
+.home-step:hover {
+  z-index: 1;
+  scale: 1.06;
+  border-color: var(--accent-fill-1);
+  background: var(--accent-tint);
+  box-shadow: 0 18px 40px rgba(240, 138, 182, 0.28);
+}
+.home-step:hover .home-step__num { background: var(--color-berry); color: var(--on-primary); }
+.home-step:hover .home-step__title { color: var(--color-berry); }
 
-/* ---- what you'll get: a bento grid. Phones: one column. Tablets: two, the big card full width.
-   Laptops: four, the big card two columns wide and two rows tall, feature cards around it. ---- */
-.home-bento { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
-@media (min-width: 640px) {
-  .home-bento { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .home-feat--big { grid-column: 1 / -1; }
+/* ---- what you'll get: the feature list on the left, the illustration on the right (stacked on smaller screens).
+   The list has no boxes: icon + title rows with thin dividers. Hover tints a row pink and nudges it right. ---- */
+.home-get-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); align-items: center; }
+@media (min-width: 992px) { .home-get-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: var(--space-8); } }
+.home-feat-list { margin: 0; padding: 0; list-style: none; }
+.home-feat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-3);
+  border-radius: var(--radius-sm);
+  transition: background 0.25s ease, translate 0.25s ease;
 }
-@media (min-width: 992px) {
-  .home-bento { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .home-feat--big { grid-column: 1 / span 2; grid-row: 1 / span 2; }
-}
-.home-feat { position: relative; padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
-.home-feat__icon { width: 44px; height: 44px; margin-bottom: var(--space-2); border-radius: 14px; background: var(--accent-tint); display: grid; place-items: center; transition: background 0.3s ease; }
-.home-feat__icon svg { width: 22px; height: 22px; fill: none; stroke: var(--color-berry); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.home-feat__title { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; transition: color 0.3s ease; }
-.home-feat__text { margin: 0; font-size: 15px; }
-.home-feat--big { padding: clamp(20px, 2.5vw, 32px); gap: var(--space-3); }
-.home-feat--big .home-feat__title { font-size: clamp(20px, 2vw, 24px); }
-.home-feat--big .home-tag { align-self: flex-start; background: var(--accent-fill-2); }
+/* Dividers between rows: a straight hairline above each row after the first (drawn separately so the row's rounded
+   hover background doesn't bend it). */
+.home-feat { position: relative; }
+.home-feat + .home-feat::before { content: ""; position: absolute; top: 0; left: var(--space-3); right: var(--space-3); height: 1px; background: var(--border-subtle); }
+.home-feat:hover::before, .home-feat:hover + .home-feat::before { opacity: 0; }
+.home-feat__icon { flex: none; width: 48px; height: 48px; border-radius: 14px; background: var(--accent-tint); display: grid; place-items: center; transition: background 0.25s ease; }
+.home-feat__icon svg { width: 24px; height: 24px; fill: none; stroke: var(--color-berry); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.home-feat__title { font-size: 18px; font-weight: 500; letter-spacing: -0.01em; transition: color 0.25s ease; }
+.home-feat:hover { background: var(--accent-tint); translate: 4px 0; }
 .home-feat:hover .home-feat__icon { background: var(--accent-fill-2); }
-.home-tag { flex: none; display: inline-flex; align-items: center; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; }
+.home-feat:hover .home-feat__title { color: var(--color-berry); }
+.home-get-panel { display: flex; flex-direction: column; gap: var(--space-3); }
 .home-get__link { align-self: flex-start; font-weight: 500; }
 .home-get__chart { background: var(--accent-fill-3); border-radius: var(--radius-md); padding: var(--space-5) var(--space-5) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
 .home-get__legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; font-size: 14px; font-weight: 500; }
@@ -642,8 +639,8 @@ const FAQS = [
     .home-stagger > :nth-child(3) { animation-range: entry 30% cover 42%; }
     .home-stagger > :nth-child(4) { animation-range: entry 45% cover 48%; }
     .home-eyebrow { animation: home-slide cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-timeline: view(); animation-range: entry 10% cover 30%; }
-    .home-drawline { animation: home-draw linear both; animation-timeline: view(); animation-range: entry 30% cover 55%; }
-    .home-meetpop { transform-box: fill-box; transform-origin: 20px 50%; animation: home-meetpop linear both; animation-timeline: view(); animation-range: cover 50% cover 62%; }
+    .home-drawline { animation: home-draw linear both; animation-timeline: view(); animation-range: entry 0% cover 35%; }
+    .home-meetpop { transform-box: fill-box; transform-origin: 20px 50%; animation: home-meetpop linear both; animation-timeline: view(); animation-range: cover 30% cover 42%; }
   }
 }
 @keyframes home-rise { from { opacity: 0; transform: translateY(64px) scale(0.96); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
@@ -654,19 +651,13 @@ const FAQS = [
 
 /* ---- pink hover: boxes lift with a springy ease and glow pink (like ParentPal's purple) ---- */
 /* `translate` (not `transform`) so it doesn't fight the scroll-reveal animations, which use transform. */
-.home-feat, .home-faq {
-  transition: translate 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+.home-faq {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
 }
-.home-feat:not(.home-feat--big):hover {
-  translate: 0 -10px;
-  border-color: var(--accent-fill-1);
-  box-shadow: 0 18px 40px rgba(240, 138, 182, 0.28);
-}
-.home-feat--big:hover, .home-faq:hover {
+.home-faq:hover {
   border-color: var(--accent-fill-2);
   box-shadow: 0 18px 44px rgba(240, 138, 182, 0.2);
 }
-.home-feat:hover .home-feat__title { color: var(--color-berry); }
 .home-btn--ghost:hover { border-color: var(--accent-fill-1); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -674,8 +665,9 @@ const FAQS = [
   .home-hero, .home-hero::before { transition: none; }
   .home-hero:hover { translate: none; }
   .home-tile:hover, .home-feat:hover { translate: none; }
-  .home-how__step { transition: none; }
-  .home-how__step:hover { transform: none; }
+  .home-feat { transition: none; }
+  .home-step { transition: none; }
+  .home-step:hover { scale: none; }
   .home-tile, .home-round-btn { transition: none; }
   .home-faq summary::after { transition: none; }
 }
