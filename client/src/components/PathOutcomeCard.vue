@@ -1,6 +1,6 @@
 <script setup>
-// One path's Outcome (server/src/engine/evaluate.contract.js): net position at the horizon (D1, no sale) in plain
-// words, how it adds up (flat value, loan, CPF to put back, clawback, cash spent), the grants, and the eligibility
+// One path's Outcome (server/src/engine/evaluate.contract.js): net financial position at the horizon (D1, no sale),
+// shown as "net position" with its definition and a short gloss, how it adds up (flat value, loan, CPF to put back, clawback, cash spent), the grants, and the eligibility
 // reasons. Wording follows the guardrails: "net financial position at the horizon",
 // never "profit", never "on sale" (v2 measures everything at horizonYear, there is no sale).
 // All Outcome money fields are integer cents (the contract); this component is the one place
@@ -63,8 +63,8 @@ const grantAmounts = computed(() =>
       <p v-if="subtitle" class="text-secondary small mb-3">{{ subtitle }}</p>
 
       <p class="text-secondary small mb-0">
-        What you'd own outright<template v-if="horizonYear"> in {{ horizonYear }}</template>
-        (<Term id="net-position">net position</Term>)
+        <Term id="net-position">Net position</Term><template v-if="horizonYear"> in {{ horizonYear }}</template>:
+        what this path leaves you with, after costs
       </p>
       <p class="path-net text-numeric mb-3" :data-cy="`${cyPrefix}-net-position`">{{ formatMoney(dollars(outcome.netPositionCents)) }}</p>
 

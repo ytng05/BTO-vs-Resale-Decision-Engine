@@ -97,9 +97,9 @@ const gap = computed(() => {
 const gapSentence = computed(() => {
   if (gap.value === null) return '';
   const years = horizonYear.value ? `By ${horizonYear.value}, ` : '';
-  if (gap.value === 0) return `${years}both paths leave you with the same net position (what you'd own outright) under your assumptions.`;
+  if (gap.value === 0) return `${years}both paths leave you with the same net position (what each path leaves you with, after costs) under your assumptions.`;
   const ahead = gap.value > 0 ? 'BTO' : 'resale';
-  return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in net position (what you'd own outright) under your assumptions.`;
+  return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in net position (what each path leaves you with, after costs) under your assumptions.`;
 });
 
 // Which prices the comparison used (D26, D33), so a default is never hidden: the BTO launch and its price
@@ -283,7 +283,7 @@ onMounted(load);
           v-if="result.outcomeA && result.outcomeB"
           v-model:open="sections.chart"
           title="Net position over time"
-          takeaway="How much you'd own outright each year, BTO against resale."
+          takeaway="What each path leaves you with each year, after costs: BTO against resale."
           lazy
           cy="results-section-chart"
         >

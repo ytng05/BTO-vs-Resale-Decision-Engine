@@ -309,7 +309,7 @@ const LIVING = [
         <!-- The (i) sits beside the label, not inside it, so tapping it doesn't focus the field. -->
         <div class="form-label d-flex align-items-center gap-1">
           <label :for="`${prefix}-asking-price`" class="mb-0">Asking price <span class="text-secondary">(optional)</span></label>
-          <Term id="asking-price" icon><span class="visually-hidden">Asking price</span></Term>
+          <Term id="asking-price" icon ask="What is the asking price?" />
         </div>
         <div class="input-group has-validation">
           <span class="input-group-text">$</span>

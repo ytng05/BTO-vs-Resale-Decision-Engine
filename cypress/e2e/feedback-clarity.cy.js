@@ -8,7 +8,7 @@ describe('clarity', () => {
   it("shows each path's net position adding up from its parts", () => {
     completePlan();
     ['results-patha', 'results-pathb'].forEach((p) => {
-      cy.get(`[data-cy=${p}-card]`).should('contain', "What you'd own outright");
+      cy.get(`[data-cy=${p}-card]`).should('contain', 'what this path leaves you with, after costs');
       cy.get(`[data-cy=${p}-breakdown] > div`).then(($rows) => {
         const rows = [...$rows].map((r) => r.querySelector('dd').textContent.trim());
         const total = cents(rows.pop());
@@ -40,7 +40,7 @@ describe('clarity', () => {
       cy.get('[data-cy=bto-step-price]').should('contain', t.trim()); // the same figure on the summary card
     });
     next();
-    cy.get('[data-cy=term-asking-price-button]').should('have.attr', 'aria-label', 'What is Asking price?').click();
+    cy.get('[data-cy=term-asking-price-button]').should('have.attr', 'aria-label', 'What is the asking price?').click();
     cy.get('[data-cy=term-asking-price-definition]').should('be.visible').and('contain', 'median of recent sales');
   });
 });

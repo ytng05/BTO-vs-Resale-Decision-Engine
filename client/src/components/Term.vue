@@ -12,6 +12,8 @@ const props = defineProps({
   // icon: the slot text stays plain and an (i) button after it opens the definition; it also opens on hover
   // with a mouse, so it reads as an info button. Used next to form labels, where an underline would be odd.
   icon: { type: Boolean, default: false },
+  // The (i) button's accessible name, e.g. "What is the asking price?". Defaults to "What is <term>?".
+  ask: { type: String, default: '' },
 });
 
 const entry = computed(() => GLOSSARY_BY_ID[props.id] ?? null);
@@ -68,15 +70,18 @@ function toggle() {
 }
 // Hover opens it only for a mouse (a tap fires pointerenter too, and the click would then close it again).
 let openedByHover = false;
+// Closing waits a moment, so the mouse can cross the gap into the pop-up to reach its link (WCAG 1.4.13).
+let leaveTimer = null;
 function onEnter(e) {
+  clearTimeout(leaveTimer);
   if (!props.icon || e.pointerType !== 'mouse' || open.value) return;
   openedByHover = true;
   show();
 }
 function onLeave(e) {
   if (!openedByHover || e.pointerType !== 'mouse') return;
-  openedByHover = false;
-  close();
+  clearTimeout(leaveTimer);
+  leaveTimer = setTimeout(() => { openedByHover = false; close(); }, 300);
 }
 function onClick() {
   if (openedByHover) {
@@ -85,19 +90,19 @@ function onClick() {
   }
   toggle();
 }
-onBeforeUnmount(close);
+onBeforeUnmount(() => { clearTimeout(leaveTimer); close(); });
 </script>
 
 <template>
   <span v-if="entry" ref="root" class="term" :data-cy="`term-${id}`" @pointerenter="onEnter" @pointerleave="onLeave">
     <template v-if="icon">
-      <slot>{{ entry.term }}</slot>
+      <slot />
       <button
         type="button"
         class="term__icon"
         :aria-expanded="open ? 'true' : 'false'"
         :aria-controls="popId"
-        :aria-label="`What is ${entry.term}?`"
+        :aria-label="ask || `What is ${entry.term}?`"
         :data-cy="`term-${id}-button`"
         @click="onClick"
       >
