@@ -29,18 +29,17 @@ describe('clarity', () => {
     cy.get('[data-cy=results-dashboard-button]').should('have.text', 'Open the dashboard');
   });
 
-  it('shows the BTO price on the plan, and explains the asking price from an info button', () => {
+  it('shows the BTO price on the plan, and says what a blank asking price means', () => {
     cy.visit('/plan');
     next();
     fillSituation();
     next();
     fillPath('patha');
+    // The figure the comparison uses, in the launch card (the summary card under the illustration was removed with
+    // the Calm "Your BTO" layout, so the price is no longer shown twice).
     cy.get('[data-cy=patha-price-estimate]').should('be.visible').invoke('text').should('match', /^S\$[\d,]+$/);
-    cy.get('[data-cy=patha-price-estimate]').invoke('text').then((t) => {
-      cy.get('[data-cy=bto-step-price]').should('contain', t.trim()); // the same figure on the summary card
-    });
     next();
-    cy.get('[data-cy=term-asking-price-button]').should('have.attr', 'aria-label', 'What is the asking price?').click();
-    cy.get('[data-cy=term-asking-price-definition]').should('be.visible').and('contain', 'median of recent sales');
+    // The asking price explains itself in one line under the box (the (i) was dropped: one pattern per field).
+    cy.get('[data-cy=pathb-asking-price-help]').should('be.visible').and('contain', 'Leave blank to use recent sales');
   });
 });

@@ -1,6 +1,6 @@
 // Results page (mock data). Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 // Selector convention: data-cy="<area>-<element>-<action>" (see docs/CONVENTIONS.md).
-import { completePlan, fillPath, fillSituation, next, seeResults } from './helpers/plan.js';
+import { backTimes, completePlan, fillPath, fillSituation, next, seeResults } from './helpers/plan.js';
 
 describe('results page', () => {
   it('shows an empty state when opened without a plan', () => {
@@ -77,8 +77,7 @@ describe('results page', () => {
     cy.location('pathname').should('eq', '/plan');
     // The stepper reopens on the last input step with the answers still filled in.
     cy.get('[data-cy=pathb-town-select]').should('have.value', 'BEDOK');
-    cy.get('[data-cy=plan-step-back]').click();
-    cy.get('[data-cy=plan-step-back]').click();
+    backTimes(5); // resale flat -> your BTO -> About you's four screens, back to the ages
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
   });
 
@@ -103,8 +102,12 @@ describe('results page', () => {
     fillSituation();
     next();
     cy.get('[data-cy=patha-town-select]').select('TAMPINES');
-    cy.get('[data-cy=patha-project-tampines-bliss-input]').should('be.checked'); // newest first
+    cy.get('[data-cy=patha-project-help]').should('contain', 'Tampines Bliss'); // the newest, picked for you
+    cy.get('[data-cy=patha-project-more]').click(); // Use a different launch
+    cy.get('[data-cy=patha-project-tampines-bliss-input]').should('be.checked');
+    cy.get('[data-cy=patha-project-tampines-bliss]').should('contain', 'Newest');
     cy.get('[data-cy=patha-project-simei-symphony]').click();
+    cy.get('[data-cy=patha-project-help]').should('contain', 'Simei Symphony');
     next();
     fillPath('pathb', { town: 'BEDOK' });
     next();
@@ -118,18 +121,25 @@ describe('results page', () => {
     fillSituation();
     next();
     cy.get('[data-cy=patha-town-select]').select('BEDOK');
-    cy.get('[data-cy=patha-project-ping-yi-court-input]').should('be.checked'); // the only launch, preselected
-    cy.get('[data-cy=patha-project-ping-yi-court]').should('contain', 'Oct 2025').and('contain', 'Standard');
+    // The only launch: named in the card, no list to choose from.
+    cy.get('[data-cy=patha-project-help]').should('contain', 'Ping Yi Court').and('contain', 'Oct 2025').and('contain', 'Standard');
+    cy.get('[data-cy=patha-project-more]').should('not.exist');
     cy.get('[data-cy=patha-flat-type-5-room]').click(); // Ping Yi Court offers 4- and 5-room
-    cy.get('[data-cy=patha-flat-type-3-room]').should('not.exist');
+    cy.get('[data-cy=patha-flat-type-3-room-input]').should('be.disabled'); // shown, greyed out
+    cy.get('[data-cy=patha-flat-type-hint]').should('have.text', 'Only 4-room and 5-room in this launch.');
     cy.get('[data-cy=patha-price-basis]')
-      .should('contain', 'S$715,000 to').and('contain', 'S$857,000');
+      .should('contain', 'Price used: S$786,000').and('contain', 'S$715,000–857,000 range');
     cy.get('[data-cy=patha-price-estimate]').should('have.text', 'S$786,000'); // the middle of the range
     // A Plus launch sets the classification with it.
     cy.get('[data-cy=patha-town-select]').select('TAMPINES');
+    cy.get('[data-cy=patha-project-more]').click();
     cy.get('[data-cy=patha-project-tampines-nova]').should('contain', 'Plus').click();
     cy.get('[data-cy=patha-flat-type-4-room-input]').should('be.checked');
-    cy.get('[data-cy=patha-flat-type-3-room]').should('not.exist'); // Nova has 4-room only
+    cy.get('[data-cy=patha-flat-type-3-room-input]').should('be.disabled'); // Nova has 4-room only
+    cy.get('[data-cy=patha-flat-type-hint]').should('have.text', 'Only 4-room in this launch.');
+    // Plus explained in a popover from the card.
+    cy.get('[data-cy=patha-project-help] button').should('have.text', 'Plus').click();
+    cy.get('#patha-cls-tip').should('be.visible').and('contain', 'minimum occupation period');
   });
 
   it('takes an optional asking price and says the part above the median is paid in cash (D39)', () => {
@@ -140,9 +150,13 @@ describe('results page', () => {
     fillPath('patha');
     next();
     fillPath('pathb', { town: 'BEDOK' });
-    cy.get('[data-cy=pathb-asking-price-help]').should('contain', 'S$665,000').and('contain', 'S$620,000 to S$760,000');
-    cy.get('[data-cy=pathb-asking-price-input]').type('700000');
-    cy.get('[data-cy=pathb-asking-price-cov]').should('contain', 'S$35,000 above the median');
+    cy.get('[data-cy=pathb-asking-price-help]').should('have.text', 'Leave blank to use recent sales (median S$665,000).');
+    cy.get('[data-cy=pathb-asking-price-input]').type('700000').should('have.value', '700,000'); // commas as typed
+    cy.get('[data-cy=pathb-asking-price-help]').should('not.exist'); // one line for the box's state
+    cy.get('[data-cy=pathb-asking-price-cov]').should('contain', 'S$35,000 above the median').and('contain', 'paid in cash, not CPF or the loan');
+    cy.get('[data-cy=pathb-asking-price-input]').clear().type('600000');
+    cy.get('[data-cy=pathb-asking-price-cov]').should('not.exist'); // below the median: nothing to say
+    cy.get('[data-cy=pathb-asking-price-input]').clear().type('700000');
     next();
     seeResults();
     cy.get('[data-cy=results-price-basis-resale]')

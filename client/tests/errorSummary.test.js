@@ -4,7 +4,7 @@ import { summariseErrors } from '../src/utils/errorSummary.js';
 describe('summariseErrors', () => {
   it('names the buyer and field, and points at its input', () => {
     expect(summariseErrors(1, { 'applicants.1.monthlyIncome': 'Enter a monthly income.' })).toEqual([
-      { key: 'applicants.1.monthlyIncome', label: "Buyer 2's monthly income", message: 'Enter a monthly income.', cy: 'situation-buyer-2-income-input' },
+      { key: 'applicants.1.monthlyIncome', label: "The other buyer's monthly income", message: 'Enter a monthly income.', cy: 'situation-buyer-2-income-input' },
     ]);
   });
 

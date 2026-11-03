@@ -1,7 +1,7 @@
 // Smoke test. Needs: `VITE_USE_MOCK=true npm run build` then `npm start`, then `npm run test:e2e`.
 // Selector convention: data-cy="<area>-<element>-<action>" (see docs/CONVENTIONS.md).
 
-import { fillPath, fillSituation, next, seeResults } from './helpers/plan.js';
+import { backTimes, fillPath, fillSituation, next, seeResults } from './helpers/plan.js';
 
 describe('smoke', () => {
   it('loads the home page and shows the disclaimer', () => {
@@ -20,7 +20,7 @@ describe('smoke', () => {
     cy.visit('/plan');
     next(); // step 1 (what matters most) is optional
     next();
-    cy.get('[data-cy=plan-step-errors]').should('be.visible');
+    cy.get('[data-cy=situation-buyer-1-age-error]').should('be.visible'); // under the box (no summary on About you)
     cy.get('[data-cy=plan-step-2-panel]').should('exist'); // still on About you
   });
 
@@ -32,7 +32,7 @@ describe('smoke', () => {
     fillPath('patha');
     next(); // your BTO -> resale flat
     fillPath('pathb');
-    next(); // resale flat -> check your answers
+    next(); // resale flat -> results
     seeResults();
     cy.location('pathname').should('eq', '/results');
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
@@ -84,8 +84,7 @@ describe('smoke', () => {
     cy.get('[data-cy=pathb-town-select]').should('have.value', 'TAMPINES');
     cy.get('[data-cy=pathb-flat-type-4-room-input]').should('be.checked');
     cy.get('[data-cy=pathb-lease-band-80-89-input]').should('be.checked');
-    cy.get('[data-cy=plan-step-back]').click();
-    cy.get('[data-cy=plan-step-back]').click();
+    backTimes(5); // resale flat -> your BTO -> About you's four screens, back to the ages
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
     cy.get('[data-cy=situation-buyer-2-age-input]').should('have.value', '29');
 
