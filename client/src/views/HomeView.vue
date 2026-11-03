@@ -130,6 +130,9 @@ function setHover(on) {
   hovering = on;
   if (!on && strip.value) pos = strip.value.scrollLeft;
 }
+// "How it works": which step is picked (clicking a step picks it and shows what to have to hand).
+const activeStep = ref(0);
+
 onMounted(() => { frame = requestAnimationFrame(tick); });
 onBeforeUnmount(() => cancelAnimationFrame(frame));
 
@@ -227,18 +230,17 @@ const FAQS = [
         <h2 id="how-title" class="home-title">How it works</h2>
         <p class="home-sub">Four short steps, then your answer.</p>
       </div>
-      <!-- A timeline: one line with a numbered dot per step, cards alternating above and below it
-           (on phones it turns into a vertical line with the cards beside it). -->
-      <ol class="home-steps home-stagger">
-        <li v-for="(s, i) in STEPS" :key="s.title" class="home-tl__item" :data-cy="`home-step-${i + 1}`">
-          <span class="home-tl__node"><span class="home-step__num" aria-hidden="true">{{ i + 1 }}</span></span>
-          <div class="home-card home-step">
-            <h3 class="home-step__title">{{ s.title }}</h3>
-            <span class="home-muted">{{ s.text }}</span>
-            <span class="home-step__need">{{ s.need }}</span>
-          </div>
-        </li>
-      </ol>
+      <!-- Bootstrap grid: 1 column on phones, 2 on tablets, 4 on laptops. Click a step to pick it. -->
+      <div class="row g-3 home-how">
+        <div v-for="(s, i) in STEPS" :key="s.title" class="col-12 col-md-6 col-lg-3" :data-cy="`home-step-${i + 1}`">
+          <button type="button" class="home-how__step" :class="{ active: activeStep === i }" :aria-pressed="activeStep === i" @click="activeStep = i">
+            <span class="home-how__num" aria-hidden="true">0{{ i + 1 }}</span>
+            <span class="home-how__title">{{ s.title }}</span>
+            <span class="home-how__text">{{ s.text }}</span>
+            <span v-show="activeStep === i" class="home-how__need">✓ {{ s.need }}</span>
+          </button>
+        </div>
+      </div>
     </section>
 
     <!-- What you'll get: one big card with the break-even illustration, and a card per feature around it. -->
@@ -479,56 +481,30 @@ const FAQS = [
 .home-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); background: var(--bg-surface); font-size: 14px; font-weight: 500; }
 
 /* ---- how it works ---- */
-/* Phones: a vertical line down the left, a dot per step, the card beside it. */
-.home-steps { display: flex; flex-direction: column; gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
-.home-tl__item { display: grid; grid-template-columns: 44px 1fr; gap: var(--space-4); }
-.home-tl__node { position: relative; display: flex; justify-content: center; }
-.home-tl__node::before {
-  content: "";
-  position: absolute;
-  left: calc(50% - 1.5px);
-  top: 22px;
-  bottom: calc(-1 * (var(--space-4) + 22px));
-  width: 3px;
-  border-radius: 2px;
-  background: var(--accent-fill-2);
+/* Each step: no box, just a big number and text. Hover or click tints it pink; the picked step's number turns berry. */
+.home-how__step {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
-.home-tl__item:last-child .home-tl__node::before { display: none; }
-.home-step { position: relative; padding: var(--space-4) var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
-.home-step__num {
-  position: relative;
-  z-index: 1;
-  box-sizing: border-box;
-  width: 44px;
-  height: 44px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--accent-fill-2);
-  border: 4px solid var(--bg-surface);
-  box-shadow: 0 4px 12px rgba(240, 138, 182, 0.3);
-  display: grid;
-  place-items: center;
-  font-weight: 600;
-}
-
-/* Wider screens: one horizontal line through the middle; cards 1 and 3 sit above it, 2 and 4 below. */
-@media (min-width: 900px) {
-  .home-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: auto 52px auto; gap: var(--space-4) 0; }
-  .home-tl__item { grid-row: 1 / span 3; display: grid; grid-template-rows: subgrid; grid-template-columns: none; gap: inherit; }
-  .home-tl__node { grid-row: 2; align-items: center; }
-  .home-tl__node::before { left: 0; right: 0; top: calc(50% - 1.5px); bottom: auto; width: auto; height: 3px; }
-  .home-tl__item:first-child .home-tl__node::before { left: 50%; }
-  .home-tl__item:last-child .home-tl__node::before { display: block; right: 50%; }
-  .home-step { margin-inline: var(--space-2); }
-  .home-tl__item:nth-child(odd) .home-step { grid-row: 1; align-self: end; }
-  .home-tl__item:nth-child(even) .home-step { grid-row: 3; align-self: start; }
-  /* A short stem from each card to its dot. */
-  .home-step::after { content: ""; position: absolute; left: calc(50% - 1px); width: 2px; height: var(--space-4); background: var(--accent-fill-2); }
-  .home-tl__item:nth-child(odd) .home-step::after { top: 100%; }
-  .home-tl__item:nth-child(even) .home-step::after { bottom: 100%; }
-}
-.home-step__title { margin: 0; font-weight: 500; font-size: 17px; line-height: 1.3; }
-.home-step__need { align-self: flex-start; margin-top: auto; padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); background: var(--bg-page); font-size: 13px; color: var(--text-secondary); }
+.home-how__step:hover, .home-how__step.active { background: var(--accent-tint); }
+.home-how__step:hover { transform: translateY(-4px); }
+.home-how__step:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.home-how__num { font-size: 48px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; color: var(--accent-fill-1); }
+.home-how__step.active .home-how__num { color: var(--color-berry); }
+.home-how__title { margin-top: var(--space-2); font-size: 18px; font-weight: 600; }
+.home-how__text { font-size: 15px; line-height: 1.5; color: var(--text-secondary); }
+.home-how__need { font-size: 14px; font-weight: 500; color: var(--color-berry); }
 
 /* ---- what you'll get: a bento grid. Phones: one column. Tablets: two, the big card full width.
    Laptops: four, the big card two columns wide and two rows tall, feature cards around it. ---- */
@@ -666,7 +642,6 @@ const FAQS = [
     .home-stagger > :nth-child(3) { animation-range: entry 30% cover 42%; }
     .home-stagger > :nth-child(4) { animation-range: entry 45% cover 48%; }
     .home-eyebrow { animation: home-slide cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-timeline: view(); animation-range: entry 10% cover 30%; }
-    .home-step__num { animation: home-pop linear both; animation-timeline: view(); animation-range: entry 40% cover 40%; }
     .home-drawline { animation: home-draw linear both; animation-timeline: view(); animation-range: entry 30% cover 55%; }
     .home-meetpop { transform-box: fill-box; transform-origin: 20px 50%; animation: home-meetpop linear both; animation-timeline: view(); animation-range: cover 50% cover 62%; }
   }
@@ -674,16 +649,15 @@ const FAQS = [
 @keyframes home-rise { from { opacity: 0; transform: translateY(64px) scale(0.96); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes home-card { from { opacity: 0; transform: translateY(80px) rotate(-2deg) scale(0.92); } to { opacity: 1; transform: none; } }
 @keyframes home-slide { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
-@keyframes home-pop { 0% { transform: scale(0.3); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
 @keyframes home-draw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes home-meetpop { 0% { opacity: 0; transform: scale(0.2); } 70% { opacity: 1; transform: scale(1.35); } 100% { opacity: 1; transform: scale(1); } }
 
 /* ---- pink hover: boxes lift with a springy ease and glow pink (like ParentPal's purple) ---- */
 /* `translate` (not `transform`) so it doesn't fight the scroll-reveal animations, which use transform. */
-.home-step, .home-feat, .home-faq {
+.home-feat, .home-faq {
   transition: translate 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
 }
-.home-step:hover, .home-feat:not(.home-feat--big):hover {
+.home-feat:not(.home-feat--big):hover {
   translate: 0 -10px;
   border-color: var(--accent-fill-1);
   box-shadow: 0 18px 40px rgba(240, 138, 182, 0.28);
@@ -692,16 +666,16 @@ const FAQS = [
   border-color: var(--accent-fill-2);
   box-shadow: 0 18px 44px rgba(240, 138, 182, 0.2);
 }
-.home-step:hover .home-step__title, .home-feat:hover .home-feat__title { color: var(--color-berry); }
-.home-step__num { transition: background 0.3s ease, scale 0.3s ease; }
-.home-tl__item:hover .home-step__num { background: var(--accent-fill-1); scale: 1.1; }
+.home-feat:hover .home-feat__title { color: var(--color-berry); }
 .home-btn--ghost:hover { border-color: var(--accent-fill-1); }
 
 @media (prefers-reduced-motion: reduce) {
   .home-pulse, .home-lit { animation: none; }
   .home-hero, .home-hero::before { transition: none; }
   .home-hero:hover { translate: none; }
-  .home-step:hover, .home-tile:hover, .home-feat:hover { translate: none; }
+  .home-tile:hover, .home-feat:hover { translate: none; }
+  .home-how__step { transition: none; }
+  .home-how__step:hover { transform: none; }
   .home-tile, .home-round-btn { transition: none; }
   .home-faq summary::after { transition: none; }
 }
