@@ -227,6 +227,11 @@ export async function saveScenario(payload) {
   return (await http.post('/scenarios', payload)).data;
 }
 
+// Saves over one of the user's scenarios (same id); payload as saveScenario.
+export async function updateScenario(id, payload) {
+  return (await http.put(`/scenarios/${encodeURIComponent(id)}`, payload)).data;
+}
+
 export async function getScenario(id) {
   return (await http.get(`/scenarios/${encodeURIComponent(id)}`)).data;
 }

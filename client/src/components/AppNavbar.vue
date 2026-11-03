@@ -11,7 +11,7 @@ const route = useRoute();
 const router = useRouter();
 
 const LINKS = [
-  { to: '/plan', label: 'Plan', cy: 'nav-plan-link' },
+  { to: '/plan?new=1', label: 'Plan', cy: 'nav-plan-link' }, // ?new=1: a fresh plan once this one is saved (PlanView)
   { to: '/results', label: 'Results', cy: 'nav-results-link' },
   { to: '/dashboard', label: 'Dashboard', cy: 'nav-dashboard-link' },
   { to: '/sources', label: 'Sources', cy: 'nav-sources-link' },

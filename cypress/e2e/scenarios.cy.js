@@ -1,6 +1,17 @@
 // Saved scenarios, end to end: register, save from Results, list, open, delete.
 // Needs the server connected to MongoDB (CI: the throwaway mongo service; locally: MONGODB_URI).
-import { completePlan } from './helpers/plan.js';
+import { completePlan, fillPath, next, seeResults } from './helpers/plan.js';
+
+// Registers a new user through the real API and stores the token where stores/auth.js keeps it.
+function registerFreshUser() {
+  cy.request('POST', '/api/auth/register', {
+    name: 'E2E tester',
+    email: `e2e-${Date.now()}@example.com`,
+    password: 'e2e-password-123',
+  }).then(({ body }) => {
+    window.localStorage.setItem('hdb-app:auth', JSON.stringify({ token: body.token, user: body.user }));
+  });
+}
 
 describe('saved scenarios', () => {
   it('asks a logged-out user to log in, on Results and on My scenarios', () => {
@@ -35,6 +46,9 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=results-save-name-input]').type('E2E scenario');
     cy.get('[data-cy=results-save-submit]').click();
     cy.get('[data-cy=results-save-success]').should('contain', 'E2E scenario');
+    // Saved: the same scenario cannot be saved again.
+    cy.get('[data-cy=results-save-button]').should('not.exist');
+    cy.get('[data-cy=results-update-button]').should('not.exist');
 
     // Listed, with the ruleset that produced it.
     cy.get('[data-cy=results-save-scenarios-link]').click();
@@ -57,5 +71,65 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=scenarios-delete-button]').click();
     cy.get('[data-cy=scenarios-delete-confirm]').click();
     cy.get('[data-cy=scenarios-empty]').should('be.visible');
+  });
+
+  it('updates the same scenario after its inputs change, instead of saving a copy', () => {
+    registerFreshUser();
+    completePlan();
+    cy.get('[data-cy=results-save-button]').click();
+    cy.get('[data-cy=results-save-name-input]').clear().type('First plan');
+    cy.get('[data-cy=results-save-submit]').click();
+    cy.get('[data-cy=results-save-success]').should('contain', 'First plan');
+
+    // Change the resale flat, then save again: it offers to update "First plan".
+    cy.get('[data-cy=results-edit-button]').click();
+    fillPath('pathb', { town: 'TAMPINES' });
+    next();
+    seeResults();
+    cy.get('[data-cy=results-update-button]').should('contain', 'First plan').click();
+    cy.get('[data-cy=results-save-success]').should('contain', 'First plan');
+    cy.get('[data-cy=results-update-button]').should('not.exist');
+
+    cy.visit('/scenarios');
+    cy.get('[data-cy=scenarios-list] li').should('have.length', 1).and('contain', 'First plan');
+  });
+
+  it('offers the saved About you answers under the "You" age box, and fills them in', () => {
+    registerFreshUser();
+    completePlan();
+    cy.get('[data-cy=results-save-button]').click();
+    cy.get('[data-cy=results-save-submit]').click();
+    cy.get('[data-cy=results-save-success]').should('be.visible');
+
+    cy.intercept('GET', '/api/scenarios/*').as('loadSaved');
+    cy.visit('/plan');
+    next();
+    cy.wait('@loadSaved', { timeout: 30000 });
+    cy.get('[data-cy=situation-buyer-1-age-input]').focus();
+    cy.get('[data-cy=situation-autofill-option]').should('have.length', 1).and('contain', 'Ages 30 and 29').click();
+    cy.get('[data-cy=situation-autofill]').should('not.exist');
+    cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
+    cy.get('[data-cy=situation-buyer-2-age-input]').should('have.value', '29');
+  });
+
+  it('starts a fresh plan from the Plan link once the plan is saved, and offers the saved details', () => {
+    registerFreshUser();
+    completePlan();
+    cy.get('[data-cy=results-save-button]').click();
+    cy.get('[data-cy=results-save-submit]').click();
+    cy.get('[data-cy=results-save-success]').should('be.visible');
+
+    // "Change inputs" keeps the saved plan to edit it.
+    cy.get('[data-cy=results-edit-button]').first().click();
+    cy.get('[data-cy=pathb-town-select]').should('have.value', 'BEDOK');
+
+    // The Plan link starts over: first step, empty ages, and the saved details on offer.
+    cy.get('[data-cy=nav-plan-link]').click({ force: true });
+    cy.location('search').should('eq', '');
+    cy.get('[data-cy=wish-parents]').should('be.visible');
+    next();
+    cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '').focus();
+    cy.get('[data-cy=situation-autofill-option]', { timeout: 30000 }).should('have.length', 1).click();
+    cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
   });
 });

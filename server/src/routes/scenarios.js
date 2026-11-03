@@ -39,6 +39,16 @@ function validateScenario(req, res, next) {
   return next();
 }
 
+// The ruleset that produced a saved result, and the year it was calculated from, so "recalculate" on a reopened
+// scenario uses the same ones. With no result saved: the current ruleset and this year.
+function savedStamps(result) {
+  const rulesetVersion = typeof result?.rulesetVersion === 'string' ? result.rulesetVersion : loadRuleset().version;
+  const evaluationStartYear = Number.isInteger(result?.evaluationStartYear)
+    ? result.evaluationStartYear
+    : new Date().getFullYear();
+  return { rulesetVersion, evaluationStartYear };
+}
+
 // GET /api/scenarios -> { scenarios: [{ id, name, rulesetVersion, createdAt, updatedAt }] }, newest first.
 // The list leaves out the inputs and result to stay small; GET /:id returns everything.
 router.get('/', requireDb, async (req, res, next) => {
@@ -56,14 +66,7 @@ router.get('/', requireDb, async (req, res, next) => {
 // POST /api/scenarios  { name, profile, choiceA, choiceB, assumptions, result? } -> 201 { scenario }
 router.post('/', validateScenario, requireDb, async (req, res, next) => {
   try {
-    const { result } = req.scenario;
-    // Record the ruleset that produced the result. With no result saved, it is the current ruleset.
-    const rulesetVersion = typeof result?.rulesetVersion === 'string' ? result.rulesetVersion : loadRuleset().version;
-    // Same idea for the start year, so "recalculate" on a reopened scenario starts from the same year
-    const evaluationStartYear = Number.isInteger(result?.evaluationStartYear)
-      ? result.evaluationStartYear
-      : new Date().getFullYear();
-    const doc = await Scenario.create({ ...req.scenario, rulesetVersion, evaluationStartYear, userId: req.user.id });
+    const doc = await Scenario.create({ ...req.scenario, ...savedStamps(req.scenario.result), userId: req.user.id });
 
     res.status(201).json({ scenario: toJson(doc.toObject()) });
   } catch (err) {
@@ -76,6 +79,26 @@ router.get('/:id', requireDb, async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return notFound(res);
     const doc = await Scenario.findOne({ _id: req.params.id, userId: req.user.id }).lean();
+    if (!doc) return notFound(res);
+    res.json({ scenario: toJson(doc) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/scenarios/:id  { name, profile, choiceA, choiceB, assumptions, result? } -> 200 { scenario }
+// Saves over the user's own scenario (same id), e.g. after changing the inputs of one they reopened.
+// Someone else's scenario gets 404, as for GET and DELETE.
+router.put('/:id', validateScenario, requireDb, async (req, res, next) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return notFound(res);
+    const { result, ...inputs } = req.scenario;
+    const update = { $set: { ...inputs, ...savedStamps(result) } };
+    if (result === undefined) update.$unset = { result: 1 };
+    else update.$set.result = result;
+    const doc = await Scenario.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, update, {
+      returnDocument: 'after',
+    }).lean();
     if (!doc) return notFound(res);
     res.json({ scenario: toJson(doc) });
   } catch (err) {

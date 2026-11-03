@@ -83,7 +83,7 @@ describe('GET /api/auth/me', () => {
 
 describe('/api/scenarios', () => {
   it('needs a token on every route', async () => {
-    for (const [method, path] of [['get', '/'], ['post', '/'], ['get', '/abc'], ['delete', '/abc']]) {
+    for (const [method, path] of [['get', '/'], ['post', '/'], ['get', '/abc'], ['put', '/abc'], ['delete', '/abc']]) {
       const res = await request(app)[method](`/api/scenarios${path}`);
       expect(res.status, `${method} ${path}`).toBe(401);
     }
@@ -100,6 +100,17 @@ describe('/api/scenarios', () => {
     const res = await request(app).post('/api/scenarios').set(bearer(signToken(user)))
       .send({ name: 'Plan', profile: 'x', choiceA: {}, choiceB: {}, assumptions: {} });
     expect(res.status).toBe(400);
+  });
+
+  it('validates an update before touching the database, and answers 503 without one', async () => {
+    const auth = bearer(signToken(user));
+    const bad = await request(app).put('/api/scenarios/64b000000000000000000002').set(auth)
+      .send({ name: '', profile: {}, choiceA: {}, choiceB: {}, assumptions: {} });
+    expect(bad.status).toBe(400);
+    expect(bad.body.error.code).toBe('VALIDATION_ERROR');
+    const ok = await request(app).put('/api/scenarios/64b000000000000000000002').set(auth)
+      .send({ name: 'Plan', profile: {}, choiceA: {}, choiceB: {}, assumptions: {} });
+    expect(ok.status).toBe(503);
   });
 
   it('returns 503 for a valid request when there is no database', async () => {

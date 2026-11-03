@@ -13,7 +13,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 | POST | `/api/auth/login` | seat 3 | returns JWT | working |
 | GET | `/api/auth/me` | seat 3 | current user from the token (restores a session on page load) | working |
 | GET/POST | `/api/scenarios` | seat 3 | list / save (auth required) | working |
-| GET/DELETE | `/api/scenarios/:id` | seat 3 | load / delete (auth required) | working |
+| GET/PUT/DELETE | `/api/scenarios/:id` | seat 3 | load / update / delete (auth required) | working |
 | POST | `/api/compare` | seat 1 | break-even surface for path A vs B | working |
 | POST | `/api/cpf/accrued-interest` | seat 1 | CPF refund owed at a date: principal + accrued interest (D2, D12) | working (needs verified CPF rate in ruleset) |
 | POST | `/api/stamp-duty` | seat 1 | buyer's stamp duty on a price (D20) | working |
@@ -258,6 +258,10 @@ Errors: `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `503 DB_UNAVAILABLE`.
 ### GET /api/scenarios/:id
 Response `200`: `{ scenario }` with all inputs and the saved result.
 Errors: `401 UNAUTHORIZED`, `404 NOT_FOUND`, `503 DB_UNAVAILABLE`.
+
+### PUT /api/scenarios/:id
+Request: as POST. Saves over the user's own scenario (same `id`), e.g. after changing the inputs of a reopened one. `rulesetVersion` and `evaluationStartYear` are set again as for POST; a request without `result` removes the saved result.
+Response `200`: `{ scenario }`, as POST. Errors: `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `404 NOT_FOUND` (also for someone else's scenario), `503 DB_UNAVAILABLE`.
 
 ### DELETE /api/scenarios/:id
 Response `204` (no body).

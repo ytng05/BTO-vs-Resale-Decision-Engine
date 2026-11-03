@@ -9,9 +9,11 @@
 // as they type, so a half-typed number is not flagged mid-keystroke.
 // Field names follow the store (contract v2/v2.1). Money is in dollars here; client.js sends cents.
 import Term from './Term.vue';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
-import { ehgEstimate, getRuleset } from '../api/client.js';
+import { ehgEstimate, getRuleset, getScenario, listScenarios } from '../api/client.js';
+import { useAuthStore } from '../stores/auth.js';
+import { MAX_SUGGESTIONS, uniqueProfiles } from '../utils/savedProfiles.js';
 import { formatMoney } from '../utils/format.js';
 import { CITIZENSHIPS, REQUIRED_APPLICANTS, blankApplicant } from '../constants/planOptions.js';
 import { cpfLooksHigh } from '../validation/planValidation.js';
@@ -29,6 +31,73 @@ const WHO = ['You', 'The other buyer'];
 const store = useScenarioStore();
 const applicants = computed(() => store.profile.applicants);
 const currentYear = new Date().getFullYear();
+
+// Autofill, like the browser's own suggestions: when the "You" age box is focused and empty, a small list drops
+// down with the distinct About you answers from the user's saved scenarios (utils/savedProfiles.js).
+// Picking one fills every About you screen.
+const auth = useAuthStore();
+const savedProfiles = ref([]); // from uniqueProfiles(): [{ key, profile, title, detail, savings, showSavings }]
+const autofillOpen = ref(false);
+const autofillBox = ref(null);
+const SCENARIOS_TO_CHECK = 10; // look past repeated saves to find different households
+
+onMounted(async function () {
+  if (!auth.isLoggedIn) {
+    return;
+  }
+  try {
+    const list = (await listScenarios()).scenarios.slice(0, SCENARIOS_TO_CHECK);
+    const profiles = [];
+    for (const s of list) {
+      const data = await getScenario(s.id);
+      profiles.push(data.scenario.profile);
+      if (uniqueProfiles(profiles).length >= MAX_SUGGESTIONS) {
+        break; // enough different households: no need to load more
+      }
+    }
+    savedProfiles.value = uniqueProfiles(profiles);
+    // Already in the "You" box while they loaded: show them now.
+    if (document.activeElement && document.activeElement.id === 'buyer-0-age') {
+      onAgeFocus(0);
+    }
+  } catch (err) {
+    savedProfiles.value = []; // no suggestions rather than an error
+  }
+});
+
+function onAgeFocus(i) {
+  if (i === 0 && savedProfiles.value.length > 0 && applicants.value[0].age === null) {
+    autofillOpen.value = true;
+  }
+}
+
+function closeAutofill() {
+  autofillOpen.value = false;
+}
+
+// Closes once focus leaves both the age box and the list, so Tab and the down arrow can reach the list.
+function onAutofillFocusOut(event) {
+  if (autofillBox.value && autofillBox.value.contains(event.relatedTarget)) {
+    return;
+  }
+  closeAutofill();
+}
+
+// Down arrow in the "You" box: into the list, like the browser's own suggestions.
+function onAgeArrowDown(i) {
+  if (i !== 0 || !autofillOpen.value) {
+    return;
+  }
+  const first = autofillBox.value.querySelector('.autofill__item');
+  if (first) {
+    first.focus();
+  }
+}
+
+function pickProfile(item) {
+  store.fillProfile(item.profile);
+  closeAutofill();
+}
 
 // The contract models exactly two buyers (API_CONTRACT.md), so always show two.
 while (store.profile.applicants.length < REQUIRED_APPLICANTS) {
@@ -120,7 +189,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 <template>
   <div data-cy="situation-form" :data-part="part">
     <!-- 0 · How old are you both? -->
-    <div v-if="part === 0" class="pair">
+    <div v-if="part === 0" ref="autofillBox" class="pair" @focusout="onAutofillFocusOut">
       <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`">
         <label :for="`buyer-${i}-age`" class="big-field__label">{{ WHO[i] }}</label>
         <div class="big-box">
@@ -135,9 +204,47 @@ onBeforeUnmount(() => clearTimeout(timer));
             :class="{ 'is-invalid': err(`applicants.${i}.age`) }"
             :data-cy="`situation-buyer-${i + 1}-age-input`"
             @blur="leave(`applicants.${i}.age`)"
+            @focus="onAgeFocus(i)"
+            @keydown.down.prevent="onAgeArrowDown(i)"
+            @keydown.esc="closeAutofill"
           />
         </div>
         <div v-if="err(`applicants.${i}.age`)" :id="`buyer-${i}-age-error`" class="invalid-feedback d-block" :data-cy="`situation-buyer-${i + 1}-age-error`">{{ err(`applicants.${i}.age`) }}</div>
+        <!-- Saved details, shown under the "You" box like the browser's own suggestions -->
+        <ul v-if="i === 0 && autofillOpen" class="autofill" aria-label="Saved details" data-cy="situation-autofill">
+          <li v-for="item in savedProfiles" :key="item.key">
+            <button
+              type="button"
+              class="autofill__item"
+              data-cy="situation-autofill-option"
+              @mousedown.prevent
+              @click="pickProfile(item)"
+              @keydown.esc="closeAutofill"
+            >
+              <svg class="autofill__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+              </svg>
+              <span>
+                <span class="autofill__title">{{ item.title }}</span>
+                <span v-if="item.detail" class="autofill__detail">{{ item.detail }}</span>
+                <span v-if="item.showSavings" class="autofill__detail" data-cy="situation-autofill-savings">{{ item.savings }}</span>
+              </span>
+            </button>
+          </li>
+          <li class="autofill__divider" aria-hidden="true"></li>
+          <li>
+            <button
+              type="button"
+              class="autofill__item autofill__item--plain"
+              data-cy="situation-autofill-dismiss"
+              @mousedown.prevent
+              @click="closeAutofill"
+            >
+              Fill in myself
+            </button>
+          </li>
+        </ul>
       </div>
     </div>
 
@@ -386,4 +493,54 @@ legend.big-field__group { margin-bottom: 12px; }
 @media (prefers-reduced-motion: reduce) {
   .big-box, .cit__face, .switch__track, .switch__knob { transition: none; }
 }
+/* Autofill list under the "You" age box, styled like the browser's own suggestions */
+.big-field { position: relative; }
+.autofill {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  width: 100%;
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) 0;
+  list-style: none;
+  color: var(--on-primary);
+  background: var(--primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+.autofill__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.autofill__item:hover,
+.autofill__item:focus-visible {
+  background: var(--primary-hover);
+  outline: none;
+}
+.autofill__item--plain {
+  padding-left: calc(var(--space-4) + 20px + var(--space-3)); /* lines up with the text above the icons */
+  color: var(--border);
+}
+.autofill__icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+}
+.autofill__title { display: block; font-weight: 600; }
+.autofill__detail { display: block; font-size: 0.875rem; color: var(--border); }
+.autofill__divider { margin: var(--space-2) 0; border-top: 1px solid var(--text-secondary); }
+/* Wider than the age box on bigger screens, like the browser's own list */
+@media (min-width: 768px) { .autofill { width: 18rem; } }
 </style>

@@ -28,6 +28,10 @@ const nextYear = () => new Date().getFullYear() + 1;
 const blank = () => ({
   step: 0,
   wishes: [],               // keys from WISHES; UI only (not sent, not saved)
+  // The saved scenario these inputs belong to (UI only, not sent): set by saving, or by opening one from My scenarios.
+  savedId: null,
+  savedName: null,
+  savedKey: null,           // the inputs as they were at that save, to tell "nothing changed" from "changed since"
 
   profile: {
     // One buyer to start; the form can add a second. blankApplicant() lives in
@@ -87,6 +91,12 @@ const blank = () => ({
 
 export const useScenarioStore = defineStore('scenario', {
   state: blank,
+  getters: {
+    // The inputs as one string, so the inputs now can be compared with the inputs at the last save.
+    inputsKey(state) {
+      return JSON.stringify([state.profile, state.choiceA, state.choiceB, state.assumptions]);
+    },
+  },
   actions: {
     next() {
       if (this.step < STEPS.length - 1) this.step += 1;
@@ -122,6 +132,33 @@ export const useScenarioStore = defineStore('scenario', {
     // Refills the store from a saved scenario. Each part is laid over the blank one, so a scenario saved
     // before a field existed still loads, with that field's default. Lands on the last input step, as
     // after "See results", so "Change inputs" opens Path B.
+    // After a save (or opening a saved scenario): these inputs now belong to that scenario.
+    markSaved(id, name) {
+      this.savedId = id;
+      this.savedName = name;
+      this.savedKey = this.inputsKey;
+    },
+    // About you autofill: the household's answers from a saved scenario. The move-in deadline is kept, as it belongs
+    // to this plan, not to the household. New buyer ids, as in loadSaved.
+    fillProfile(savedProfile) {
+      const applicants = [];
+      let saved = [];
+      if (savedProfile && Array.isArray(savedProfile.applicants)) {
+        saved = savedProfile.applicants;
+      }
+      for (const a of saved) {
+        const b = blankApplicant();
+        applicants.push({ ...b, ...a, id: b.id });
+      }
+      if (applicants.length === 0) {
+        applicants.push(blankApplicant());
+      }
+      let cash = null;
+      if (savedProfile && typeof savedProfile.cashSavings === 'number') {
+        cash = savedProfile.cashSavings;
+      }
+      this.profile = { ...this.profile, applicants: applicants, cashSavings: cash };
+    },
     loadSaved(saved) {
       const fresh = blank();
       Object.assign(this, {
@@ -145,6 +182,8 @@ export const useScenarioStore = defineStore('scenario', {
           ...(saved.profile?.constraints?.moveInByYear ? ['moveby'] : []),
         ],
       });
+      // Saving again updates this scenario instead of making a copy.
+      this.markSaved(saved.id, saved.name);
     },
   },
 });

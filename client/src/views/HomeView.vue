@@ -96,7 +96,7 @@ const FAQS = [
         </div>
         <div class="home-hero__actions">
           <div class="d-flex flex-wrap gap-2">
-            <router-link class="btn btn-primary btn-disc home-btn home-btn--lead" to="/login?redirect=/plan" data-cy="home-start-button">
+            <router-link class="btn btn-primary btn-disc home-btn home-btn--lead" to="/login?redirect=/plan?new=1" data-cy="home-start-button">
               <span class="btn-disc__disc" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
               </span>
@@ -238,7 +238,7 @@ const FAQS = [
         <h2 id="cta-title" class="home-h2 text-white">Ready to see where your paths cross?</h2>
         <p class="mb-0 home-cta__sub">Four short steps. You can change your answers later.</p>
       </div>
-      <router-link class="btn btn-disc home-btn home-btn--light" to="/login?redirect=/plan" data-cy="home-cta-button">
+      <router-link class="btn btn-disc home-btn home-btn--light" to="/login?redirect=/plan?new=1" data-cy="home-cta-button">
         <span class="btn-disc__disc" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
         </span>

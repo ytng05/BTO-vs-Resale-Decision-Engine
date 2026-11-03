@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onBeforeRouteUpdate, useRoute, useRouter } from 'vue-router';
 import { useScenarioStore, STEPS } from '../stores/scenario.js';
 import AppStepper from '../components/AppStepper.vue';
 import ErrorSummary from '../components/ErrorSummary.vue';
@@ -21,6 +21,18 @@ import { LEASE_BANDS, btoKeysYear } from '../constants/planOptions.js';
 const store = useScenarioStore();
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
+
+// "Start planning" and the navbar's Plan link come here with ?new=1. If the plan in memory is already saved (and not
+// changed since), start a fresh one, so the next scenario starts empty and About you can offer the saved details.
+// A plan that is not saved yet is kept, so wandering off to another page does not lose it (Home's "Keep my plan").
+// "Change inputs" / "Edit inputs" link to plain /plan, so they always keep the plan.
+if (route.query.new) {
+  if (store.savedId !== null && store.inputsKey === store.savedKey) {
+    store.reset();
+  }
+  router.replace({ path: '/plan' });
+}
 
 // The track shows the four input steps (Results is the page after them), with step 1 shortened to fit.
 const TRACK = STEPS.slice(0, -1).map((s, i) => (i === 0 ? 'What matters' : s));
@@ -69,6 +81,20 @@ const firstName = computed(() => auth.user?.name?.trim().split(/\s+/)[0] ?? '');
 const btoProject = ref(null);
 // Keys year for the scene's bubble: application (1 January) plus HDB's waiting time for the launch (D7).
 const keysYear = computed(() => btoKeysYear(store.choiceA.applicationYear, btoProject.value?.waitMonths));
+
+// Same check when the Plan link is clicked while already on the plan (the page is reused, so the code above does not
+// run again): fresh plan if this one is saved, then drop the ?new=1.
+onBeforeRouteUpdate(function (to) {
+  if (!to.query.new) {
+    return true;
+  }
+  if (store.savedId !== null && store.inputsKey === store.savedKey) {
+    store.reset();
+    aboutPart.value = 0;
+    attempted.value = false;
+  }
+  return { path: '/plan', replace: true };
+});
 
 const summary = ref(null);
 const form = ref(null);
