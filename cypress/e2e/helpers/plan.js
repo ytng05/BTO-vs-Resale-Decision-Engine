@@ -1,11 +1,16 @@
 // Shared Cypress steps for filling in the plan stepper with valid input (D38 onboarding).
-// Steps: 1 What matters most (optional chips) · 2 About you · 3 Your BTO · 4 Resale flat · Results.
+// Steps: 1 What matters most (optional chips) · 2 About you · 3 Your BTO · 4 Resale flat · Check your answers · Results.
 // Not a spec file (no .cy.js), so Cypress does not run it on its own.
 
 export const nextYear = new Date().getFullYear() + 1;
 // The stepper's Next and Back buttons.
 export const next = () => cy.get('[data-cy=plan-step-next]').click();
 export const back = () => cy.get('[data-cy=plan-step-back]').click();
+// After the last step: "Check your answers", then See results.
+export const seeResults = () => {
+  cy.get('[data-cy=plan-review]').should('be.visible');
+  next();
+};
 
 // '4 ROOM' -> '4-room', 'PLUS' -> 'plus', 'NEAR' -> 'near': the chips' data-cy suffixes.
 const slug = (v) => String(v).toLowerCase().replace(/\s+/g, '-');
@@ -49,5 +54,6 @@ export function completePlan({ wishes = [], ...situation } = {}) {
   next();
   fillPath('pathb', { town: 'BEDOK' });
   next();
+  seeResults();
   cy.location('pathname').should('eq', '/results');
 }

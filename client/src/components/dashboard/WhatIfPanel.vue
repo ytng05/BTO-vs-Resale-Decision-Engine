@@ -61,6 +61,8 @@ const sliders = computed(() => {
         group: 'Housing costs', key: 'btoPrice', id: 'whatif-bto-price', label: 'BTO price',
         hint: `Estimated from ${props.btoRange.name}${monthYear(props.btoRange.launch)}: HDB's range ${formatMoney(props.btoRange.min)} to ${formatMoney(props.btoRange.max)}. Starts at the middle.${btoFlip.value.text}`,
         min: props.btoRange.min, max: props.btoRange.max, step: 1000, scale: 1, markAt: btoFlip.value.at,
+        // D40: name the mark, so it isn't confused with the heatmap's break-even line.
+        term: typeof btoFlip.value.at === 'number' ? { id: 'break-even-price', lead: " That's the ", text: 'break-even price' } : null,
         value: v.btoPrice ?? props.btoRange.used, text: formatMoney(v.btoPrice ?? props.btoRange.used),
       }]
       : []),
