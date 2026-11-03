@@ -50,10 +50,15 @@ const resale = computed(() => [
   ['Flat type', labelOf(FLAT_TYPES, store.choiceB.flatType)],
   ['Remaining lease', labelOf(LEASE_BANDS, store.choiceB.leaseBand)],
   ['Asking price', typeof store.choiceB.resalePrice === 'number' ? money(store.choiceB.resalePrice) : 'Not given: the median of recent sales'],
-  ...(store.choiceB.livingArrangement && store.choiceB.livingArrangement !== 'NONE'
+  // Shown whenever the question was asked (picked in step 1), including "Neither", or set some other way.
+  ...(store.wishes.includes('parents') || (store.choiceB.livingArrangement && store.choiceB.livingArrangement !== 'NONE')
     ? [['Your parents', labelOf(LIVING_ARRANGEMENTS, store.choiceB.livingArrangement)]]
     : []),
 ]);
+
+// The assumptions not asked in the stepper (D38), said once before Results so nothing is hidden.
+const pctText = (f) => `${Math.round((f ?? 0) * 1000) / 10}%`;
+const defaultsText = computed(() => `We compare as if you apply in ${store.choiceA.applicationYear}, with flat prices growing ${pctText(store.assumptions.annualPriceGrowth)} and incomes ${pctText(store.assumptions.annualIncomeGrowth)} a year. You can change these on the Dashboard.`);
 
 const SECTIONS = computed(() => [
   { step: 0, title: 'What matters most', rows: [['Your priorities', wishes.value]] },
@@ -73,15 +78,18 @@ const SECTIONS = computed(() => [
         </button>
       </div>
       <div v-if="s.groups" class="plan-review__groups">
-        <dl v-for="g in s.groups" :key="g.title" class="plan-review__list">
-          <div class="plan-review__group-title">{{ g.title }}</div>
-          <div v-for="[k, v] in g.rows" :key="k" class="plan-review__row"><dt>{{ k }}</dt><dd>{{ v }}</dd></div>
-        </dl>
+        <div v-for="g in s.groups" :key="g.title">
+          <h4 class="plan-review__group-title">{{ g.title }}</h4>
+          <dl class="plan-review__list">
+            <div v-for="[k, v] in g.rows" :key="k" class="plan-review__row"><dt>{{ k }}</dt><dd>{{ v }}</dd></div>
+          </dl>
+        </div>
       </div>
       <dl class="plan-review__list">
         <div v-for="[k, v] in s.rows" :key="k" class="plan-review__row"><dt>{{ k }}</dt><dd>{{ v }}</dd></div>
       </dl>
     </section>
+    <p class="plan-review__defaults small text-secondary mb-0" data-cy="plan-review-defaults">{{ defaultsText }}</p>
   </div>
 </template>
 
@@ -92,7 +100,7 @@ const SECTIONS = computed(() => [
 .plan-review__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
 .plan-review__title { margin: 0; font-size: 1rem; font-weight: 600; }
 .plan-review__groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--space-3); margin-bottom: var(--space-2); }
-.plan-review__group-title { font-size: 0.875rem; font-weight: 600; margin-bottom: var(--space-1); }
+.plan-review__group-title { margin: 0 0 var(--space-1); font-size: 0.875rem; font-weight: 600; }
 .plan-review__list { margin: 0; }
 .plan-review__row { display: flex; justify-content: space-between; gap: var(--space-3); padding: 2px 0; font-size: 0.9375rem; }
 .plan-review__row dt { font-weight: 400; color: var(--text-secondary); }

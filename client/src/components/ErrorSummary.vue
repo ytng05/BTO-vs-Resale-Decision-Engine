@@ -27,7 +27,7 @@ defineExpose({ focus: () => root.value?.focus() });
 </script>
 
 <template>
-  <div ref="root" class="error-summary" role="alert" tabindex="-1" aria-labelledby="error-summary-title" data-cy="plan-step-errors">
+  <div ref="root" class="error-summary" role="region" tabindex="-1" aria-labelledby="error-summary-title" data-cy="plan-step-errors">
     <h3 id="error-summary-title" class="error-summary__title">{{ heading }}</h3>
     <ul class="error-summary__list">
       <li v-for="e in items" :key="e.key" :data-cy="`plan-error-${e.key}`">

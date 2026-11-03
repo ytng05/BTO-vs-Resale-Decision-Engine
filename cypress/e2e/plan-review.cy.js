@@ -26,6 +26,8 @@ describe('plan: error summary and check your answers', () => {
     cy.get('[data-cy=plan-step-next]').should('contain', 'Check your answers');
     next();
     cy.get('[data-cy=plan-review]').should('be.visible');
+    cy.get('[data-cy=plan-review-defaults]').should('contain', 'You can change these on the Dashboard');
+    cy.get('[data-cy=plan-review] dl > :not(div)').should('have.length', 0); // a <dl> holds only dt/dd groups
     cy.contains('h2', 'Check your answers').should('be.visible');
     cy.get('[data-cy=plan-review-step-2]').should('contain', 'S$5,000').and('contain', 'Singapore Citizen');
     cy.get('[data-cy=plan-review-step-4]').should('contain', 'Bedok').and('contain', '80 to 89 years');
