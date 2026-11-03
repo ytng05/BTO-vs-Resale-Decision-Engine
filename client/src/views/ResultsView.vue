@@ -1,4 +1,5 @@
 <script setup>
+import Term from '../components/Term.vue';
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { compare } from '../api/client.js';
@@ -217,7 +218,7 @@ onMounted(load);
       <p class="d-flex flex-wrap align-items-center gap-2 mb-3">
         <span class="badge-version" data-cy="results-ruleset-version">Ruleset {{ result.rulesetVersion }}</span>
         <span class="text-caption">
-          The break-even line is not a prediction of prices.
+          The <Term id="break-even">break-even</Term> line is not a prediction of prices.
           <span v-if="result.mock" data-cy="results-mock-notice">Showing mock data.</span>
         </span>
       </p>

@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getRuleset } from '../api/client.js';
+import { GLOSSARY } from '../constants/glossary.js';
 import { formatMinCashDownpayment, formatRuleValue, isDerivedAssumption, sourceTitle, statedAssumptionText } from './sourcesFormatting.js';
 
 const response = ref(null);
@@ -97,6 +98,7 @@ const ruleChips = [
 const linkChips = [
   { id: 'assumptions', label: 'Assumptions' },
   { id: 'data', label: 'Datasets' },
+  { id: 'glossary', label: 'Glossary' },
 ];
 
 function fallbackLabel(path) {
@@ -462,10 +464,16 @@ const datasetCards = computed(() => datasets
   }))
   .filter((dataset) => !normalizedQuery.value || matches(dataset.name, dataset.provider, dataset.identifier, dataset.licence)));
 
+// The glossary (constants/glossary.js) also answers <Term> links: /sources#glossary-<id>.
+const visibleGlossary = computed(() => (normalizedQuery.value
+  ? GLOSSARY.filter((g) => matches(g.term, g.definition))
+  : GLOSSARY));
+
 const noMatches = computed(() => Boolean(normalizedQuery.value)
   && !visibleRuleGroups.value.length
   && !visibleAssumptions.value.length
-  && !datasetCards.value.length);
+  && !datasetCards.value.length
+  && !visibleGlossary.value.length);
 
 async function clearSearch() {
   query.value = '';
@@ -507,6 +515,7 @@ const router = useRouter();
 
 // /sources#loans (or #sources-section-loans) filters to that topic, open; #assumptions and #data just scroll.
 // Runs on load and when the hash changes from outside; clearing the filter clears its hash, which does nothing here.
+const highlightedTerm = ref(null);
 function applyHash() {
   const id = decodeURIComponent(route.hash.replace(/^#/, '')).replace(/^sources-section-/, '');
   if (!id) return;
@@ -517,6 +526,15 @@ function applyHash() {
     nextTick(() => scrollToSection(id));
   } else if (linkChips.some((item) => item.id === id)) {
     nextTick(() => scrollToSection(id));
+  } else if (id.startsWith('glossary-')) {
+    // One glossary term: scroll to it and mark it, so the reader lands on the right definition.
+    highlightedTerm.value = id;
+    nextTick(() => {
+      const target = document.getElementById(id);
+      if (!target) return;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    });
   }
 }
 
@@ -729,6 +747,27 @@ onMounted(async () => {
             </tr>
           </tbody>
         </table>
+      </section>
+
+      <section v-if="visibleGlossary.length" id="sources-section-glossary" class="sources-section" aria-labelledby="glossary-title" data-cy="sources-glossary">
+        <h2 class="h4 mb-2" id="glossary-title">Glossary</h2>
+        <p class="text-secondary mb-3">The housing and CPF terms the app uses, in plain words. The rule sections above have the figures and official sources.</p>
+        <dl class="sources-glossary">
+          <div
+            v-for="g in visibleGlossary"
+            :id="`glossary-${g.id}`"
+            :key="g.id"
+            class="sources-glossary__item"
+            :class="{ 'sources-glossary__item--current': highlightedTerm === `glossary-${g.id}` }"
+            :data-cy="`sources-glossary-${g.id}`"
+          >
+            <dt>{{ g.term }}</dt>
+            <dd>
+              {{ g.definition }}
+              <router-link v-if="g.section" :to="`/sources#${g.section}`" class="sources-glossary__rule">See the rule</router-link>
+            </dd>
+          </div>
+        </dl>
       </section>
     </template>
   </section>
@@ -1034,6 +1073,14 @@ onMounted(async () => {
   margin-top: var(--space-3);
   font-size: 0.875rem;
 }
+
+/* Glossary: two columns of short definitions on wide screens. */
+.sources-glossary { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--space-3); margin: 0; }
+.sources-glossary__item { padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); background: var(--bg-surface); scroll-margin-top: var(--space-6); }
+.sources-glossary__item--current { border-color: var(--accent-fill-1); box-shadow: 0 0 0 3px var(--accent-fill-2); }
+.sources-glossary dt { margin-bottom: var(--space-1); font-weight: 600; }
+.sources-glossary dd { margin: 0; color: var(--text-secondary); line-height: 1.55; }
+.sources-glossary__rule { display: inline-block; margin-left: var(--space-1); font-size: 0.875rem; font-weight: 500; }
 
 @media (max-width: 359.98px) {
   .sources-rule-card__summary {

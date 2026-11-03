@@ -6,6 +6,7 @@
 // `amounts` ({ EHG: cents, ... }) decides a grant's status when given (a grant is eligible when it pays
 // out, as on the Dashboard); without it a grant is eligible when every one of its tests passed.
 // data-cy keeps one item per TEST, numbered across the whole list, as the Results spec expects.
+import Term from './Term.vue';
 // Progressive disclosure: each grant shows its status and amount, and a grant that doesn't apply also shows the
 // first check it failed; the full list of checks, with sources, opens from "Why: N checks".
 import { computed } from 'vue';
@@ -23,6 +24,8 @@ const GRANT_NAMES = {
   PHG: 'Proximity Housing Grant',
 };
 const grantName = (code) => GRANT_NAMES[code] ?? code;
+// The glossary entry for each grant, so its name opens a plain-English definition.
+const GRANT_TERMS = { EHG: 'ehg', FAMILY: 'family-grant', PHG: 'phg' };
 
 // Groups keep the order grants first appear in; each test keeps its index in the flat list.
 const groups = computed(() => {
@@ -49,7 +52,7 @@ const groups = computed(() => {
   <div v-if="items.length" class="elig" :data-cy="`${cyPrefix}-eligibility`">
     <section v-for="g in groups" :key="g.id" class="elig__grant" :data-cy="`${cyPrefix}-eligibility-grant-${g.id.toLowerCase()}`">
       <div class="elig__head">
-        <h4 class="elig__name">{{ g.name }}</h4>
+        <h4 class="elig__name"><Term v-if="GRANT_TERMS[g.id]" :id="GRANT_TERMS[g.id]">{{ g.name }}</Term><template v-else>{{ g.name }}</template></h4>
         <span class="elig__pill" :class="g.eligible ? 'elig__pill--yes' : 'elig__pill--no'" :data-cy="`${cyPrefix}-eligibility-grant-status-${g.id.toLowerCase()}`">
           {{ g.eligible ? '✓ Eligible' : '✗ Not eligible' }}
         </span>
