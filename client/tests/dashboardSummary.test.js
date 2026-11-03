@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bars, cashCard, cashSentence, purchaseCard, sideBySide, versus, whatIfChanges } from '../src/utils/dashboardSummary.js';
+import { bars, cashCard, cashSentence, priceFlip, purchaseCard, sideBySide, versus, whatIfChanges } from '../src/utils/dashboardSummary.js';
 
 describe('bars', () => {
   it('scales both from S$0 to the larger amount', () => {
@@ -69,5 +69,23 @@ describe('whatIfChanges', () => {
     const plan = { annualPriceGrowth: 0.03, applicationYear: 2027, btoPrice: null };
     expect(whatIfChanges({ ...plan, annualPriceGrowth: 0.045 }, plan)).toEqual(['flat price growth 3% → 4.5% a year']);
     expect(whatIfChanges(plan, plan)).toEqual([]);
+  });
+});
+
+describe('priceFlip', () => {
+  const cell = (p, i, winner) => ({ annualPriceGrowth: p, annualIncomeGrowth: i, winner });
+  const result = {
+    frontier: [{ annualPriceGrowth: 0.06, annualIncomeGrowth: 0.02 }, { annualPriceGrowth: 0.05, annualIncomeGrowth: 0.03 }],
+    grid: [[cell(0.05, 0.02, 'A'), cell(0.07, 0.02, 'B')], [cell(0.04, 0.03, 'A'), cell(0.06, 0.03, 'B')]],
+  };
+  it('finds where the answer flips at the user\'s income growth, and who wins above it', () => {
+    expect(priceFlip(result, 0.02)).toEqual({ atPct: 6, winnerAbove: 'Resale', approx: false });
+  });
+  it('uses the nearest income row tested, and says so', () => {
+    expect(priceFlip(result, 0.028)).toEqual({ atPct: 5, winnerAbove: 'Resale', approx: true });
+  });
+  it('is null with no break-even line, or one outside the slider', () => {
+    expect(priceFlip({ frontier: [], grid: [] }, 0.02)).toBeNull();
+    expect(priceFlip({ frontier: [{ annualPriceGrowth: 0.09, annualIncomeGrowth: 0.02 }], grid: [] }, 0.02)).toBeNull();
   });
 });

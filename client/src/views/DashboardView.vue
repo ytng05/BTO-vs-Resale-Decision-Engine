@@ -25,7 +25,7 @@ import DashboardVerdict from '../components/dashboard/DashboardVerdict.vue';
 import DashboardCashCard from '../components/dashboard/DashboardCashCard.vue';
 import DashboardSideBySide from '../components/dashboard/DashboardSideBySide.vue';
 import DashboardPaid from '../components/dashboard/DashboardPaid.vue';
-import { whatIfChanges } from '../utils/dashboardSummary.js';
+import { priceFlip, whatIfChanges } from '../utils/dashboardSummary.js';
 import { totalCpfOa } from '../utils/dashboardFormat.js';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
@@ -168,6 +168,9 @@ const headline = computed(() => {
   // Rounded to S$1,000 like every summary on the page; the exact figures are in "How each purchase is paid".
   return `${gapCents.value > 0 ? 'BTO' : 'Resale'} ends ${formatMoney(Math.round(Math.abs(gapCents.value) / 100 / 1000) * 1000)} ahead by ${horizon.value}`;
 });
+
+// Where the answer flips on the flat price growth slider, at the income growth being tried now.
+const flip = computed(() => priceFlip(result.value, whatIf.annualIncomeGrowth));
 
 // "Since your inputs": the answer at the saved plan against the answer now.
 const k = (cents) => formatMoney(Math.round(Math.abs(cents) / 100 / 1000) * 1000);
@@ -440,17 +443,6 @@ const warningText = (w) =>
 
           <aside class="dash-main__side">
             <div class="dash-sticky">
-              <div class="dash-since" :class="sinceInputs ? `dash-since--${sinceInputs.tone}` : ''" aria-live="polite" data-cy="dashboard-since-inputs">
-                <template v-if="sinceInputs">
-                  <strong class="dash-since__status">{{ sinceInputs.status }}</strong>
-                  <span class="dash-since__figures"><s>{{ sinceInputs.before }}</s> {{ sinceInputs.now }}</span>
-                  <span class="small text-secondary">You changed: {{ changes.join('; ') }}</span>
-                </template>
-                <template v-else>
-                  <strong class="dash-since__status">Try a what-if</strong>
-                  <span class="small text-secondary">Move a slider and the whole page updates. Your saved plan stays as it is.</span>
-                </template>
-              </div>
               <WhatIfPanel
                 :model-value="whatIf"
                 :horizon-shown="horizon"
@@ -459,9 +451,24 @@ const warningText = (w) =>
                 :bto-range="btoRange"
                 :resale-median="resaleMedian"
                 :baseline="planValues"
+                :price-flip="flip"
                 @update:model-value="setWhatIf"
                 @reset="reset"
-              />
+              >
+                <template #live>
+                  <div class="dash-since" :class="sinceInputs ? `dash-since--${sinceInputs.tone}` : ''" aria-live="polite" data-cy="dashboard-since-inputs">
+                    <template v-if="sinceInputs">
+                      <strong class="dash-since__status">{{ sinceInputs.status }}</strong>
+                      <span class="dash-since__figures"><s>{{ sinceInputs.before }}</s> {{ sinceInputs.now }}</span>
+                      <span class="small text-secondary">Since your inputs: {{ changes.join('; ') }}</span>
+                    </template>
+                    <template v-else>
+                      <strong class="dash-since__status">Try a what-if</strong>
+                      <span class="small text-secondary">Change any of these and every number on the page updates. Your saved plan stays as it is.</span>
+                    </template>
+                  </div>
+                </template>
+              </WhatIfPanel>
             </div>
           </aside>
         </div>
@@ -497,7 +504,7 @@ const warningText = (w) =>
 .dash-main__content { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
 .dash-main :deep(.dash-panel) { display: flex; flex-direction: column; gap: var(--space-4); padding: clamp(20px, 3vw, 36px); border-radius: var(--radius-lg); background: var(--bg-surface); box-shadow: var(--shadow-sm); }
 .dash-main :deep(.dash-panel__title) { margin: 0; font-family: var(--font-heading); font-size: 1.5rem; font-weight: 600; }
-.dash-since { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); box-shadow: var(--shadow-sm); }
+.dash-since { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-5); padding: var(--space-4) var(--space-4); border-radius: var(--radius-sm); background: var(--bg-page); }
 .dash-since--bto { background: var(--dash-bto-tint); }
 .dash-since--resale { background: var(--dash-resale-tint); }
 .dash-since__status { color: var(--dash-bto); }

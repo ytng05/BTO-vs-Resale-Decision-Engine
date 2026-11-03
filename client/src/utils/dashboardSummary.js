@@ -137,3 +137,25 @@ export function whatIfChanges(now, plan) {
     .filter(([key]) => now[key] !== null && now[key] !== undefined && plan[key] !== null && plan[key] !== undefined && now[key] !== plan[key])
     .map(([key, label, to, from]) => `${label} ${from(plan[key])} → ${to(now[key])}`);
 }
+
+/**
+ * Where the answer flips on the flat price growth slider, from /api/compare's break-even line (`frontier`) and grid,
+ * at the user's income growth (the nearest row tested if theirs isn't one). Returns null when the paths don't flip
+ * inside [minPct, maxPct], else { atPct, winnerAbove: 'BTO' | 'Resale', approx }.
+ */
+export function priceFlip(result, incomeGrowth, minPct = -2, maxPct = 8) {
+  const frontier = Array.isArray(result?.frontier) ? result.frontier : [];
+  const cells = Array.isArray(result?.grid) ? result.grid.flat() : [];
+  if (!frontier.length || !isNum(incomeGrowth)) return null;
+  const incomes = [...new Set(frontier.map((p) => p.annualIncomeGrowth))];
+  const nearest = incomes.reduce((best, g) => (Math.abs(g - incomeGrowth) < Math.abs(best - incomeGrowth) ? g : best), incomes[0]);
+  const point = frontier.filter((p) => p.annualIncomeGrowth === nearest).sort((x, y) => x.annualPriceGrowth - y.annualPriceGrowth)[0];
+  if (!point) return null;
+  const atPct = Math.round(point.annualPriceGrowth * 1000) / 10;
+  if (atPct <= minPct || atPct >= maxPct) return null;
+  const above = cells
+    .filter((c) => c.annualIncomeGrowth === nearest && c.annualPriceGrowth > point.annualPriceGrowth && (c.winner === 'A' || c.winner === 'B'))
+    .sort((x, y) => x.annualPriceGrowth - y.annualPriceGrowth)[0];
+  if (!above) return null;
+  return { atPct, winnerAbove: above.winner === 'A' ? 'BTO' : 'Resale', approx: Math.abs(nearest - incomeGrowth) > 1e-9 };
+}

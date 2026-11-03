@@ -65,7 +65,24 @@ describe('dashboard sections', () => {
     cy.get('[data-cy=dashboard-since-inputs]').should('contain', 'Try a what-if');
     cy.get('[data-cy=whatif-price-growth-slider]').invoke('val', 5).trigger('input');
     cy.get('[data-cy=dashboard-updating]', { timeout: 10000 }).should('not.exist');
-    cy.get('[data-cy=dashboard-since-inputs]').should('contain', 'You changed: flat price growth 3% → 5% a year');
+    cy.get('[data-cy=dashboard-since-inputs]').should('contain', 'Since your inputs: flat price growth 3% → 5% a year');
+  });
+
+  it('moves flat price growth with the quick picks and resets it to your input', () => {
+    openDashboard();
+    cy.get('[data-cy=whatif-price-growth-preset-5]').click().should('have.attr', 'aria-pressed', 'true');
+    cy.get('[data-cy=whatif-price-growth-value]').should('contain', '5% / yr');
+    cy.get('[data-cy=whatif-price-growth-reset]').click();
+    cy.get('[data-cy=whatif-price-growth-value]').should('contain', '3% / yr');
+    cy.get('[data-cy=whatif-price-growth-reset]').should('not.exist');
+  });
+
+  it('steps the application and comparison years one at a time', () => {
+    openDashboard();
+    cy.get('[data-cy=whatif-year-value]').invoke('text').then((year) => {
+      cy.get('[data-cy=whatif-year-plus]').click();
+      cy.get('[data-cy=whatif-year-value]').should('have.text', String(Number(year) + 1));
+    });
   });
 
   it('the overview grants link opens the grants section', () => {

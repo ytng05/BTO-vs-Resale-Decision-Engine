@@ -66,10 +66,10 @@ describe('financial dashboard', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-headline]').invoke('text').then((before) => {
       const startYear = before.match(/by (\d{4})/)[1];
-      cy.get('[data-cy=whatif-horizon-slider]').invoke('attr', 'max').then((max) => {
-        cy.get('[data-cy=whatif-horizon-slider]').invoke('val', max).trigger('input');
-        cy.get('[data-cy=whatif-horizon-value]').should('contain', max);
-        cy.get('[data-cy=dashboard-headline]').should('contain', `by ${max}`);
+      cy.get('[data-cy=whatif-horizon-value]').invoke('text').then((year) => {
+        cy.get('[data-cy=whatif-horizon-plus]').click(); // "Compare in" is a stepper
+        cy.get('[data-cy=whatif-horizon-value]').should('contain', String(Number(year) + 1));
+        cy.get('[data-cy=dashboard-headline]').should('contain', `by ${Number(year) + 1}`);
         cy.get('[data-cy=dashboard-whatif-reset]').click();
         cy.get('[data-cy=dashboard-headline]').should('contain', `by ${startYear}`);
       });
