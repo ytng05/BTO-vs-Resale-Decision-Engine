@@ -22,9 +22,8 @@ describe('Journey 5: can they afford it?', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-summary-bto-affordability]').should('contain', 'Loan short');
     cy.get('[data-cy=dashboard-summary-resale-affordability]').should('contain', 'Loan short');
-    cy.get('[data-cy=dashboard-warnings]').should('be.visible')
-      .and('contain', 'above your maximum loan')
-      .and('not.contain', 'LOAN_ABOVE_LIMIT');
+    // The loan cap is said in each purchase card ("Loan short by…"), so the notes below don't repeat it.
+    cy.get('[data-cy=dashboard-paid]').should('contain', 'Loan short by').and('not.contain', 'LOAN_ABOVE_LIMIT');
     beat();
   });
 });

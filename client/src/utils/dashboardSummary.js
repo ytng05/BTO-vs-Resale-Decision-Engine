@@ -159,3 +159,32 @@ export function priceFlip(result, incomeGrowth, minPct = -2, maxPct = 8) {
   if (!above) return null;
   return { atPct, winnerAbove: above.winner === 'A' ? 'BTO' : 'Resale', approx: Math.abs(nearest - incomeGrowth) > 1e-9 };
 }
+
+// Warnings said in a card already (the lease-to-95 note in the resale card, "Loan short by…" under each housing
+// loan, the cash card's shortfall), so the notes don't repeat them.
+const SAID_ELSEWHERE = new Set(['LEASE_BELOW_95_PRORATION', 'LOAN_ABOVE_LIMIT', 'CASH_SHORTFALL_AT_PURCHASE']);
+// Warnings that overturn the answer: HDB would not sell this BTO flat that year (D36).
+const BLOCKING = new Set(['INCOME_CEILING_BREACHED_AT_PURCHASE']);
+
+/**
+ * The Dashboard's warnings, sorted: `blocking` (shown as a red banner) and `notes` ("Before you trust these numbers"),
+ * one note per code with the paths it applies to ("Both paths" when it is on both). `messages` is /api/compare's
+ * warningMessages ({ CODE: sentence }); a code without a sentence shows as the code.
+ */
+export function groupWarnings(outcomeA, outcomeB, messages = {}) {
+  const code = (w) => (typeof w === 'string' ? w : w?.code);
+  const byCode = new Map();
+  [['BTO', outcomeA], ['Resale', outcomeB]].forEach(([path, o]) => {
+    (o?.warnings ?? []).forEach((w) => {
+      const c = code(w);
+      if (!c) return;
+      if (!byCode.has(c)) byCode.set(c, { code: c, paths: [], text: messages?.[c] ?? (typeof w === 'object' && w?.message) ?? c });
+      if (!byCode.get(c).paths.includes(path)) byCode.get(c).paths.push(path);
+    });
+  });
+  const all = [...byCode.values()].map((x) => ({ ...x, label: x.paths.length === 2 ? 'Both paths' : x.paths[0] }));
+  return {
+    blocking: all.filter((x) => BLOCKING.has(x.code)),
+    notes: all.filter((x) => !BLOCKING.has(x.code) && !SAID_ELSEWHERE.has(x.code)),
+  };
+}

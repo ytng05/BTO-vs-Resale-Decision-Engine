@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bars, cashCard, cashSentence, priceFlip, purchaseCard, sideBySide, versus, whatIfChanges } from '../src/utils/dashboardSummary.js';
+import { bars, cashCard, cashSentence, groupWarnings, priceFlip, purchaseCard, sideBySide, versus, whatIfChanges } from '../src/utils/dashboardSummary.js';
 
 describe('bars', () => {
   it('scales both from S$0 to the larger amount', () => {
@@ -87,5 +87,18 @@ describe('priceFlip', () => {
   it('is null with no break-even line, or one outside the slider', () => {
     expect(priceFlip({ frontier: [], grid: [] }, 0.02)).toBeNull();
     expect(priceFlip({ frontier: [{ annualPriceGrowth: 0.09, annualIncomeGrowth: 0.02 }], grid: [] }, 0.02)).toBeNull();
+  });
+});
+
+describe('groupWarnings', () => {
+  const A = { warnings: ['INCOME_CEILING_BREACHED_AT_PURCHASE', 'HDB_LOAN_INCOME_CEILING_BREACHED', 'LOAN_ABOVE_LIMIT', 'BTO_WAIT_ASSUMED'] };
+  const B = { warnings: ['HDB_LOAN_INCOME_CEILING_BREACHED', 'CASH_SHORTFALL_AT_PURCHASE', 'LEASE_BELOW_95_PRORATION'] };
+  const g = groupWarnings(A, B, { BTO_WAIT_ASSUMED: 'Wait assumed.' });
+  it('puts the new-flat income ceiling in the banner', () => {
+    expect(g.blocking.map((x) => x.code)).toEqual(['INCOME_CEILING_BREACHED_AT_PURCHASE']);
+  });
+  it('merges a warning on both paths into one note, and drops the ones a card already says', () => {
+    expect(g.notes.map((x) => [x.code, x.label])).toEqual([['HDB_LOAN_INCOME_CEILING_BREACHED', 'Both paths'], ['BTO_WAIT_ASSUMED', 'BTO']]);
+    expect(g.notes[1].text).toBe('Wait assumed.');
   });
 });

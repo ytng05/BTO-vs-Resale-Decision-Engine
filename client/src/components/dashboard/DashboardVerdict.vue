@@ -11,6 +11,9 @@ const props = defineProps({
   outcomeB: { type: Object, required: true },
   headline: { type: String, required: true },
   horizon: { type: Number, default: null },
+  // The application year when HDB wouldn't sell this BTO (new-flat income ceiling, D36): the card then says so and
+  // points to the banner below, so "BTO comes out ahead" is never read on its own.
+  blockedYear: { type: Number, default: null },
 });
 const a = computed(() => props.outcomeA.netPositionCents);
 const b = computed(() => props.outcomeB.netPositionCents);
@@ -29,6 +32,9 @@ const rows = computed(() => {
   <section class="dash-verdict" aria-labelledby="dashboard-heading" data-cy="dashboard-verdict">
     <p class="dash-verdict__eyebrow">{{ eyebrow }}</p>
     <h1 id="dashboard-heading" class="dash-verdict__headline" data-cy="dashboard-headline">{{ headline }}</h1>
+    <a v-if="blockedYear" href="#dashboard-critical" class="dash-verdict__blocked" data-cy="dashboard-verdict-blocked">
+      <span aria-hidden="true">⚠</span> You couldn't buy this BTO in {{ blockedYear }}: your income is above the new-flat ceiling. See below.
+    </a>
     <div class="dash-verdict__panel">
       <p class="dash-verdict__panel-title mb-0">
         <Term id="net-position">Net position</Term><template v-if="horizon"> in {{ horizon }}</template>
@@ -53,6 +59,8 @@ const rows = computed(() => {
   margin: 0; color: #fff; font-family: var(--font-heading); font-weight: 600;
   font-size: clamp(1.75rem, 3.4vw, 2.75rem); line-height: 1.08; letter-spacing: -0.03em;
 }
+.dash-verdict__blocked { align-self: flex-start; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: #fff; color: #8f2a21; font-size: 0.875rem; font-weight: 600; text-decoration: none; }
+.dash-verdict__blocked:hover { text-decoration: underline; color: #8f2a21; }
 .dash-verdict__panel { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.1); }
 .dash-verdict__panel-title { opacity: 0.92; font-size: 0.9375rem; }
 .dash-verdict__panel-title :deep(button) { color: inherit; text-decoration-color: rgba(255, 255, 255, 0.7); }

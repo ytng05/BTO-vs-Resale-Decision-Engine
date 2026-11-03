@@ -25,7 +25,8 @@ import DashboardVerdict from '../components/dashboard/DashboardVerdict.vue';
 import DashboardCashCard from '../components/dashboard/DashboardCashCard.vue';
 import DashboardSideBySide from '../components/dashboard/DashboardSideBySide.vue';
 import DashboardPaid from '../components/dashboard/DashboardPaid.vue';
-import { priceFlip, whatIfChanges } from '../utils/dashboardSummary.js';
+import DashboardNotes from '../components/dashboard/DashboardNotes.vue';
+import { groupWarnings, priceFlip, whatIfChanges } from '../utils/dashboardSummary.js';
 import { totalCpfOa } from '../utils/dashboardFormat.js';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import PhgMapCard from '../components/dashboard/PhgMapCard.vue';
@@ -201,13 +202,9 @@ const cardSubtitle = (c, withClass) => [labelOf(TOWNS, c.town), labelOf(FLAT_TYP
   .filter(Boolean).join(' · ');
 const cpfOa = computed(() => totalCpfOa(store.profile.applicants));
 
-// The lease-to-95 warning is said in the resale purchase card already, so it isn't repeated in the list.
-const SAID_IN_CARD = new Set(['LEASE_BELOW_95_PRORATION']);
-const codeOf = (w) => (typeof w === 'string' ? w : w?.code);
-const warnings = computed(() => [
-  ...(A.value?.warnings ?? []).map((w) => ({ path: 'BTO', w })),
-  ...(B.value?.warnings ?? []).map((w) => ({ path: 'Resale', w })),
-].filter((x) => !SAID_IN_CARD.has(codeOf(x.w))));
+// The warnings, below the summary: a banner when HDB wouldn't sell this BTO that year, then the notes that no card
+// already says, one per code (groupWarnings).
+const warningGroups = computed(() => groupWarnings(A.value, B.value, result.value?.warningMessages ?? {}));
 
 // "Try a later year in What if": bring the panel into view and move focus to its first slider.
 function jumpToWhatIf() {
@@ -243,8 +240,6 @@ const costsLine = computed(() => costsTakeaway(A.value, B.value));
 const mapLine = computed(() => (store.choiceB.livingArrangement === 'NEAR'
   ? "You said you'll live near your parents: check the 4 km rule."
   : "Only needed if you'll live near your parents."));
-const warningText = (w) =>
-  typeof w === 'string' ? result.value?.warningMessages?.[w] ?? w : w?.message ?? w?.code ?? '';
 </script>
 
 <template>
@@ -298,19 +293,13 @@ const warningText = (w) =>
         </div>
 
         <div v-if="A && B" class="dash-top">
-          <DashboardVerdict :outcome-a="A" :outcome-b="B" :headline="headline" :horizon="horizon" />
+          <DashboardVerdict :outcome-a="A" :outcome-b="B" :headline="headline" :horizon="horizon" :blocked-year="warningGroups.blocking.length ? whatIf.applicationYear : null" />
           <DashboardCashCard :outcome-a="A" :outcome-b="B" :cash-savings="store.profile.cashSavings" @jump-whatif="jumpToWhatIf" />
         </div>
         <h1 v-else id="dashboard-heading" class="hero-statement" data-cy="dashboard-headline">{{ headline }}</h1>
 
         <div class="dash-main" :aria-busy="updating ? 'true' : 'false'">
           <div class="dash-main__content">
-            <div v-if="warnings.length" class="alert alert-warning small mb-0" role="status" data-cy="dashboard-warnings">
-              <ul class="mb-0 ps-3">
-                <li v-for="(x, i) in warnings" :key="i"><strong>{{ x.path }}:</strong> {{ warningText(x.w) }}</li>
-              </ul>
-            </div>
-
             <DashboardSideBySide v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon="horizon" :gap="result.gapBreakdown ?? null" />
 
             <DashboardPaid
@@ -322,6 +311,13 @@ const warningText = (w) =>
               :subtitle-b="cardSubtitle(store.choiceB, false)"
               :cash-savings="store.profile.cashSavings ?? null"
               :cpf-oa="cpfOa"
+            />
+
+            <DashboardNotes
+              :blocking="warningGroups.blocking"
+              :notes="warningGroups.notes"
+              :application-year="whatIf.applicationYear"
+              @jump-whatif="jumpToWhatIf"
             />
 
             <!-- Everything else, one click away: the sections hold the grant checks with sources, the costs, the
