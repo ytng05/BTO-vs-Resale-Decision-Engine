@@ -49,3 +49,7 @@ Rename one only in the same PR that updates the specs. `{n}` = buyer 1/2, `{pref
 1. Base app works end to end (engine core, rules, data, stepper, results, tests).
 2. FEATURE 1 timing optimiser, FEATURE 2 strategy search.
 3. Only then FEATURE 3 backtest (`FEATURE_BACKTEST=true`). Freeze new features around week 10 or 11.
+
+### Results verdict
+`results-verdict`, `results-verdict-eyebrow`, `results-verdict-headline`, `results-key-comparison`, `results-key-row-<position|grants|cash|keys>`, `results-key-<row>-<bto|resale>`, `results-verdict-next`, `results-steps-jump`, `results-<patha|pathb>-ahead-tag`, `results-trend-readout`, `results-trend-stage`, `results-trend-year`, `results-trend-bto`, `results-trend-resale`, `results-trend-lead`.
+Moved into the verdict: `results-gap-sentence`, `results-breakeven-sentence`, `results-dashboard-button`, `results-edit-button`.
