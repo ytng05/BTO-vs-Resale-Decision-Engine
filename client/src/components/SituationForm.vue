@@ -129,7 +129,6 @@ onBeforeUnmount(() => clearTimeout(timer));
             v-model="a.age"
             :grouped="false"
             :max-digits="3"
-            placeholder="30"
             :aria-invalid="err(`applicants.${i}.age`) ? 'true' : null"
             :aria-describedby="err(`applicants.${i}.age`) ? `buyer-${i}-age-error` : null"
             class="big-box__input"
@@ -199,7 +198,6 @@ onBeforeUnmount(() => clearTimeout(timer));
             <NumberField
               :id="`buyer-${i}-income`"
               v-model="a.monthlyIncome" :decimals="2"
-              placeholder="5,000"
               :aria-invalid="err(`applicants.${i}.monthlyIncome`) ? 'true' : null"
               class="big-box__input"
               :class="{ 'is-invalid': err(`applicants.${i}.monthlyIncome`) }"
@@ -256,7 +254,6 @@ onBeforeUnmount(() => clearTimeout(timer));
               <NumberField
                 :id="`buyer-${i}-cpf`"
                 v-model="a.cpfOaBalance" :decimals="2"
-                placeholder="40,000"
                 :aria-invalid="err(`applicants.${i}.cpfOaBalance`) ? 'true' : null"
                 :aria-describedby="cpfLooksHigh(a.age, a.cpfOaBalance) ? `buyer-${i}-cpf-high` : null"
                 class="big-box__input"
@@ -281,7 +278,6 @@ onBeforeUnmount(() => clearTimeout(timer));
             <NumberField
               id="cash-savings"
               v-model="store.profile.cashSavings" :decimals="2"
-              placeholder="20,000"
               aria-describedby="cash-savings-help"
               :aria-invalid="err('cashSavings') ? 'true' : null"
               class="big-box__input"
@@ -301,7 +297,6 @@ onBeforeUnmount(() => clearTimeout(timer));
               v-model="store.profile.constraints.moveInByYear"
               :grouped="false"
               :max-digits="4"
-              :placeholder="`${currentYear + 4}`"
               aria-describedby="move-in-by-help"
               :aria-invalid="err('moveInByYear') ? 'true' : null"
               class="big-box__input"
@@ -338,7 +333,6 @@ onBeforeUnmount(() => clearTimeout(timer));
   font-size: 22px; font-weight: 600; color: var(--text-primary);
   appearance: textfield; -moz-appearance: textfield;
 }
-.big-box__input::placeholder { color: var(--border-strong); font-weight: 500; }
 .big-box__input::-webkit-inner-spin-button,
 .big-box__input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .big-box__unit { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
