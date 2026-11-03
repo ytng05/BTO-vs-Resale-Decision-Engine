@@ -7,7 +7,6 @@
 // data-cy names: docs/CONVENTIONS.md "Results verdict".
 import Term from './Term.vue';
 import { computed, nextTick } from 'vue';
-import { formatMoney } from '../utils/format.js';
 import { barShares, reasonLine } from '../utils/resultsVerdict.js';
 
 const props = defineProps({
