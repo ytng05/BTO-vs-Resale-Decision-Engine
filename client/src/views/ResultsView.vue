@@ -2,7 +2,7 @@
 import Term from '../components/Term.vue';
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { compare } from '../api/client.js';
+import { compareReusing } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import GapBreakdownPanel from '../components/GapBreakdownPanel.vue';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
@@ -160,7 +160,7 @@ async function load() {
   loading.value = true;
   error.value = null;
   try {
-    result.value = await compare(store);
+    result.value = await compareReusing(store); // the same request as the other page reuses its answer
   } catch (e) {
     // Say what went wrong and how to fix it (rulebook: errors never apologise or stay vague).
     error.value =

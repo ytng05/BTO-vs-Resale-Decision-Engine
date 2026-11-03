@@ -1,6 +1,6 @@
 // Plan form validation (contract v2/v2.1 field names). Pure functions, no components mounted.
 import { describe, it, expect } from 'vitest';
-import { validateSituation, validateChoice, validateStep, isPlanComplete, validatePlan } from '../src/validation/planValidation.js';
+import { validateSituation, validateChoice, validateStep, isPlanComplete, validatePlan, validateAboutPart, cpfLooksHigh } from '../src/validation/planValidation.js';
 
 const YEAR = 2026;
 const buyer = (over = {}) => ({ age: 30, citizenship: 'SC', firstTimer: true, monthlyIncome: 5000, cpfOaBalance: 40000, ...over });
@@ -29,8 +29,10 @@ describe('validateSituation', () => {
   });
 
   it('checks each buyer and gives a plain message per field', () => {
-    const e = validateSituation(profile({ applicants: [buyer({ age: 17 }), buyer({ monthlyIncome: 150000 })] }), assumptions(), opts);
-    expect(e['applicants.0.age']).toMatch(/at least 18/);
+    const e = validateSituation(profile({ applicants: [buyer({ age: 20 }), buyer({ monthlyIncome: 150000 })] }), assumptions(), opts);
+    expect(e['applicants.0.age']).toBe('Enter an age between 21 and 99.');
+    expect(validateSituation(profile({ applicants: [buyer({ age: 100 }), buyer()] }), assumptions(), opts)['applicants.0.age']).toBe('Enter an age between 21 and 99.');
+    expect(validateSituation(profile({ applicants: [buyer({ age: 21 }), buyer({ age: 99 })] }), assumptions(), opts)).toEqual({});
     expect(e['applicants.1.monthlyIncome']).toMatch(/yearly figure/);
   });
 
@@ -105,8 +107,62 @@ describe('validateStep (D38 steps)', () => {
   it('about you checks the buyers, cash and move-in year, not the assumptions (they have defaults)', () => {
     const store = { profile: profile({ cashSavings: null }), assumptions: assumptions({ annualPriceGrowth: null }) };
     const errors = validateStep(1, store, opts);
-    expect(errors.cashSavings).toMatch(/cash savings/);
+    expect(errors.cashSavings).toBe('Enter an amount, or 0 if none.'); // shown under the cash box
     expect(errors).not.toHaveProperty('annualPriceGrowth');
+  });
+});
+
+describe('validateAboutPart (About you, one question per screen)', () => {
+  // A household with something wrong on every screen.
+  const broken = profile({
+    applicants: [buyer({ age: null, citizenship: 'PR', monthlyIncome: 120000 }), buyer({ citizenship: 'PR', cpfOaBalance: null })],
+    cashSavings: null,
+  });
+
+  it('accepts each screen of a complete household', () => {
+    [0, 1, 2, 3].forEach((part) => expect(validateAboutPart(part, profile(), opts)).toEqual({}));
+  });
+
+  it('checks only the fields its own screen asks', () => {
+    expect(Object.keys(validateAboutPart(0, broken, opts))).toEqual(['applicants.0.age']);
+    expect(Object.keys(validateAboutPart(1, broken, opts))).toEqual(['applicants']);
+    expect(Object.keys(validateAboutPart(2, broken, opts))).toEqual(['applicants.0.monthlyIncome']);
+    expect(Object.keys(validateAboutPart(3, broken, opts)).sort()).toEqual(['applicants.1.cpfOaBalance', 'cashSavings']);
+  });
+
+  it('puts the optional move-in year on the last screen', () => {
+    const late = profile({ constraints: { moveInByYear: YEAR - 1 } });
+    expect(validateAboutPart(3, late, opts)).toHaveProperty('moveInByYear');
+    expect(validateAboutPart(0, late, opts)).toEqual({});
+  });
+
+  it('between them, the screens report every error the whole step does', () => {
+    const parts = Object.assign({}, ...[0, 1, 2, 3].map((part) => validateAboutPart(part, broken, opts)));
+    expect(parts).toEqual(validateStep(1, { profile: broken }, opts));
+  });
+
+  it('has nothing to check past the last screen', () => {
+    expect(validateAboutPart(4, broken, opts)).toEqual({});
+  });
+});
+
+describe('cpfLooksHigh (a soft "double-check?" note, never an error)', () => {
+  it('flags a balance above S$25,000 for each year since age 20', () => {
+    expect(cpfLooksHigh(25, 400000)).toBe(true); // the limit at 25 is S$125,000
+    expect(cpfLooksHigh(25, 125000)).toBe(false);
+    expect(cpfLooksHigh(25, 125001)).toBe(true);
+    expect(cpfLooksHigh(35, 300000)).toBe(false); // S$375,000 at 35
+  });
+
+  it('allows at least S$25,000 at any age, and says nothing until both numbers are in', () => {
+    expect(cpfLooksHigh(20, 25000)).toBe(false);
+    expect(cpfLooksHigh(null, 999999)).toBe(false);
+    expect(cpfLooksHigh(30, null)).toBe(false);
+  });
+
+  it('is not a validation error', () => {
+    const rich = profile({ applicants: [buyer({ age: 25, cpfOaBalance: 400000 }), buyer()] });
+    expect(validateAboutPart(3, rich, opts)).toEqual({});
   });
 });
 

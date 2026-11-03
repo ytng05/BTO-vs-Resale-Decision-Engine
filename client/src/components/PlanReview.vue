@@ -1,7 +1,7 @@
 <script setup>
 // "Check your answers": everything the four plan steps asked, on one screen, before Results. Each section has a
-// Change button that goes back to its step; PlanView shows this after the last step instead of going straight to
-// Results, so a typo (an extra zero on an income) is caught before it is in every figure.
+// Change button that goes back to its step. Shown on /preview (#110), which every plan passes through after the last
+// question, so a typo (an extra zero on an income) is caught before it is in every figure.
 import { computed } from 'vue';
 import { useScenarioStore, WISHES } from '../stores/scenario.js';
 import { CITIZENSHIPS, FLAT_TYPES, LEASE_BANDS, LIVING_ARRANGEMENTS, toTitleCase } from '../constants/planOptions.js';
@@ -24,7 +24,7 @@ const wishes = computed(() => (store.wishes.length
   : 'None picked'));
 
 const buyers = computed(() => store.profile.applicants.map((a, i) => ({
-  title: `Buyer ${i + 1}`,
+  title: i === 0 ? 'You' : 'The other buyer', // as the About you questions say
   rows: [
     ['Age', a.age ?? '—'],
     ['Citizenship', labelOf(CITIZENSHIPS, a.citizenship)],

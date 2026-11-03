@@ -63,6 +63,24 @@ export async function compare(store) {
   return (await http.post('/compare', payload)).data;
 }
 
+/**
+ * /preview and /results ask for the same comparison one after the other (#110): keep the last answer, keyed on the
+ * exact request, for a few minutes, so Results doesn't compute it again. Any change to the inputs is a new key and
+ * a new request; failures are never kept. `send(payload)` and `now()` are passed in so the tests need no network.
+ */
+export function createCompareReuse(send, { now = () => Date.now(), keepMs = 10 * 60 * 1000 } = {}) {
+  let last = null; // { key, at, result }
+  return async function compareReusing(store) {
+    const payload = toCompareRequest(store);
+    const key = JSON.stringify(payload);
+    if (last && last.key === key && now() - last.at < keepMs) return last.result;
+    const result = await send(payload);
+    last = { key, at: now(), result };
+    return result;
+  };
+}
+export const compareReusing = createCompareReuse(async (payload) => (USE_MOCK ? mockCompare(payload) : (await http.post('/compare', payload)).data));
+
 export async function getRuleset() {
   if (USE_MOCK) return mockRuleset();
   return (await http.get('/ruleset')).data;

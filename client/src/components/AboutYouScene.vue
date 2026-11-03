@@ -5,6 +5,7 @@
 
   Props (all optional, so it works as pure decoration first):
     buyers    1 or 2       – shows the second buyer and switches the bubble between "Just me" and "Two of us"
+    bubble    text or null – replaces that bubble's words for a screen ("Saving up together" on What have you saved?)
     moveBy    year or null – shows a "Keys by <year>" bubble when set
     wide      true         – a short banner (1400 × 180): the skyline, hills, ground and road carry on to both edges,
                              the view starts at the third floor, and the cloud, kite and keys bubble come down into
@@ -24,6 +25,7 @@ const props = defineProps({
   buyers: { type: Number, default: 2 },
   moveBy: { type: [Number, String], default: null },
   wide: { type: Boolean, default: false },
+  bubble: { type: String, default: null },
 });
 
 // The wide banner adds 420 units each side and starts the view at y 290; the sky items move down into it.
@@ -33,6 +35,9 @@ const kiteAt = computed(() => (props.wide ? 'translate(70 225)' : null));
 const keysAt = computed(() => (props.wide ? 'translate(200 272)' : null));
 
 const household = computed(() => (props.buyers >= 2 ? 'Two of us' : 'Just me'));
+// The bubble grows with its words (about 7 units a character at this size), centred on the same point.
+const bubbleText = computed(() => props.bubble ?? household.value);
+const bubbleW = computed(() => Math.max(96, bubbleText.value.length * 7.4 + 28));
 </script>
 
 <template>
@@ -123,9 +128,9 @@ const household = computed(() => (props.buyers >= 2 ? 'Two of us' : 'Just me'));
 
     <!-- bubbles -->
     <g class="ay-bob">
-      <rect class="ay-slate" opacity=".06" x="220" y="297" width="96" height="36" rx="18"/>
-      <rect class="ay-white" x="220" y="294" width="96" height="36" rx="18"/><path class="ay-white" d="M264 328l6 12 8-12z"/>
-      <text class="ay-text" x="268" y="317">{{ household }}</text>
+      <rect class="ay-slate" opacity=".06" :x="268 - bubbleW / 2" y="297" :width="bubbleW" height="36" rx="18"/>
+      <rect class="ay-white" :x="268 - bubbleW / 2" y="294" :width="bubbleW" height="36" rx="18"/><path class="ay-white" d="M264 328l6 12 8-12z"/>
+      <text class="ay-text" x="268" y="317">{{ bubbleText }}</text>
     </g>
     <g v-if="moveBy" :transform="keysAt"><g class="ay-bob" style="animation-delay:-1.4s">
       <rect class="ay-slate" opacity=".06" x="380" y="31" width="150" height="36" rx="18"/>
