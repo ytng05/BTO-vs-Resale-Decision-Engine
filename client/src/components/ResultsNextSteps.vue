@@ -11,7 +11,7 @@ const STEPS = [
   {
     id: 'hfe',
     title: 'Get an HDB Flat Eligibility (HFE) letter',
-    text: 'Needed before you apply for a BTO or buy a resale flat. Valid for 9 months.',
+    text: 'Needed before you apply for a BTO, or before you get an Option to Purchase for a resale flat. Valid for 9 months.',
     link: { href: 'https://www.mynicehome.gov.sg/get-started/hdb-loans-guide/', label: 'HDB loans guide (MyNiceHome)' },
   },
   {
@@ -23,7 +23,7 @@ const STEPS = [
   {
     id: 'afford',
     title: 'Work out a budget you are comfortable with',
-    text: 'Leave room for renovation and emergencies. Loan instalments can\'t exceed 30% of income.',
+    text: 'Leave room for renovation and emergencies. Loan instalments can\'t exceed 30% of your gross monthly income (the Mortgage Servicing Ratio).',
     link: { href: 'https://www.moneysense.gov.sg/buying-a-property-how-much-can-you-afford/', label: 'MoneySense: how much can you afford' },
   },
   {
