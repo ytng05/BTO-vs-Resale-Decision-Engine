@@ -3,7 +3,8 @@
 // plan from the saved inputs (GET /api/scenarios/:id) and recalculates on Results; Delete asks first
 // (DELETE /api/scenarios/:id). docs/API_CONTRACT.md "Saved scenarios".
 // Compare mode (styles in styles/_components.scss): tick two scenarios, then Compare opens /scenarios/compare?a=&b= (side-by-side view).
-import { onMounted, ref } from 'vue';
+// Filter bar: search, town, flat type, path ahead and price range, on the list's summaries (utils/scenarioFilter.js).
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteScenario, getScenario, listScenarios } from '../api/client.js';
 import CompareBar from '../components/CompareBar.vue';
@@ -11,6 +12,9 @@ import { useComparePicker } from '../composables/useComparePicker.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import { formatDate } from '../utils/format.js';
+import {
+  emptyFilters, filterScenarios, flatTypeOptions, hasFilters, summaryLine, townOptions,
+} from '../utils/scenarioFilter.js';
 
 const auth = useAuthStore();
 const store = useScenarioStore();
@@ -21,6 +25,39 @@ const loading = ref(false);
 const error = ref(null);
 const confirmingId = ref(null); // the row asking "Delete this scenario?"
 const busyId = ref(null); // the row being opened or deleted
+
+// The filter bar. Everything is worked out on the page from the list, with no extra requests.
+const filters = ref(emptyFilters());
+
+const shownScenarios = computed(function () {
+  return filterScenarios(scenarios.value, filters.value);
+});
+const townChoices = computed(function () {
+  return townOptions(scenarios.value);
+});
+const flatTypeChoices = computed(function () {
+  return flatTypeOptions(scenarios.value);
+});
+const filtersSet = computed(function () {
+  return hasFilters(filters.value);
+});
+
+// "3 scenarios", or "1 of 3 scenarios" while filtering.
+const countText = computed(function () {
+  const total = scenarios.value.length;
+  let word = 'scenarios';
+  if (total === 1) {
+    word = 'scenario';
+  }
+  if (filtersSet.value) {
+    return shownScenarios.value.length + ' of ' + total + ' ' + word;
+  }
+  return total + ' ' + word;
+});
+
+function clearFilters() {
+  filters.value = emptyFilters();
+}
 
 // Compare mode: Open and Delete are hidden so a tap cannot delete by accident.
 const compareMode = ref(false);
@@ -165,13 +202,111 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- Filter bar: only shown with two or more scenarios -->
+      <form
+        v-if="!error && scenarios.length >= 2"
+        class="card card-body mb-3"
+        role="search"
+        aria-label="Filter your scenarios"
+        data-cy="scenarios-filters"
+        @submit.prevent
+      >
+        <div class="row g-2">
+          <div class="col-12 col-md-6">
+            <label for="filter-search" class="form-label">Search by name</label>
+            <input
+              id="filter-search"
+              v-model="filters.search"
+              type="search"
+              class="form-control"
+              autocomplete="off"
+              data-cy="scenarios-filter-search"
+            />
+          </div>
+          <div class="col-6 col-md-3">
+            <label for="filter-town" class="form-label">Town</label>
+            <select id="filter-town" v-model="filters.town" class="form-select" data-cy="scenarios-filter-town">
+              <option value="">Any town</option>
+              <option v-for="t in townChoices" :key="t.value" :value="t.value">{{ t.label }}</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label for="filter-flat-type" class="form-label">Flat type</label>
+            <select id="filter-flat-type" v-model="filters.flatType" class="form-select" data-cy="scenarios-filter-flat-type">
+              <option value="">Any flat type</option>
+              <option v-for="f in flatTypeChoices" :key="f.value" :value="f.value">{{ f.label }}</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-4">
+            <label for="filter-ahead" class="form-label">Which path is ahead</label>
+            <select id="filter-ahead" v-model="filters.ahead" class="form-select" data-cy="scenarios-filter-ahead">
+              <option value="">Either</option>
+              <option value="A">BTO ahead</option>
+              <option value="B">Resale ahead</option>
+              <option value="TIE">Level</option>
+              <option value="NONE">Not calculated</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-4">
+            <label for="filter-min-price" class="form-label">Price from (S$)</label>
+            <input
+              id="filter-min-price"
+              v-model="filters.minPrice"
+              type="number"
+              min="0"
+              step="10000"
+              inputmode="numeric"
+              class="form-control"
+              data-cy="scenarios-filter-min-price"
+            />
+          </div>
+          <div class="col-6 col-md-4">
+            <label for="filter-max-price" class="form-label">Price up to (S$)</label>
+            <input
+              id="filter-max-price"
+              v-model="filters.maxPrice"
+              type="number"
+              min="0"
+              step="10000"
+              inputmode="numeric"
+              class="form-control"
+              data-cy="scenarios-filter-max-price"
+            />
+          </div>
+        </div>
+        <p class="form-text mb-0">The price range keeps a scenario when its BTO or its resale price is inside it.</p>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+          <p class="mb-0 text-secondary" role="status" data-cy="scenarios-filter-count">{{ countText }}</p>
+          <button
+            v-if="filtersSet"
+            type="button"
+            class="btn btn-link btn-sm p-0"
+            data-cy="scenarios-filter-clear"
+            @click="clearFilters"
+          >
+            Clear filters
+          </button>
+        </div>
+      </form>
+
+      <!-- No matches: the filters hide every scenario -->
+      <div v-if="!error && scenarios.length > 0 && shownScenarios.length === 0" class="card" data-cy="scenarios-no-matches">
+        <div class="card-body">
+          <p class="text-secondary">No scenarios match these filters.</p>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="scenarios-no-matches-clear" @click="clearFilters">
+            Clear filters
+          </button>
+        </div>
+      </div>
+
       <p v-if="compareMode" class="text-secondary mb-2" data-cy="scenarios-compare-hint">
         Tick two scenarios to see them side by side.
       </p>
 
-      <ul v-if="scenarios.length" class="list-unstyled d-grid gap-2 mb-0" data-cy="scenarios-list">
+      <ul v-if="shownScenarios.length" class="list-unstyled d-grid gap-2 mb-0" data-cy="scenarios-list">
         <li
-          v-for="s in scenarios"
+          v-for="s in shownScenarios"
           :key="s.id"
           class="card card-body d-flex flex-row flex-wrap align-items-center gap-2"
           :class="{ 'scenarios-row--picked': compareMode && picker.isSelected(s.id) }"
@@ -197,6 +332,7 @@ onMounted(() => {
             :class="{ 'scenarios-pick-label': compareMode }"
           >
             <div class="fw-semibold" data-cy="scenarios-row-name">{{ s.name }}</div>
+            <div class="text-body-small text-secondary" data-cy="scenarios-row-summary">{{ summaryLine(s) }}</div>
             <div class="text-caption">
               Saved {{ formatDate(s.createdAt) }} · Ruleset {{ s.rulesetVersion }}
             </div>
