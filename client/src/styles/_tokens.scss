@@ -56,6 +56,14 @@ $warning:      #8E621D; // 4.84:1 on Mist, 4.75 on its fill, 4.55 on periwinkle 
 $warning-fill: #FBF0DD;
 $danger:       #B3372C; // 5.2:1
 $danger-fill:  #FAE6E3;
+// Borders for the tinted status cards (the Dashboard's cash card and income-ceiling banner), a stronger danger for
+// text on $danger-fill, and two soft shades used only as bar fills, never for text.
+$warning-border: #EED9B3;
+$success-border: #C6E0D2;
+$danger-border:  #E8B4AC;
+$danger-strong:  #8F2A21; // 6.9:1 on $danger-fill
+$bar-indigo:     #8E97C9; // BTO share in bars and the What-if zone (decoration only)
+$bar-amber:      #F2C66D; // cash share in the purchase bar (decoration only)
 $info:         $color-slate;
 $info-fill:    $color-periwinkle;
 
@@ -158,6 +166,12 @@ $ease-in:  cubic-bezier(0.4, 0, 1, 1);
   --warning-fill: #{$warning-fill};
   --danger: #{$danger};
   --danger-fill: #{$danger-fill};
+  --warning-border: #{$warning-border};
+  --success-border: #{$success-border};
+  --danger-border: #{$danger-border};
+  --danger-strong: #{$danger-strong};
+  --bar-indigo: #{$bar-indigo};
+  --bar-amber: #{$bar-amber};
   --info: #{$info};
   --info-fill: #{$info-fill};
 
