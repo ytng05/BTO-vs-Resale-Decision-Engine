@@ -52,7 +52,7 @@ defineExpose({ focus: () => root.value?.focus() });
   color: var(--text-primary);
 }
 .error-summary:focus { outline: none; }
-.error-summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.error-summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 .error-summary__title { margin: 0 0 var(--space-2); font-size: 1rem; font-weight: 600; }
 .error-summary__list { margin: 0; padding-left: 1.1rem; }
 .error-summary__list li + li { margin-top: var(--space-1); }

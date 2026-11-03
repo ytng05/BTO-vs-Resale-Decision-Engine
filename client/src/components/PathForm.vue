@@ -444,10 +444,11 @@ const LIVING = [
 .pf { display: flex; flex-direction: column; gap: 26px; }
 .pf__field { margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .pf__field > legend { float: none; width: auto; padding: 0; margin: 0 0 8px; }
-.pf__label { margin: 0; font-size: 16px; font-weight: 600; }
-.pf__select { height: 56px; border-radius: 14px; border: 1.5px solid var(--border); font-size: 17px; font-weight: 500; padding-inline: 16px 44px; }
-.pf__select:focus { border-color: var(--border); box-shadow: none; outline: 2px solid var(--text-primary); outline-offset: 2px; }
-.pf__hint { margin: 0; font-size: 14px; color: var(--text-secondary); }
+.pf__label { margin: 0; font-size: 17px; font-weight: 600; } /* = About you's field labels (big-field__group) */
+/* Fields match About you's boxes: 64px, 16px corners; focus is an ink border with the soft ring. */
+.pf__select { height: 64px; border-radius: 16px; border: 1.5px solid var(--border); font-size: 17px; font-weight: 500; padding-inline: 18px 44px; }
+.pf__select:focus { border-color: var(--text-primary); box-shadow: 0 0 0 4px var(--accent-fill-2); outline: none; }
+.pf__hint { margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.45; }
 
 .est { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: 20px; background: var(--indigo-tint); }
 .est__line { display: flex; gap: 14px; align-items: flex-start; }
@@ -460,7 +461,7 @@ const LIVING = [
   padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--text-primary);
   text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer;
 }
-.est__cls:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; border-radius: 4px; }
+.est__cls:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 4px; }
 .est__tip {
   margin: auto; max-width: 320px; padding: 16px 18px; border: 0; border-radius: 16px;
   background: var(--text-primary); color: var(--bg-surface); font-size: 14px; line-height: 1.45; box-shadow: 0 16px 40px rgba(29, 29, 36, 0.25);
@@ -471,7 +472,7 @@ const LIVING = [
   font-size: 15px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
 }
 .est__more summary::-webkit-details-marker { display: none; }
-.est__more summary:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; border-radius: 4px; }
+.est__more summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 4px; }
 .est__chev { transition: transform 0.15s; }
 .est__more[open] .est__chev { transform: rotate(180deg); }
 .launches { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 0 54px; padding: 0; border: 0; }
@@ -482,7 +483,7 @@ const LIVING = [
 }
 .launch:hover .launch__face { border-color: var(--border-strong); }
 .launch input:checked + .launch__face { background: var(--accent-tint); border-color: var(--text-primary); }
-.launch input:focus-visible + .launch__face { outline: 2px solid var(--text-primary); outline-offset: 3px; }
+.launch input:focus-visible + .launch__face { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 .launch b { display: block; font-size: 15px; font-weight: 600; }
 .launch small { font-size: 13px; color: var(--text-secondary); }
 .launch__new { padding: 3px 9px; border-radius: 999px; background: var(--bg-page); color: var(--text-secondary); font-size: 12px; font-weight: 600; white-space: nowrap; }
@@ -494,13 +495,13 @@ const LIVING = [
 .pf__note { display: flex; gap: 10px; align-items: flex-start; }
 .pf__note svg { flex-shrink: 0; margin-top: 1px; }
 .pf__box {
-  display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; border-radius: 14px;
+  display: flex; align-items: center; gap: 10px; height: 64px; padding: 0 18px; border-radius: 16px;
   border: 1.5px solid var(--border); background: var(--bg-surface); transition: border-color 0.15s, box-shadow 0.15s;
 }
 .pf__box:focus-within { border-color: var(--text-primary); box-shadow: 0 0 0 4px var(--accent-fill-2); }
 .pf__box--invalid { border-color: var(--danger); }
 .pf__unit { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
-.pf__input { flex: 1; min-width: 0; padding: 0; border: 0; outline: none; background: transparent; font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.pf__input { flex: 1; min-width: 0; padding: 0; border: 0; outline: none; background: transparent; font-size: 22px; font-weight: 600; color: var(--text-primary); }
 /* Five lease bands on one row from a small laptop up; two rows on phones. */
 @media (max-width: 575.98px) {
   .choice-row--five { flex-wrap: wrap; }
@@ -514,7 +515,7 @@ const LIVING = [
 .choice:hover .choice__face { border-color: var(--border-strong); }
 .choice input:checked + .choice__face { background: var(--accent-tint); border-color: var(--text-primary); }
 .choice input:disabled + .choice__face { background: var(--surface-disabled); color: var(--text-secondary); border-style: dashed; cursor: not-allowed; }
-.choice input:focus-visible + .choice__face { outline: 2px solid var(--text-primary); outline-offset: 3px; }
+.choice input:focus-visible + .choice__face { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 @media (max-width: 767.98px) {
   .est__more summary, .launches { margin-left: 0; }
 }

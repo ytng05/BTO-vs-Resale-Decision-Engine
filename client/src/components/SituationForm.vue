@@ -290,7 +290,7 @@ onBeforeUnmount(() => clearTimeout(timer));
           <div v-if="err('cashSavings')" class="invalid-feedback d-block">{{ err('cashSavings') }}</div>
         </div>
         <div v-if="askMoveIn" class="big-field">
-          <label for="move-in-by" class="big-field__group">Must move in by</label>
+          <label for="move-in-by" class="big-field__group">Must move in by <span class="big-field__optional">(optional)</span></label>
           <div class="big-box">
             <NumberField
               id="move-in-by"
@@ -337,6 +337,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 .big-box__input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .big-box__unit { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
 .big-field__group { margin: 0 0 4px; font-size: 17px; font-weight: 600; }
+.big-field__optional { font-weight: 400; color: var(--text-secondary); } /* = PathForm's pf__optional */
 legend.big-field__group { margin-bottom: 12px; }
 /* What have you saved?: CPF, cash and the move-in year read as separate groups, 24px apart. */
 .groups { display: flex; flex-direction: column; gap: 24px; }
@@ -350,7 +351,7 @@ legend.big-field__group { margin-bottom: 12px; }
 @media (max-width: 767.98px) { .who { grid-template-columns: minmax(0, 1fr); } }
 .who__person { margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 /* A legend is not a flex item, so the fieldset's gap does not reach it: its own 12px below. */
-.who__legend { float: none; width: auto; margin: 0 0 12px; padding: 0; font-size: 16px; font-weight: 600; }
+.who__legend { float: none; width: auto; margin: 0 0 12px; padding: 0; font-size: 15px; font-weight: 600; } /* = big-field__label */
 .who__group { display: flex; flex-direction: column; gap: 8px; }
 .who__label { font-size: 15px; font-weight: 600; }
 .who__hint { font-weight: 400; color: var(--text-secondary); }
@@ -365,7 +366,7 @@ legend.big-field__group { margin-bottom: 12px; }
 }
 .cit__opt:hover .cit__face { border-color: var(--border-strong); }
 .cit__opt input:checked + .cit__face { background: var(--accent-tint); border-color: var(--text-primary); }
-.cit__opt input:focus-visible + .cit__face { outline: 2px solid var(--text-primary); outline-offset: 3px; }
+.cit__opt input:focus-visible + .cit__face { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 .switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; margin: 0; cursor: pointer; align-self: flex-start; }
 .switch__track { position: relative; flex-shrink: 0; width: 50px; height: 30px; border-radius: 15px; background: var(--border-strong); transition: background-color 0.15s; }
 .switch__knob {
@@ -374,7 +375,7 @@ legend.big-field__group { margin-bottom: 12px; }
 }
 .switch input:checked + .switch__track { background: var(--text-primary); }
 .switch input:checked + .switch__track .switch__knob { transform: translateX(20px); }
-.switch input:focus-visible + .switch__track { outline: 2px solid var(--text-primary); outline-offset: 3px; }
+.switch input:focus-visible + .switch__track { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 .switch__state { font-size: 15px; font-weight: 600; }
 .who__error { margin: 0; min-height: 0; font-size: 14px; color: var(--danger); }
 .who__error:empty { display: none; }

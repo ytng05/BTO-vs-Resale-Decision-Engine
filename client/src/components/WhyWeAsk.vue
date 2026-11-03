@@ -32,7 +32,7 @@ const closed = ref(false);
   padding: 0; border: 0; background: none; font-size: 14px; font-weight: 600;
   color: var(--text-primary); text-decoration: underline; text-underline-offset: 3px;
 }
-.why__link:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; border-radius: 4px; }
+.why__link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: 4px; }
 .why__tip {
   position: absolute; left: 0; top: calc(100% + 8px); z-index: 5; width: max-content; max-width: min(320px, 80vw);
   padding: 10px 12px; border-radius: 12px; background: var(--text-primary); color: var(--bg-surface); font-size: 14px; line-height: 1.4;
