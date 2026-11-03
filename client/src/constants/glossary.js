@@ -82,7 +82,12 @@ export const GLOSSARY = [
   {
     id: 'break-even',
     term: 'Break-even line',
-    definition: "The flat price growth at which both paths end level in the comparison year. Above it one path is ahead, below it the other. It's a what-if line, not a price forecast. Where it falls depends on how fast your income grows.",
+    definition: "The flat price growth at which both paths end level in the comparison year. Above it one path is ahead, below it the other. It's a what-if line, not a price forecast. Where it falls depends on how fast your income grows. Not the same as the break-even price, which is about the BTO price.",
+  },
+  {
+    id: 'break-even-price',
+    term: 'Break-even price (BTO)',
+    definition: "The BTO price at which both paths end level in the comparison year, with everything else in your plan unchanged. Below it BTO comes out ahead; above it, resale. We look for it within HDB's price range for the launch, and the BTO price slider on the Dashboard marks it. Not the same as the break-even line, which is about price growth.",
   },
 ];
 

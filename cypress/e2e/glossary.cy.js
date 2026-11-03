@@ -22,6 +22,23 @@ describe('glossary and terms', () => {
     cy.get('[data-cy=sources-glossary-break-even]').should('have.class', 'sources-glossary__item--current');
   });
 
+  it('keeps every definition on screen at 375px, with no sideways scrolling', () => {
+    cy.viewport(375, 667);
+    completePlan();
+    cy.get('[data-cy$=-button][data-cy^=term-]').each(($btn) => {
+      cy.wrap($btn).scrollIntoView().click();
+      cy.get(`#${$btn.attr('aria-controls')}`).should('be.visible').then(($pop) => {
+        const r = $pop[0].getBoundingClientRect();
+        expect(r.left, 'left edge').to.be.at.least(0);
+        expect(r.right, 'right edge').to.be.at.most($pop[0].ownerDocument.documentElement.clientWidth);
+      });
+      cy.document().then((doc) => {
+        expect(doc.documentElement.scrollWidth).to.be.at.most(doc.documentElement.clientWidth);
+      });
+      cy.get('body').type('{esc}');
+    });
+  });
+
   it('lists every term on Sources and filters them with the search', () => {
     cy.visit('/sources');
     cy.get('[data-cy=sources-glossary] dt').should('have.length.greaterThan', 10);

@@ -2,7 +2,9 @@
 // A word with a plain-English definition one tap away: <Term id="mop">minimum occupation period</Term>.
 // The word is a button (dotted underline), so it works by tap, click and keyboard, not hover only; the
 // definition opens just below it, with a link to the full glossary on Sources. Esc or a click elsewhere closes it.
-import { computed, onBeforeUnmount, ref, useId } from 'vue';
+// The pop-up is position: fixed, placed from the word's spot on screen and kept 16px inside the viewport, so a word
+// near the right edge (or inside a card that clips its overflow) never pushes it off-screen.
+import { computed, nextTick, onBeforeUnmount, ref, useId } from 'vue';
 import { GLOSSARY_BY_ID } from '../constants/glossary.js';
 
 const props = defineProps({
@@ -12,27 +14,50 @@ const props = defineProps({
 const entry = computed(() => GLOSSARY_BY_ID[props.id] ?? null);
 const open = ref(false);
 const root = ref(null);
+const pop = ref(null);
+const popStyle = ref({});
 const popId = `term-${useId()}`;
+
+const GUTTER = 16;
+const MAX_WIDTH = 320;
+function place() {
+  const word = root.value?.querySelector('button');
+  if (!word) return;
+  const r = word.getBoundingClientRect();
+  const vw = document.documentElement.clientWidth;
+  const width = Math.min(MAX_WIDTH, vw - 2 * GUTTER);
+  const left = Math.max(GUTTER, Math.min(r.left, vw - GUTTER - width));
+  popStyle.value = { top: `${r.bottom + 6}px`, left: `${left}px`, width: `${width}px` };
+}
 
 function onOutside(e) {
   if (!root.value?.contains(e.target)) close();
 }
 function onKey(e) {
   if (e.key === 'Escape') {
+    // Only take focus back if it was on the word or in the pop-up, not somewhere the user has since moved to.
+    const wasInside = root.value?.contains(document.activeElement);
     close();
-    root.value?.querySelector('button')?.focus();
+    if (wasInside) root.value?.querySelector('button')?.focus();
   }
 }
 function close() {
   open.value = false;
   document.removeEventListener('click', onOutside, true);
   document.removeEventListener('keydown', onKey);
+  window.removeEventListener('scroll', place, true);
+  window.removeEventListener('resize', place);
 }
-function toggle() {
+async function toggle() {
   if (open.value) return close();
+  place();
   open.value = true;
   document.addEventListener('click', onOutside, true);
   document.addEventListener('keydown', onKey);
+  window.addEventListener('scroll', place, { capture: true, passive: true });
+  window.addEventListener('resize', place);
+  await nextTick();
+  place();
 }
 onBeforeUnmount(close);
 </script>
@@ -47,7 +72,7 @@ onBeforeUnmount(close);
       :data-cy="`term-${id}-button`"
       @click="toggle"
     ><slot>{{ entry.term }}</slot></button>
-    <span v-show="open" :id="popId" class="term__pop" role="note" :data-cy="`term-${id}-definition`">
+    <span v-show="open" :id="popId" ref="pop" class="term__pop" :style="popStyle" role="note" :data-cy="`term-${id}-definition`">
       <strong class="term__title">{{ entry.term }}</strong>
       {{ entry.definition }}
       <router-link :to="`/sources#glossary-${id}`" class="term__more" @click="close">More in the glossary</router-link>
@@ -74,12 +99,10 @@ onBeforeUnmount(close);
 .term__word:hover { text-decoration-color: var(--text-primary); }
 .term__word:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 4px; }
 .term__pop {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 30;
+  position: fixed; /* top, left and width come from place() */
+  z-index: 1050;
   display: block;
-  width: min(20rem, 80vw);
+  max-width: calc(100vw - 2rem);
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
