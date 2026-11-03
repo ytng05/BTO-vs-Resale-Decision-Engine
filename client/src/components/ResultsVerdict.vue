@@ -80,7 +80,7 @@ async function jumpToSteps() {
         <strong>Next:</strong> see what these numbers are made of, then check the official steps.
       </p>
       <div class="d-flex flex-wrap gap-2">
-        <RouterLink to="/dashboard" class="btn btn-primary" data-cy="results-dashboard-button">See what this is made of</RouterLink>
+        <RouterLink to="/dashboard" class="btn btn-primary" data-cy="results-dashboard-button">Open the dashboard</RouterLink>
         <button type="button" class="btn btn-outline-secondary" data-cy="results-steps-jump" @click="jumpToSteps">Jump to the official steps</button>
         <RouterLink to="/plan" class="btn btn-link" data-cy="results-edit-button">Change inputs</RouterLink>
       </div>
