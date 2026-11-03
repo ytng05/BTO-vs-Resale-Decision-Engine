@@ -3,6 +3,8 @@ import { computed, nextTick, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useScenarioStore, STEPS } from '../stores/scenario.js';
 import AppStepper from '../components/AppStepper.vue';
+import ErrorSummary from '../components/ErrorSummary.vue';
+import PlanReview from '../components/PlanReview.vue';
 import SituationForm from '../components/SituationForm.vue';
 import PathForm from '../components/PathForm.vue';
 import WishesForm from '../components/WishesForm.vue';
@@ -22,7 +24,12 @@ const router = useRouter();
 const TRACK = STEPS.slice(0, -1).map((s, i) => (i === 0 ? 'What matters' : s));
 const HEADINGS = ['What matters most in your next home?', STEPS[1], 'Which BTO are you eyeing?', STEPS[3]];
 const isLastInput = computed(() => store.step === STEPS.length - 2);
-const nextLabel = computed(() => (isLastInput.value ? 'See results' : 'Next'));
+// After the last step, "Check your answers" (PlanReview) comes before Results.
+const reviewing = ref(false);
+const nextLabel = computed(() => {
+  if (reviewing.value) return 'See results';
+  return isLastInput.value ? 'Check your answers' : 'Next';
+});
 
 // Errors are always computed, but only shown after the user tries to continue,
 // so a fresh form is not covered in red before they have typed anything.
@@ -66,19 +73,36 @@ const keysIn = computed(() => {
   return `Keys in about ${whole}${half > whole ? '½' : ''} year${half === 1 ? '' : 's'}`;
 });
 
+const summary = ref(null);
+const form = ref(null);
+
+// Back to the top of the form card, with focus on its title, when the card's content changes in place.
+async function toCardTop() {
+  await nextTick();
+  const title = form.value?.querySelector('.plan-card__title');
+  form.value?.scrollIntoView({ block: 'start' });
+  title?.setAttribute('tabindex', '-1');
+  title?.focus({ preventScroll: true });
+}
+
 async function next() {
+  if (reviewing.value) {
+    router.push('/results');
+    return;
+  }
   if (!isStepValid.value) {
     attempted.value = true;
-    // Move focus to the first bad field so keyboard and screen-reader users land on it.
+    // Focus the error summary: it lists every problem, each a link to its field.
     await nextTick();
-    document.querySelector('[data-cy="plan-form"] .is-invalid')?.focus();
+    summary.value?.focus();
     return;
   }
 
   attempted.value = false;
   if (isLastInput.value) {
-    // Last input step done: go to results.
-    router.push('/results');
+    // Last input step done: check the answers, then Results.
+    reviewing.value = true;
+    toCardTop();
     return;
   }
   store.next();
@@ -86,7 +110,18 @@ async function next() {
 
 function back() {
   attempted.value = false;
+  if (reviewing.value) {
+    reviewing.value = false;
+    return;
+  }
   store.back();
+}
+
+// "Change" on the review screen: back to that step; Next from there leads through to the review again.
+function edit(step) {
+  reviewing.value = false;
+  store.step = step;
+  toCardTop();
 }
 </script>
 
@@ -122,7 +157,7 @@ function back() {
         </div>
       </section>
 
-      <form class="card plan-card" :class="{ 'plan-card--side': isSideStep, 'plan-card--stacked': isStackedStep }" data-cy="plan-form" novalidate @submit.prevent="next">
+      <form ref="form" class="card plan-card" :class="{ 'plan-card--side': isSideStep, 'plan-card--stacked': isStackedStep }" data-cy="plan-form" novalidate @submit.prevent="next">
         <div
           class="plan-card__body"
           :class="{ 'plan-card__body--center': store.step === 0 }"
@@ -134,7 +169,11 @@ function back() {
             <hr class="plan-card__divider" />
           </div>
 
-          <div class="plan-card__head" :class="{ 'plan-card__head--banner': isStackedStep }">
+          <div v-if="reviewing" class="plan-card__head">
+            <h2 class="plan-card__title plan-card__title--hero">Check your answers</h2>
+            <p class="plan-card__lead">Make sure these are right before we compare. Change any of them here.</p>
+          </div>
+          <div v-else class="plan-card__head" :class="{ 'plan-card__head--banner': isStackedStep }">
             <p v-if="isBtoStep && firstName" class="plan-card__lead">Welcome back, {{ firstName }}</p>
             <h2 class="plan-card__title plan-card__title--hero">{{ HEADINGS[store.step] }}</h2>
             <p v-if="isStackedStep" class="plan-card__lead">{{ ABOUT_YOU_LEAD }}</p>
@@ -144,16 +183,10 @@ function back() {
             </p>
           </div>
 
-          <div
-            v-if="attempted && !isStepValid"
-            class="alert alert-danger py-2 mb-0"
-            role="alert"
-            data-cy="plan-step-errors"
-          >
-            Some details need fixing before you continue.
-          </div>
+          <ErrorSummary v-if="attempted && !isStepValid" ref="summary" :step="store.step" :errors="errors" />
 
-          <WishesForm v-if="store.step === 0" />
+          <PlanReview v-if="reviewing" :bto-project="btoProject" @edit="edit" />
+          <WishesForm v-else-if="store.step === 0" />
           <SituationForm v-else-if="store.step === 1" :errors="shownErrors" />
           <PathForm v-else-if="store.step === 2" key="choiceA" choice-key="choiceA" :errors="shownErrors" @project="btoProject = $event" />
           <PathForm v-else-if="store.step === 3" key="choiceB" choice-key="choiceB" :errors="shownErrors" />

@@ -1,6 +1,6 @@
 // Results page (mock data). Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 // Selector convention: data-cy="<area>-<element>-<action>" (see docs/CONVENTIONS.md).
-import { completePlan, fillPath, fillSituation, next } from './helpers/plan.js';
+import { completePlan, fillPath, fillSituation, next, seeResults } from './helpers/plan.js';
 
 describe('results page', () => {
   it('shows an empty state when opened without a plan', () => {
@@ -108,6 +108,7 @@ describe('results page', () => {
     next();
     fillPath('pathb', { town: 'BEDOK' });
     next();
+    seeResults();
     cy.get('[data-cy=results-price-basis-bto]').should('contain', 'MOCK Simei Symphony');
   });
 
@@ -142,6 +143,7 @@ describe('results page', () => {
     cy.get('[data-cy=pathb-asking-price-input]').type('700000');
     cy.get('[data-cy=pathb-asking-price-cov]').should('contain', 'S$35,000 above the median');
     next();
+    seeResults();
     cy.get('[data-cy=results-price-basis-resale]')
       .should('contain', 'your asking price, S$700,000').and('contain', 'S$35,000 above the median').and('contain', 'paid in cash');
   });
@@ -161,6 +163,7 @@ describe('results page', () => {
     cy.get('[data-cy=plan-step-4-panel]').should('exist');
     cy.get('[data-cy=pathb-living-none]').click();
     next();
+    seeResults();
     cy.location('pathname').should('eq', '/results');
     // They were asked and chose "Neither", so Results doesn't say the grant was left out.
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
