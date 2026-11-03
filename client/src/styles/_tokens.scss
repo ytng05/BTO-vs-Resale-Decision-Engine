@@ -47,6 +47,7 @@ $universe-text:  $color-ink; // legacy name: links, active nav and the active st
 $accent-fill-1:  $color-pink;
 $accent-fill-2:  $color-blush;
 $accent-fill-3:  $color-periwinkle;
+$accent-deep:    #3D4A8F;      // 8:1 with white text: the Results verdict card
 
 // ---- Semantic colours (UI.md §2.7) ------------------------------------------
 $success:      #2C7756; // 4.88:1 on Mist, 4.61 on its fill, 4.59 on periwinkle (AA)
@@ -142,6 +143,7 @@ $ease-in:  cubic-bezier(0.4, 0, 1, 1);
   --accent-fill-1: #{$accent-fill-1};
   --accent-fill-2: #{$accent-fill-2};
   --accent-fill-3: #{$accent-fill-3};
+  --accent-deep: #{$accent-deep};
   --color-pink-deep: #{$color-pink-deep};
   --color-berry: #{$color-berry};
   --accent-tint: #{$accent-tint};

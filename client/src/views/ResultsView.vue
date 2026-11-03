@@ -11,9 +11,11 @@ import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
 import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
 import ResultsNextSteps from '../components/ResultsNextSteps.vue';
+import ResultsVerdict from '../components/ResultsVerdict.vue';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, LEASE_BANDS, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
+import { keyRows, verdict as buildVerdict } from '../utils/resultsVerdict.js';
 import { isPlanComplete } from '../validation/planValidation.js';
 
 const store = useScenarioStore();
@@ -93,6 +95,10 @@ const gap = computed(() => {
   const b = result.value?.outcomeB?.netPositionCents;
   return typeof a === 'number' && typeof b === 'number' ? a - b : null;
 });
+
+// Who ends ahead, in a plain sentence, and the few numbers side by side (utils/resultsVerdict.js, unit-tested).
+const verdict = computed(() => buildVerdict(result.value?.outcomeA, result.value?.outcomeB, horizonYear.value));
+const keyComparison = computed(() => keyRows(result.value?.outcomeA, result.value?.outcomeB, horizonYear.value));
 
 const gapSentence = computed(() => {
   if (gap.value === null) return '';
@@ -206,8 +212,25 @@ onMounted(load);
       <p class="d-none d-print-block small mb-2" data-cy="results-print-header">
         BTO vs Resale · printed {{ printedOn }} · {{ planLine }}
       </p>
-      <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
-      <p v-if="gapSentence" data-cy="results-gap-sentence">{{ gapSentence }}</p>
+      <ResultsVerdict
+        v-if="verdict.winner"
+        :verdict="verdict"
+        :rows="keyComparison"
+        :gap-sentence="gapSentence"
+        :break-even-sentence="result.breakEvenSentence"
+        :horizon-year="horizonYear"
+        :label-a="`BTO · ${labelOf(TOWNS, store.choiceA.town)}`"
+        :label-b="`Resale · ${labelOf(TOWNS, store.choiceB.town)}`"
+      />
+      <template v-else>
+        <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
+        <p v-if="gapSentence" data-cy="results-gap-sentence">{{ gapSentence }}</p>
+        <!-- No verdict to show (an outcome has no net position): the way back and on must still be here. -->
+        <div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
+          <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="results-edit-button">Change inputs</RouterLink>
+          <RouterLink to="/dashboard" class="btn btn-outline-primary" data-cy="results-dashboard-button">Open the dashboard</RouterLink>
+        </div>
+      </template>
       <!-- D40: the BTO price at which the verdict flips. Absent from older servers and when path A isn't a BTO. -->
       <p v-if="result.btoPriceSentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
       <p v-if="phgNotAsked" class="text-caption mb-2" data-cy="results-phg-note">
@@ -222,13 +245,6 @@ onMounted(load);
           <span v-if="result.mock" data-cy="results-mock-notice">Showing mock data.</span>
         </span>
       </p>
-      <div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
-        <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="results-edit-button">Change inputs</RouterLink>
-        <RouterLink to="/dashboard" class="btn btn-outline-primary" data-cy="results-dashboard-button">Open the dashboard</RouterLink>
-        <button type="button" class="btn btn-outline-secondary" data-cy="results-print-button" @click="printPage">Print or save as PDF</button>
-      </div>
-      <SaveScenarioPanel class="d-print-none" :result="result" />
-
       <div v-if="result.outcomeA && result.outcomeB" class="row g-3 mb-3">
         <div class="col-12 col-lg-6">
           <PathOutcomeCard
@@ -238,6 +254,7 @@ onMounted(load);
             :horizon-year="horizonYear"
             cy-prefix="results-patha"
             tone="bto"
+            :ahead="!verdict.close && verdict.winner === 'bto'"
           />
         </div>
         <div class="col-12 col-lg-6">
@@ -248,6 +265,7 @@ onMounted(load);
             :horizon-year="horizonYear"
             cy-prefix="results-pathb"
             tone="resale"
+            :ahead="!verdict.close && verdict.winner === 'resale'"
           />
         </div>
       </div>
@@ -277,18 +295,25 @@ onMounted(load);
       <!-- Why one path ends ahead, line by line (D34). Arrives with /compare; hidden if an older server omits it. -->
       <GapBreakdownPanel v-if="result.gapBreakdown" :gap="result.gapBreakdown" />
 
+      <div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
+        <button type="button" class="btn btn-outline-secondary" data-cy="results-print-button" @click="printPage">Print or save as PDF</button>
+      </div>
+      <SaveScenarioPanel class="d-print-none" :result="result" />
+
       <h2 class="h5 mt-4 mb-2">More detail</h2>
       <div class="results-sections">
         <DashboardSection
           v-if="result.outcomeA && result.outcomeB"
           v-model:open="sections.chart"
           title="Net position over time"
-          takeaway="What each path leaves you with each year, after costs: BTO against resale."
+          takeaway="How each path's net position builds up year by year. Hover or tap the chart to compare."
           lazy
           cy="results-section-chart"
         >
           <p class="text-secondary">
-            Before selling. For what makes up the figure at {{ horizonYear }} itself, see the
+            A running estimate, without selling: the flat's value minus the loan and the CPF to put back. It does not take off
+            the cash you pay in, so {{ horizonYear }} here differs a little from the net position above. For the exact figure
+            and what it is made of, see the
             <RouterLink to="/dashboard" data-cy="results-cashflow-dashboard-link">financial dashboard</RouterLink>.
           </p>
           <CashFlowOverTimeChart :outcome-a="result.outcomeA" :outcome-b="result.outcomeB" :horizon-year="horizonYear" />
@@ -347,3 +372,4 @@ onMounted(load);
 .heatmap-guide { margin: 0 0 var(--space-3); padding-left: 1.1rem; font-size: 0.9375rem; line-height: 1.5; }
 .heatmap-guide li + li { margin-top: var(--space-1); }
 </style>
+

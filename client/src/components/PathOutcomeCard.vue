@@ -20,6 +20,7 @@ const props = defineProps({
   horizonYear: { type: Number, default: null },
   cyPrefix: { type: String, required: true }, // 'results-patha' / 'results-pathb'
   tone: { type: String, default: 'bto' }, // 'bto' (ink) | 'resale' (pink): matches the charts and the Dashboard
+  ahead: { type: Boolean, default: false }, // true on the path with the higher net position: outlined and tagged in words
 });
 
 const dollars = (cents) => (typeof cents === 'number' ? cents / 100 : cents);
@@ -57,9 +58,12 @@ const grantAmounts = computed(() =>
 </script>
 
 <template>
-  <div class="card h-100" :class="`dash-card--${tone}`" :data-cy="`${cyPrefix}-card`">
+  <div class="card h-100" :class="[`dash-card--${tone}`, { 'compare-card--winner': ahead }]" :data-cy="`${cyPrefix}-card`">
     <div class="card-body">
-      <h2 class="h5 mb-1"><span class="dash-dot" :class="`dash-dot--${tone}`" aria-hidden="true"></span>{{ title }}</h2>
+      <h2 class="h5 mb-1 d-flex flex-wrap align-items-center gap-2">
+        <span><span class="dash-dot" :class="`dash-dot--${tone}`" aria-hidden="true"></span>{{ title }}</span>
+        <span v-if="ahead" class="path-ahead" :data-cy="`${cyPrefix}-ahead-tag`">Ahead<template v-if="horizonYear"> in {{ horizonYear }}</template></span>
+      </h2>
       <p v-if="subtitle" class="text-secondary small mb-3">{{ subtitle }}</p>
 
       <p class="text-secondary small mb-0">
@@ -111,6 +115,15 @@ const grantAmounts = computed(() =>
 .path-list__total { border-top: 1px solid var(--text-primary) !important; }
 .path-list__total dt { color: var(--text-primary); font-weight: 500; }
 .path-list dd { margin: 0; text-align: right; font-weight: 500; white-space: nowrap; }
+.path-ahead {
+  padding: 0 0.625rem;
+  border-radius: var(--radius-pill);
+  background: var(--success-fill);
+  color: var(--success);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
 .path-subhead {
   font-family: var(--font-heading);
   font-size: 0.8125rem;
@@ -120,3 +133,4 @@ const grantAmounts = computed(() =>
   margin: 0 0 var(--space-3);
 }
 </style>
+
