@@ -7,6 +7,7 @@
 // Data: GET /api/data/geocode, /town-point, /distance (OneMap, cached on the server; api/onemap.js).
 // Map: Leaflet (BSD-2-Clause) on OneMap's Default basemap. OneMap's terms require its logo and
 // attribution on the map: https://www.onemap.gov.sg/docs/maps/
+import Term from '../Term.vue';
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import 'leaflet/dist/leaflet.css';
 import { geocodePostal, getDistance, getTownPoint } from '../../api/onemap.js';
@@ -148,7 +149,7 @@ onBeforeUnmount(() => map.value?.remove());
     <div class="card-body">
       <h2 id="phg-map-heading" class="h5">Near your parents (or child)? (Proximity Housing Grant)</h2>
       <p class="text-secondary small">
-        Enter your parents' postal code to see the {{ PHG_RADIUS_KM }} km circle the PHG uses. Add the resale flat's
+        Enter your parents' postal code to see the {{ PHG_RADIUS_KM }} km circle the <Term id="phg">PHG</Term> uses. Add the resale flat's
         postal code for its exact distance. This map is a guide only: your grants use the answer you gave in the plan.
         Postal codes typed here aren't saved with your scenario or linked to your account.
       </p>

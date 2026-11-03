@@ -3,6 +3,7 @@
 // verdict from Results; it shows the parts: the cash needed up front and how much of it you hold, what you
 // start with, the grants, the cash spent on housing, and when the keys arrive. Both paths are always named in
 // text. Money from the API is integer cents (divided by 100 for display); the store is in dollars.
+import Term from '../Term.vue';
 import { computed } from 'vue';
 import { formatMoney } from '../../utils/format.js';
 import { monthYear, totalCpfOa } from '../../utils/dashboardFormat.js';
@@ -64,7 +65,7 @@ const paths = computed(() => [
               <h3 class="dash-tile__label">Your savings today</h3>
               <dl class="dash-tile__list">
                 <div><dt>Cash</dt><dd class="text-numeric">{{ formatMoney(cashSavings) }}</dd></div>
-                <div><dt>CPF Ordinary Account</dt><dd class="text-numeric">{{ formatMoney(cpfOa) }}</dd></div>
+                <div><dt><Term id="oa">CPF Ordinary Account</Term></dt><dd class="text-numeric">{{ formatMoney(cpfOa) }}</dd></div>
               </dl>
               <p class="dash-tile__note">{{ buyers > 1 ? 'CPF is both buyers added together.' : 'What you entered in your plan.' }}</p>
             </div>

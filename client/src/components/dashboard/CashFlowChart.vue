@@ -35,7 +35,8 @@ function sum(...cents) {
 const ITEMS = [
   { label: 'Flat value', get: (o) => o.marketValueAtHorizonCents },
   { label: 'Loan still owed', get: (o) => neg(o.outstandingLoanAtHorizonCents) },
-  { label: 'CPF to pay back + interest', get: (o) => neg(sum(o.cpfRefundPrincipalCents, o.cpfAccruedInterestCents)) },
+  // The CPF savings refund (own OA money + interest), the figure in net position (D1); not the deprecated totals with grants.
+  { label: 'CPF to put back + interest', get: (o) => neg(sum(o.cpfSavingsRefundPrincipalCents, o.cpfSavingsAccruedInterestCents)) },
   { label: 'Subsidy clawback (Plus/Prime)', get: (o) => neg(o.clawbackCents), hideWhenZero: true },
   { label: 'Cash spent on housing', get: (o) => neg(o.housingCashSpentCents) },
   { label: 'Net position', get: (o) => o.netPositionCents },

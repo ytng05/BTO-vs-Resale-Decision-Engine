@@ -44,7 +44,7 @@ const STEPS = [
 ];
 
 const GETS = [
-  { tag: 'Break-even year', fill: 'var(--accent-fill-2)', text: 'When both paths leave you equally well off' },
+  { tag: 'Break-even line', fill: 'var(--accent-fill-2)', text: 'The price growth at which both paths leave you equally well off' },
   { tag: 'Net position', fill: 'var(--accent-fill-3)', text: 'How far ahead each path is, year by year' },
   { tag: 'What would flip it', fill: 'var(--bg-page)', text: 'The BTO price at which the answer changes, and how rent and growth move it' },
 ];
@@ -69,7 +69,7 @@ const FAQS = [
   },
   {
     q: 'What does "break-even" mean here?',
-    a: "It's the year your net position on both paths is the same. Before it, one path is ahead; after it, the other one is.",
+    a: "The flat price growth at which both paths end level in the comparison year. Above it one path is ahead, below it the other. It's a what-if line, not a price forecast.",
   },
   {
     q: "What if my BTO launch isn't listed?",
@@ -96,7 +96,7 @@ const FAQS = [
         </div>
         <div class="home-hero__actions">
           <div class="d-flex flex-wrap gap-2">
-            <router-link class="btn btn-primary btn-disc home-btn" to="/login?redirect=/plan" data-cy="home-start-button">
+            <router-link class="btn btn-primary btn-disc home-btn home-btn--lead" to="/login?redirect=/plan" data-cy="home-start-button">
               <span class="btn-disc__disc" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
               </span>
@@ -166,7 +166,7 @@ const FAQS = [
           <span class="home-get__key"><span class="home-get__swatch home-get__swatch--bto" aria-hidden="true"></span>BTO</span>
           <span class="home-get__key"><span class="home-get__swatch home-get__swatch--resale" aria-hidden="true"></span>Resale</span>
         </div>
-        <svg viewBox="0 0 520 250" class="home-get__svg" role="img" aria-label="Illustration: resale starts ahead, the BTO line crosses it at the break-even year and stays ahead after that">
+        <svg viewBox="0 0 520 250" class="home-get__svg" role="img" aria-label="Illustration: resale starts ahead, then the BTO line overtakes it and stays ahead">
           <g class="home-grid"><line x1="20" y1="40" x2="500" y2="40" /><line x1="20" y1="100" x2="500" y2="100" /><line x1="20" y1="160" x2="500" y2="160" /><line x1="20" y1="210" x2="500" y2="210" /></g>
           <g class="home-drawline">
             <polyline points="30,150 72,140 114,130 156,122 198,114 240,106 282,98 324,90 366,83 408,76 450,70 492,64" fill="none" class="home-line-resale" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 10" />
@@ -174,7 +174,7 @@ const FAQS = [
           </g>
           <g class="home-meetpop">
             <circle class="home-pulse home-berry" cx="324" cy="90" r="8" /><circle cx="324" cy="90" r="8" class="home-berry" /><circle cx="324" cy="90" r="3" class="home-white" />
-            <rect x="336" y="98" width="118" height="30" rx="15" class="home-white" /><text x="395" y="118" text-anchor="middle" font-size="13" font-weight="600" class="home-berry">Break-even</text>
+            <rect x="336" y="98" width="146" height="30" rx="15" class="home-white" /><text x="409" y="118" text-anchor="middle" font-size="13" font-weight="600" class="home-berry">Where they cross</text>
           </g>
           <g font-size="12" text-anchor="middle" class="home-axis"><text x="30" y="242">Today</text><text x="492" y="242">Years ahead</text></g>
         </svg>
@@ -274,6 +274,11 @@ const FAQS = [
 .home-confirm { max-width: 26rem; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--bg-surface); font-size: 0.875rem; }
 .home-btn { min-height: 52px; display: inline-flex; align-items: center; font-weight: 500; }
 .home-btn.btn-disc { padding-right: var(--space-5); }
+/* Start planning is the page's main action: taller, larger text and disc, so it reads first. */
+.home-btn--lead { min-height: 64px; padding-right: var(--space-6) !important; font-size: 1.125rem; gap: var(--space-3); box-shadow: 0 8px 24px rgba(29, 29, 36, 0.18); }
+.home-btn--lead .btn-disc__disc { width: 44px; height: 44px; }
+.home-btn--lead:hover { transform: translateY(-1px); }
+@media (prefers-reduced-motion: reduce) { .home-btn--lead:hover { transform: none; } }
 .home-btn--ghost { padding: 0 var(--space-5); background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary); }
 .home-btn--ghost:hover { background: var(--accent-fill-3); color: var(--text-primary); }
 .home-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); background: var(--bg-surface); font-size: 14px; font-weight: 500; }

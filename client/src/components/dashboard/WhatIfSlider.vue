@@ -1,7 +1,9 @@
 <script setup>
 // One labelled slider with its value pill and optional hint, used by the What-if panel.
+import Term from '../Term.vue';
+
 defineProps({
-  // { key, id, label, hint?, link?, markAt? (0–1, D40), min, max, step, scale, value, text }
+  // { key, id, label, hint?, term? ({ id, lead, text }), link?, markAt? (0–1, D40), min, max, step, scale, value, text }
   slider: { type: Object, required: true },
 });
 const emit = defineEmits(['change']);
@@ -38,6 +40,7 @@ const emit = defineEmits(['change']);
     </div>
     <div v-if="slider.hint" :id="`${slider.id}-hint`" class="form-text mt-0" :data-cy="`${slider.id}-hint`">
       {{ slider.hint }}
+      <template v-if="slider.term">{{ slider.term.lead }}<Term :id="slider.term.id">{{ slider.term.text }}</Term>.</template>
       <a v-if="slider.link" :href="slider.link.href" target="_blank" rel="noopener noreferrer">{{ slider.link.text }}<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
     </div>
   </div>
