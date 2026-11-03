@@ -6,7 +6,7 @@
 // pointer to the full comparison. PlanView only sends people here when at least one pick has a figure.
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { compare } from '../api/client.js';
+import { compareReusing } from '../api/client.js';
 import { useScenarioStore, WISHES } from '../stores/scenario.js';
 import BtoScene from '../components/BtoScene.vue';
 import { formatMoney } from '../utils/format.js';
@@ -71,7 +71,7 @@ async function load() {
   error.value = null;
   loading.value = true;
   try {
-    result.value = await compare(store);
+    result.value = await compareReusing(store); // the same request as the other page reuses its answer
   } catch (e) {
     error.value = e?.response?.data?.error?.message ?? 'We could not work out your numbers just now.';
   } finally {
