@@ -71,7 +71,10 @@ export function durationText(months) {
 
 /**
  * The few numbers that matter, side by side, with the better side of each marked ('a', 'b' or null when equal or
- * unknown). "Better" is the higher net position, the higher grants, the lower cash up front, the earlier keys.
+ * unknown). "Better" is the higher net position, the lower cash up front, the earlier keys. Grants are never marked
+ * better: they are already inside net position (D1: a bigger grant means a smaller loan or less cash, and it goes
+ * back to the buyers' own CPF when they sell), so a "Better" tag there would count them twice. Their difference is
+ * still written, as a fact.
  * Each row also says how far apart the two are, in words ("S$13,000" + "more with BTO"; diffLead is the part to
  * bold, empty when they are the same), and keeps the raw values (raw: [a, b], cents or a month count) for bars.
  */
@@ -93,13 +96,14 @@ export function keyRows(outcomeA, outcomeB, horizonYear) {
   const grantsB = outcomeB?.totalGrantsCents;
   const cashA = outcomeA?.cashRequiredAtPurchaseCents;
   const cashB = outcomeB?.cashRequiredAtPurchaseCents;
-  const keyBetter = earlier(keysA, keysB);
   const mA = monthIndex(keysA);
   const mB = monthIndex(keysB);
   const keyMonths = mA !== null && mB !== null ? Math.abs(mA - mB) : 0;
+  // Keys in the same month are the same to the reader ("May 2031" twice), even if the days differ.
+  const keyBetter = keyMonths > 0 ? earlier(keysA, keysB) : null;
 
   const positionBetter = higher(posA, posB);
-  const grantsBetter = higher(grantsA, grantsB);
+  const grantsHigher = higher(grantsA, grantsB); // for the difference text only; never a "Better" tag
   const cashBetter = lower(cashA, cashB);
 
   return [
@@ -112,8 +116,8 @@ export function keyRows(outcomeA, outcomeB, horizonYear) {
     {
       id: 'grants',
       label: 'Grants you get',
-      a: money(grantsA), b: money(grantsB), better: grantsBetter, raw: [grantsA, grantsB],
-      ...moneyDiff(grantsA, grantsB, grantsBetter, 'more'),
+      a: money(grantsA), b: money(grantsB), better: null, raw: [grantsA, grantsB],
+      ...moneyDiff(grantsA, grantsB, grantsHigher, 'more'),
     },
     {
       id: 'cash',
@@ -133,8 +137,9 @@ export function keyRows(outcomeA, outcomeB, horizonYear) {
 }
 
 /**
- * One sentence on what the path that is behind still does better, from the rows: "Resale gets you more in grants
- * and the keys about 4 years sooner." Empty when there is nothing to say. When the result is too close to call it
+ * One sentence on what the path that is behind still does better, from the rows: "Resale gets you the keys about
+ * 4 years sooner." Only cash up front and the keys: grants are already in net position (D1), so listing them as a
+ * reason would count them twice. Empty when there is nothing to say. When the result is too close to call it
  * says so instead, because the assumptions could change who ends ahead.
  */
 export function reasonLine(rows, v) {
@@ -145,8 +150,7 @@ export function reasonLine(rows, v) {
   const phrases = [];
   for (const row of rows) {
     if (row.id === 'position' || row.better !== loser) continue;
-    if (row.id === 'grants') phrases.push('more in grants');
-    else if (row.id === 'cash') phrases.push('a smaller cash payment up front');
+    if (row.id === 'cash') phrases.push('a smaller cash payment up front');
     else if (row.id === 'keys') {
       phrases.push(row.months < 12
         ? `the keys ${row.months} month${row.months === 1 ? '' : 's'} sooner`

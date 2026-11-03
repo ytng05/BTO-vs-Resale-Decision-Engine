@@ -68,17 +68,12 @@ describe('results verdict', () => {
     cy.get('[data-cy=results-verdict-diff]').invoke('text').should('match', /^Difference: /);
   });
 
-  it('gives one line on what the other path still does better, or says the gap is small (D42)', () => {
+  it('says the gap is small, instead of who is ahead, when too close to call (D42)', () => {
     completePlan();
+    // The wording of the reason line is covered by the unit tests; here only the close case, which has one fixed line.
     cy.get('[data-cy=results-verdict-headline]').invoke('text').then((headline) => {
-      const close = /^Too close to call|about the same/.test(headline);
-      if (close) {
+      if (/^Too close to call|about the same/.test(headline)) {
         cy.get('[data-cy=results-verdict-reason]').invoke('text').should('match', /small enough|about the same place/);
-      } else {
-        cy.get('body').then(($body) => {
-          const reason = $body.find('[data-cy=results-verdict-reason]');
-          if (reason.length) expect(reason.text()).to.match(/gets you .+\.$/); // optional: only when the path behind wins on something
-        });
       }
     });
   });
