@@ -30,7 +30,7 @@ Unimplemented routes currently return `501 NOT_IMPLEMENTED` with an `owner`.
 
 ### GET /api/ruleset
 
-Response: `{ version, status, effectiveDate, verifiedOn, verifiedBy, rules }`. `rules` is the active versioned ruleset object; fields not yet verified remain null or empty and must be presented as unverified.
+Response `200`: `{ scenarios: [{ id, name, rulesetVersion, createdAt, updatedAt, summary }] }`, newest first. `summary` (additive, for filtering My scenarios) is `{ btoTown, btoFlatType, resaleTown, resaleFlatType, ahead, btoPriceCents, resalePriceCents }`: `ahead` is `A`, `B` or `TIE` from `result.gapBreakdown.marginCents`; prices are today's (`result.resolvedA/B.purchasePriceCents`, else `outcomeA/B` for older saves); any field is `null` when it was not saved (e.g. no result). Inputs and the full result are left out to keep the list small.
 
 ## POST /api/grants
 
