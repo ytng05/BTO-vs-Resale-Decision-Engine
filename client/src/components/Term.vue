@@ -9,6 +9,11 @@ import { GLOSSARY_BY_ID } from '../constants/glossary.js';
 
 const props = defineProps({
   id: { type: String, required: true }, // a GLOSSARY id
+  // icon: the slot text stays plain and an (i) button after it opens the definition; it also opens on hover
+  // with a mouse, so it reads as an info button. Used next to form labels, where an underline would be odd.
+  icon: { type: Boolean, default: false },
+  // The (i) button's accessible name, e.g. "What is the asking price?". Defaults to "What is <term>?".
+  ask: { type: String, default: '' },
 });
 
 const entry = computed(() => GLOSSARY_BY_ID[props.id] ?? null);
@@ -48,8 +53,8 @@ function close() {
   window.removeEventListener('scroll', place, true);
   window.removeEventListener('resize', place);
 }
-async function toggle() {
-  if (open.value) return close();
+async function show() {
+  if (open.value) return;
   place();
   open.value = true;
   document.addEventListener('click', onOutside, true);
@@ -59,12 +64,53 @@ async function toggle() {
   await nextTick();
   place();
 }
-onBeforeUnmount(close);
+function toggle() {
+  if (open.value) return close();
+  return show();
+}
+// Hover opens it only for a mouse (a tap fires pointerenter too, and the click would then close it again).
+let openedByHover = false;
+// Closing waits a moment, so the mouse can cross the gap into the pop-up to reach its link (WCAG 1.4.13).
+let leaveTimer = null;
+function onEnter(e) {
+  clearTimeout(leaveTimer);
+  if (!props.icon || e.pointerType !== 'mouse' || open.value) return;
+  openedByHover = true;
+  show();
+}
+function onLeave(e) {
+  if (!openedByHover || e.pointerType !== 'mouse') return;
+  clearTimeout(leaveTimer);
+  leaveTimer = setTimeout(() => { openedByHover = false; close(); }, 300);
+}
+function onClick() {
+  if (openedByHover) {
+    openedByHover = false; // a click after hovering keeps it open
+    return;
+  }
+  toggle();
+}
+onBeforeUnmount(() => { clearTimeout(leaveTimer); close(); });
 </script>
 
 <template>
-  <span v-if="entry" ref="root" class="term" :data-cy="`term-${id}`">
+  <span v-if="entry" ref="root" class="term" :data-cy="`term-${id}`" @pointerenter="onEnter" @pointerleave="onLeave">
+    <template v-if="icon">
+      <slot />
+      <button
+        type="button"
+        class="term__icon"
+        :aria-expanded="open ? 'true' : 'false'"
+        :aria-controls="popId"
+        :aria-label="ask || `What is ${entry.term}?`"
+        :data-cy="`term-${id}-button`"
+        @click="onClick"
+      >
+        <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M10 9v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" /><circle cx="10" cy="6.25" r="1.1" fill="currentColor" /></svg>
+      </button>
+    </template>
     <button
+      v-else
       type="button"
       class="term__word"
       :aria-expanded="open ? 'true' : 'false'"
@@ -97,6 +143,22 @@ onBeforeUnmount(close);
   cursor: help;
 }
 .term__word:hover { text-decoration-color: var(--text-primary); }
+.term__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary);
+  vertical-align: middle;
+  cursor: help;
+}
+.term__icon:hover, .term__icon[aria-expanded='true'] { color: var(--text-primary); background: var(--accent-fill-3); }
+.term__icon:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
 .term__word:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 4px; }
 .term__pop {
   position: fixed; /* top, left and width come from place() */

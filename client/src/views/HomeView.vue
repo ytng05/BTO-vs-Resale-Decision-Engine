@@ -96,7 +96,7 @@ const FAQS = [
         </div>
         <div class="home-hero__actions">
           <div class="d-flex flex-wrap gap-2">
-            <router-link class="btn btn-primary btn-disc home-btn" to="/login?redirect=/plan" data-cy="home-start-button">
+            <router-link class="btn btn-primary btn-disc home-btn home-btn--lead" to="/login?redirect=/plan" data-cy="home-start-button">
               <span class="btn-disc__disc" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
               </span>
@@ -274,6 +274,11 @@ const FAQS = [
 .home-confirm { max-width: 26rem; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--bg-surface); font-size: 0.875rem; }
 .home-btn { min-height: 52px; display: inline-flex; align-items: center; font-weight: 500; }
 .home-btn.btn-disc { padding-right: var(--space-5); }
+/* Start planning is the page's main action: taller, larger text and disc, so it reads first. */
+.home-btn--lead { min-height: 64px; padding-right: var(--space-6) !important; font-size: 1.125rem; gap: var(--space-3); box-shadow: 0 8px 24px rgba(29, 29, 36, 0.18); }
+.home-btn--lead .btn-disc__disc { width: 44px; height: 44px; }
+.home-btn--lead:hover { transform: translateY(-1px); }
+@media (prefers-reduced-motion: reduce) { .home-btn--lead:hover { transform: none; } }
 .home-btn--ghost { padding: 0 var(--space-5); background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-primary); }
 .home-btn--ghost:hover { background: var(--accent-fill-3); color: var(--text-primary); }
 .home-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); background: var(--bg-surface); font-size: 14px; font-weight: 500; }

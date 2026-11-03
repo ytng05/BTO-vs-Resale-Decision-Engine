@@ -15,6 +15,7 @@ import ResaleScene from '../components/ResaleScene.vue';
 import { useAuthStore } from '../stores/auth.js';
 import { validateStep } from '../validation/planValidation.js';
 import { FLAT_TYPES, LEASE_BANDS, toTitleCase } from '../constants/planOptions.js';
+import { formatMoney } from '../utils/format.js';
 
 const store = useScenarioStore();
 const auth = useAuthStore();
@@ -57,6 +58,12 @@ const btoSummary = computed(() => {
   const flat = btoProject.value?.flats?.find((f) => f.flatType === flatType);
   if (flat) parts.push(`S$${Math.round(flat.priceMinCents / 100000)}k–${Math.round(flat.priceMaxCents / 100000)}k`);
   return parts.filter(Boolean).join(' · ');
+});
+// The price the comparison will use (the middle of HDB's range, as PathForm says), so it's on screen before Results.
+const btoEstimate = computed(() => {
+  const flat = btoProject.value?.flats?.find((f) => f.flatType === store.choiceA.flatType);
+  if (!flat) return null;
+  return formatMoney(Math.round((flat.priceMinCents + flat.priceMaxCents) / 2) / 100);
 });
 // Keys year for the scene's bubble: application (1 January) plus HDB's waiting time for the launch (D7).
 const keysYear = computed(() => {
@@ -152,6 +159,9 @@ function edit(step) {
           <span class="bto-step__summary-text">
             <span class="bto-step__summary-label">Building your BTO plan</span>
             <span class="bto-step__summary-value">{{ btoSummary ?? 'Choose a town to start' }}</span>
+            <span v-if="btoEstimate" class="bto-step__summary-price" data-cy="bto-step-price">
+              Estimated price we'll use: <strong class="text-numeric">{{ btoEstimate }}</strong>
+            </span>
           </span>
           <span v-if="keysIn" class="bto-step__keys" data-cy="bto-step-keys">{{ keysIn }}</span>
         </div>
@@ -295,6 +305,8 @@ function edit(step) {
 .bto-step__summary-text { display: flex; flex-direction: column; flex-grow: 1; }
 .bto-step__summary-label { font-size: 13px; color: var(--text-secondary, #5f6373); }
 .bto-step__summary-value { font-size: 18px; font-weight: 500; }
+.bto-step__summary-price { margin-top: 2px; font-size: 15px; color: var(--text-secondary, #5f6373); }
+.bto-step__summary-price strong { color: var(--text-primary, #1d1d24); font-weight: 600; }
 .bto-step__keys { padding: 8px 14px; border-radius: 999px; background: var(--color-blush, #fbd5e5); font-size: 14px; font-weight: 500; }
 .plan-card--side { max-width: none; min-width: 0; margin: 0; padding: 36px; height: 100%; }
 .plan-card__back-link { color: var(--text-secondary, #5f6373); text-decoration: none; padding-inline: 4px; }

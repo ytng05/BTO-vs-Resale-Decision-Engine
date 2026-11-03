@@ -344,6 +344,14 @@ function mockOutcome({
     .filter((line) => line.paidFrom === 'CASH')
     .reduce((sum, line) => sum + line.amountCents, 0);
 
+  // MOCK: the CPF savings refund (own OA money + interest, no grants) that net position uses (D1), derived so the
+  // parts add up to netPositionCents exactly, as the real engine's do.
+  const marketValueAtHorizonCents = 72_000_000;
+  const outstandingLoanAtHorizonCents = 30_000_000;
+  const cpfSavingsAccruedInterestCents = cpfAccruedInterestCents;
+  const cpfSavingsRefundPrincipalCents = marketValueAtHorizonCents - outstandingLoanAtHorizonCents - (clawbackCents ?? 0)
+    - housingCashSpentCents - netPositionCents - cpfSavingsAccruedInterestCents;
+
   return {
     horizonYear,
     timeline: {
@@ -364,9 +372,11 @@ function mockOutcome({
     cashRequiredAtPurchaseCents: 4_500_000,
     cpfUsedAtPurchaseCents: 8_000_000,
     loanPrincipalCents: 45_000_000,
-    marketValueAtHorizonCents: 72_000_000,
-    outstandingLoanAtHorizonCents: 30_000_000,
-    cpfRefundPrincipalCents,
+    marketValueAtHorizonCents,
+    outstandingLoanAtHorizonCents,
+    cpfSavingsRefundPrincipalCents,
+    cpfSavingsAccruedInterestCents,
+    cpfRefundPrincipalCents, // deprecated combined totals (savings + grants), as the server still sends them
     cpfAccruedInterestCents,
     clawbackCents,
     housingCashSpentCents,
