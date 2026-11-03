@@ -4,6 +4,7 @@
 // rent while waiting are not asked here: they have defaults and are changed on the Dashboard (D35).
 // Reads and writes the Pinia store directly; PlanView owns validation and passes errors in.
 // Field names follow the store (contract v2/v2.1). Money is in dollars here; client.js sends cents.
+import Term from './Term.vue';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
 import { ehgEstimate } from '../api/client.js';
@@ -64,6 +65,9 @@ async function refreshEhg() {
       year: res.applicationYear,
       years: res.years,
       growthPct: Math.round((store.assumptions.annualIncomeGrowth ?? 0) * 1000) / 10,
+      // Household income in the application year, each buyer grown and rounded to the cent as the engine does (D13).
+      income: applicants.value.reduce((sum, a) => sum
+        + Math.round(a.monthlyIncome * (1 + (store.assumptions.annualIncomeGrowth ?? 0)) ** res.years * 100) / 100, 0),
     };
   } catch {
     if (id === requestId) ehg.value = null; // the hint is a bonus: no error message for it
@@ -199,10 +203,15 @@ onBeforeUnmount(() => clearTimeout(timer));
       <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Checking your housing grant…
     </div>
     <div v-if="ehg" class="alert alert-info small py-2 mb-3" role="status" aria-live="polite" data-cy="situation-ehg-hint">
-      <strong v-if="ehg.cents > 0">Applying in {{ ehg.year }}, you'd likely get up to {{ formatMoney(ehg.cents / 100) }} in Enhanced CPF Housing Grant.</strong>
-      <strong v-else>Applying in {{ ehg.year }}, the Enhanced CPF Housing Grant likely doesn't apply.</strong>
-      <template v-if="ehg.years > 0">We grow your incomes {{ ehg.growthPct }}% a year to then, as the results do. </template>
-      {{ ehg.reason }} We check all your grants again once you choose your flats.
+      <template v-if="ehg.cents > 0">
+        <strong>If you apply in {{ ehg.year }}, you could get {{ formatMoney(ehg.cents / 100) }} from the <Term id="ehg">Enhanced CPF Housing Grant</Term>.</strong>
+        That's based on your household income then: about {{ formatMoney(ehg.income) }} a month<template v-if="ehg.years > 0">, if your pay rises {{ ehg.growthPct }}% a year</template>.
+      </template>
+      <template v-else>
+        <strong>If you apply in {{ ehg.year }}, you probably won't get the <Term id="ehg">Enhanced CPF Housing Grant</Term>.</strong>
+        {{ ehg.reason }}<template v-if="ehg.years > 0"> This assumes your pay rises {{ ehg.growthPct }}% a year.</template>
+      </template>
+      We'll confirm all your grants once you choose your flats.
     </div>
 
     <!-- Household -->

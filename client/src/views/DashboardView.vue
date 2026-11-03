@@ -7,6 +7,7 @@
 // in the store never changes, and "Reset" goes back to it.
 // Store and sliders hold dollars and fractions; client.js turns them into the contract's cents (D14).
 // All money from the API is integer cents (API_CONTRACT.md); it is divided by 100 only for display.
+import Term from '../components/Term.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
@@ -405,7 +406,7 @@ const warningText = (w) =>
               <h2 id="notes-heading" class="h5">Before you decide</h2>
               <ul class="list-unstyled d-flex flex-column gap-2 mb-0 small">
                 <li class="dash-note" data-cy="dashboard-note-mop">
-                  <strong>Minimum Occupation Period:</strong> you cannot sell before
+                  <strong><Term id="mop">Minimum Occupation Period</Term>:</strong> you cannot sell before
                   {{ monthYear(A?.timeline?.earliestSaleDate) }} (BTO) or {{ monthYear(B?.timeline?.earliestSaleDate) }} (resale).
                   <RouterLink to="/sources#flat-types">See the current rule</RouterLink>.
                 </li>

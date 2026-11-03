@@ -10,6 +10,7 @@
 // and flat type, not one price (the unit is picked later), so the price defaults to the midpoint and changes on
 // the Dashboard (D26).
 // Field names follow the store (contract v2/v2.1). The path ('BTO' / 'RESALE') is fixed in the store.
+import Term from './Term.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
 import { getBtoProjects, getResalePrice } from '../api/client.js';
@@ -243,7 +244,7 @@ const LIVING = [
           <!-- D40: these launches have closed; one stands in for the launch the user will apply to. -->
           These launches have closed. We use one as an estimate of the price and wait for your own application.
           <template v-if="activeProject">{{ activeProject.name }}: {{ keysIn(activeProject.waitMonths) }} after you apply. </template>
-          Plus and Prime flats have a longer minimum occupation period and a subsidy clawback when sold.
+          Plus and Prime flats have a longer <Term id="mop">minimum occupation period</Term> and a <Term id="clawback">subsidy clawback</Term> when sold.
         </div>
         <div v-if="err('classification')" class="invalid-feedback d-block">{{ err('classification') }}</div>
       </fieldset>
@@ -325,7 +326,7 @@ const LIVING = [
           <template v-else-if="medianLoading"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Looking up recent sales…</template>
           <template v-else>Leave blank to use the median of recent sales.</template>
           <span v-if="overMedian > 0" class="d-block mt-1" :data-cy="`${prefix}-asking-price-cov`">
-            {{ formatMoney(overMedian) }} above the median. We treat the median as the valuation, so that part is paid in cash, not CPF or the loan.
+            {{ formatMoney(overMedian) }} above the median. We treat the median as the <Term id="valuation">valuation</Term>, so that part is paid in cash, not CPF or the loan.
           </span>
         </div>
       </div>
