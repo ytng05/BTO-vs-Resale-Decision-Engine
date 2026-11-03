@@ -1,7 +1,7 @@
 // The two buyers on the 'About you' step (step 2, D38; mock data). The app models exactly two buyers, at least one a
 // Singapore Citizen (D21), so both are always shown and there are no add/remove buttons.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
-import { back, fillPath, fillSituation, next } from './helpers/plan.js';
+import { back, fillPath, fillSituation, next, seeResults } from './helpers/plan.js';
 
 const citizenship = (n) => cy.get(`[data-cy=situation-buyer-${n}-citizenship-select]`);
 // The error message shown under one buyer's field (field: age, citizenship, income or cpf).
@@ -74,6 +74,7 @@ describe('buyers on the About you step', () => {
     next();
     fillPath('pathb', { town: 'BEDOK' });
     next();
+    seeResults();
     cy.location('pathname').should('eq', '/results');
 
     cy.get('[data-cy=results-edit-button]').click();
