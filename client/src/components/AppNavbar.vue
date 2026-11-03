@@ -2,7 +2,7 @@
 // The top navigation as three floating pills (design system Navbar, .pill-nav in _components.scss):
 // logo + PropertyEngine name (left), links (centre), My scenarios or Log in (right).
 // Keep data-cy attributes stable.
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { listScenarios } from '../api/client.js';
 import { useAuthStore } from '../stores/auth.js';
@@ -36,6 +36,20 @@ watch(() => [auth.isLoggedIn, route.fullPath], loadCount, { immediate: true });
 
 const userName = computed(() => auth.user?.name || auth.user?.email || 'Account');
 
+// The navbar stays at the top while you scroll, so share its height as --nav-height on <html>: the page uses it
+// to stop in-page jumps (#links, scrollIntoView) landing under the bar, and sticky panels can sit below it.
+const bar = ref(null);
+let resize = null;
+onMounted(() => {
+  const set = () => document.documentElement.style.setProperty('--nav-height', `${bar.value?.offsetHeight ?? 80}px`);
+  set();
+  if (typeof ResizeObserver !== 'undefined' && bar.value) {
+    resize = new ResizeObserver(set);
+    resize.observe(bar.value);
+  }
+});
+onBeforeUnmount(() => resize?.disconnect());
+
 function logout() {
   auth.logout();
   router.push('/');
@@ -43,12 +57,12 @@ function logout() {
 </script>
 
 <template>
-  <header class="pill-nav" data-cy="nav-bar">
+  <header ref="bar" class="pill-nav" data-cy="nav-bar">
     <!-- Logo + app name: one link back home. -->
     <router-link to="/" class="pill-nav__home" aria-label="PropertyEngine home" data-cy="nav-brand-home">
       <span class="pill-nav__logo">
         <!-- An HDB block -->
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M6 21V5h12v16M4 5h16M10 2.5h4V5" />
           <path d="M9 9h1.5M13.5 9H15M9 13h1.5M13.5 13H15M10.5 21v-3.5h3V21" />
         </svg>
@@ -131,8 +145,9 @@ function logout() {
   max-width: none;
   margin-left: calc(50% - 50vw + var(--nav-gutter));
   margin-right: 0;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 0 0 100vmax rgba(255, 255, 255, 0.92), 0 1px 0 100vmax var(--border-subtle);
+  /* the bar matches the page behind it: mist by default, white on Home (which sets --nav-surface) */
+  background: var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent));
+  box-shadow: 0 0 0 100vmax var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent)), 0 1px 0 100vmax var(--border-subtle);
   clip-path: inset(0 -100vmax -1px);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
@@ -166,6 +181,7 @@ function logout() {
 }
 .pill-nav__home .pill-nav__logo {
   flex: none;
+  color: var(--on-primary);
   transition: background 0.3s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .pill-nav__home:hover .pill-nav__logo { background: var(--color-berry); transform: rotate(-8deg) scale(1.06); }
@@ -185,4 +201,10 @@ function logout() {
   .pill-nav__home .pill-nav__logo, .pill-nav__link { transition: none; }
   .pill-nav__home:hover .pill-nav__logo { transform: none; }
 }
+</style>
+
+<style>
+/* The navbar is sticky, so in-page jumps (#links, scrollIntoView) stop below it instead of under it.
+   --nav-height is set from the bar's real height in the script above. */
+html { scroll-padding-top: calc(var(--nav-height, 80px) + var(--space-3, 12px)); }
 </style>

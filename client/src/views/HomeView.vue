@@ -6,6 +6,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useScenarioStore } from '../stores/scenario.js';
 import { EXAMPLE_PLAN } from '../constants/examplePlan.js';
+import { getRuleset } from '../api/client.js';
 
 const store = useScenarioStore();
 const router = useRouter();
@@ -33,6 +34,24 @@ async function seeExample(from, force = false) {
   store.loadSaved(EXAMPLE_PLAN);
   router.push('/results');
 }
+
+// Ruleset freshness, shown under Good to know: green when checked against its sources, amber when not.
+// Left out if the ruleset can't be loaded, rather than shown wrong.
+const ruleset = ref(null);
+const rulesetDate = computed(() => {
+  const d = ruleset.value?.version ? new Date(`${ruleset.value.version}T00:00:00`) : null;
+  return d && !Number.isNaN(d.getTime())
+    ? d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null;
+});
+const rulesetVerified = computed(() => ruleset.value?.status === 'VERIFIED');
+onMounted(async () => {
+  try {
+    ruleset.value = await getRuleset();
+  } catch {
+    ruleset.value = null;
+  }
+});
 
 // The four plan steps, as the stepper names them, with what to have to hand for each.
 const STEPS = [
@@ -114,6 +133,11 @@ function setHover(on) {
 onMounted(() => { frame = requestAnimationFrame(tick); });
 onBeforeUnmount(() => cancelAnimationFrame(frame));
 
+// Home is the one page on a white background (the others keep the mist page so their white cards stand out).
+// The class is added while Home is shown and removed when you leave it; the rule is in the unscoped style below.
+onMounted(() => document.body.classList.add('is-home'));
+onBeforeUnmount(() => document.body.classList.remove('is-home'));
+
 const FAQS = [
   {
     q: 'Is this financial advice?',
@@ -170,29 +194,29 @@ const FAQS = [
         </div>
       </div>
         <svg viewBox="0 0 440 330" class="home-hero__art" data-cy="hero-scene" role="img" aria-label="Illustration: a new BTO block and a resale block, with trees">
-          <circle cx="240" cy="160" r="150" fill="#E9ECF6" />
-          <rect x="44" y="110" width="40" height="180" rx="4" fill="#DDE0EC" /><rect x="352" y="80" width="46" height="210" rx="4" fill="#DDE0EC" />
+          <circle cx="240" cy="160" r="150" style="fill: var(--accent-fill-3)" />
+          <rect x="44" y="110" width="40" height="180" rx="4" style="fill: var(--border)" /><rect x="352" y="80" width="46" height="210" rx="4" style="fill: var(--border)" />
           <!-- BTO block (left) -->
-          <rect x="66" y="152" width="124" height="138" rx="6" fill="#FFFFFF" /><rect x="58" y="144" width="140" height="11" rx="5.5" fill="#F08AB6" />
-          <rect x="80" y="170" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="108" y="170" width="20" height="14" rx="3" fill="#F5A3C7" /><rect x="136" y="170" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="164" y="170" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="80" y="200" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="108" y="200" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="136" y="200" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="164" y="200" width="20" height="14" rx="3" fill="#F5A3C7" /><rect x="80" y="230" width="20" height="14" rx="3" fill="#F5A3C7" /><rect x="108" y="230" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="136" y="230" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="164" y="230" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="80" y="260" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="108" y="260" width="20" height="14" rx="3" fill="#E9ECF6" /><rect x="136" y="260" width="20" height="14" rx="3" fill="#F5A3C7" /><rect x="164" y="260" width="20" height="14" rx="3" fill="#E9ECF6" />
+          <rect x="66" y="152" width="124" height="138" rx="6" style="fill: var(--bg-surface)" /><rect x="58" y="144" width="140" height="11" rx="5.5" style="fill: var(--color-pink-deep)" />
+          <rect x="80" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="108" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="136" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="164" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="80" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="108" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="136" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="164" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="80" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="108" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="136" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="164" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="80" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="108" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="136" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="164" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" />
           <!-- Resale block (centre) -->
-          <rect x="212" y="92" width="132" height="198" rx="6" fill="#FFFFFF" /><rect x="204" y="84" width="148" height="11" rx="5.5" fill="#F08AB6" />
-          <rect x="226" y="110" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="257" y="110" width="22" height="14" rx="3" fill="#F5A3C7" /><rect x="288" y="110" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="319" y="110" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="226" y="134" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="257" y="134" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="288" y="134" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="319" y="134" width="22" height="14" rx="3" fill="#F5A3C7" /><rect x="226" y="158" width="22" height="14" rx="3" fill="#F5A3C7" /><rect x="257" y="158" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="288" y="158" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="319" y="158" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="226" y="182" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="257" y="182" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="288" y="182" width="22" height="14" rx="3" fill="#F5A3C7" /><rect x="319" y="182" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="226" y="206" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="257" y="206" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="288" y="206" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="319" y="206" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="226" y="230" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="257" y="230" width="22" height="14" rx="3" fill="#F5A3C7" /><rect x="288" y="230" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="319" y="230" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="226" y="254" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="257" y="254" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="288" y="254" width="22" height="14" rx="3" fill="#E9ECF6" /><rect x="319" y="254" width="22" height="14" rx="3" fill="#F5A3C7" />
+          <rect x="212" y="92" width="132" height="198" rx="6" style="fill: var(--bg-surface)" /><rect x="204" y="84" width="148" height="11" rx="5.5" style="fill: var(--color-pink-deep)" />
+          <rect x="226" y="110" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="110" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="288" y="110" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="110" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="226" y="134" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="134" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="288" y="134" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="134" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="226" y="158" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="257" y="158" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="288" y="158" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="158" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="226" y="182" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="182" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="288" y="182" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="319" y="182" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="226" y="206" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="206" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="288" y="206" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="206" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="226" y="230" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="230" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="288" y="230" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="230" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="226" y="254" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="254" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="288" y="254" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="254" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" />
           <!-- Small block (right) -->
-          <rect x="352" y="196" width="66" height="94" rx="6" fill="#FFFFFF" /><rect x="346" y="189" width="78" height="9" rx="4.5" fill="#F5A3C7" />
-          <rect x="364" y="210" width="16" height="12" rx="3" fill="#E9ECF6" /><rect x="390" y="210" width="16" height="12" rx="3" fill="#E9ECF6" /><rect x="364" y="236" width="16" height="12" rx="3" fill="#F5A3C7" /><rect x="390" y="236" width="16" height="12" rx="3" fill="#E9ECF6" /><rect x="364" y="262" width="16" height="12" rx="3" fill="#E9ECF6" /><rect x="390" y="262" width="16" height="12" rx="3" fill="#E9ECF6" />
+          <rect x="352" y="196" width="66" height="94" rx="6" style="fill: var(--bg-surface)" /><rect x="346" y="189" width="78" height="9" rx="4.5" style="fill: var(--accent-fill-1)" />
+          <rect x="364" y="210" width="16" height="12" rx="3" style="fill: var(--accent-fill-3)" /><rect x="390" y="210" width="16" height="12" rx="3" style="fill: var(--accent-fill-3)" /><rect x="364" y="236" width="16" height="12" rx="3" style="fill: var(--accent-fill-1)" /><rect x="390" y="236" width="16" height="12" rx="3" style="fill: var(--accent-fill-3)" /><rect x="364" y="262" width="16" height="12" rx="3" style="fill: var(--accent-fill-3)" /><rect x="390" y="262" width="16" height="12" rx="3" style="fill: var(--accent-fill-3)" />
           <!-- Ground and road -->
-          <path d="M0 282 Q 220 258 440 280 V330 H0 Z" fill="#FBD5E5" />
-          <rect x="0" y="300" width="440" height="30" fill="#FFFFFF" />
-          <path d="M12 316 H412" stroke="#DFE2EA" stroke-width="3" stroke-dasharray="18 14" />
+          <path d="M0 282 Q 220 258 440 280 V330 H0 Z" style="fill: var(--accent-fill-2)" />
+          <rect x="0" y="300" width="440" height="30" style="fill: var(--bg-surface)" />
+          <path d="M12 316 H412" style="stroke: var(--border)" stroke-width="3" stroke-dasharray="18 14" />
           <!-- Trees -->
-          <path d="M34 296 V240" stroke="#5F6373" stroke-width="3" stroke-linecap="round" /><ellipse cx="34" cy="232" rx="30" ry="24" fill="#F08AB6" /><ellipse cx="26" cy="224" rx="12" ry="7" fill="#FBD5E5" />
-          <path d="M200 296 V258" stroke="#5F6373" stroke-width="3" stroke-linecap="round" /><ellipse cx="200" cy="252" rx="20" ry="16" fill="#F5A3C7" /><ellipse cx="195" cy="247" rx="8" ry="5" fill="#FBD5E5" />
-          <path d="M410 298 V262" stroke="#5F6373" stroke-width="3" stroke-linecap="round" /><ellipse cx="410" cy="254" rx="24" ry="19" fill="#F08AB6" /><ellipse cx="403" cy="248" rx="9" ry="6" fill="#FBD5E5" />
+          <path d="M34 296 V240" style="stroke: var(--text-secondary)" stroke-width="3" stroke-linecap="round" /><ellipse cx="34" cy="232" rx="30" ry="24" style="fill: var(--color-pink-deep)" /><ellipse cx="26" cy="224" rx="12" ry="7" style="fill: var(--accent-fill-2)" />
+          <path d="M200 296 V258" style="stroke: var(--text-secondary)" stroke-width="3" stroke-linecap="round" /><ellipse cx="200" cy="252" rx="20" ry="16" style="fill: var(--accent-fill-1)" /><ellipse cx="195" cy="247" rx="8" ry="5" style="fill: var(--accent-fill-2)" />
+          <path d="M410 298 V262" style="stroke: var(--text-secondary)" stroke-width="3" stroke-linecap="round" /><ellipse cx="410" cy="254" rx="24" ry="19" style="fill: var(--color-pink-deep)" /><ellipse cx="403" cy="248" rx="9" ry="6" style="fill: var(--accent-fill-2)" />
           <!-- Labels -->
           <g font-size="14" font-weight="600" text-anchor="middle" style="font-family: var(--font-body)">
-            <rect x="82" y="104" width="92" height="30" rx="15" fill="#FFFFFF" stroke="#ECEDF2" /><text x="128" y="124" fill="#1D1D24">BTO</text>
-            <rect x="232" y="40" width="92" height="30" rx="15" fill="#FFFFFF" stroke="#ECEDF2" /><text x="278" y="60" fill="#B23A78">Resale</text>
+            <rect x="82" y="104" width="92" height="30" rx="15" style="fill: var(--bg-surface); stroke: var(--border-subtle)" /><text x="128" y="124" style="fill: var(--text-primary)">BTO</text>
+            <rect x="232" y="40" width="92" height="30" rx="15" style="fill: var(--bg-surface); stroke: var(--border-subtle)" /><text x="278" y="60" style="fill: var(--color-berry)">Resale</text>
           </g>
         </svg>
     </section>
@@ -314,6 +338,16 @@ const FAQS = [
           Want the detail? The <router-link to="/sources" data-cy="home-sources-link">Sources page</router-link> lists the
           rules we use, with their HDB and CPF references.
         </p>
+        <span
+          v-if="rulesetDate"
+          class="home-ruleset"
+          :class="rulesetVerified ? 'home-ruleset--ok' : 'home-ruleset--warn'"
+          data-cy="home-ruleset-status"
+        >
+          <span class="home-ruleset__dot" aria-hidden="true"></span>
+          <template v-if="rulesetVerified">Ruleset {{ rulesetDate }} · checked against its sources</template>
+          <template v-else>Ruleset {{ rulesetDate }} · not yet verified against its sources</template>
+        </span>
       </div>
       <div class="home-card home-faq home-reveal">
         <details v-for="(f, i) in FAQS" :key="f.q" :open="i === 0" :data-cy="`home-faq-${i + 1}`">
@@ -390,7 +424,7 @@ const FAQS = [
   padding: var(--hero-pad);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-subtle);
-  background: linear-gradient(120deg, var(--accent-tint), #fff 45%, var(--indigo-tint));
+  background: linear-gradient(120deg, var(--accent-tint), var(--bg-surface) 45%, var(--indigo-tint));
   box-shadow: 0 20px 50px rgba(60, 64, 90, 0.08);
   transition: translate 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
 }
@@ -543,8 +577,8 @@ const FAQS = [
   overflow-x: auto;
   scrollbar-width: none;
   padding: var(--space-3) 0 var(--space-5);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent); /* a mask, not a colour: only its opacity counts */
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
 }
 .home-marquee::-webkit-scrollbar { display: none; }
 .home-marquee__track { display: flex; width: max-content; margin: 0; padding: 0; list-style: none; }
@@ -580,8 +614,8 @@ const FAQS = [
 }
 .home-tile--pink { --tile-bg: var(--accent-tint); --tile-well: var(--accent-fill-2); --tile-ink: var(--color-berry); }
 .home-tile--indigo { --tile-bg: var(--indigo-tint); --tile-well: var(--indigo-tint-strong); --tile-ink: var(--indigo); }
-.home-tile--green { --tile-bg: #f2f8f5; --tile-well: var(--success-fill); --tile-ink: var(--success); }
-.home-tile--amber { --tile-bg: #fdf8ef; --tile-well: var(--warning-fill); --tile-ink: var(--warning); }
+.home-tile--green { --tile-bg: color-mix(in srgb, var(--success-fill) 45%, var(--bg-surface)); --tile-well: var(--success-fill); --tile-ink: var(--success); }
+.home-tile--amber { --tile-bg: color-mix(in srgb, var(--warning-fill) 45%, var(--bg-surface)); --tile-well: var(--warning-fill); --tile-ink: var(--warning); }
 .home-tile__icon { width: 48px; height: 48px; margin-bottom: var(--space-2); border-radius: 14px; background: var(--tile-well); display: grid; place-items: center; }
 .home-tile__icon svg { width: 24px; height: 24px; fill: none; stroke: var(--tile-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .home-tile__title { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--tile-ink); }
@@ -591,6 +625,10 @@ const FAQS = [
 /* ---- FAQ ---- */
 .home-faq-wrap { display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start; }
 .home-faq-wrap__intro { flex: 1 1 300px; }
+.home-ruleset { align-self: flex-start; display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: 14px; font-weight: 500; }
+.home-ruleset__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.home-ruleset--ok { background: var(--success-fill); color: var(--success); }
+.home-ruleset--warn { background: var(--warning-fill); color: var(--warning); }
 .home-faq { flex: 2 1 520px; min-width: 0; padding: var(--space-2) var(--space-5); }
 .home-faq details { border-bottom: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-1); }
 .home-faq details:last-child { border-bottom: 0; }
@@ -666,5 +704,14 @@ const FAQS = [
   .home-step:hover, .home-tile:hover, .home-feat:hover { translate: none; }
   .home-tile, .home-round-btn { transition: none; }
   .home-faq summary::after { transition: none; }
+}
+</style>
+
+<style>
+/* Home only: the page behind Home is white (body gets .is-home while Home is mounted, see the script).
+   The sticky navbar reads --nav-surface, so its bar matches the white page here and the mist page elsewhere. */
+body.is-home {
+  background-color: var(--bg-surface);
+  --nav-surface: color-mix(in srgb, var(--bg-surface) 92%, transparent);
 }
 </style>
