@@ -14,6 +14,7 @@ describe('login page', () => {
     cy.get('[data-cy=login-bubble-login]').should('contain', 'see your saved scenarios');
     cy.get('[data-cy=login-bubble-register]').should('contain', 'Create a free account');
     cy.get('[data-cy=login-bubble-guest]').should('contain', "won't be saved");
+    cy.get('[data-cy=login-prepare]').should('contain', 'CPF OA balances');
     cy.get('[data-cy^=login-choice-]').should('have.length', 3);
     cy.get('[data-cy=login-form]').should('not.exist');
   });
