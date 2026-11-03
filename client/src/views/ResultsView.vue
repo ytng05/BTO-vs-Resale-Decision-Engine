@@ -219,6 +219,8 @@ onMounted(load);
         :gap-sentence="gapSentence"
         :break-even-sentence="result.breakEvenSentence"
         :horizon-year="horizonYear"
+        :label-a="`BTO · ${labelOf(TOWNS, store.choiceA.town)}`"
+        :label-b="`Resale · ${labelOf(TOWNS, store.choiceB.town)}`"
       />
       <template v-else>
         <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
