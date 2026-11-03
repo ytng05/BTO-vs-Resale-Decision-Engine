@@ -10,6 +10,7 @@
 // and flat type, not one price (the unit is picked later), so the price defaults to the midpoint and changes on
 // the Dashboard (D26).
 // Field names follow the store (contract v2/v2.1). The path ('BTO' / 'RESALE') is fixed in the store.
+import Term from './Term.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
 import { findResaleFlat, getBtoProjects, getResalePrice } from '../api/client.js';
@@ -335,7 +336,7 @@ const LIVING = [
           <!-- D40: these launches have closed; one stands in for the launch the user will apply to. -->
           These launches have closed. We use one as an estimate of the price and wait for your own application.
           <template v-if="activeProject">{{ activeProject.name }}: {{ keysIn(activeProject.waitMonths) }} after you apply. </template>
-          Plus and Prime flats have a longer minimum occupation period and a subsidy clawback when sold.
+          Plus and Prime flats have a longer <Term id="mop">minimum occupation period</Term> and a <Term id="clawback">subsidy clawback</Term> when sold.
         </div>
         <div v-if="err('classification')" class="invalid-feedback d-block">{{ err('classification') }}</div>
       </fieldset>
@@ -361,12 +362,19 @@ const LIVING = [
       </fieldset>
 
       <!-- BTO: the price, as HDB publishes it: a range for the launch and flat type (D26) -->
-      <p v-if="isBto && activeFlat" class="col-12 mb-0 small" :data-cy="`${prefix}-price-basis`">
-        HDB's range for a {{ labelOf(FLAT_TYPES, choice.flatType).toLowerCase() }} at {{ activeProject.name }} ({{ monthYear(activeProject.launch) }}) was
-        {{ formatMoney(activeFlat.priceMinCents / 100) }} to {{ formatMoney(activeFlat.priceMaxCents / 100) }}; your own price
-        depends on the launch and the unit you pick. We use the middle, {{ formatMoney(midpointCents / 100) }}, and the results say at what
-        price the answer would change.
-      </p>
+      <!-- The price the comparison uses, as a figure: easy to miss when it was only a sentence. -->
+      <div v-if="isBto && activeFlat" class="col-12">
+        <div class="bto-price" :data-cy="`${prefix}-price-basis`">
+          <p class="bto-price__label mb-0">Estimated price we'll use</p>
+          <p class="bto-price__figure text-numeric mb-1" :data-cy="`${prefix}-price-estimate`">{{ formatMoney(midpointCents / 100) }}</p>
+          <p class="bto-price__note mb-0">
+            The middle of HDB's range for a {{ labelOf(FLAT_TYPES, choice.flatType).toLowerCase() }} at {{ activeProject.name }}
+            ({{ monthYear(activeProject.launch) }}): {{ formatMoney(activeFlat.priceMinCents / 100) }} to
+            {{ formatMoney(activeFlat.priceMaxCents / 100) }}. Your own price depends on the launch and the unit you pick; you
+            can change it on the dashboard, and the results say at what price the answer would change.
+          </p>
+        </div>
+      </div>
 
       <!-- Resale: remaining lease -->
       <fieldset v-if="!isBto" class="col-12" :data-cy="`${prefix}-lease-band`">
@@ -390,7 +398,11 @@ const LIVING = [
 
       <!-- Resale: the listing's asking price, optional (D39) -->
       <div v-if="!isBto" class="col-12 col-md-6">
-        <label :for="`${prefix}-asking-price`" class="form-label">Asking price <span class="text-secondary">(optional)</span></label>
+        <!-- The (i) sits beside the label, not inside it, so tapping it doesn't focus the field. -->
+        <div class="form-label d-flex align-items-center gap-1">
+          <label :for="`${prefix}-asking-price`" class="mb-0">Asking price <span class="text-secondary">(optional)</span></label>
+          <Term id="asking-price" icon ask="What is the asking price?" />
+        </div>
         <div class="input-group has-validation">
           <span class="input-group-text">$</span>
           <input
@@ -417,7 +429,7 @@ const LIVING = [
           <template v-else-if="medianLoading"><span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Looking up recent sales…</template>
           <template v-else>Leave blank to use the median of recent sales.</template>
           <span v-if="overMedian > 0" class="d-block mt-1" :data-cy="`${prefix}-asking-price-cov`">
-            {{ formatMoney(overMedian) }} above the median. We treat the median as the valuation, so that part is paid in cash, not CPF or the loan.
+            {{ formatMoney(overMedian) }} above the median. We treat the median as the <Term id="valuation">valuation</Term>, so that part is paid in cash, not CPF or the loan.
           </span>
         </div>
       </div>
@@ -444,3 +456,11 @@ const LIVING = [
     </div>
   </div>
 </template>
+
+<style scoped>
+/* "Estimated price we'll use": the BTO price as a figure, on the periwinkle fill the Calm cards use for facts. */
+.bto-price { padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--accent-fill-3); }
+.bto-price__label { font-size: 0.875rem; color: var(--text-secondary); }
+.bto-price__figure { font-family: var(--font-heading); font-size: 1.75rem; font-weight: 500; line-height: 1.15; letter-spacing: -0.02em; }
+.bto-price__note { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; }
+</style>

@@ -4,6 +4,7 @@
 // arrives with the comparison, so there is nothing to fetch here. The server's lines are signed so positive
 // helps Path A; this panel says which path each line favours in words, not only by sign or colour.
 // Zero lines are hidden (the contract allows it). data-cy names: docs/CONVENTIONS.md "Gap breakdown".
+import Term from './Term.vue';
 import { computed } from 'vue';
 import { formatMoney } from '../utils/format.js';
 import { gapRows, gapTotal, grantsText, hiddenLineCount } from '../utils/gapFormat.js';
@@ -26,8 +27,8 @@ const grants = computed(() => grantsText(props.gap, labels.value));
     <div class="card-body">
       <h2 class="h5">Why the gap</h2>
       <p class="text-secondary">
-        Each line is the difference between the two paths in one part of net financial position
-        <template v-if="gap.horizonYear">in {{ gap.horizonYear }}</template>. The lines add up to the total gap.
+        Each line is how much one part of <Term id="net-position">net position</Term>
+        <template v-if="gap.horizonYear">in {{ gap.horizonYear }}</template> differs between the two paths. The lines add up to the total gap.
       </p>
 
       <ul v-if="rows.length" class="list-unstyled border-top mb-0" data-cy="results-gap-list">

@@ -7,6 +7,7 @@
 // in the store never changes, and "Reset" goes back to it.
 // Store and sliders hold dollars and fractions; client.js turns them into the contract's cents (D14).
 // All money from the API is integer cents (API_CONTRACT.md); it is divided by 100 only for display.
+import Term from '../components/Term.vue';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
@@ -288,7 +289,7 @@ const warningText = (w) =>
               <div class="card h-100" :class="`dash-card--${p.key}`" :data-cy="`dashboard-summary-${p.key}`">
                 <div class="card-body">
                   <h2 class="h5 mb-1"><span class="dash-dot" :class="`dash-dot--${p.key}`" aria-hidden="true"></span>{{ p.title }}</h2>
-                  <p class="text-secondary small mb-0">Net financial position in {{ horizon }}</p>
+                  <p class="text-secondary small mb-0"><Term id="net-position">Net position</Term> in {{ horizon }}: what this path leaves you with, after costs</p>
                   <p class="dash-net text-numeric mb-3" :data-cy="`dashboard-summary-${p.key}-net`">{{ formatMoney(dollars(p.o.netPositionCents)) }}</p>
 
                   <p v-if="p.o.affordability" class="mb-4" :data-cy="`dashboard-summary-${p.key}-affordability`">
@@ -405,7 +406,7 @@ const warningText = (w) =>
               <h2 id="notes-heading" class="h5">Before you decide</h2>
               <ul class="list-unstyled d-flex flex-column gap-2 mb-0 small">
                 <li class="dash-note" data-cy="dashboard-note-mop">
-                  <strong>Minimum Occupation Period:</strong> you cannot sell before
+                  <strong><Term id="mop">Minimum Occupation Period</Term>:</strong> you cannot sell before
                   {{ monthYear(A?.timeline?.earliestSaleDate) }} (BTO) or {{ monthYear(B?.timeline?.earliestSaleDate) }} (resale).
                   <RouterLink to="/sources#flat-types">See the current rule</RouterLink>.
                 </li>
