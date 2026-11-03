@@ -7,20 +7,21 @@ import { formatMoney } from './format.js';
 // Judgement call, not a rule from the ruleset: when the gap between the two net positions is at most this share of
 // the larger one, the headline says "too close to call" instead of naming a winner, because growth and price
 // assumptions move the result by more than that. 2% is a round, cautious figure; change it here (and the test) if
-// the team wants a different line. Recorded in docs/DECISIONS.md.
+// the team wants a different line. Recorded in docs/DECISIONS.md (D42).
 export const CLOSE_SHARE = 0.02;
 
 const roundToThousand = (cents) => Math.round(cents / 100 / 1000) * 1000; // dollars, nearest S$1,000
+const NAME = { a: 'BTO', b: 'Resale' };
 
 /**
  * Who ends ahead, and by how much.
- * @returns {{ winner: 'bto'|'resale'|'level'|null, gapCents: number, roundedDollars: number, close: boolean, headline: string }}
+ * @returns {{ winner: 'bto'|'resale'|'level'|null, gapCents: number, roundedDollars: number, close: boolean, headline: string, diffLine: string }}
  */
 export function verdict(outcomeA, outcomeB, horizonYear) {
   const a = outcomeA?.netPositionCents;
   const b = outcomeB?.netPositionCents;
   if (typeof a !== 'number' || typeof b !== 'number') {
-    return { winner: null, gapCents: 0, roundedDollars: 0, close: false, headline: '' };
+    return { winner: null, gapCents: 0, roundedDollars: 0, close: false, headline: '', diffLine: '' };
   }
   const by = horizonYear ? ` by ${horizonYear}` : '';
   const gapCents = Math.abs(a - b);
@@ -29,14 +30,21 @@ export function verdict(outcomeA, outcomeB, horizonYear) {
   const close = larger > 0 && gapCents / larger <= CLOSE_SHARE;
 
   if (gapCents === 0 || roundedDollars === 0) {
-    return { winner: 'level', gapCents, roundedDollars, close: true, headline: `BTO and resale leave you about the same${by}` };
+    return {
+      winner: 'level', gapCents, roundedDollars, close: true,
+      headline: `BTO and resale leave you about the same${by}`,
+      diffLine: gapCents === 0 ? 'Difference: none.' : `Difference: ${formatMoney(gapCents / 100)}, too small to call.`,
+    };
   }
   const winner = a > b ? 'bto' : 'resale';
   const name = winner === 'bto' ? 'BTO' : 'Resale';
   const headline = close
     ? `Too close to call: ${name} is only about ${formatMoney(roundedDollars)} ahead${by}`
     : `${name} leaves you about ${formatMoney(roundedDollars)} better off${by}`;
-  return { winner, gapCents, roundedDollars, close, headline };
+  const diffLine = close
+    ? `Difference: ${formatMoney(gapCents / 100)} in favour of ${name}, too small to call.`
+    : `Difference: ${formatMoney(gapCents / 100)} in favour of ${name}.`;
+  return { winner, gapCents, roundedDollars, close, headline, diffLine };
 }
 
 // "Keys in" column: "May 2031". keyCollectionDate is an ISO date string.
@@ -45,10 +53,27 @@ function monthYear(iso) {
   const [y, m] = iso.slice(0, 7).split('-').map(Number);
   return y && m ? new Date(y, m - 1, 1).toLocaleDateString('en-SG', { month: 'short', year: 'numeric' }) : null;
 }
+const monthIndex = (iso) => {
+  if (typeof iso !== 'string' || iso.length < 7) return null;
+  const [y, m] = iso.slice(0, 7).split('-').map(Number);
+  return y && m ? y * 12 + (m - 1) : null;
+};
+
+/** 52 -> "4 years 4 months", 7 -> "7 months", 12 -> "1 year". */
+export function durationText(months) {
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  const parts = [];
+  if (y) parts.push(`${y} year${y === 1 ? '' : 's'}`);
+  if (m || !y) parts.push(`${m} month${m === 1 ? '' : 's'}`);
+  return parts.join(' ');
+}
 
 /**
  * The few numbers that matter, side by side, with the better side of each marked ('a', 'b' or null when equal or
  * unknown). "Better" is the higher net position, the higher grants, the lower cash up front, the earlier keys.
+ * Each row also says how far apart the two are, in words ("S$13,000" + "more with BTO"; diffLead is the part to
+ * bold, empty when they are the same), and keeps the raw values (raw: [a, b], cents or a month count) for bars.
  */
 export function keyRows(outcomeA, outcomeB, horizonYear) {
   const money = (cents) => (typeof cents === 'number' ? formatMoney(cents / 100) : '—');
@@ -58,34 +83,89 @@ export function keyRows(outcomeA, outcomeB, horizonYear) {
   const keysB = outcomeB?.timeline?.keyCollectionDate;
   const earlier = (x, y) => (typeof x !== 'string' || typeof y !== 'string' || x === y ? null : x < y ? 'a' : 'b');
 
+  const moneyDiff = (x, y, better, word) => (better
+    ? { diffLead: money(Math.abs(x - y)), diffRest: `${word} with ${NAME[better]}` }
+    : { diffLead: '', diffRest: 'Same for both' });
+
+  const posA = outcomeA?.netPositionCents;
+  const posB = outcomeB?.netPositionCents;
+  const grantsA = outcomeA?.totalGrantsCents;
+  const grantsB = outcomeB?.totalGrantsCents;
+  const cashA = outcomeA?.cashRequiredAtPurchaseCents;
+  const cashB = outcomeB?.cashRequiredAtPurchaseCents;
+  const keyBetter = earlier(keysA, keysB);
+  const mA = monthIndex(keysA);
+  const mB = monthIndex(keysB);
+  const keyMonths = mA !== null && mB !== null ? Math.abs(mA - mB) : 0;
+
+  const positionBetter = higher(posA, posB);
+  const grantsBetter = higher(grantsA, grantsB);
+  const cashBetter = lower(cashA, cashB);
+
   return [
     {
       id: 'position',
       label: horizonYear ? `Net position in ${horizonYear}` : 'Net position',
-      a: money(outcomeA?.netPositionCents),
-      b: money(outcomeB?.netPositionCents),
-      better: higher(outcomeA?.netPositionCents, outcomeB?.netPositionCents),
+      a: money(posA), b: money(posB), better: positionBetter, raw: [posA, posB],
+      ...moneyDiff(posA, posB, positionBetter, 'more'),
     },
     {
       id: 'grants',
       label: 'Grants you get',
-      a: money(outcomeA?.totalGrantsCents),
-      b: money(outcomeB?.totalGrantsCents),
-      better: higher(outcomeA?.totalGrantsCents, outcomeB?.totalGrantsCents),
+      a: money(grantsA), b: money(grantsB), better: grantsBetter, raw: [grantsA, grantsB],
+      ...moneyDiff(grantsA, grantsB, grantsBetter, 'more'),
     },
     {
       id: 'cash',
       label: 'Cash needed up front',
-      a: money(outcomeA?.cashRequiredAtPurchaseCents),
-      b: money(outcomeB?.cashRequiredAtPurchaseCents),
-      better: lower(outcomeA?.cashRequiredAtPurchaseCents, outcomeB?.cashRequiredAtPurchaseCents),
+      a: money(cashA), b: money(cashB), better: cashBetter, raw: [cashA, cashB],
+      ...moneyDiff(cashA, cashB, cashBetter, 'less'),
     },
     {
       id: 'keys',
       label: 'You get the keys',
-      a: monthYear(keysA) ?? '—',
-      b: monthYear(keysB) ?? '—',
-      better: earlier(keysA, keysB),
+      a: monthYear(keysA) ?? '—', b: monthYear(keysB) ?? '—', better: keyBetter, raw: [mA, mB], months: keyMonths,
+      ...(keyBetter && keyMonths > 0
+        ? { diffLead: durationText(keyMonths), diffRest: `sooner with ${NAME[keyBetter]}` }
+        : { diffLead: '', diffRest: 'Same for both' }),
     },
   ];
+}
+
+/**
+ * One sentence on what the path that is behind still does better, from the rows: "Resale gets you more in grants
+ * and the keys about 4 years sooner." Empty when there is nothing to say. When the result is too close to call it
+ * says so instead, because the assumptions could change who ends ahead.
+ */
+export function reasonLine(rows, v) {
+  if (!v || !v.winner) return '';
+  if (v.winner === 'level') return 'Both paths leave you in about the same place.';
+  if (v.close) return 'The gap is small enough that your assumptions could change who ends ahead.';
+  const loser = v.winner === 'bto' ? 'b' : 'a';
+  const phrases = [];
+  for (const row of rows) {
+    if (row.id === 'position' || row.better !== loser) continue;
+    if (row.id === 'grants') phrases.push('more in grants');
+    else if (row.id === 'cash') phrases.push('a smaller cash payment up front');
+    else if (row.id === 'keys') {
+      phrases.push(row.months < 12
+        ? `the keys ${row.months} month${row.months === 1 ? '' : 's'} sooner`
+        : `the keys about ${Math.round(row.months / 12)} year${Math.round(row.months / 12) === 1 ? '' : 's'} sooner`);
+    }
+  }
+  if (!phrases.length) return '';
+  const list = phrases.length === 1 ? phrases[0] : `${phrases.slice(0, -1).join(', ')} and ${phrases[phrases.length - 1]}`;
+  return `${NAME[loser]} gets you ${list}.`;
+}
+
+/**
+ * Bar widths (0 to 100) for two positions on one scale that starts at S$0. The larger is 100; a negative position
+ * has no bar (its figure is still written beside it); a positive one is never thinner than 2 so it can be seen.
+ */
+export function barShares(a, b) {
+  if (typeof a !== 'number' || typeof b !== 'number') return { a: 0, b: 0 };
+  const top = Math.max(a, b, 0);
+  if (top === 0) return { a: 0, b: 0 };
+  const share = (v) => (v <= 0 ? 0 : Math.max(2, Math.round((v / top) * 100)));
+  return { a: share(a), b: share(b) };
 }

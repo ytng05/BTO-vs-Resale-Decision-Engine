@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CLOSE_SHARE, keyRows, verdict } from '../src/utils/resultsVerdict.js';
+import { barShares, CLOSE_SHARE, durationText, keyRows, reasonLine, verdict } from '../src/utils/resultsVerdict.js';
 
 const out = (net, extra = {}) => ({ netPositionCents: net, ...extra });
 
@@ -70,5 +70,73 @@ describe('keyRows', () => {
     expect(rows.position.better).toBe(null);
     expect(rows.grants.a).toBe('—');
     expect(rows.keys.better).toBe(null);
+  });
+});
+
+describe('difference text, reason line and bars', () => {
+  const a = out(18_500_000, { totalGrantsCents: 3_000_000, cashRequiredAtPurchaseCents: 4_500_000, timeline: { keyCollectionDate: '2031-05-01' } });
+  const b = out(17_200_000, { totalGrantsCents: 13_000_000, cashRequiredAtPurchaseCents: 4_500_000, timeline: { keyCollectionDate: '2027-01-15' } });
+  const rows = keyRows(a, b, 2041);
+  const row = (id) => rows.find((r) => r.id === id);
+
+  it('says how far apart each row is, and who is ahead on it', () => {
+    expect(row('position')).toMatchObject({ diffLead: 'S$13,000', diffRest: 'more with BTO' });
+    expect(row('grants')).toMatchObject({ diffLead: 'S$100,000', diffRest: 'more with Resale' });
+    expect(row('keys')).toMatchObject({ diffLead: '4 years 4 months', diffRest: 'sooner with Resale', months: 52 });
+  });
+
+  it('says "Same for both" when a row is equal, with nothing to bold', () => {
+    expect(row('cash')).toMatchObject({ diffLead: '', diffRest: 'Same for both' });
+  });
+
+  it('says "less" for cash, where lower is better', () => {
+    const r = keyRows(out(1, { cashRequiredAtPurchaseCents: 3_000_000 }), out(1, { cashRequiredAtPurchaseCents: 4_500_000 }), 2041).find((x) => x.id === 'cash');
+    expect(r).toMatchObject({ diffLead: 'S$15,000', diffRest: 'less with BTO' });
+  });
+
+  it('formats a duration in years and months', () => {
+    expect(durationText(52)).toBe('4 years 4 months');
+    expect(durationText(12)).toBe('1 year');
+    expect(durationText(7)).toBe('7 months');
+    expect(durationText(1)).toBe('1 month');
+    expect(durationText(0)).toBe('0 months');
+  });
+
+  it('gives the reason the path that is behind still has going for it', () => {
+    const v = verdict(a, b, 2041);
+    expect(reasonLine(rows, v)).toBe('Resale gets you more in grants and the keys about 4 years sooner.');
+  });
+
+  it('lists three things with commas, and says months when the keys gap is under a year', () => {
+    const behind = out(10, { totalGrantsCents: 9_000_000, cashRequiredAtPurchaseCents: 1_000_000, timeline: { keyCollectionDate: '2027-01-01' } });
+    const ahead = out(99_000_000, { totalGrantsCents: 1_000_000, cashRequiredAtPurchaseCents: 5_000_000, timeline: { keyCollectionDate: '2027-08-01' } });
+    const text = reasonLine(keyRows(behind, ahead, 2041), verdict(behind, ahead, 2041));
+    expect(text).toBe('BTO gets you more in grants, a smaller cash payment up front and the keys 7 months sooner.');
+  });
+
+  it('says nothing when the path that is behind is not better at anything else', () => {
+    const behind = out(1_000_000);
+    const ahead = out(9_000_000);
+    expect(reasonLine(keyRows(behind, ahead, 2041), verdict(behind, ahead, 2041))).toBe('');
+  });
+
+  it('says the gap is small, not who is ahead, when too close to call; and "about the same" when level', () => {
+    const close = verdict(out(30_000_000), out(29_600_000), 2041);
+    expect(reasonLine(rows, close)).toBe('The gap is small enough that your assumptions could change who ends ahead.');
+    expect(reasonLine(rows, verdict(out(5), out(5), 2041))).toBe('Both paths leave you in about the same place.');
+    expect(reasonLine(rows, verdict(null, out(1), 2041))).toBe('');
+  });
+
+  it('writes the difference line, and calls a close gap too small to call', () => {
+    expect(verdict(a, b, 2041).diffLine).toBe('Difference: S$13,000 in favour of BTO.');
+    expect(verdict(out(30_000_000), out(29_600_000), 2041).diffLine).toBe('Difference: S$4,000 in favour of BTO, too small to call.');
+  });
+
+  it('scales the bars to the larger position, from zero', () => {
+    expect(barShares(18_500_000, 17_200_000)).toEqual({ a: 100, b: 93 });
+    expect(barShares(-5_000, 10_000)).toEqual({ a: 0, b: 100 });
+    expect(barShares(1, 10_000_000)).toEqual({ a: 2, b: 100 });
+    expect(barShares(0, 0)).toEqual({ a: 0, b: 0 });
+    expect(barShares(null, 5)).toEqual({ a: 0, b: 0 });
   });
 });
