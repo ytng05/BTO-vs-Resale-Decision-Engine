@@ -19,6 +19,12 @@ $color-blush:      #FBD5E5; // soft pink fills
 $color-pink:       #F5A3C7; // pink accent, resale in charts
 $color-pink-deep:  #F08AB6; // orb edge
 $color-berry:      #B23A78; // pink that can be text (5.57:1 on white)
+// Onboarding tints (#110): selected tiles, the BTO/resale panels and hover borders.
+$accent-tint:          #FDF0F6; // a picked tile or option, behind ink text
+$indigo:               #3D4A8F; // BTO label and icon on the indigo tints (7.6:1 on $indigo-tint)
+$indigo-tint:          #F3F5FB; // BTO panel
+$indigo-tint-strong:   #E3E6F4; // icon well on $indigo-tint
+$border-strong:        #B9BFCD; // hover border on tiles, switch track
 $color-ink:        #1D1D24;
 $color-slate:      #5F6373;
 
@@ -138,6 +144,11 @@ $ease-in:  cubic-bezier(0.4, 0, 1, 1);
   --accent-fill-3: #{$accent-fill-3};
   --color-pink-deep: #{$color-pink-deep};
   --color-berry: #{$color-berry};
+  --accent-tint: #{$accent-tint};
+  --indigo: #{$indigo};
+  --indigo-tint: #{$indigo-tint};
+  --indigo-tint-strong: #{$indigo-tint-strong};
+  --border-strong: #{$border-strong};
 
   --success: #{$success};
   --success-fill: #{$success-fill};

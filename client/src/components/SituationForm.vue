@@ -23,8 +23,8 @@ const props = defineProps({
   part: { type: Number, default: 0 },
 });
 
-// Buyer 1 is the person filling in the plan, buyer 2 their partner.
-const WHO = ['You', 'Your partner'];
+// Buyer 1 is the person filling in the plan, buyer 2 the other buyer (a partner, parent or child).
+const WHO = ['You', 'The other buyer'];
 
 const store = useScenarioStore();
 const applicants = computed(() => store.profile.applicants);
@@ -198,7 +198,7 @@ onBeforeUnmount(() => clearTimeout(timer));
             <span class="big-box__unit" aria-hidden="true">S$</span>
             <NumberField
               :id="`buyer-${i}-income`"
-              v-model="a.monthlyIncome"
+              v-model="a.monthlyIncome" :decimals="2"
               placeholder="5,000"
               :aria-invalid="err(`applicants.${i}.monthlyIncome`) ? 'true' : null"
               class="big-box__input"
@@ -255,7 +255,7 @@ onBeforeUnmount(() => clearTimeout(timer));
               <span class="big-box__unit" aria-hidden="true">S$</span>
               <NumberField
                 :id="`buyer-${i}-cpf`"
-                v-model="a.cpfOaBalance"
+                v-model="a.cpfOaBalance" :decimals="2"
                 placeholder="40,000"
                 :aria-invalid="err(`applicants.${i}.cpfOaBalance`) ? 'true' : null"
                 :aria-describedby="cpfLooksHigh(a.age, a.cpfOaBalance) ? `buyer-${i}-cpf-high` : null"
@@ -280,7 +280,7 @@ onBeforeUnmount(() => clearTimeout(timer));
             <span class="big-box__unit" aria-hidden="true">S$</span>
             <NumberField
               id="cash-savings"
-              v-model="store.profile.cashSavings"
+              v-model="store.profile.cashSavings" :decimals="2"
               placeholder="20,000"
               aria-describedby="cash-savings-help"
               :aria-invalid="err('cashSavings') ? 'true' : null"
@@ -325,30 +325,30 @@ onBeforeUnmount(() => clearTimeout(timer));
 .pair--stack { grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .big-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .big-field__label { margin: 0; font-size: 15px; font-weight: 600; }
-.big-field__help { margin: 0; font-size: 14px; color: var(--text-secondary, #5f6373); line-height: 1.45; }
+.big-field__help { margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.45; }
 .big-box {
   display: flex; align-items: center; gap: 10px; height: 64px; box-sizing: border-box; padding: 0 18px;
-  border-radius: 16px; background: var(--color-white, #ffffff); border: 1.5px solid var(--border, #dfe2ea);
+  border-radius: 16px; background: var(--bg-surface); border: 1.5px solid var(--border);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.big-box:focus-within { border-color: var(--text-primary, #1d1d24); box-shadow: 0 0 0 4px var(--color-blush, #fbd5e5); }
-.big-box:has(.is-invalid) { border-color: var(--bs-form-invalid-border-color, #dc3545); }
+.big-box:focus-within { border-color: var(--text-primary); box-shadow: 0 0 0 4px var(--accent-fill-2); }
+.big-box:has(.is-invalid) { border-color: var(--danger); }
 .big-box__input {
   flex: 1; min-width: 0; padding: 0; border: 0; outline: none; background: transparent;
-  font-size: 22px; font-weight: 600; color: var(--text-primary, #1d1d24);
+  font-size: 22px; font-weight: 600; color: var(--text-primary);
   appearance: textfield; -moz-appearance: textfield;
 }
-.big-box__input::placeholder { color: #b9bfcd; font-weight: 500; }
+.big-box__input::placeholder { color: var(--border-strong); font-weight: 500; }
 .big-box__input::-webkit-inner-spin-button,
 .big-box__input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.big-box__unit { font-size: 16px; font-weight: 500; color: var(--text-secondary, #5f6373); }
+.big-box__unit { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
 .big-field__group { margin: 0 0 4px; font-size: 17px; font-weight: 600; }
 legend.big-field__group { margin-bottom: 12px; }
 /* What have you saved?: CPF, cash and the move-in year read as separate groups, 24px apart. */
 .groups { display: flex; flex-direction: column; gap: 24px; }
 .groups > .pair { row-gap: 24px; }
 .big-field__total { margin: 0; font-size: 16px; font-weight: 600; }
-.big-field__warn { margin: 0; font-size: 14px; color: var(--warning, #8e621d); }
+.big-field__warn { margin: 0; font-size: 14px; color: var(--warning); }
 .choice-set { margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .choice-set > legend { float: none; width: auto; padding: 0; }
 /* Who is buying? (Cadence's spec, 3 Nov 2026): two people side by side, stacked below 768px. */
@@ -359,30 +359,30 @@ legend.big-field__group { margin-bottom: 12px; }
 .who__legend { float: none; width: auto; margin: 0 0 12px; padding: 0; font-size: 16px; font-weight: 600; }
 .who__group { display: flex; flex-direction: column; gap: 8px; }
 .who__label { font-size: 15px; font-weight: 600; }
-.who__hint { font-weight: 400; color: var(--text-secondary, #5f6373); }
+.who__hint { font-weight: 400; color: var(--text-secondary); }
 .cit { display: flex; gap: 8px; }
 .cit__opt { flex: 1 1 0; min-width: 0; margin: 0; }
 .cit__opt--wide { flex-grow: 1.8; }
 .cit__face {
   display: grid; place-items: center; height: 54px; padding: 0 10px; border-radius: 14px; cursor: pointer;
-  background: #ffffff; border: 1.5px solid #dfe2ea; color: var(--text-primary, #1d1d24);
+  background: var(--bg-surface); border: 1.5px solid var(--border); color: var(--text-primary);
   font-size: 16px; font-weight: 500; text-align: center; white-space: nowrap;
   transition: border-color 0.15s, background-color 0.15s;
 }
-.cit__opt:hover .cit__face { border-color: #b9bfcd; }
-.cit__opt input:checked + .cit__face { background: #fdf0f6; border-color: #1d1d24; }
-.cit__opt input:focus-visible + .cit__face { outline: 2px solid #1d1d24; outline-offset: 3px; }
+.cit__opt:hover .cit__face { border-color: var(--border-strong); }
+.cit__opt input:checked + .cit__face { background: var(--accent-tint); border-color: var(--text-primary); }
+.cit__opt input:focus-visible + .cit__face { outline: 2px solid var(--text-primary); outline-offset: 3px; }
 .switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; margin: 0; cursor: pointer; align-self: flex-start; }
-.switch__track { position: relative; flex-shrink: 0; width: 50px; height: 30px; border-radius: 15px; background: #cfd3de; transition: background-color 0.15s; }
+.switch__track { position: relative; flex-shrink: 0; width: 50px; height: 30px; border-radius: 15px; background: var(--border-strong); transition: background-color 0.15s; }
 .switch__knob {
-  position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #ffffff;
+  position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: var(--bg-surface);
   box-shadow: 0 1px 3px rgba(29, 29, 36, 0.25); transition: transform 0.15s;
 }
-.switch input:checked + .switch__track { background: #1d1d24; }
+.switch input:checked + .switch__track { background: var(--text-primary); }
 .switch input:checked + .switch__track .switch__knob { transform: translateX(20px); }
-.switch input:focus-visible + .switch__track { outline: 2px solid #1d1d24; outline-offset: 3px; }
+.switch input:focus-visible + .switch__track { outline: 2px solid var(--text-primary); outline-offset: 3px; }
 .switch__state { font-size: 15px; font-weight: 600; }
-.who__error { margin: 0; min-height: 0; font-size: 14px; color: var(--danger, #b42318); }
+.who__error { margin: 0; min-height: 0; font-size: 14px; color: var(--danger); }
 .who__error:empty { display: none; }
 /* Phones: a size down, so a six-figure CPF balance fits its box in full. */
 @media (max-width: 575.98px) {

@@ -40,14 +40,14 @@ const stepNumber = computed(() => props.current + 1);
 <style scoped>
 .seg-track { display: flex; gap: 8px; flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; }
 .seg-track__item { display: flex; flex-direction: column; gap: 8px; flex: 1 1 0; min-width: 0; }
-.seg-track__bar { display: block; height: 6px; border-radius: 3px; background: var(--color-periwinkle, #e9ecf6); overflow: hidden; }
-.seg-track__bar > span { display: block; height: 100%; border-radius: 3px; background: var(--text-primary, #1d1d24); transition: width 0.4s ease-out; }
+.seg-track__bar { display: block; height: 6px; border-radius: 3px; background: var(--accent-fill-3); overflow: hidden; }
+.seg-track__bar > span { display: block; height: 100%; border-radius: 3px; background: var(--text-primary); transition: width 0.4s ease-out; }
 .seg-track__label {
-  font-size: 13px; font-weight: 500; color: var(--text-secondary, #5f6373);
+  font-size: 13px; font-weight: 500; color: var(--text-secondary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.seg-track__item--current .seg-track__label { color: var(--text-primary, #1d1d24); font-weight: 600; }
-.seg-track__mobile { display: none; margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary, #5f6373); }
+.seg-track__item--current .seg-track__label { color: var(--text-primary); font-weight: 600; }
+.seg-track__mobile { display: none; margin: 0; font-size: 14px; font-weight: 500; color: var(--text-secondary); }
 @media (max-width: 767.98px) {
   .seg-track__label { display: none; }
   .seg-track__mobile { display: block; }

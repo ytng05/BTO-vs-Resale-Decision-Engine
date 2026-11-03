@@ -166,7 +166,7 @@ function back() {
           <div class="plan-card__head">
             <p v-if="isBtoStep && firstName" class="plan-card__lead">Welcome back, {{ firstName }}</p>
             <h2 class="plan-card__title plan-card__title--hero" :data-cy="onAbout ? `about-part-${ABOUT_PARTS[aboutPart]}` : null">
-              {{ onAbout ? aboutHead.title : HEADINGS[store.step] }}
+              {{ onAbout ? aboutHead.title : HEADINGS[store.step] }}<span v-if="onAbout" class="visually-hidden"> (question {{ aboutPart + 1 }} of {{ ABOUT_PARTS.length }})</span>
             </h2>
             <p v-if="onAbout && aboutHead.lead" class="plan-card__lead">{{ aboutHead.lead }}</p>
             <p v-if="store.step === 0" class="plan-card__lead">Pick as many as you like.</p>
@@ -212,9 +212,9 @@ function back() {
 .plan-card__track { display: flex; align-items: center; gap: 24px; }
 .plan-card__progress { flex: 1; min-width: 0; }
 .plan-card__iconbtn,
-.plan-card__skip { flex-shrink: 0; border: 0; background: #f3f3f5; color: var(--text-primary, #1d1d24); }
+.plan-card__skip { flex-shrink: 0; border: 0; background: var(--bg-page); color: var(--text-primary); }
 .plan-card__iconbtn:hover,
-.plan-card__skip:hover { background: var(--color-periwinkle, #e9ecf6); }
+.plan-card__skip:hover { background: var(--accent-fill-3); }
 .plan-card__iconbtn { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; }
 .plan-card__skip { padding: 12px 18px; border-radius: 999px; font-size: 15px; font-weight: 600; }
 @media (max-width: 767.98px) {
@@ -224,7 +224,7 @@ function back() {
 .plan-card__head { display: flex; flex-direction: column; gap: 8px; }
 .plan-card__title { margin: 0; }
 .plan-card__title--hero { font-size: clamp(26px, 2.8vw, 36px); font-weight: 500; letter-spacing: -0.025em; line-height: 1.15; }
-.plan-card__lead { margin: 0; font-size: 15px; color: var(--text-secondary, #5f6373); }
+.plan-card__lead { margin: 0; font-size: 15px; color: var(--text-secondary); }
 .plan-card__actions { display: flex; justify-content: flex-end; margin-top: auto; }
 
 /* Steps 2 to 4 (Calm "Plan your BTO" board): the illustration panel and the form card side by side (the track is
@@ -245,7 +245,7 @@ function back() {
 .side-step__art {
   display: flex; flex-direction: column; gap: 12px; min-width: 0; overflow: hidden;
   padding: 24px; border-radius: 36px;
-  background: var(--color-periwinkle, #e9ecf6); border: 1px solid var(--color-white, #ffffff);
+  background: var(--accent-fill-3); border: 1px solid var(--bg-surface);
 }
 .plan-card--side { max-width: none; min-width: 0; margin: 0; padding: 36px; height: 100%; }
 

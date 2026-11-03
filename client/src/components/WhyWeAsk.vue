@@ -30,12 +30,12 @@ const closed = ref(false);
 .why { position: relative; align-self: flex-start; }
 .why__link {
   padding: 0; border: 0; background: none; font-size: 14px; font-weight: 600;
-  color: var(--text-primary, #1d1d24); text-decoration: underline; text-underline-offset: 3px;
+  color: var(--text-primary); text-decoration: underline; text-underline-offset: 3px;
 }
-.why__link:focus-visible { outline: 2px solid #1d1d24; outline-offset: 3px; border-radius: 4px; }
+.why__link:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; border-radius: 4px; }
 .why__tip {
   position: absolute; left: 0; top: calc(100% + 8px); z-index: 5; width: max-content; max-width: min(320px, 80vw);
-  padding: 10px 12px; border-radius: 12px; background: #1d1d24; color: #ffffff; font-size: 14px; line-height: 1.4;
+  padding: 10px 12px; border-radius: 12px; background: var(--text-primary); color: var(--bg-surface); font-size: 14px; line-height: 1.4;
   visibility: hidden; opacity: 0; transition: opacity 0.15s;
 }
 .why:hover .why__tip, .why__link:focus + .why__tip { visibility: visible; opacity: 1; }

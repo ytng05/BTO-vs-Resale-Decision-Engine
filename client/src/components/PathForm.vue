@@ -242,7 +242,7 @@ const LIVING = [
       <div v-if="activeProject" class="est" :data-cy="`${prefix}-project`">
         <div class="est__line">
           <span class="est__ic" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3d4a8f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21v-9h7v9M8 15h1M8 18h1M16 21V4M16 4H9M16 4l4 3M9 4v4" /></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="stroke: var(--indigo)"><path d="M3 21h18M5 21v-9h7v9M8 15h1M8 18h1M16 21V4M16 4H9M16 4l4 3M9 4v4" /></svg>
           </span>
           <p :data-cy="`${prefix}-project-help`">
             We'll estimate from <b>{{ activeProject.name }}</b>, a past launch<br />
@@ -387,7 +387,7 @@ const LIVING = [
           <span class="pf__unit" aria-hidden="true">S$</span>
           <NumberField
             :id="`${prefix}-asking-price`"
-            v-model="choice.resalePrice"
+            v-model="choice.resalePrice" :decimals="2"
             class="pf__input"
             :class="{ 'is-invalid': err('resalePrice') }"
             :aria-invalid="err('resalePrice') ? 'true' : null"
@@ -445,25 +445,25 @@ const LIVING = [
 .pf__field { margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .pf__field > legend { float: none; width: auto; padding: 0; margin: 0 0 8px; }
 .pf__label { margin: 0; font-size: 16px; font-weight: 600; }
-.pf__select { height: 56px; border-radius: 14px; border: 1.5px solid #dfe2ea; font-size: 17px; font-weight: 500; padding-inline: 16px 44px; }
-.pf__select:focus { border-color: #dfe2ea; box-shadow: none; outline: 2px solid #1d1d24; outline-offset: 2px; }
-.pf__hint { margin: 0; font-size: 14px; color: var(--text-secondary, #5f6373); }
+.pf__select { height: 56px; border-radius: 14px; border: 1.5px solid var(--border); font-size: 17px; font-weight: 500; padding-inline: 16px 44px; }
+.pf__select:focus { border-color: var(--border); box-shadow: none; outline: 2px solid var(--text-primary); outline-offset: 2px; }
+.pf__hint { margin: 0; font-size: 14px; color: var(--text-secondary); }
 
-.est { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: 20px; background: #f3f5fb; }
+.est { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: 20px; background: var(--indigo-tint); }
 .est__line { display: flex; gap: 14px; align-items: flex-start; }
-.est__ic { flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; background: #e3e6f4; display: grid; place-items: center; }
+.est__ic { flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; background: var(--indigo-tint-strong); display: grid; place-items: center; }
 .est__line p { margin: 0; font-size: 16px; line-height: 1.5; }
-.est__meta { font-size: 15px; color: var(--text-secondary, #5f6373); }
-.est__price { color: var(--text-primary, #1d1d24); font-weight: 600; } /* the figure the comparison uses (#107) */
+.est__meta { font-size: 15px; color: var(--text-secondary); }
+.est__price { color: var(--text-primary); font-weight: 600; } /* the figure the comparison uses (#107) */
 .est__range { white-space: nowrap; } /* the range never splits at its dash */
 .est__cls {
-  padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--text-primary, #1d1d24);
+  padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--text-primary);
   text-decoration: underline dotted; text-underline-offset: 3px; cursor: pointer;
 }
-.est__cls:focus-visible { outline: 2px solid #1d1d24; outline-offset: 2px; border-radius: 4px; }
+.est__cls:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; border-radius: 4px; }
 .est__tip {
   margin: auto; max-width: 320px; padding: 16px 18px; border: 0; border-radius: 16px;
-  background: #1d1d24; color: #ffffff; font-size: 14px; line-height: 1.45; box-shadow: 0 16px 40px rgba(29, 29, 36, 0.25);
+  background: var(--text-primary); color: var(--bg-surface); font-size: 14px; line-height: 1.45; box-shadow: 0 16px 40px rgba(29, 29, 36, 0.25);
 }
 .est__tip::backdrop { background: rgba(29, 29, 36, 0.12); }
 .est__more summary {
@@ -471,36 +471,36 @@ const LIVING = [
   font-size: 15px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
 }
 .est__more summary::-webkit-details-marker { display: none; }
-.est__more summary:focus-visible { outline: 2px solid #1d1d24; outline-offset: 3px; border-radius: 4px; }
+.est__more summary:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; border-radius: 4px; }
 .est__chev { transition: transform 0.15s; }
 .est__more[open] .est__chev { transform: rotate(180deg); }
 .launches { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 0 54px; padding: 0; border: 0; }
 .launch { position: relative; display: block; margin: 0; }
 .launch__face {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; cursor: pointer;
-  border-radius: 14px; border: 1.5px solid #dfe2ea; background: #ffffff;
+  border-radius: 14px; border: 1.5px solid var(--border); background: var(--bg-surface);
 }
-.launch:hover .launch__face { border-color: #b9bfcd; }
-.launch input:checked + .launch__face { background: #fdf0f6; border-color: #1d1d24; }
-.launch input:focus-visible + .launch__face { outline: 2px solid #1d1d24; outline-offset: 3px; }
+.launch:hover .launch__face { border-color: var(--border-strong); }
+.launch input:checked + .launch__face { background: var(--accent-tint); border-color: var(--text-primary); }
+.launch input:focus-visible + .launch__face { outline: 2px solid var(--text-primary); outline-offset: 3px; }
 .launch b { display: block; font-size: 15px; font-weight: 600; }
-.launch small { font-size: 13px; color: var(--text-secondary, #5f6373); }
-.launch__new { padding: 3px 9px; border-radius: 999px; background: #f3f3f5; color: var(--text-secondary, #5f6373); font-size: 12px; font-weight: 600; white-space: nowrap; }
+.launch small { font-size: 13px; color: var(--text-secondary); }
+.launch__new { padding: 3px 9px; border-radius: 999px; background: var(--bg-page); color: var(--text-secondary); font-size: 12px; font-weight: 600; white-space: nowrap; }
 
 .choice-row { display: flex; gap: 8px; }
 .choice-row--wrap { flex-wrap: wrap; }
 .choice-row--wrap .choice { flex: 1 1 160px; }
-.pf__optional { font-weight: 400; color: var(--text-secondary, #5f6373); }
+.pf__optional { font-weight: 400; color: var(--text-secondary); }
 .pf__note { display: flex; gap: 10px; align-items: flex-start; }
 .pf__note svg { flex-shrink: 0; margin-top: 1px; }
 .pf__box {
   display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; border-radius: 14px;
-  border: 1.5px solid #dfe2ea; background: #ffffff; transition: border-color 0.15s, box-shadow 0.15s;
+  border: 1.5px solid var(--border); background: var(--bg-surface); transition: border-color 0.15s, box-shadow 0.15s;
 }
-.pf__box:focus-within { border-color: #1d1d24; box-shadow: 0 0 0 4px var(--color-blush, #fbd5e5); }
-.pf__box--invalid { border-color: var(--bs-form-invalid-border-color, #dc3545); }
-.pf__unit { font-size: 16px; font-weight: 500; color: var(--text-secondary, #5f6373); }
-.pf__input { flex: 1; min-width: 0; padding: 0; border: 0; outline: none; background: transparent; font-size: 18px; font-weight: 600; color: var(--text-primary, #1d1d24); }
+.pf__box:focus-within { border-color: var(--text-primary); box-shadow: 0 0 0 4px var(--accent-fill-2); }
+.pf__box--invalid { border-color: var(--danger); }
+.pf__unit { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
+.pf__input { flex: 1; min-width: 0; padding: 0; border: 0; outline: none; background: transparent; font-size: 18px; font-weight: 600; color: var(--text-primary); }
 /* Five lease bands on one row from a small laptop up; two rows on phones. */
 @media (max-width: 575.98px) {
   .choice-row--five { flex-wrap: wrap; }
@@ -509,12 +509,12 @@ const LIVING = [
 .choice { position: relative; flex: 1 1 0; min-width: 0; margin: 0; } /* three across at every width */
 .choice__face {
   display: flex; align-items: center; justify-content: center; height: 54px; padding: 0 12px; cursor: pointer;
-  border-radius: 14px; border: 1.5px solid #dfe2ea; background: #ffffff; font-size: 16px; font-weight: 500; white-space: nowrap;
+  border-radius: 14px; border: 1.5px solid var(--border); background: var(--bg-surface); font-size: 16px; font-weight: 500; white-space: nowrap;
 }
-.choice:hover .choice__face { border-color: #b9bfcd; }
-.choice input:checked + .choice__face { background: #fdf0f6; border-color: #1d1d24; }
-.choice input:disabled + .choice__face { background: #f7f8fa; color: #6b7080; border-style: dashed; cursor: not-allowed; }
-.choice input:focus-visible + .choice__face { outline: 2px solid #1d1d24; outline-offset: 3px; }
+.choice:hover .choice__face { border-color: var(--border-strong); }
+.choice input:checked + .choice__face { background: var(--accent-tint); border-color: var(--text-primary); }
+.choice input:disabled + .choice__face { background: var(--surface-disabled); color: var(--text-secondary); border-style: dashed; cursor: not-allowed; }
+.choice input:focus-visible + .choice__face { outline: 2px solid var(--text-primary); outline-offset: 3px; }
 @media (max-width: 767.98px) {
   .est__more summary, .launches { margin-left: 0; }
 }

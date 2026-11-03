@@ -73,7 +73,7 @@ async function load() {
   try {
     result.value = await compare(store);
   } catch (e) {
-    error.value = e?.response?.data?.error ?? 'We could not work out your numbers just now.';
+    error.value = e?.response?.data?.error?.message ?? 'We could not work out your numbers just now.';
   } finally {
     loading.value = false;
   }
@@ -131,6 +131,7 @@ onMounted(() => {
       </div>
       <div class="preview__head">
         <h1 class="preview__title">How BTO and resale compare on what matters to you</h1>
+        <p v-if="result?.mock" class="small text-secondary mb-0" data-cy="preview-mock-notice">Showing mock data.</p>
         <div class="preview__answers">
           <span class="preview__answers-label">From your answers:</span>
           <span v-for="a in answers" :key="a" class="preview__chip">{{ a }}</span>
@@ -188,51 +189,51 @@ onMounted(() => {
   display: flex; flex-direction: column; gap: 28px;
 }
 .preview__title { margin: 0; font-size: clamp(26px, 2.8vw, 36px); font-weight: 500; letter-spacing: -0.025em; line-height: 1.15; }
-.preview__lead { margin: 0; font-size: 15px; color: var(--text-secondary, #5f6373); }
+.preview__lead { margin: 0; font-size: 15px; color: var(--text-secondary); }
 .preview__head { display: flex; flex-direction: column; gap: 16px; }
 .preview__top { display: flex; }
 .preview__iconbtn {
   width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;
-  background: #f3f3f5; color: var(--text-primary, #1d1d24);
+  background: var(--bg-page); color: var(--text-primary);
 }
-.preview__iconbtn:hover { background: var(--color-periwinkle, #e9ecf6); }
+.preview__iconbtn:hover { background: var(--accent-fill-3); }
 .preview__answers { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.preview__answers-label { font-size: 14px; color: var(--text-secondary, #5f6373); margin-right: 4px; }
-.preview__chip { padding: 8px 14px; border-radius: 999px; background: #f3f3f5; font-size: 14px; font-weight: 500; }
+.preview__answers-label { font-size: 14px; color: var(--text-secondary); margin-right: 4px; }
+.preview__chip { padding: 8px 14px; border-radius: 999px; background: var(--bg-page); font-size: 14px; font-weight: 500; }
 .preview__edit { padding: 0 4px; font-size: 14px; font-weight: 600; }
 
 /* Screen 4 */
 .preview__working { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: center; }
 @media (min-width: 992px) { .preview__working { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 480px; } }
 .preview__working-text { display: flex; flex-direction: column; gap: 16px; }
-.preview__art { padding: 24px; border-radius: 28px; background: var(--color-periwinkle, #e9ecf6); }
-.preview__bar { position: relative; height: 8px; border-radius: 4px; background: var(--color-periwinkle, #e9ecf6); overflow: hidden; max-width: 420px; }
-.preview__bar span { position: absolute; inset: 0 auto 0 0; width: 40%; border-radius: 4px; background: var(--text-primary, #1d1d24); animation: slide 1.4s ease-in-out infinite; }
+.preview__art { padding: 24px; border-radius: 28px; background: var(--accent-fill-3); }
+.preview__bar { position: relative; height: 8px; border-radius: 4px; background: var(--accent-fill-3); overflow: hidden; max-width: 420px; }
+.preview__bar span { position: absolute; inset: 0 auto 0 0; width: 40%; border-radius: 4px; background: var(--text-primary); animation: slide 1.4s ease-in-out infinite; }
 @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 
 /* Screen 5: one card per pick, BTO in indigo and resale in rose as on the board. */
 .preview__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
 .fit-card {
   display: flex; flex-direction: column; gap: 14px; padding: 20px 22px 22px;
-  border-radius: 22px; border: 1.5px solid #e6e8ef; background: var(--color-white, #ffffff);
+  border-radius: 22px; border: 1.5px solid var(--border); background: var(--bg-surface);
 }
 .fit-card__hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .fit-card__title { margin: 0; font-size: 18px; font-weight: 600; }
-.fit-card__verdict { padding: 5px 12px; border-radius: 999px; background: var(--color-blush, #fbd5e5); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.fit-card__verdict { padding: 5px 12px; border-radius: 999px; background: var(--accent-fill-2); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .fit-card__sides { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .fit-card__side { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 16px; }
-.fit-card__side--bto { background: #f3f5fb; }
-.fit-card__side--resale { background: #fdf4f8; }
+.fit-card__side--bto { background: var(--indigo-tint); }
+.fit-card__side--resale { background: var(--accent-tint); }
 .fit-card__path { font-size: 13px; font-weight: 600; }
-.fit-card__side--bto .fit-card__path { color: #3d4a8f; }
-.fit-card__side--resale .fit-card__path { color: #b23a72; }
+.fit-card__side--bto .fit-card__path { color: var(--indigo); }
+.fit-card__side--resale .fit-card__path { color: var(--color-berry); }
 .fit-card__value { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
-.fit-card__note { font-size: 13px; color: var(--text-secondary, #5f6373); }
-.fit-card__why { margin: 0; font-size: 14px; color: var(--text-secondary, #5f6373); line-height: 1.45; }
+.fit-card__note { font-size: 13px; color: var(--text-secondary); }
+.fit-card__why { margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.45; }
 
 .preview__cta {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px;
-  padding: 20px 24px; border-radius: 28px; background: #fdf0f6;
+  padding: 20px 24px; border-radius: 28px; background: var(--accent-tint);
 }
 .preview__cta p { margin: 0; }
 .preview__cta-title { font-size: 18px; font-weight: 600; }

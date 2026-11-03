@@ -68,7 +68,7 @@ describe('buyers on the About you step', () => {
     next();
     onScreen('buyers');
     cy.get('[data-cy=plan-step-art]').should('not.exist');
-    // Keyboard order: You (citizenship, switch), Your partner (citizenship, switch), Why we ask, Next. Each radio
+    // Keyboard order: You (citizenship, switch), The other buyer (citizenship, switch), Why we ask, Next. Each radio
     // group is one tab stop (only its checked radio), and arrow keys move within it, as native radios do.
     cy.get('[data-cy=plan-form]').then(($form) => {
       const stops = [...$form[0].querySelectorAll('input, button')]
@@ -110,6 +110,20 @@ describe('buyers on the About you step', () => {
       expect($face[0].scrollWidth).to.be.at.most($face[0].clientWidth + 1);
       expect($face.height()).to.be.lessThan(60); // one line
     });
+  });
+
+  it('keeps the cents in money amounts (45,123.67 stays 45,123.67, not 4,512,367), and whole numbers in ages', () => {
+    cy.get('[data-cy=situation-buyer-1-age-input]').clear().type('30.5');
+    cy.get('[data-cy=situation-buyer-1-age-input]').blur().should('have.value', '30'); // the .5 goes, not joined on
+    fillAges();
+    next();
+    next(); // who is buying: the defaults
+    cy.get('[data-cy=situation-buyer-1-income-input]').clear().type('5,123.67');
+    cy.get('[data-cy=situation-buyer-1-income-input]').should('have.value', '5,123.67');
+    fillIncomes();
+    next();
+    cy.get('[data-cy=situation-buyer-1-cpf-input]').clear().type('45,123.67');
+    cy.get('[data-cy=situation-buyer-1-cpf-input]').should('have.value', '45,123.67');
   });
 
   it('accepts a citizen with a Permanent Resident', () => {
@@ -184,7 +198,7 @@ describe('buyers on the About you step', () => {
   it('checks an age once the box is left, then as the user types, and Enter acts as Next', () => {
     cy.get('[data-cy=situation-buyer-1-age-input]').type('2');
     cy.get('[data-cy=situation-buyer-1-age-error]').should('not.exist'); // not mid-typing
-    cy.get('[data-cy=situation-buyer-2-age-input]').focus(); // Tab order: You, then Your partner
+    cy.get('[data-cy=situation-buyer-2-age-input]').focus(); // Tab order: You, then The other buyer
     cy.get('[data-cy=situation-buyer-1-age-error]').should('contain', 'Enter an age between 21 and 99.');
     cy.get('[data-cy=situation-buyer-1-age-input]').type('7'); // now 27
     cy.get('[data-cy=situation-buyer-1-age-error]').should('not.exist');

@@ -59,6 +59,11 @@ Separate pages: Sources (`/sources`, always in the nav), My scenarios (`/scenari
 | Pink | `$color-pink` | `#F5A3C7` | Accent fill, and resale in charts |
 | Pink deep | `$color-pink-deep` / `--color-pink-deep` | `#F08AB6` | Edge of the accent disc |
 | Berry | `$color-berry` / `--color-berry` | `#B23A78` | The only pink allowed as text or a thin mark |
+| Accent tint | `$accent-tint` / `--accent-tint` | `#FDF0F6` | A picked tile or option (with an ink border) |
+| Indigo | `$indigo` / `--indigo` | `#3D4A8F` | BTO label and icon on the indigo tints |
+| Indigo tint | `$indigo-tint` / `--indigo-tint` | `#F3F5FB` | BTO side of a comparison panel |
+| Indigo tint strong | `$indigo-tint-strong` / `--indigo-tint-strong` | `#E3E6F4` | Icon well on the indigo tint |
+| Border strong | `$border-strong` / `--border-strong` | `#B9BFCD` | Hover border on tiles; switch track |
 | Ink | `$color-ink` | `#1D1D24` | Primary text, primary buttons, BTO in charts |
 | Slate | `$color-slate` | `#5F6373` | Secondary text and labels |
 

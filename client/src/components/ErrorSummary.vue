@@ -48,7 +48,7 @@ defineExpose({ focus: () => root.value?.focus() });
 .error-summary {
   padding: var(--space-3) var(--space-4);
   border-radius: 16px;
-  background: #fdf0f6;
+  background: var(--accent-tint);
   color: var(--text-primary);
 }
 .error-summary:focus { outline: none; }

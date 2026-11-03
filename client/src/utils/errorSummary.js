@@ -1,5 +1,5 @@
 // The plan's error summary: each validation error (planValidation.js, keyed like 'applicants.0.age' or 'town')
-// as a line that names its field ("Your partner's age: Enter an age.") and the field to move focus to.
+// as a line that names its field ("The other buyer's age: Enter an age.") and the field to move focus to.
 // Pure, so it is unit-tested; ErrorSummary.vue renders it.
 
 const BUYER_FIELDS = {
@@ -35,8 +35,8 @@ export function summariseErrors(step, errors) {
     if (buyer) {
       const n = Number(buyer[1]) + 1;
       const field = BUYER_FIELDS[buyer[2]];
-      // Buyer 1 is the person filling in the plan, buyer 2 their partner, as the About you questions say.
-      const whose = n === 1 ? 'Your' : "Your partner's";
+      // Buyer 1 is the person filling in the plan, buyer 2 the other buyer, as the About you questions say.
+      const whose = n === 1 ? 'Your' : "The other buyer's";
       return {
         key,
         label: `${whose} ${field?.label ?? buyer[2]}`,
