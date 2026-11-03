@@ -15,6 +15,7 @@ describe('dashboard sections', () => {
     ['dashboard-verdict', 'dashboard-cash-card', 'dashboard-side-by-side', 'dashboard-paid', 'dashboard-whatif'].forEach((cy) => {
       cy.get(`[data-cy=${cy}]`).should('be.visible');
     });
+    cy.get('[data-cy=dashboard-more-detail]').should('not.have.attr', 'open');
     ['overview', 'cashflow', 'grants', 'costs', 'rpi', 'map', 'size'].forEach((key) => {
       cy.get(`[data-cy=dashboard-section-${key}]`).should('not.have.attr', 'open');
     });
@@ -22,6 +23,7 @@ describe('dashboard sections', () => {
 
   it('opens and closes a section from its header', () => {
     openDashboard();
+    cy.get('[data-cy=dashboard-more-detail] > summary').click();
     cy.get('[data-cy=dashboard-section-costs] summary').click();
     cy.get('[data-cy=dashboard-section-costs]').should('have.attr', 'open');
     cy.get('[data-cy=dashboard-costs]').should('be.visible');
@@ -31,6 +33,7 @@ describe('dashboard sections', () => {
 
   it('expands and collapses every section at once', () => {
     openDashboard();
+    cy.get('[data-cy=dashboard-more-detail] > summary').click();
     cy.get('[data-cy=dashboard-sections-toggle]').should('contain', 'Expand all').click();
     ['overview', 'cashflow', 'grants', 'costs', 'rpi', 'map', 'size'].forEach((key) => {
       cy.get(`[data-cy=dashboard-section-${key}]`).should('have.attr', 'open');
@@ -87,6 +90,7 @@ describe('dashboard sections', () => {
 
   it('the overview grants link opens the grants section', () => {
     openDashboard();
+    cy.get('[data-cy=dashboard-more-detail] > summary').click();
     cy.get('[data-cy=dashboard-section-overview] summary').click();
     cy.get('[data-cy=dashboard-grants-jump]').click();
     cy.get('[data-cy=dashboard-section-grants]').should('have.attr', 'open');

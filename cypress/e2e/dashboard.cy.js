@@ -45,13 +45,15 @@ describe('financial dashboard', () => {
 
   it('draws how the net position adds up, and lists the costs', () => {
     openDashboard();
-    cy.get('[data-cy=dashboard-section-cashflow] summary').click(); // under "More detail", closed at first
+    cy.get('[data-cy=dashboard-more-detail] > summary').click(); // the sections sit under "More detail", closed at first
+    cy.get('[data-cy=dashboard-section-cashflow] summary').click();
     cy.get('[data-cy=dashboard-cashflow] canvas').should('be.visible');
     cy.get('[data-cy=dashboard-costs], [data-cy=dashboard-costs-empty]').should('exist');
   });
 
   it('puts the two flats side by side: size, price and price per m²', () => {
     openDashboard();
+    cy.get('[data-cy=dashboard-more-detail] > summary').click();
     cy.get('[data-cy=dashboard-section-size] summary').click();
     cy.get('[data-cy=dashboard-size-price]').should('be.visible');
     ['bto', 'resale'].forEach((p) => {

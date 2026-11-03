@@ -226,8 +226,11 @@ function toggleAll() {
   const next = !allOpen.value;
   Object.keys(sections).forEach((key) => { sections[key] = next; });
 }
+// "More detail" folds every section into one row, closed at first.
+const moreOpen = ref(false);
 // The grants link in the overview: open the section, then bring its heading into view and focus it.
 function showGrants() {
+  moreOpen.value = true;
   sections.grants = true;
   nextTick(() => {
     const heading = document.getElementById('grants-heading');
@@ -321,11 +324,18 @@ const warningText = (w) =>
               :cpf-oa="cpfOa"
             />
 
-            <div class="d-flex align-items-baseline justify-content-between gap-3 mt-2">
-              <div>
-                <h2 class="h4 mb-0">More detail</h2>
-                <p class="text-secondary small mb-0">Open any section for the numbers behind the answer.</p>
-              </div>
+            <!-- Everything else, one click away: the sections hold the grant checks with sources, the costs, the
+                 price history (D35), the PHG map (D15) and the flat sizes, so they stay, folded into one row. -->
+            <details class="dash-more" :open="moreOpen" data-cy="dashboard-more-detail" @toggle="moreOpen = $event.target.open">
+              <summary class="dash-more__summary">
+                <span>
+                  <strong>More detail</strong>
+                  <small>Grant checks with sources, every cost, how the net position adds up, price history, the PHG map, flat sizes and notes before you decide</small>
+                </span>
+                <svg class="dash-more__chevron" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </summary>
+              <div class="dash-more__body">
+            <div class="d-flex justify-content-end">
               <button type="button" class="btn btn-link p-0" data-cy="dashboard-sections-toggle" @click="toggleAll">
                 {{ allOpen ? 'Collapse all' : 'Expand all' }}
               </button>
@@ -439,6 +449,8 @@ const warningText = (w) =>
                 </ul>
               </div>
             </section>
+              </div>
+            </details>
           </div>
 
           <aside class="dash-main__side">
@@ -478,17 +490,12 @@ const warningText = (w) =>
 </template>
 
 <style scoped>
-/* On large screens the What-if panel follows you down the page, so it is never stranded beside empty space.
-   It scrolls inside itself if the screen is shorter than the panel. */
+/* On large screens the What-if panel stays in view as you scroll, as in the mock-up. The right column stretches to
+   the full height of the page's content so the panel has room to stick in; the panel itself never scrolls inside. */
+.dash-main__side { align-self: stretch; }
 @media (min-width: 992px) {
-  .dash-sticky {
-    position: sticky;
-    top: 5rem;
-    max-height: calc(100vh - 6rem);
-    overflow-y: auto;
-    padding: 4px;
-    margin: -4px;
-  }
+  .dash-sticky { position: sticky; top: var(--space-5); }
+  .dash-sticky :deep(.dash-whatif) { position: static; }
 }
 /* Version E's colours: BTO indigo and resale berry for text, with pale tints behind (all pass 4.5:1). */
 .dash-e {
@@ -504,6 +511,16 @@ const warningText = (w) =>
 .dash-main__content { display: flex; flex-direction: column; gap: var(--space-5); min-width: 0; }
 .dash-main :deep(.dash-panel) { display: flex; flex-direction: column; gap: var(--space-4); padding: clamp(20px, 3vw, 36px); border-radius: var(--radius-lg); background: var(--bg-surface); box-shadow: var(--shadow-sm); }
 .dash-main :deep(.dash-panel__title) { margin: 0; font-family: var(--font-heading); font-size: 1.5rem; font-weight: 600; }
+.dash-more { border-radius: var(--radius-lg); background: var(--bg-surface); box-shadow: var(--shadow-sm); }
+.dash-more__summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-5) clamp(20px, 3vw, 36px); cursor: pointer; list-style: none; }
+.dash-more__summary::-webkit-details-marker { display: none; }
+.dash-more__summary strong { display: block; font-family: var(--font-heading); font-size: 1.25rem; font-weight: 600; }
+.dash-more__summary small { display: block; color: var(--text-secondary); font-size: 0.875rem; }
+.dash-more__summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: var(--radius-lg); }
+.dash-more__chevron { flex: none; transition: transform var(--duration-base) var(--ease-out); }
+.dash-more[open] .dash-more__chevron { transform: rotate(180deg); }
+.dash-more__body { display: flex; flex-direction: column; gap: var(--space-4); padding: 0 clamp(12px, 2vw, 20px) clamp(12px, 2vw, 20px); }
+@media (prefers-reduced-motion: reduce) { .dash-more__chevron { transition: none; } }
 .dash-since { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-5); padding: var(--space-4) var(--space-4); border-radius: var(--radius-sm); background: var(--bg-page); }
 .dash-since--bto { background: var(--dash-bto-tint); }
 .dash-since--resale { background: var(--dash-resale-tint); }

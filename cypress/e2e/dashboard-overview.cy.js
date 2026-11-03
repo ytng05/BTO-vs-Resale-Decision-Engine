@@ -8,6 +8,7 @@ function openDashboard() {
   cy.get('[data-cy=results-dashboard-button]').click();
   cy.location('pathname').should('eq', '/dashboard');
   cy.get('[data-cy=dashboard-headline]').should('be.visible');
+  cy.get('[data-cy=dashboard-more-detail] > summary').click();
   cy.get('[data-cy=dashboard-section-overview] summary').click();
 }
 
