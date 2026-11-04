@@ -73,7 +73,7 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=scenarios-empty]').should('be.visible');
   });
 
-  it('updates the same scenario after its inputs change, instead of saving a copy', () => {
+    it('updates the same scenario after its inputs change, instead of saving a copy', () => {
     registerFreshUser();
     completePlan();
     cy.get('[data-cy=results-save-button]').click();
@@ -92,6 +92,24 @@ describe('saved scenarios', () => {
 
     cy.visit('/scenarios');
     cy.get('[data-cy=scenarios-list] li').should('have.length', 1).and('contain', 'First plan');
+  });
+
+  it('renames an automatically named scenario to the new towns on Update', () => {
+    registerFreshUser();
+    completePlan();
+    cy.get('[data-cy=results-save-button]').click();
+    cy.get('[data-cy=results-save-submit]').click(); // keeps the suggested "Tampines BTO vs Bedok resale"
+    cy.get('[data-cy=results-save-success]').should('contain', 'Tampines BTO vs Bedok resale');
+
+    cy.get('[data-cy=results-edit-button]').click();
+    fillPath('pathb', { town: 'TAMPINES' });
+    next();
+    seeResults();
+    cy.get('[data-cy=results-update-button]').click();
+    cy.get('[data-cy=results-save-success]').should('contain', 'Tampines BTO vs Tampines resale');
+
+    cy.visit('/scenarios');
+    cy.get('[data-cy=scenarios-list] li').should('have.length', 1).and('contain', 'Tampines BTO vs Tampines resale');
   });
 
   it('offers each About you box its saved answers, and fills only that box', () => {

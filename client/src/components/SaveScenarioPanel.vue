@@ -44,10 +44,32 @@ const nameError = computed(() => {
 });
 const shownError = computed(() => (attempted.value ? nameError.value : null));
 
-// "Tampines BTO vs Bedok resale" as a starting name; the user can type over it.
+// "Tampines BTO vs Bedok resale": the automatic name for a BTO and a resale choice.
+function townName(town) {
+  if (!town) {
+    return '';
+  }
+  return toTitleCase(town);
+}
+
+function nameFor(choiceA, choiceB) {
+  return (townName(choiceA.town) + ' BTO vs ' + townName(choiceB.town) + ' resale').replace(/\s+/g, ' ').trim();
+}
+
+// The starting name in the Save box; the user can type over it.
 function suggestedName() {
-  const town = (t) => (t ? toTitleCase(t) : '');
-  return `${town(store.choiceA.town)} BTO vs ${town(store.choiceB.town)} resale`.replace(/\s+/g, ' ').trim();
+  return nameFor(store.choiceA, store.choiceB);
+}
+
+// The name to update under. An automatic name ("<town> BTO vs <town> resale", whichever towns, so one left out of
+// date by an earlier update also catches up) follows the new towns; a name the user typed themselves is kept.
+const AUTOMATIC_NAME = /^(.+ )?BTO vs (.+ )?resale$/;
+
+function updatedName() {
+  if (AUTOMATIC_NAME.test(store.savedName)) {
+    return nameFor(store.choiceA, store.choiceB);
+  }
+  return store.savedName;
 }
 
 async function start() {
@@ -94,13 +116,14 @@ async function save() {
   }
 }
 
-// Saves the changed inputs over the scenario they came from (same name, same id).
+// Saves the changed inputs over the scenario they came from (same id). An automatic name follows the new towns.
 async function update() {
   saving.value = true;
   error.value = null;
   try {
-    await updateScenario(store.savedId, store.savePayload(store.savedName, props.result));
-    store.markSaved(store.savedId, store.savedName);
+    const newName = updatedName();
+    await updateScenario(store.savedId, store.savePayload(newName, props.result));
+    store.markSaved(store.savedId, newName);
   } catch (e) {
     if (e && e.response && e.response.status === 404) {
       // Deleted elsewhere since: save it as a new scenario instead.
