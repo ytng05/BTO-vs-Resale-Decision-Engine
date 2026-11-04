@@ -96,6 +96,8 @@ export function keyRows(outcomeA, outcomeB, horizonYear) {
   const grantsB = outcomeB?.totalGrantsCents;
   const cashA = outcomeA?.cashRequiredAtPurchaseCents;
   const cashB = outcomeB?.cashRequiredAtPurchaseCents;
+  const spentA = outcomeA?.housingCashSpentCents;
+  const spentB = outcomeB?.housingCashSpentCents;
   const mA = monthIndex(keysA);
   const mB = monthIndex(keysB);
   const keyMonths = mA !== null && mB !== null ? Math.abs(mA - mB) : 0;
@@ -105,6 +107,7 @@ export function keyRows(outcomeA, outcomeB, horizonYear) {
   const positionBetter = higher(posA, posB);
   const grantsHigher = higher(grantsA, grantsB); // for the difference text only; never a "Better" tag
   const cashBetter = lower(cashA, cashB);
+  const spentBetter = lower(spentA, spentB);
 
   return [
     {
@@ -114,16 +117,23 @@ export function keyRows(outcomeA, outcomeB, horizonYear) {
       ...moneyDiff(posA, posB, positionBetter, 'more'),
     },
     {
-      id: 'grants',
-      label: 'Grants you get',
-      a: money(grantsA), b: money(grantsB), better: null, raw: [grantsA, grantsB],
-      ...moneyDiff(grantsA, grantsB, grantsHigher, 'more'),
-    },
-    {
       id: 'cash',
-      label: 'Cash needed up front',
+      label: 'Cash needed at purchase',
       a: money(cashA), b: money(cashB), better: cashBetter, raw: [cashA, cashB],
       ...moneyDiff(cashA, cashB, cashBetter, 'less'),
+    },
+    {
+      id: 'spent',
+      label: horizonYear ? `Cash spent on housing by ${horizonYear}` : 'Cash spent on housing',
+      note: 'Rent, renovation, fees and loan payments',
+      a: money(spentA), b: money(spentB), better: spentBetter, raw: [spentA, spentB],
+      ...moneyDiff(spentA, spentB, spentBetter, 'less'),
+    },
+    {
+      id: 'grants',
+      label: 'Grants you may get',
+      a: money(grantsA), b: money(grantsB), better: null, raw: [grantsA, grantsB],
+      ...moneyDiff(grantsA, grantsB, grantsHigher, 'more'),
     },
     {
       id: 'keys',
