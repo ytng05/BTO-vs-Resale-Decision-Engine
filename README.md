@@ -79,6 +79,7 @@ npm run test:e2e                                  # terminal 2  (or npm run cy:o
 | `smoke.cy.js` | home page, hero scene, step validation, full journey, register → save → reload (needs a database) |
 | `home.cy.js` | the two ways in, See an example, the four steps, costs people forget, FAQ, reduced motion, phone width |
 | `login.cy.js` | Start planning → login page: the three choices, the create-account and log-in forms, Back, planning without an account, and going on to the plan |
+| `scenarios-filter.cy.js` | My scenarios filter bar: search, town / flat type / path-ahead dropdowns, price range, count, Clear filters, no matches (stubbed list) |
 | `buyers.cy.js` | the About you step: one question per screen, two buyers, PR + PR blocked, per-buyer validation, money and age input, answers kept when going back |
 | `error-summary.cy.js` | the error summary on Your BTO and Resale flat: every problem listed, each linking to its field |
 | `preview.cy.js` | the check-your-answers page between the plan and Results; Change and Edit go back with answers kept |
