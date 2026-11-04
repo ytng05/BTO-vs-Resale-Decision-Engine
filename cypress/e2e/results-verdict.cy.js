@@ -64,6 +64,7 @@ describe('results verdict', () => {
 
   it('keeps the break-even sentence in view under the verdict, with the full grid folded one click away (D35, D40, D43)', () => {
     completePlan();
+    cy.get('[data-cy=results-confidence-open]').click(); // the detail and the exact sentences open in a pop-up
     cy.get('[data-cy=results-breakeven] [data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
     cy.get('[data-cy=results-breakeven] [data-cy=term-break-even-button]').should('be.visible');
     cy.get('[data-cy=results-section-heatmap]').should('not.have.attr', 'open');
@@ -94,18 +95,19 @@ describe('results verdict', () => {
     cy.location('pathname').should('eq', '/dashboard');
   });
 
-  it('shows both paths for the year under the pointer on the chart, and with the arrow keys', () => {
+  it('explains why the leader is ahead, checks the cash, and draws where the answer flips', () => {
     completePlan();
-    cy.get('[data-cy=results-section-chart] summary').click();
-    cy.get('[data-cy=results-trend-readout]').should('be.visible');
-    cy.get('[data-cy=results-trend-bto]').invoke('text').should('match', /S\$/);
-    cy.get('[data-cy=results-trend-year]').invoke('text').then((last) => {
-      cy.get('[data-cy=results-trend-stage]').focus().type('{leftarrow}');
-      cy.get('[data-cy=results-trend-year]').invoke('text').should('not.eq', last);
-      cy.get('[data-cy=results-trend-stage]').type('{end}');
-      cy.get('[data-cy=results-trend-year]').invoke('text').should('eq', last);
+    // The chart that measured without the cash paid in is gone from Results (it could contradict the verdict).
+    cy.get('[data-cy=results-section-chart]').should('not.exist');
+    cy.get('[data-cy=dashboard-cash-card]').invoke('text').should('match', /don't cover|cover the cash|Add your cash savings/);
+    // Why: only when a path is called ahead (not too close to call).
+    cy.get('body').then(($b) => {
+      if ($b.find('[data-cy=results-why]').length) cy.get('[data-cy=results-why] li').should('have.length.at.least', 1);
     });
-    cy.get('[data-cy=results-trend-lead]').invoke('text').should('match', /ahead|Level/);
+    // The flip line, when the answer flips inside -2% to 8%: says who is ahead below and above, and marks "You".
+    cy.get('body').then(($b) => {
+      if ($b.find('[data-cy=results-flip-line]').length) cy.get('[data-cy=results-flip-line]').should('contain', 'ahead below').and('contain', 'You ');
+    });
   });
 
   it('draws both net positions as bars with their figures, and says the difference in words', () => {

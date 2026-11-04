@@ -3,7 +3,8 @@
 // when either path is short, green when both are covered. "Try a later year" moves focus to the What-if panel.
 // Everything is written out (no hover tooltips): how much each path's cash is covered, the exact amount short (a
 // shortfall is never rounded), and the stated assumption that no more is saved before buying (D19).
-// data-cy: CONVENTIONS "Dashboard".
+// data-cy: CONVENTIONS "Dashboard". Also shown on Results (under the verdict), where the --dash-* colours aren't set,
+// so each falls back to its path token.
 import { computed } from 'vue';
 import { cashCard } from '../../utils/dashboardSummary.js';
 import { formatMoney } from '../../utils/format.js';
@@ -77,8 +78,8 @@ const assumption = computed(() => {
 .dash-cash__title { margin: 0; font-size: 1.0625rem; font-weight: 600; }
 .dash-cash__rows { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); }
 .dash-cash__row { flex: 1 1 240px; display: grid; grid-template-columns: 3.75rem minmax(60px, 1fr) auto; gap: var(--space-3); align-items: center; font-size: 0.9375rem; }
-.dash-cash__name--bto { color: var(--dash-bto); }
-.dash-cash__name--resale { color: var(--dash-resale); }
+.dash-cash__name--bto { color: var(--dash-bto, var(--path-bto)); }
+.dash-cash__name--resale { color: var(--dash-resale, var(--path-resale)); }
 .dash-cash__track { display: block; height: 8px; border-radius: var(--radius-pill); background: rgba(29, 29, 36, 0.08); overflow: hidden; }
 .dash-cash__fill { display: block; height: 100%; border-radius: var(--radius-pill); transform-origin: left; animation: cash-grow 0.9s 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 .dash-cash { animation: cash-in 0.6s 0.25s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
@@ -87,8 +88,8 @@ const assumption = computed(() => {
 @keyframes cash-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes cash-nudge { 0%, 100% { transform: none; } 30% { transform: scale(1.18); } 60% { transform: rotate(-8deg); } }
 @media (prefers-reduced-motion: reduce) { .dash-cash, .dash-cash__fill, .dash-cash__icon { animation: none !important; } }
-.dash-cash__fill--bto { background: var(--dash-bto); }
-.dash-cash__fill--resale { background: var(--color-pink-deep); }
+.dash-cash__fill--bto { background: var(--dash-bto, var(--path-bto)); }
+.dash-cash__fill--resale { background: var(--path-resale-bar); }
 .dash-cash__short { font-weight: 500; white-space: nowrap; }
 /* "S$20,000 of S$111,000 covered", under the bar, spanning the row. */
 .dash-cash__of { grid-column: 2 / -1; margin-top: -6px; font-size: 0.8125rem; color: var(--text-secondary); }

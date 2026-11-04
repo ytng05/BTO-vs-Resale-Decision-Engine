@@ -1,4 +1,6 @@
 <script setup>
+// On Results the Dashboard is the one filled (primary) button in the "Next" bar; Save and Log in are outlined
+// (secondary), so the page has one clear next step (5 Nov 2026).
 // Results page: save the current inputs and this result as a named scenario (POST /api/scenarios,
 // docs/API_CONTRACT.md "Saved scenarios"). Once saved, the same inputs cannot be saved again: the button becomes
 // "Saved as …". If the inputs change after that (or after opening a saved scenario), it offers "Update" (PUT, same
@@ -142,7 +144,7 @@ async function update() {
     <RouterLink
       v-if="!auth.isLoggedIn"
       :to="{ name: 'login', query: { redirect: '/results' } }"
-      class="btn btn-primary"
+      class="btn btn-outline-secondary"
       data-cy="results-save-login-link"
     >
       Log in to save this scenario
@@ -162,7 +164,7 @@ async function update() {
           Save as new
         </button>
       </div>
-      <button v-else-if="!open" type="button" class="btn btn-primary" data-cy="results-save-button" @click="start">
+      <button v-else-if="!open" type="button" class="btn btn-outline-secondary" data-cy="results-save-button" @click="start">
         Save scenario
       </button>
 

@@ -491,7 +491,7 @@ a:focus-visible,
     transition: background-color $duration-micro $ease-out, color $duration-micro $ease-out, border-color $duration-micro $ease-out;
   }
 
-  &:hover &__face { background: $surface-disabled; }
+  &:hover &__face { background: $accent-tint; border-color: $accent-fill-1; }
 
   &__input:checked + &__face {
     background: $accent-fill-2;
@@ -603,7 +603,7 @@ a:focus-visible,
     text-decoration: none;
   }
 
-  &__end:hover { background: $surface-disabled; color: $text-primary; }
+  &__end:hover { background: $accent-tint; color: $color-berry; } // pink hover, as everywhere else
 
   &__dot {
     width: 12px;
@@ -638,7 +638,7 @@ a:focus-visible,
     text-decoration: none;
     transition: background-color $duration-micro $ease-out;
 
-    &:hover { background: $surface-disabled; color: $text-primary; text-decoration: none; }
+    &:hover { background: $accent-tint; color: $color-berry; text-decoration: none; }
     &[aria-current="page"] { background: $accent-fill-2; }
   }
 

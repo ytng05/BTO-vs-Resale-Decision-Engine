@@ -12,6 +12,7 @@ describe('results page', () => {
 
   it('shows the break-even sentence under the verdict and the ruleset version', () => {
     completePlan();
+    cy.get('[data-cy=results-confidence-open]').click(); // the detail and the exact sentences open in a pop-up
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
     cy.get('[data-cy=results-verdict-diff]').should('contain', 'in favour of');
     cy.get('[data-cy=results-ruleset-version]').should('contain', 'Ruleset');
@@ -185,6 +186,7 @@ describe('results page', () => {
     seeResults();
     cy.location('pathname').should('eq', '/results');
     // They were asked and chose "Neither", so Results doesn't say the grant was left out.
+    cy.get('[data-cy=results-confidence-open]').click(); // the detail and the exact sentences open in a pop-up
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
     cy.get('[data-cy=results-phg-note]').should('not.exist');
   });
