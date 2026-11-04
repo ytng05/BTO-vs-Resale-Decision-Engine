@@ -73,7 +73,7 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=scenarios-empty]').should('be.visible');
   });
 
-    it('updates the same scenario after its inputs change, instead of saving a copy', () => {
+  it('updates the same scenario after its inputs change, instead of saving a copy', () => {
     registerFreshUser();
     completePlan();
     cy.get('[data-cy=results-save-button]').click();
@@ -112,7 +112,7 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=scenarios-list] li').should('have.length', 1).and('contain', 'Tampines BTO vs Tampines resale');
   });
 
-    it('keeps a typed name on Update, even one shaped like "X BTO vs Y resale"', () => {
+  it('keeps a typed name on Update, even one shaped like "X BTO vs Y resale"', () => {
     registerFreshUser();
     completePlan(); // Tampines BTO vs Bedok resale
     cy.get('[data-cy=results-save-button]').click();
@@ -142,7 +142,7 @@ describe('saved scenarios', () => {
     cy.visit('/plan');
     next();
     cy.wait('@loadSaved', { timeout: 30000 });
-        cy.get('[data-cy=situation-buyer-1-age-input]').focus();
+    cy.get('[data-cy=situation-buyer-1-age-input]').focus();
     cy.get('[data-cy=situation-autofill-option]').should('have.length', 1).and('have.text', '30').click();
     cy.get('[data-cy=situation-autofill]').should('not.exist');
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
@@ -186,7 +186,7 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
   });
 
-    it('shows Saved, not Update, after opening a saved scenario without changing it', () => {
+  it('shows Saved, not Update, after opening a saved scenario without changing it', () => {
     registerFreshUser();
     completePlan();
     cy.get('[data-cy=results-save-button]').click();

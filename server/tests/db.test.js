@@ -137,7 +137,7 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
     expect(list[0]).not.toHaveProperty('result');
   });
 
-    it('updates a scenario in place, only for its owner, and a save without a result removes it', async () => {
+  it('updates a scenario in place, only for its owner, and a save without a result removes it', async () => {
     const owner = await register('henry@example.com');
     const other = await register('iris@example.com');
     const { id } = (await request(app).post('/api/scenarios').set(auth(owner)).send(scenario)).body.scenario;

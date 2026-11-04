@@ -319,7 +319,7 @@ onBeforeUnmount(() => clearTimeout(timer));
     <!-- 2 · What do you each earn a month? The total, then the early EHG estimate. -->
     <template v-else-if="part === 2">
       <div class="pair">
-                <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`" @focusout="onFieldFocusOut">
+        <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`" @focusout="onFieldFocusOut">
           <label :for="`buyer-${i}-income`" class="big-field__label">{{ WHO[i] }}</label>
           <div class="big-box">
             <span class="big-box__unit" aria-hidden="true">S$</span>
@@ -389,7 +389,7 @@ onBeforeUnmount(() => clearTimeout(timer));
       <fieldset class="choice-set">
         <legend class="big-field__group">CPF Ordinary Account</legend>
         <div class="pair">
-                    <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`" @focusout="onFieldFocusOut">
+          <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`" @focusout="onFieldFocusOut">
             <label :for="`buyer-${i}-cpf`" class="big-field__label">{{ WHO[i] }}</label>
             <div class="big-box">
               <span class="big-box__unit" aria-hidden="true">S$</span>

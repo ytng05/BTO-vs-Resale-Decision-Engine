@@ -23,7 +23,7 @@ function onKeydown(event) {
 </script>
 
 <template>
-    <ul class="autofill" role="listbox" aria-label="Answers from your saved scenarios" data-cy="situation-autofill" @keydown="onKeydown">
+  <ul class="autofill" role="listbox" aria-label="Answers from your saved scenarios" data-cy="situation-autofill" @keydown="onKeydown">
     <li v-for="option in options" :key="option.value" role="none">
       <button
         type="button"
@@ -77,4 +77,3 @@ function onKeydown(event) {
   outline: none;
 }
 </style>
-
