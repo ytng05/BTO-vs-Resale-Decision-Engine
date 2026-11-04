@@ -10,10 +10,10 @@ describe('smoke', () => {
     cy.get('[data-cy=disclaimer-banner]').should('be.visible');
   });
 
-  it('shows the hero scene on the home page, with the point where the two paths cross', () => {
+  it('shows the hero illustration on the home page, with the BTO and resale blocks labelled', () => {
     cy.visit('/');
     cy.get('[data-cy=hero-scene]').should('be.visible').and('have.attr', 'aria-label');
-    cy.get('[data-cy=hero-scene-meet]').should('exist');
+    cy.get('[data-cy=hero-scene]').should('contain', 'BTO').and('contain', 'Resale');
   });
 
   it('blocks the stepper until the current step is valid', () => {
