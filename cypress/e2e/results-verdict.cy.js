@@ -62,8 +62,10 @@ describe('results verdict', () => {
     cy.get('[data-cy=results-patha-card]').should('contain', 'Net position').and('contain', 'what this path leaves you with, after costs');
   });
 
-  it('opens the full heatmap with the break-even sentence and the term explained (D35, D40)', () => {
+  it('folds the heatmap, which opens with the break-even sentence and the term explained (D35, D40)', () => {
     completePlan();
+    cy.get('[data-cy=results-section-heatmap]').should('not.have.attr', 'open');
+    cy.get('[data-cy=results-section-heatmap] > summary').click();
     cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open');
     cy.get('[data-cy=results-section-heatmap] [data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
     cy.get('[data-cy=results-section-heatmap] [data-cy=term-break-even-button]').should('be.visible');

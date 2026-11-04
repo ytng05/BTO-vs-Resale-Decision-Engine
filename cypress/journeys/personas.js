@@ -119,7 +119,7 @@ export function fillPlan(p) {
 export function waitForResults() {
   cy.location('pathname').should('eq', '/results');
   cy.get('[data-cy=results-loading]', { timeout: 60000 }).should('not.exist');
-  cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
+  cy.get('[data-cy=results-breakeven-sentence]').should('exist');
   cy.get('[data-cy=results-mock-notice]').should('not.exist'); // journeys need the live engine
 }
 

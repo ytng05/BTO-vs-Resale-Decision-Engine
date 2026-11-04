@@ -68,10 +68,10 @@ const userPoint = computed(() => ({
   incomeGrowth: store.assumptions.annualIncomeGrowth,
 }));
 
-// Progressive disclosure (redesign, 4 Nov 2026): the answer, the two path cards and the heatmap with the break-even
-// sentence (the central idea, D35, D40) are open; the chart over time, when to apply and the official steps open on
-// request (DashboardSection), each with a one-line takeaway.
-const sections = ref({ chart: false, heatmap: true, timing: false, steps: false });
+// Progressive disclosure (redesign, 4 Nov 2026): the answer and the two path cards are open; the chart over time, the
+// heatmap with the break-even sentence (D35, D40; its takeaway line stays in view), when to apply and the official
+// steps open on request (DashboardSection), each with a one-line takeaway.
+const sections = ref({ chart: false, heatmap: false, timing: false, steps: false });
 
 // Open a folded part, then move to its heading with focus, so keyboard and screen-reader users land there too.
 async function openAndGo(id) {

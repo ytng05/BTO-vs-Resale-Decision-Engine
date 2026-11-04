@@ -14,7 +14,7 @@ describe('home', () => {
     cy.visit('/');
     cy.get('[data-cy=home-example-button]').click();
     cy.location('pathname').should('eq', '/results');
-    cy.get('[data-cy=results-breakeven-sentence]', { timeout: 10000 }).should('be.visible');
+    cy.get('[data-cy=results-breakeven-sentence]', { timeout: 10000 }).should('exist');
   });
 
   it('asks before the example replaces a plan the user has started, and keeps it on "Keep my plan"', () => {

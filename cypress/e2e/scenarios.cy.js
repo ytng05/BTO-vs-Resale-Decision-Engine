@@ -44,7 +44,7 @@ describe('saved scenarios', () => {
     // Open refills the plan and recalculates.
     cy.get('[data-cy=scenarios-open-button]').click();
     cy.location('pathname').should('eq', '/results');
-    cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
+    cy.get('[data-cy=results-breakeven-sentence]').should('exist');
     cy.get('[data-cy=results-edit-button]').click();
     cy.get('[data-cy=plan-step-4-panel]').should('be.visible');
     cy.get('[data-cy=pathb-town-select]').should('have.value', 'BEDOK');
