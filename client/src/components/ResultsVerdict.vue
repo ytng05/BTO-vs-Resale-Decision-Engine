@@ -1,9 +1,9 @@
 <script setup>
 // Top of the Results page: who ends ahead, by how much, why the other path still has something going for it, and the
-// few numbers that decide it, side by side. Everything is derived from the two Outcomes by utils/resultsVerdict.js
+// few numbers that decide it (the side-by-side table lives on the Dashboard). Everything is derived from the two Outcomes by utils/resultsVerdict.js
 // (pure, unit-tested); this component only lays it out. Wording follows the guardrails: "net position" (what a
 // path leaves you with, after costs), never "profit". Colour is never the only signal: the leading path is named in
-// words, each bar carries its figure, and the better side of each row is marked with a ✓ (and tinted, and spoken as "(better)" to screen readers).
+// words and each bar carries its figure.
 // data-cy names: docs/CONVENTIONS.md "Results verdict".
 import Term from './Term.vue';
 import { computed, nextTick } from 'vue';
@@ -40,8 +40,6 @@ async function jumpTo(id) {
   el.focus({ preventScroll: true });
 }
 const jumpToSteps = () => jumpTo('next-steps-title');
-// "See why each grant applies": the grant reasons live on the two path cards further down.
-const jumpToGrants = () => jumpTo('path-details-title');
 </script>
 
 <template>
@@ -81,56 +79,6 @@ const jumpToGrants = () => jumpTo('path-details-title');
     <p v-if="gapSentence" class="verdict__exact" data-cy="results-gap-sentence">{{ gapSentence }}</p>
     <p v-if="breakEvenSentence" class="text-secondary mb-4" data-cy="results-breakeven-sentence">{{ breakEvenSentence }}</p>
 
-    <h2 class="h5 mb-1">Side by side</h2>
-    <p class="text-secondary mb-2" data-cy="results-key-hint">The better one in each row is marked ✓. Grants are already in net position, so they are not.</p>
-    <div class="card verdict__table-card mb-3">
-      <div class="table-responsive">
-        <table class="verdict__table" data-cy="results-key-comparison">
-          <caption class="visually-hidden">The numbers that matter, BTO next to resale, and how far apart they are. Net position is what each path leaves you with, after costs. The better side of each row is marked with a tick.</caption>
-          <thead>
-            <tr>
-              <td></td>
-              <th scope="col">
-                <svg class="verdict__ico verdict__ico--bto" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21v-9h7v9M8 15h1M8 18h1M16 21V4M16 4H9M16 4l4 3M9 4v4" /></svg>BTO
-              </th>
-              <th scope="col">
-                <svg class="verdict__ico verdict__ico--resale" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4" /><path d="M10.9 12.1 20 3M17 6l2.5 2.5M14.5 8.5 17 11" /></svg>Resale
-              </th>
-              <th scope="col" class="verdict__diff-col">Difference</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in rows" :key="row.id" :data-cy="`results-key-row-${row.id}`">
-              <th scope="row">
-                <Term v-if="row.id === 'position'" id="net-position">{{ row.label }}</Term>
-                <template v-else>{{ row.label }}</template>
-                <span v-if="row.note" class="verdict__note">{{ row.note }}</span>
-                <!-- On a phone the Difference column is hidden and its words sit under the row label. -->
-                <span class="verdict__diff-sm"><strong v-if="row.diffLead">{{ row.diffLead }}</strong> {{ row.diffRest }}</span>
-              </th>
-              <td :class="{ 'is-better': row.better === 'a' }" :data-cy="`results-key-${row.id}-bto`">
-                <span v-if="row.better === 'a'" class="verdict__check" aria-hidden="true">✓</span>
-                <span class="text-numeric">{{ row.a }}</span>
-                <span v-if="row.better === 'a'" class="visually-hidden"> (better)</span>
-              </td>
-              <td :class="{ 'is-better': row.better === 'b' }" :data-cy="`results-key-${row.id}-resale`">
-                <span v-if="row.better === 'b'" class="verdict__check" aria-hidden="true">✓</span>
-                <span class="text-numeric">{{ row.b }}</span>
-                <span v-if="row.better === 'b'" class="visually-hidden"> (better)</span>
-              </td>
-              <td class="verdict__diff-col verdict__diff-cell" :data-cy="`results-key-${row.id}-diff`">
-                <strong v-if="row.diffLead">{{ row.diffLead }}</strong> {{ row.diffRest }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <!-- Outside the table: inside a row header, screen readers would repeat it for every cell in the row. -->
-    <p class="verdict__grants-line d-print-none">
-      <button type="button" class="verdict__grants-link" data-cy="results-key-grants-link" @click="jumpToGrants">See why each grant applies</button>
-    </p>
-
     <!-- The next step: move on from "which is better" to "what is it made of", then to the official steps. -->
     <div class="verdict__next d-print-none" data-cy="results-verdict-next">
       <p class="verdict__next-text mb-0">
@@ -146,7 +94,7 @@ const jumpToGrants = () => jumpTo('path-details-title');
 </template>
 
 <style scoped>
-.verdict { --tint-bto: var(--indigo-tint); --tint-resale: var(--accent-tint); margin-bottom: var(--space-4); }
+.verdict { margin-bottom: var(--space-4); }
 .verdict__hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); }
 .verdict__lead {
   display: flex; flex-direction: column; gap: var(--space-3);
@@ -183,32 +131,6 @@ const jumpToGrants = () => jumpTo('path-details-title');
 .verdict__dot--resale { background: var(--accent-fill-1); box-shadow: 0 0 0 1px var(--primary); }
 .verdict__exact { margin-bottom: var(--space-1); }
 
-.verdict__table-card { overflow: hidden; }
-.verdict__table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
-.verdict__table th, .verdict__table td { padding: var(--space-3) var(--space-4); text-align: right; vertical-align: baseline; }
-.verdict__table thead th { font-family: var(--font-heading); font-weight: 500; }
-.verdict__table tbody th { text-align: left; font-weight: 400; color: var(--text-secondary); }
-.verdict__table tbody tr { border-top: 1px solid var(--border-subtle); }
-.verdict__table td.is-better:nth-of-type(1) { background: var(--tint-bto); }
-.verdict__table td.is-better { font-weight: 600; }
-.verdict__table td.is-better:nth-of-type(2) { background: var(--tint-resale); }
-.verdict__table td.is-better .text-numeric { font-weight: 600; }
-.verdict__ico { vertical-align: -3px; margin-right: var(--space-2); }
-.verdict__ico--bto { color: var(--accent-deep); }
-.verdict__ico--resale { color: var(--color-berry, var(--accent-fill-1)); }
-.verdict__check { margin-right: var(--space-1); font-weight: 700; }
-.verdict__note { display: block; margin-top: 0.125rem; font-size: 0.8125rem; color: var(--text-secondary); }
-.verdict__grants-link {
-  display: inline; margin: 0; padding: 0; border: 0; background: none;
-  font: inherit; font-size: 0.9375rem; color: var(--text-primary); text-decoration: underline; cursor: pointer;
-}
-.verdict__grants-line { margin: calc(-1 * var(--space-1)) 0 var(--space-3); }
-.verdict__grants-link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
-.verdict__diff-cell { text-align: left !important; color: var(--text-secondary); }
-.verdict__diff-cell strong { color: var(--text-primary); font-weight: 600; }
-.verdict__diff-col { text-align: left !important; }
-.verdict__diff-sm { display: none; font-size: 0.8125rem; }
-.verdict__diff-sm strong { color: var(--text-primary); font-weight: 600; }
 .verdict__next {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3);
   padding: var(--space-4);
@@ -221,9 +143,6 @@ const jumpToGrants = () => jumpTo('path-details-title');
 @media (max-width: 575.98px) {
   .verdict__lead { padding: var(--space-4); }
   .verdict__bars { padding: var(--space-4); }
-  .verdict__table th, .verdict__table td { padding: var(--space-2) var(--space-3); }
-  .verdict__diff-col { display: none; }
-  .verdict__diff-sm { display: block; margin-top: 0.125rem; }
 }
 @media print {
   .verdict__lead { background: none; color: inherit; border: 1px solid var(--text-primary); }
