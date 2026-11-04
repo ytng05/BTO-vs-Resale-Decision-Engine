@@ -183,9 +183,15 @@ async function showWhy() {
 
 <style scoped>
 /* Spacing follows the design mockup: roomy card, larger figures, rows with air between them. */
-.path { border-top: 6px solid var(--primary); }
-.path--resale { border-top-color: var(--accent-fill-1); }
-.path > .card-body { padding: 1.75rem 1.75rem 1.5rem; }
+/* Each card is outlined in its path's colour, BTO indigo and resale pink (as the verdict, bars and Dashboard); the
+   path ahead is said in words by its "Ahead" tag. On hover the outline thickens and the shadow deepens, in place, so
+   the two cards' tops always line up (the shared .card hover swapped the shadow, which made the outline flash). */
+.path { --path-ring: var(--accent-deep); border-color: var(--path-ring); border-top: 6px solid var(--path-ring); box-shadow: 0 0 0 1px var(--path-ring), var(--shadow-sm); transition: box-shadow var(--duration-base) var(--ease-out); }
+.path--resale { --path-ring: var(--accent-fill-1); }
+.path:hover, .path:focus-within { box-shadow: 0 0 0 2px var(--path-ring), var(--shadow-lg); }
+.path.compare-card--winner { border-color: var(--path-ring); box-shadow: 0 0 0 1px var(--path-ring), var(--shadow-sm); }
+.path.compare-card--winner:hover, .path.compare-card--winner:focus-within { box-shadow: 0 0 0 2px var(--path-ring), var(--shadow-lg); }
+.path > .card-body { display: flex; flex-direction: column; padding: 1.75rem 1.75rem 1.5rem; }
 .path__pill {
   display: inline-block;
   padding: 0.375rem 0.875rem;
@@ -193,7 +199,7 @@ async function showWhy() {
   font-family: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
-  background: var(--primary);
+  background: var(--accent-deep);
   color: var(--on-primary);
 }
 .path--resale .path__pill { background: var(--accent-fill-2); color: var(--text-primary); }
@@ -242,7 +248,7 @@ async function showWhy() {
   color: var(--text-primary); text-decoration: underline; cursor: pointer;
 }
 .path-note__why:focus-visible, .path-more__toggle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
-.path-more { border-top: 1px solid var(--border-subtle); padding-top: 1rem; }
+.path-more { margin-top: auto; border-top: 1px solid var(--border-subtle); padding-top: 1rem; } /* the two cards' toggles line up */
 .path-more__toggle {
   display: flex; align-items: center; justify-content: space-between;
   list-style: none; cursor: pointer;
@@ -277,5 +283,7 @@ async function showWhy() {
   .path > .card-body { padding: 1.25rem 1.25rem 1.125rem; }
   .path-lines li { font-size: 1rem; }
 }
-@media (prefers-reduced-motion: reduce) { .path-more__chev { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .path-more__chev, .path { transition: none; }
+}
 </style>
