@@ -3,7 +3,8 @@
 // plan from the saved inputs (GET /api/scenarios/:id) and recalculates on Results; Delete asks first
 // (DELETE /api/scenarios/:id). docs/API_CONTRACT.md "Saved scenarios".
 // Compare mode (styles in styles/_components.scss): tick two scenarios, then Compare opens /scenarios/compare?a=&b= (side-by-side view).
-import { onMounted, ref } from 'vue';
+// Filter bar: search, town, flat type, path ahead and price range, on the list's summaries (utils/scenarioFilter.js).
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { deleteScenario, getScenario, listScenarios } from '../api/client.js';
 import CompareBar from '../components/CompareBar.vue';
@@ -11,6 +12,9 @@ import { useComparePicker } from '../composables/useComparePicker.js';
 import { useAuthStore } from '../stores/auth.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import { formatDate } from '../utils/format.js';
+import {
+  emptyFilters, flatTypeOptions, hasFilters, keepValidFilters, matchesFilters, priceRangeProblem, summaryLine, townOptions,
+} from '../utils/scenarioFilter.js';
 
 const auth = useAuthStore();
 const store = useScenarioStore();
@@ -25,6 +29,67 @@ const busyId = ref(null); // the row being opened or deleted
 // Compare mode: Open and Delete are hidden so a tap cannot delete by accident.
 const compareMode = ref(false);
 const picker = useComparePicker();
+
+// The filter bar. Everything is worked out on the page from the list, with no extra requests.
+const filters = ref(emptyFilters());
+
+// Compare mode keeps ticked scenarios in the list even when the filters would hide them, so Compare never opens
+// a scenario the user cannot see (and they can untick it).
+const shownScenarios = computed(function () {
+  const shown = [];
+  for (const s of scenarios.value) {
+    if (matchesFilters(s, filters.value) || (compareMode.value && picker.isSelected(s.id))) {
+      shown.push(s);
+    }
+  }
+  return shown;
+});
+const townChoices = computed(function () {
+  return townOptions(scenarios.value);
+});
+const flatTypeChoices = computed(function () {
+  return flatTypeOptions(scenarios.value);
+});
+const filtersSet = computed(function () {
+  return hasFilters(filters.value);
+});
+const priceProblem = computed(function () {
+  return priceRangeProblem(filters.value);
+});
+
+// Every change to the list goes through here, so a town or flat type that is no longer in the dropdown is reset.
+function setScenarios(list) {
+  scenarios.value = list;
+  filters.value = keepValidFilters(filters.value, list);
+}
+
+// How many scenarios match the filters (not counting ticked ones kept visible in compare mode).
+const matchCount = computed(function () {
+  let count = 0;
+  for (const s of scenarios.value) {
+    if (matchesFilters(s, filters.value)) {
+      count = count + 1;
+    }
+  }
+  return count;
+});
+
+// "3 scenarios", or "1 of 3 scenarios" while filtering.
+const countText = computed(function () {
+  const total = scenarios.value.length;
+  let word = 'scenarios';
+  if (total === 1) {
+    word = 'scenario';
+  }
+  if (filtersSet.value) {
+    return matchCount.value + ' of ' + total + ' ' + word;
+  }
+  return total + ' ' + word;
+});
+
+function clearFilters() {
+  filters.value = emptyFilters();
+}
 
 function startCompare() {
   confirmingId.value = null;
@@ -54,7 +119,7 @@ async function load() {
   loading.value = true;
   error.value = null;
   try {
-    scenarios.value = (await listScenarios()).scenarios;
+    setScenarios((await listScenarios()).scenarios);
   } catch (e) {
     if (!handledAuthError(e)) {
       error.value = messageOf(e, 'Your scenarios could not be loaded. Check your connection and try again.');
@@ -75,7 +140,7 @@ async function open(id) {
     if (handledAuthError(e)) return;
     if (e?.response?.status === 404) {
       // Deleted elsewhere (another tab or device) since the list loaded.
-      scenarios.value = scenarios.value.filter((s) => s.id !== id);
+      setScenarios(scenarios.value.filter((s) => s.id !== id));
       error.value = 'That scenario no longer exists. It may have been deleted in another tab.';
     } else {
       error.value = messageOf(e, 'The scenario could not be opened. Check your connection and try again.');
@@ -90,13 +155,13 @@ async function remove(id) {
   error.value = null;
   try {
     await deleteScenario(id);
-    scenarios.value = scenarios.value.filter((s) => s.id !== id);
+    setScenarios(scenarios.value.filter((s) => s.id !== id));
     confirmingId.value = null;
   } catch (e) {
     if (handledAuthError(e)) return;
     if (e?.response?.status === 404) {
       // Already gone: the outcome the user wanted.
-      scenarios.value = scenarios.value.filter((s) => s.id !== id);
+      setScenarios(scenarios.value.filter((s) => s.id !== id));
       confirmingId.value = null;
     } else {
       error.value = messageOf(e, 'The scenario could not be deleted. Check your connection and try again.');
@@ -165,13 +230,117 @@ onMounted(() => {
         </div>
       </div>
 
+      <!-- Filter bar: only shown with two or more scenarios -->
+      <form
+        v-if="!error && scenarios.length >= 2"
+        class="card card-body mb-3"
+        role="search"
+        aria-label="Filter your scenarios"
+        data-cy="scenarios-filters"
+        @submit.prevent
+      >
+        <div class="row g-2">
+          <div class="col-12 col-md-6">
+            <label for="filter-search" class="form-label">Search by name</label>
+            <input
+              id="filter-search"
+              v-model="filters.search"
+              type="search"
+              class="form-control"
+              autocomplete="off"
+              data-cy="scenarios-filter-search"
+            />
+          </div>
+          <div class="col-6 col-md-3">
+            <label for="filter-town" class="form-label">Town</label>
+            <select id="filter-town" v-model="filters.town" class="form-select" data-cy="scenarios-filter-town">
+              <option value="">Any town</option>
+              <option v-for="t in townChoices" :key="t.value" :value="t.value">{{ t.label }}</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label for="filter-flat-type" class="form-label">Flat type</label>
+            <select id="filter-flat-type" v-model="filters.flatType" class="form-select" data-cy="scenarios-filter-flat-type">
+              <option value="">Any flat type</option>
+              <option v-for="f in flatTypeChoices" :key="f.value" :value="f.value">{{ f.label }}</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-4">
+            <label for="filter-ahead" class="form-label">Which path is ahead</label>
+            <select id="filter-ahead" v-model="filters.ahead" class="form-select" data-cy="scenarios-filter-ahead">
+              <option value="">Either</option>
+              <option value="A">BTO ahead</option>
+              <option value="B">Resale ahead</option>
+              <option value="TIE">Level</option>
+              <option value="NONE">Not calculated</option>
+            </select>
+          </div>
+          <div class="col-6 col-md-4">
+            <label for="filter-min-price" class="form-label">Price from (S$)</label>
+            <input
+              id="filter-min-price"
+              v-model="filters.minPrice"
+              type="number"
+              min="0"
+              step="10000"
+              inputmode="numeric"
+              class="form-control"
+              data-cy="scenarios-filter-min-price"
+            />
+          </div>
+          <div class="col-6 col-md-4">
+            <label for="filter-max-price" class="form-label">Price up to (S$)</label>
+            <input
+              id="filter-max-price"
+              v-model="filters.maxPrice"
+              type="number"
+              min="0"
+              step="10000"
+              inputmode="numeric"
+              class="form-control"
+              data-cy="scenarios-filter-max-price"
+            />
+          </div>
+        </div>
+        <p v-if="priceProblem" class="form-text text-danger mb-1" role="status" data-cy="scenarios-filter-price-hint">
+          {{ priceProblem }}
+        </p>
+        <p class="form-text mb-0">
+          The price range keeps a scenario when its BTO or its resale price is inside it. Prices are today's prices;
+          scenarios saved before today's prices were kept use the price at the application year instead.
+        </p>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+          <p class="mb-0 text-secondary" role="status" data-cy="scenarios-filter-count">{{ countText }}</p>
+          <button
+            v-if="filtersSet"
+            type="button"
+            class="btn btn-link btn-sm p-0"
+            data-cy="scenarios-filter-clear"
+            @click="clearFilters"
+          >
+            Clear filters
+          </button>
+        </div>
+      </form>
+
+      <!-- No matches: the filters hide every scenario -->
+      <div v-if="!error && scenarios.length > 0 && shownScenarios.length === 0" class="card" data-cy="scenarios-no-matches">
+        <div class="card-body">
+          <p class="text-secondary">No scenarios match these filters.</p>
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="scenarios-no-matches-clear" @click="clearFilters">
+            Clear filters
+          </button>
+        </div>
+      </div>
+
       <p v-if="compareMode" class="text-secondary mb-2" data-cy="scenarios-compare-hint">
         Tick two scenarios to see them side by side.
       </p>
 
-      <ul v-if="scenarios.length" class="list-unstyled d-grid gap-2 mb-0" data-cy="scenarios-list">
+      <ul v-if="shownScenarios.length" class="list-unstyled d-grid gap-2 mb-0" data-cy="scenarios-list">
         <li
-          v-for="s in scenarios"
+          v-for="s in shownScenarios"
           :key="s.id"
           class="card card-body d-flex flex-row flex-wrap align-items-center gap-2"
           :class="{ 'scenarios-row--picked': compareMode && picker.isSelected(s.id) }"
@@ -197,6 +366,7 @@ onMounted(() => {
             :class="{ 'scenarios-pick-label': compareMode }"
           >
             <div class="fw-semibold" data-cy="scenarios-row-name">{{ s.name }}</div>
+            <div class="text-body-small text-secondary" data-cy="scenarios-row-summary">{{ summaryLine(s) }}</div>
             <div class="text-caption">
               Saved {{ formatDate(s.createdAt) }} · Ruleset {{ s.rulesetVersion }}
             </div>

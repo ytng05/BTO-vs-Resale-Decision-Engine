@@ -55,7 +55,7 @@ Jurong East, 4-room, 80 to 89 years, **live near my parents**.
 | Results | Resale is ahead under every combination tested; by 2041 resale ends about S$97,000 ahead. |
 | "Why the gap" | Rent while waiting costs the BTO path about S$134,400 over four years. |
 | Dashboard grants | Resale gets S$140,000 (Enhanced CPF Housing Grant S$40,000, Family S$80,000, Proximity S$20,000) against BTO's S$40,000; each check has its reason and an official link. |
-| PHG map | *(once #69 is merged)* the parents' home and the 4 km circle. |
+| PHG map | The parents' home and the 4 km circle. |
 | What-if | Rent while waiting to S$0 (living with parents until keys): BTO ends about S$37,000 ahead instead. |
 | Sources | Every rule with its official source and the ruleset date. |
 
