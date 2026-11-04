@@ -37,12 +37,13 @@ const currentYear = new Date().getFullYear();
 // user's saved scenarios (utils/savedProfiles.js), filtered by what is typed so far. Picking one fills that box only.
 // A box is named by the same key as its error ('applicants.0.age', 'cashSavings').
 const auth = useAuthStore();
-const savedProfiles = ref([]); // the `profile` of each of the newest saved scenarios, newest first
 const openField = ref(null); // the box that has the focus, so its suggestions show
 const SCENARIOS_TO_CHECK = 10;
 
+// Loads the answers once and keeps them in the store (store.savedProfiles), so going back and forth, or a fresh
+// plan, does not fetch them again. A new save or logging out clears them.
 onMounted(async function () {
-  if (!auth.isLoggedIn) {
+  if (!auth.isLoggedIn || store.savedProfiles !== null) {
     return;
   }
   try {
@@ -55,9 +56,9 @@ onMounted(async function () {
     for (const data of await Promise.all(requests)) {
       profiles.push(data.scenario.profile);
     }
-    savedProfiles.value = profiles; // a box already focused shows its suggestions now
+    store.savedProfiles = profiles; // a box already focused shows its suggestions now
   } catch (err) {
-    savedProfiles.value = []; // no suggestions rather than an error
+    // No suggestions this time rather than an error; it tries again next time.
   }
 });
 
@@ -66,7 +67,7 @@ const suggestions = computed(function () {
   if (openField.value === null) {
     return [];
   }
-  const values = matchingValues(savedValues(savedProfiles.value, openField.value), valueAt(store.profile, openField.value));
+  const values = matchingValues(savedValues(store.savedProfiles || [], openField.value), valueAt(store.profile, openField.value));
   const options = [];
   for (const value of values) {
     options.push({ value: value, label: suggestionLabel(openField.value, value) });
@@ -80,6 +81,18 @@ function openSuggestions(field) {
 
 function closeSuggestions() {
   openField.value = null;
+}
+
+// Whether a box's list is showing, and its id for aria-controls (only one list is open at a time).
+function listOpen(field) {
+  return openField.value === field && suggestions.value.length > 0;
+}
+
+function listId(field) {
+  if (listOpen(field)) {
+    return 'situation-autofill-list';
+  }
+  return null;
 }
 
 // Closes once the focus leaves the box and its list, so the down arrow and Tab can reach the list.
@@ -220,12 +233,17 @@ onBeforeUnmount(() => clearTimeout(timer));
             :class="{ 'is-invalid': err(`applicants.${i}.age`) }"
             :data-cy="`situation-buyer-${i + 1}-age-input`"
             @blur="leave(`applicants.${i}.age`)"
+            role="combobox"
+            aria-autocomplete="list"
+            :aria-expanded="String(listOpen(`applicants.${i}.age`))"
+            :aria-controls="listId(`applicants.${i}.age`)"
             @focus="openSuggestions(`applicants.${i}.age`)"
             @keydown.down="focusFirstSuggestion"
             @keydown.esc="closeSuggestions"
           />
           <SavedValueList
-            v-if="openField === `applicants.${i}.age` && suggestions.length"
+            id="situation-autofill-list"
+            v-if="listOpen(`applicants.${i}.age`)"
             :options="suggestions"
             @pick="pickSuggestion"
             @close="backToField(`buyer-${i}-age`)"
@@ -297,12 +315,17 @@ onBeforeUnmount(() => clearTimeout(timer));
               :class="{ 'is-invalid': err(`applicants.${i}.monthlyIncome`) }"
               :data-cy="`situation-buyer-${i + 1}-income-input`"
               @blur="leave(`applicants.${i}.monthlyIncome`)"
+              role="combobox"
+              aria-autocomplete="list"
+              :aria-expanded="String(listOpen(`applicants.${i}.monthlyIncome`))"
+              :aria-controls="listId(`applicants.${i}.monthlyIncome`)"
               @focus="openSuggestions(`applicants.${i}.monthlyIncome`)"
               @keydown.down="focusFirstSuggestion"
               @keydown.esc="closeSuggestions"
             />
             <SavedValueList
-              v-if="openField === `applicants.${i}.monthlyIncome` && suggestions.length"
+              id="situation-autofill-list"
+              v-if="listOpen(`applicants.${i}.monthlyIncome`)"
               :options="suggestions"
               @pick="pickSuggestion"
               @close="backToField(`buyer-${i}-income`)"
@@ -363,12 +386,17 @@ onBeforeUnmount(() => clearTimeout(timer));
                 :class="{ 'is-invalid': err(`applicants.${i}.cpfOaBalance`) }"
                 :data-cy="`situation-buyer-${i + 1}-cpf-input`"
                 @blur="leave(`applicants.${i}.cpfOaBalance`)"
+                role="combobox"
+                aria-autocomplete="list"
+                :aria-expanded="String(listOpen(`applicants.${i}.cpfOaBalance`))"
+                :aria-controls="listId(`applicants.${i}.cpfOaBalance`)"
                 @focus="openSuggestions(`applicants.${i}.cpfOaBalance`)"
                 @keydown.down="focusFirstSuggestion"
                 @keydown.esc="closeSuggestions"
               />
               <SavedValueList
-                v-if="openField === `applicants.${i}.cpfOaBalance` && suggestions.length"
+                id="situation-autofill-list"
+                v-if="listOpen(`applicants.${i}.cpfOaBalance`)"
                 :options="suggestions"
                 @pick="pickSuggestion"
                 @close="backToField(`buyer-${i}-cpf`)"
@@ -396,12 +424,17 @@ onBeforeUnmount(() => clearTimeout(timer));
               :class="{ 'is-invalid': err('cashSavings') }"
               data-cy="situation-cash-savings-input"
               @blur="leave('cashSavings')"
+              role="combobox"
+              aria-autocomplete="list"
+              :aria-expanded="String(listOpen('cashSavings'))"
+              :aria-controls="listId('cashSavings')"
               @focus="openSuggestions('cashSavings')"
               @keydown.down="focusFirstSuggestion"
               @keydown.esc="closeSuggestions"
             />
             <SavedValueList
-              v-if="openField === 'cashSavings' && suggestions.length"
+              id="situation-autofill-list"
+              v-if="listOpen('cashSavings')"
               :options="suggestions"
               @pick="pickSuggestion"
               @close="backToField('cash-savings')"

@@ -96,7 +96,11 @@ const blank = () => ({
 });
 
 export const useScenarioStore = defineStore('scenario', {
-  state: blank,
+  // savedProfiles: the About you answers of the newest saved scenarios, loaded once for the autofill (SituationForm).
+  // Kept outside blank(), so a fresh plan does not load them again; null means not loaded yet.
+  state: function () {
+    return { ...blank(), savedProfiles: null };
+  },
   getters: {
     // The inputs as one string, so the inputs now can be compared with the inputs at the last save.
     inputsKey(state) {
@@ -136,15 +140,24 @@ export const useScenarioStore = defineStore('scenario', {
       if (result) payload.result = result;
       return payload;
     },
-    // Refills the store from a saved scenario. Each part is laid over the blank one, so a scenario saved
-    // before a field existed still loads, with that field's default. Lands on the last input step, as
-    // after "See results", so "Change inputs" opens Path B.
     // After a save (or opening a saved scenario): these inputs now belong to that scenario.
     markSaved(id, name) {
       this.savedId = id;
       this.savedName = name;
       this.savedKey = this.inputsKey;
+      this.savedProfiles = null; // a new save: load the answers again next time
     },
+    // Logging out: the plan no longer belongs to a saved scenario, and the saved answers must not be offered to
+    // whoever logs in next.
+    forgetSaved() {
+      this.savedId = null;
+      this.savedName = null;
+      this.savedKey = null;
+      this.savedProfiles = null;
+    },
+    // Refills the store from a saved scenario. Each part is laid over the blank one, so a scenario saved
+    // before a field existed still loads, with that field's default. Lands on the last input step, as
+    // after "See results", so "Change inputs" opens Path B.
     loadSaved(saved) {
       const fresh = blank();
       Object.assign(this, {

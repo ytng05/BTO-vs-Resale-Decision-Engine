@@ -23,10 +23,12 @@ function onKeydown(event) {
 </script>
 
 <template>
-  <ul class="autofill" aria-label="Answers from your saved scenarios" data-cy="situation-autofill" @keydown="onKeydown">
-    <li v-for="option in options" :key="option.value">
+    <ul class="autofill" role="listbox" aria-label="Answers from your saved scenarios" data-cy="situation-autofill" @keydown="onKeydown">
+    <li v-for="option in options" :key="option.value" role="none">
       <button
         type="button"
+        role="option"
+        aria-selected="false"
         class="autofill__item"
         data-cy="situation-autofill-option"
         @mousedown.prevent
@@ -52,6 +54,8 @@ function onKeydown(event) {
   background: var(--primary);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-md);
+  max-height: 10rem;
+  overflow-y: auto;
 }
 .autofill__item {
   display: block;

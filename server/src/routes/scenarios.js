@@ -55,7 +55,7 @@ function savedStamps(result) {
 // (summary, services/scenarioSummary.js); GET /:id returns everything.
 router.get('/', requireDb, async (req, res, next) => {
   try {
-    const docs = await Scenario.find({ userId: req.user.id })
+      const docs = await Scenario.find({ userId: req.user.id })
       .select(['name', 'rulesetVersion', 'createdAt', 'updatedAt', ...SUMMARY_FIELDS].join(' '))
       .sort({ updatedAt: -1 })
       .lean();
@@ -101,8 +101,9 @@ router.put('/:id', validateScenario, requireDb, async (req, res, next) => {
     const update = { $set: { ...inputs, ...savedStamps(result) } };
     if (result === undefined) update.$unset = { result: 1 };
     else update.$set.result = result;
-    const doc = await Scenario.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, update, {
+        const doc = await Scenario.findOneAndUpdate({ _id: req.params.id, userId: req.user.id }, update, {
       returnDocument: 'after',
+      runValidators: true, // the schema's checks apply to updates too, as they do to create
     }).lean();
     if (!doc) return notFound(res);
     res.json({ scenario: toJson(doc) });
