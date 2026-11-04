@@ -3,20 +3,26 @@
 IS216 Web Application Development 2, group project (SMU).
 
 Every first-time buyer in Singapore faces the same fork: take a BTO now and wait, or keep saving and buy resale later.
-This app does not forecast prices. It solves for the assumptions at which the two paths are equal and shows the result
-as a decision surface (heatmap), plus an optimal-timing search. A ranked strategy recommendation is future work (dropped after the prof's feedback).
-A historical backtest ("risk-based verdict") is planned for later, once the first two features work.
+This app does not forecast prices. For a household's own plan it follows a BTO path and a resale path year by year and
+says which ends ahead, by how much and why. It solves for the assumptions at which the two paths are equal and shows them
+as a decision surface (heatmap), searches for the best year to apply, and checks every grant with its reason and its
+official source. Policy rules are versioned and dated, and every result names the ruleset that produced it.
 
 > Illustrative projection, not financial advice. Policy figures come from the versioned ruleset and are only as good as
 > the sources recorded in `docs/SOURCES.md`.
 
 ## Scope
 - HDB BTO (Standard / Plus / Prime) versus HDB resale. Executive Condominiums are out of scope.
-- Features, in build order: (1) base break-even comparison, (2) optimal timing search, (3) later: risk-based verdict (historical backtest). Future work: strategy recommendation over the full space.
+- Built: (1) break-even comparison of the two paths, with the heatmap and the financial dashboard, (2) optimal timing search,
+  plus saved scenarios, side-by-side comparison of two saved scenarios, and the Sources page.
+- Future work, behind feature flags that are off: a ranked strategy recommendation over the full space (dropped after the
+  prof's feedback; `FEATURE_STRATEGY_SEARCH`) and a historical backtest, or "risk-based verdict" (`FEATURE_BACKTEST`).
 
 ## Tech stack
 Vue 3 (Composition API), Pinia, Vue Router, Bootstrap 5 (SCSS), Chart.js | Node.js, Express, MongoDB/Mongoose, JWT + bcryptjs | Vitest, Cypress.
-External data: data.gov.sg (resale transactions, Resale Price Index, price range of flats offered). PHG “near” status is declared by the user; no distance service is called.
+External data: data.gov.sg (resale transactions, Resale Price Index, price range of flats offered) and OneMap (geocoding and
+distance for the dashboard's PHG map). Whether the household lives with or near its parents is declared by the user; the map
+lets them check that answer but never changes it (D15).
 
 ## Repository layout
 ```
@@ -45,7 +51,7 @@ Requires Node 20+ (developed on 22).
 git clone <repo-url> && cd bto-resale-breakeven
 npm install
 cp .env.example .env        # optional: add MONGODB_URI, API keys
-npm run dev                 # API on :3000, Vue dev server on :5173 (mock data on by default)
+npm run dev                 # API on :3000, Vue dev server on :5173, live data (VITE_USE_MOCK=true npm run dev for mock data)
 ```
 
 Run as a single app on one port (this is how it is submitted and graded):
@@ -70,15 +76,26 @@ npm run test:e2e                                  # terminal 2  (or npm run cy:o
 ```
 | Spec | Covers |
 |---|---|
-| `smoke.cy.js` | home page, step validation, full journey, register → save → reload (needs a database) |
-| `buyers.cy.js` | two buyers, PR + PR blocked, per-buyer validation, answers kept when going back |
-| `results.cy.js` | results content, heatmap, phone width, Back keeps inputs |
-| `dashboard.cy.js` | financial dashboard |
-| `scenarios.cy.js` | save, list, open and delete a scenario (needs a database) |
-| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios) |
-| `responsive.cy.js` | every page at 375 / 768 / 1280 px with no sideways scrolling |
-| `sources.cy.js` | ruleset version and badge, expand/collapse all, safe https source links, assumptions and datasets |
+| `smoke.cy.js` | home page, hero scene, step validation, full journey, register → save → reload (needs a database) |
+| `home.cy.js` | the two ways in, See an example, the four steps, costs people forget, FAQ, reduced motion, phone width |
 | `login.cy.js` | Start planning → login page: the three choices, the create-account and log-in forms, Back, planning without an account, and going on to the plan |
+| `buyers.cy.js` | the About you step: one question per screen, two buyers, PR + PR blocked, per-buyer validation, money and age input, answers kept when going back |
+| `error-summary.cy.js` | the error summary on Your BTO and Resale flat: every problem listed, each linking to its field |
+| `preview.cy.js` | the check-your-answers page between the plan and Results; Change and Edit go back with answers kept |
+| `results.cy.js` | results content, heatmap (labelled in words, not colour alone), BTO launch and price, phone width, Back keeps inputs |
+| `results-verdict.cy.js` | who comes out ahead in plain words, the side-by-side table, net position bars, the hover chart, "too close to call" |
+| `results-grants.cy.js` | each grant once with one status and every check's reason and official source; the best application year |
+| `results-print.cy.js` | what to do next (official links) and print or save as PDF |
+| `feedback-clarity.cy.js` | fixes from user testing: prices shown as figures, how to read the heatmap, the BTO price on the plan |
+| `glossary.cy.js` | plain-English terms open by tap or keyboard, stay on screen at 375px, and link to the glossary on Sources |
+| `dashboard.cy.js` | financial dashboard: headline, grant reasons, warnings, the flats side by side, what-if sliders and the flip price |
+| `dashboard-overview.cy.js` | the cash rings, the four tiles and the jump to the grants table |
+| `dashboard-sections.cy.js` | dashboard sections open and close, one at a time or all at once |
+| `scenarios.cy.js` | save, list, open and delete a scenario (needs a database) |
+| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width |
+| `sources.cy.js` | ruleset version and badge, expand/collapse all, topic chips, search, safe https source links, assumptions and datasets |
+| `responsive.cy.js` | every page at 375 / 768 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
+| `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |
 
 
 Demo user journeys (five households, one per presenter) live in `cypress/journeys/` and run against a **live**
