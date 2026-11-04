@@ -13,7 +13,7 @@ import { useAuthStore } from '../stores/auth.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import { formatDate } from '../utils/format.js';
 import {
-  emptyFilters, filterScenarios, flatTypeOptions, hasFilters, summaryLine, townOptions,
+  emptyFilters, flatTypeOptions, hasFilters, keepValidFilters, matchesFilters, priceRangeProblem, summaryLine, townOptions,
 } from '../utils/scenarioFilter.js';
 
 const auth = useAuthStore();
@@ -29,8 +29,16 @@ const busyId = ref(null); // the row being opened or deleted
 // The filter bar. Everything is worked out on the page from the list, with no extra requests.
 const filters = ref(emptyFilters());
 
+// Compare mode keeps ticked scenarios in the list even when the filters would hide them, so Compare never opens
+// a scenario the user cannot see (and they can untick it).
 const shownScenarios = computed(function () {
-  return filterScenarios(scenarios.value, filters.value);
+  const shown = [];
+  for (const s of scenarios.value) {
+    if (matchesFilters(s, filters.value) || (compareMode.value && picker.isSelected(s.id))) {
+      shown.push(s);
+    }
+  }
+  return shown;
 });
 const townChoices = computed(function () {
   return townOptions(scenarios.value);
@@ -41,6 +49,15 @@ const flatTypeChoices = computed(function () {
 const filtersSet = computed(function () {
   return hasFilters(filters.value);
 });
+const priceProblem = computed(function () {
+  return priceRangeProblem(filters.value);
+});
+
+// Every change to the list goes through here, so a town or flat type that is no longer in the dropdown is reset.
+function setScenarios(list) {
+  scenarios.value = list;
+  filters.value = keepValidFilters(filters.value, list);
+}
 
 // "3 scenarios", or "1 of 3 scenarios" while filtering.
 const countText = computed(function () {
@@ -91,7 +108,7 @@ async function load() {
   loading.value = true;
   error.value = null;
   try {
-    scenarios.value = (await listScenarios()).scenarios;
+    scenarios.value = setScenarios((await listScenarios()).scenarios);
   } catch (e) {
     if (!handledAuthError(e)) {
       error.value = messageOf(e, 'Your scenarios could not be loaded. Check your connection and try again.');
@@ -112,7 +129,7 @@ async function open(id) {
     if (handledAuthError(e)) return;
     if (e?.response?.status === 404) {
       // Deleted elsewhere (another tab or device) since the list loaded.
-      scenarios.value = scenarios.value.filter((s) => s.id !== id);
+      scenarios.value = setScenarios((await listScenarios()).scenarios);
       error.value = 'That scenario no longer exists. It may have been deleted in another tab.';
     } else {
       error.value = messageOf(e, 'The scenario could not be opened. Check your connection and try again.');
@@ -127,13 +144,13 @@ async function remove(id) {
   error.value = null;
   try {
     await deleteScenario(id);
-    scenarios.value = scenarios.value.filter((s) => s.id !== id);
+    scenarios.value = setScenarios((await listScenarios()).scenarios);
     confirmingId.value = null;
   } catch (e) {
     if (handledAuthError(e)) return;
     if (e?.response?.status === 404) {
       // Already gone: the outcome the user wanted.
-      scenarios.value = scenarios.value.filter((s) => s.id !== id);
+      scenarios.value = setScenarios((await listScenarios()).scenarios);
       confirmingId.value = null;
     } else {
       error.value = messageOf(e, 'The scenario could not be deleted. Check your connection and try again.');
@@ -274,7 +291,13 @@ onMounted(() => {
             />
           </div>
         </div>
-        <p class="form-text mb-0">The price range keeps a scenario when its BTO or its resale price is inside it.</p>
+        <p v-if="priceProblem" class="form-text text-danger mb-1" role="status" data-cy="scenarios-filter-price-hint">
+          {{ priceProblem }}
+        </p>
+        <p class="form-text mb-0">
+          The price range keeps a scenario when its BTO or its resale price is inside it. Prices are today's prices;
+          scenarios saved before today's prices were kept use the price at the application year instead.
+        </p>
 
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
           <p class="mb-0 text-secondary" role="status" data-cy="scenarios-filter-count">{{ countText }}</p>

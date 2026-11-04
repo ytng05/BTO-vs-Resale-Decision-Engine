@@ -1,7 +1,7 @@
 // My scenarios filter bar: search, town, flat type, path ahead and price range on the list summaries.
 import { describe, it, expect } from 'vitest';
 import {
-  emptyFilters, filterScenarios, flatTypeOptions, hasFilters, summaryLine, townOptions,
+  emptyFilters, filterScenarios, flatTypeOptions, hasFilters, summaryLine, townOptions, keepValidFilters, priceRangeProblem
 } from '../src/utils/scenarioFilter.js';
 
 const tampines = {
@@ -101,5 +101,30 @@ describe('summaryLine', () => {
     expect(summaryLine(tampines)).toBe('Tampines 4-room BTO vs Bedok 4-room resale · BTO ahead');
     expect(summaryLine(punggol)).toBe('Punggol 5-room BTO vs Tampines 5-room resale · Resale ahead');
     expect(summaryLine(unsaved)).toBe('Bedok 3-room BTO vs Bedok 3-room resale · Not calculated');
+  });
+});
+
+describe('keepValidFilters', () => {
+  it('resets a town or flat type that no scenario has any more, and keeps the rest', () => {
+    const picked = withFilters({ search: 'plan', town: 'PUNGGOL', flatType: '5 ROOM', ahead: 'B' });
+    expect(keepValidFilters(picked, all)).toEqual(picked);
+    // Punggol plan deleted: no Punggol and no 5-room left.
+    expect(keepValidFilters(picked, [tampines, unsaved])).toEqual(withFilters({ search: 'plan', ahead: 'B' }));
+  });
+});
+
+describe('priceRangeProblem', () => {
+  it('says when the range cannot match, and nothing when it can', () => {
+    expect(priceRangeProblem(withFilters({ minPrice: '700000', maxPrice: '500000' }))).toContain('higher than');
+    expect(priceRangeProblem(withFilters({ minPrice: '-1' }))).toContain('negative');
+    expect(priceRangeProblem(withFilters({ minPrice: '500000', maxPrice: '500000' }))).toBe('');
+    expect(priceRangeProblem(emptyFilters())).toBe('');
+  });
+});
+
+describe('flatTypeLabel', () => {
+  it('replaces every space, not just the first', () => {
+    const multi = { id: '9', name: 'x', summary: { btoFlatType: 'MULTI GENERATION FLAT' } };
+    expect(flatTypeOptions([multi])).toEqual([{ value: 'MULTI GENERATION FLAT', label: 'multi-generation-flat' }]);
   });
 });

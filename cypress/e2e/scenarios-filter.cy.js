@@ -67,4 +67,35 @@ describe('My scenarios filter bar', () => {
     cy.get('[data-cy=scenarios-list] li').should('have.length', 3);
     cy.get('[data-cy=scenarios-filter-town]').should('have.value', '');
   });
+
+  
+  it('keeps ticked scenarios in the list while filtering in compare mode', () => {
+    visitScenarios();
+    cy.get('[data-cy=scenarios-compare-mode-button]').click();
+    cy.get('[data-cy=scenarios-row-s1] [data-cy=scenarios-compare-checkbox]').check();
+    cy.get('[data-cy=scenarios-row-s2] [data-cy=scenarios-compare-checkbox]').check();
+    cy.get('[data-cy=scenarios-filter-search]').type('draft');
+    cy.get('[data-cy=scenarios-list] li').should('have.length', 3);
+    cy.get('[data-cy=scenarios-row-s1] [data-cy=scenarios-compare-checkbox]').uncheck();
+    cy.get('[data-cy=scenarios-list] li').should('have.length', 2);
+    cy.get('[data-cy=scenarios-row-s1]').should('not.exist');
+  });
+
+  it('resets the town filter when the last scenario in that town is deleted', () => {
+    visitScenarios();
+    cy.intercept('DELETE', '/api/scenarios/s2', { statusCode: 204 });
+    cy.get('[data-cy=scenarios-filter-town]').select('Punggol');
+    cy.get('[data-cy=scenarios-row-s2] [data-cy=scenarios-delete-button]').click();
+    cy.get('[data-cy=scenarios-row-s2] [data-cy=scenarios-delete-confirm]').click();
+    cy.get('[data-cy=scenarios-filter-town]').should('have.value', '');
+    cy.get('[data-cy=scenarios-list] li').should('have.length', 2);
+  });
+
+  it('warns when the price range cannot match anything', () => {
+    visitScenarios();
+    cy.get('[data-cy=scenarios-filter-price-hint]').should('not.exist');
+    cy.get('[data-cy=scenarios-filter-min-price]').type('700000');
+    cy.get('[data-cy=scenarios-filter-max-price]').type('500000');
+    cy.get('[data-cy=scenarios-filter-price-hint]').should('contain', 'higher than');
+  });
 });

@@ -39,6 +39,19 @@ function toCents(text) {
   return Math.round(dollars * 100);
 }
 
+// A note under the price boxes when the range cannot match anything, or '' when it is fine.
+export function priceRangeProblem(filters) {
+  const minCents = toCents(filters.minPrice);
+  const maxCents = toCents(filters.maxPrice);
+  if ((minCents !== null && minCents < 0) || (maxCents !== null && maxCents < 0)) {
+    return 'Prices cannot be negative.';
+  }
+  if (minCents !== null && maxCents !== null && minCents > maxCents) {
+    return '"Price from" is higher than "Price up to", so no scenario can match.';
+  }
+  return '';
+}
+
 // A price is in range when it is at least the minimum and at most the maximum (either can be left out).
 function priceInRange(priceCents, minCents, maxCents) {
   if (typeof priceCents !== 'number') {
@@ -125,7 +138,7 @@ function optionsFrom(scenarios, keyA, keyB, makeLabel) {
 
 // '4 ROOM' -> '4-room'
 function flatTypeLabel(value) {
-  return value.toLowerCase().replace(' ', '-');
+  return value.toLowerCase().replace(/\s+/g, '-');
 }
 
 export function townOptions(scenarios) {
@@ -134,6 +147,28 @@ export function townOptions(scenarios) {
 
 export function flatTypeOptions(scenarios) {
   return optionsFrom(scenarios, 'btoFlatType', 'resaleFlatType', flatTypeLabel);
+}
+
+// After the list changes (e.g. a delete), a town or flat type that no scenario has any more is not in its dropdown,
+// so the select would look blank. Reset those to "Any".
+function hasOption(options, value) {
+  for (const option of options) {
+    if (option.value === value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function keepValidFilters(filters, scenarios) {
+  const kept = { ...filters };
+  if (kept.town !== '' && !hasOption(townOptions(scenarios), kept.town)) {
+    kept.town = '';
+  }
+  if (kept.flatType !== '' && !hasOption(flatTypeOptions(scenarios), kept.flatType)) {
+    kept.flatType = '';
+  }
+  return kept;
 }
 
 // One line under each scenario's name: "Tampines 4-room BTO vs Bedok 5-room resale · BTO ahead".
