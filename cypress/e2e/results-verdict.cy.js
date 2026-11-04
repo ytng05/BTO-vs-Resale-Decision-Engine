@@ -1,6 +1,7 @@
-// Results page: the winner-first summary, the two path cards, the next step and the hover chart (mock data).
+// Results page (redesign, 4 Nov 2026): the winner-first summary, "Would the answer change?", the trade-off, why one
+// path comes out ahead, the grants, the two path cards (folded), the next step and the hover chart (mock data).
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
-import { completePlan } from './helpers/plan.js';
+import { completePlan, openPathCards } from './helpers/plan.js';
 
 describe('results verdict', () => {
   it('leads with who comes out ahead, in plain words', () => {
@@ -38,6 +39,8 @@ describe('results verdict', () => {
 
   it('explains each path in three plain lines, with the exact parts in "Full breakdown"', () => {
     completePlan();
+    cy.get('[data-cy=results-paths]').should('not.have.attr', 'open'); // folded under "Why"
+    openPathCards();
     ['results-patha', 'results-pathb'].forEach((p) => {
       cy.get(`[data-cy=${p}-summary-value]`).should('be.visible').and('contain', 'would be worth about');
       cy.get(`[data-cy=${p}-summary-owed]`).should('be.visible').and('contain', 'Taken off');
@@ -52,6 +55,7 @@ describe('results verdict', () => {
 
   it('opens the full breakdown from "Why" next to the grants', () => {
     completePlan();
+    openPathCards();
     cy.get('[data-cy=results-patha-grants-why]').click();
     cy.get('[data-cy=results-patha-eligibility]').should('be.visible');
   });
@@ -59,6 +63,46 @@ describe('results verdict', () => {
   it('uses the team name, "net position", on the path cards', () => {
     completePlan();
     cy.get('[data-cy=results-patha-card]').should('contain', 'Net position').and('contain', 'what this path leaves you with, after costs');
+  });
+
+  it('says whether the answer would change, with the grid in small and the full grid one click away (D35, D40)', () => {
+    completePlan();
+    cy.get('[data-cy=results-robustness]').should('be.visible');
+    cy.get('[data-cy=results-robustness-line]').invoke('text').should('match', /growth combinations? we tested/);
+    cy.get('[data-cy=results-mini-grid] span').should('have.length', 36); // the mock grid is 6 by 6
+    cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
+    cy.get('[data-cy=results-heatmap-open]').click();
+    cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open');
+    cy.focused().should('have.attr', 'id', 'heatmap-title');
+  });
+
+  it('shows the trade-off in three rows, the better side marked in words and with a tick, grants not a row (D1)', () => {
+    completePlan();
+    ['position', 'cash', 'keys'].forEach((id) => {
+      cy.get(`[data-cy=results-tradeoff-${id}-bto]`).invoke('text').should('not.be.empty');
+      cy.get(`[data-cy=results-tradeoff-${id}-resale]`).invoke('text').should('not.be.empty');
+    });
+    cy.get('[data-cy=results-tradeoff]').should('contain', '(better)').and('contain', '✓');
+    cy.get('[data-cy=results-tradeoff-grants]').should('not.exist');
+  });
+
+  it('says why one path comes out ahead, line by line, adding up to the gap (D34)', () => {
+    completePlan();
+    cy.get('[data-cy=results-gap-card]').should('contain', 'comes out ahead');
+    cy.get('[data-cy=results-why-sentence]').invoke('text').should('match', /mostly on the .+ in its favour\./);
+    cy.get('[data-cy^=results-gap-line-]').should('have.length.greaterThan', 0).each(($li) => {
+      cy.wrap($li).invoke('text').should('match', /Favours (BTO|resale)/);
+    });
+    cy.get('[data-cy=results-gap-total]').invoke('text').should('match', /ends S\$[\d,]+ ahead/);
+  });
+
+  it('lists the grants as already counted, never "not eligible" for the resale-only ones on a BTO', () => {
+    completePlan();
+    cy.get('[data-cy=results-grants]').should('contain', 'Already counted');
+    cy.get('[data-cy=results-grants-bto]').should('not.contain', 'Family').and('not.contain', 'Proximity');
+    cy.get('[data-cy=results-grants-why]').click();
+    cy.get('[data-cy=results-paths]').should('have.attr', 'open');
+    cy.focused().should('have.attr', 'id', 'path-details-title');
   });
 
   it('moves on: opens the dashboard from the main button, and jumps to the official steps', () => {

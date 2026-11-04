@@ -7,7 +7,7 @@ describe('Journey 1: first-time couple, "BTO or resale?"', () => {
 
     // The verdict: one sentence, then the gap.
     cy.get('[data-cy=results-breakeven-sentence]').should('contain', 'Path A (BTO)');
-    cy.get('[data-cy=results-gap-sentence]').should('contain', 'BTO ends');
+    cy.get('[data-cy=results-gap-total]').should('contain', 'BTO ends');
     beat();
 
     // Why: the gap line by line, and where the user's own assumptions sit on the heatmap.

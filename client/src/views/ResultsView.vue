@@ -1,10 +1,12 @@
 <script setup>
-import Term from '../components/Term.vue';
 import { computed, nextTick, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { compareReusing } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
-import GapBreakdownPanel from '../components/GapBreakdownPanel.vue';
+import ResultsRobustness from '../components/ResultsRobustness.vue';
+import ResultsTradeoff from '../components/ResultsTradeoff.vue';
+import ResultsWhy from '../components/ResultsWhy.vue';
+import ResultsGrants from '../components/ResultsGrants.vue';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
 import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
@@ -49,7 +51,8 @@ const horizonYear = computed(() => result.value?.horizonYear ?? store.assumption
 // Print or save as PDF: the browser's own dialog; styles/_print.scss lays the page out for paper. The chart and
 // heatmap sections only draw once opened, so open them first and give the chart a moment to draw.
 async function printPage() {
-  sections.value = { ...sections.value, chart: true, heatmap: true };
+  sections.value = { ...sections.value, chart: true, heatmap: true, steps: true };
+  pathsOpen.value = true;
   await nextTick();
   await new Promise((resolve) => { setTimeout(resolve, 400); });
   window.print();
@@ -68,11 +71,35 @@ const userPoint = computed(() => ({
   incomeGrowth: store.assumptions.annualIncomeGrowth,
 }));
 
-// Positive when Path A ends ahead. Cents, per the contract.
-// Progressive disclosure: the verdict, the two paths and why the gap stay open; the chart over time, the heatmap
-// and the timing panel open on request (DashboardSection, as on the Dashboard), each with a one-line takeaway.
-// The heatmap starts open: it is the app's central idea (where the paths are equal) and part of the verdict (D35).
-const sections = ref({ chart: false, heatmap: true, timing: false });
+// Progressive disclosure (redesign, 4 Nov 2026): the answer, "Would the answer change?" (the heatmap in small, so the
+// central idea stays in view, D35), the trade-off, why and the grants are open; the full heatmap, the chart over
+// time, when to apply and the official steps open on request (DashboardSection), each with a one-line takeaway.
+const sections = ref({ chart: false, heatmap: false, timing: false, steps: false });
+// The two path cards, under "See each path's full breakdown".
+const pathsOpen = ref(false);
+
+// Open a folded part, then move to its heading with focus, so keyboard and screen-reader users land there too.
+async function openAndGo(id) {
+  await nextTick();
+  const el = document.getElementById(id);
+  if (!el) return;
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  el.focus({ preventScroll: true });
+}
+function openGrid() {
+  sections.value = { ...sections.value, heatmap: true };
+  openAndGo('heatmap-title');
+}
+function jumpToSteps() {
+  sections.value = { ...sections.value, steps: true };
+  openAndGo('steps-title');
+}
+// "Why" in the Grants card: the path cards hold each grant's checks with their official sources.
+function showGrantReasons() {
+  pathsOpen.value = true;
+  openAndGo('path-details-title');
+}
 // Filled once the timing panel has loaded (it only loads when its section is first opened).
 const timingResult = ref(null);
 const timingTakeaway = computed(() => {
@@ -91,23 +118,10 @@ const heatmapTakeaway = computed(() => {
   return `BTO ends ahead in ${a} of ${cells.length} combinations of price and income growth tested, resale in ${b}.`;
 });
 
-const gap = computed(() => {
-  const a = result.value?.outcomeA?.netPositionCents;
-  const b = result.value?.outcomeB?.netPositionCents;
-  return typeof a === 'number' && typeof b === 'number' ? a - b : null;
-});
-
 // Who ends ahead, in a plain sentence, and the few numbers side by side (utils/resultsVerdict.js, unit-tested).
 const verdict = computed(() => buildVerdict(result.value?.outcomeA, result.value?.outcomeB, horizonYear.value));
 const keyComparison = computed(() => keyRows(result.value?.outcomeA, result.value?.outcomeB, horizonYear.value));
 
-const gapSentence = computed(() => {
-  if (gap.value === null) return '';
-  const years = horizonYear.value ? `By ${horizonYear.value}, ` : '';
-  if (gap.value === 0) return `${years}both paths leave you with the same net position (what each path leaves you with, after costs) under your assumptions.`;
-  const ahead = gap.value > 0 ? 'BTO' : 'resale';
-  return `${years}${ahead} ends ${formatMoney(Math.abs(gap.value) / 100)} ahead in net position (what each path leaves you with, after costs) under your assumptions.`;
-});
 
 // Which prices the comparison used (D26, D33), so a default is never hidden: the BTO launch and its price
 // against HDB's range, and the resale median with the sales behind it.
@@ -124,6 +138,22 @@ const btoPriceBasis = computed(() => {
   // D40: a past launch stands in for the user's own, which hasn't happened yet.
   const launch = p.launch ? ` (${monthYear(p.launch)} launch)` : '';
   return `BTO estimated from ${p.name}${launch} at ${formatMoney(used / 100)}, ${where} HDB's ${formatMoney(p.priceMinCents / 100)} to ${formatMoney(p.priceMaxCents / 100)} range.`;
+});
+// The same two prices in a few words, for the "Based on" line: "middle of Tampines Bliss's range", "median of 112 sales".
+const btoShort = computed(() => {
+  const p = result.value?.btoProjectA;
+  const used = result.value?.resolvedA?.purchasePriceCents;
+  if (!p || typeof used !== 'number') return '';
+  const mid = Math.round((p.priceMinCents + p.priceMaxCents) / 2);
+  return `${used === mid ? 'middle of' : 'within'} ${p.name}'s range`;
+});
+const resaleShort = computed(() => {
+  const r = result.value?.resolvedB;
+  const d = r?.priceData;
+  if (!r || typeof r.purchasePriceCents !== 'number' || !d) return '';
+  const medianCents = r.medianPriceCents ?? r.purchasePriceCents;
+  if (r.purchasePriceCents !== medianCents) return 'your asking price';
+  return `median of ${d.transactions} ${labelOf(TOWNS, store.choiceB.town)} sale${d.transactions === 1 ? '' : 's'}`;
 });
 const resalePriceBasis = computed(() => {
   const r = result.value?.resolvedB;
@@ -209,154 +239,186 @@ onMounted(load);
     </div>
 
     <template v-else-if="result">
-      <!-- Lead with the single break-even sentence before any chart (UI.md §8). -->
       <p class="d-none d-print-block small mb-2" data-cy="results-print-header">
         BTO vs Resale · printed {{ printedOn }} · {{ planLine }}
       </p>
-      <ResultsVerdict
-        v-if="verdict.winner"
-        :verdict="verdict"
-        :rows="keyComparison"
-        :gap-sentence="gapSentence"
-        :break-even-sentence="result.breakEvenSentence"
-        :horizon-year="horizonYear"
-        :label-a="`BTO · ${labelOf(TOWNS, store.choiceA.town)}`"
-        :label-b="`Resale · ${labelOf(TOWNS, store.choiceB.town)}`"
-      />
-      <template v-else>
-        <h1 class="hero-statement" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</h1>
-        <p v-if="gapSentence" data-cy="results-gap-sentence">{{ gapSentence }}</p>
-        <!-- No verdict to show (an outcome has no net position): the way back and on must still be here. -->
-        <div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
-          <RouterLink to="/plan" class="btn btn-outline-secondary" data-cy="results-edit-button">Change inputs</RouterLink>
-          <RouterLink to="/dashboard" class="btn btn-outline-primary" data-cy="results-dashboard-button">Open the dashboard</RouterLink>
-        </div>
-      </template>
-      <!-- D40: the BTO price at which the verdict flips. Absent from older servers and when path A isn't a BTO. -->
-      <p v-if="result.btoPriceSentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
-      <p v-if="phgNotAsked" class="text-caption mb-2" data-cy="results-phg-note">
-        Not counted: the Proximity Housing Grant (up to S$30,000 on a resale flat). Living with or within 4 km of your
-        parents?
-        <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-cy="results-phg-add" @click="addParents">Add it</button>
-      </p>
-      <p class="d-flex flex-wrap align-items-center gap-2 mb-3">
-        <span class="badge-version" data-cy="results-ruleset-version">Ruleset {{ result.rulesetVersion }}</span>
-        <span class="text-caption">
-          The <Term id="break-even">break-even</Term> line is not a prediction of prices.
-          <span v-if="result.mock" data-cy="results-mock-notice">Showing mock data.</span>
-        </span>
-      </p>
-      <h2 id="path-details-title" class="h5 mb-2">Each path<template v-if="horizonYear"> in {{ horizonYear }}</template>, in plain words</h2>
-      <div v-if="result.outcomeA && result.outcomeB" class="row g-3 mb-3">
-        <div class="col-12 col-lg-6">
-          <PathOutcomeCard
-            :subtitle="describe(store.choiceA)"
-            :outcome="result.outcomeA"
-            :horizon-year="horizonYear"
-            cy-prefix="results-patha"
-            tone="bto"
-            :ahead="!verdict.close && verdict.winner === 'bto'"
-          />
-        </div>
-        <div class="col-12 col-lg-6">
-          <PathOutcomeCard
-            :subtitle="describe(store.choiceB)"
-            :outcome="result.outcomeB"
-            :horizon-year="horizonYear"
-            cy-prefix="results-pathb"
-            tone="resale"
-            :ahead="!verdict.close && verdict.winner === 'resale'"
-          />
-        </div>
-      </div>
+      <div class="results-page">
+        <!-- 1. Who ends ahead, by how much, and both net positions (D1, D42). -->
+        <ResultsVerdict
+          v-if="verdict.winner"
+          :verdict="verdict"
+          :rows="keyComparison"
+          :horizon-year="horizonYear"
+          :label-a="`BTO · ${labelOf(TOWNS, store.choiceA.town)}`"
+          :label-b="`Resale · ${labelOf(TOWNS, store.choiceB.town)}`"
+        />
+        <h1 v-else class="hero-statement">Your result</h1>
 
-      <!-- The two prices everything rests on, as figures, with where each came from (D26, D39). -->
-      <section v-if="btoPriceBasis || resalePriceBasis" class="card mb-3 price-basis" aria-labelledby="price-basis-title" data-cy="results-price-basis">
-        <div class="card-body">
-          <h2 id="price-basis-title" class="h6 mb-3">The prices we used</h2>
-          <div class="price-basis__grid">
-            <div v-if="btoPriceBasis" class="price-basis__item">
-              <p class="price-basis__label"><span class="dash-dot dash-dot--bto" aria-hidden="true"></span>BTO price (estimated)</p>
-              <p class="price-basis__figure text-numeric" data-cy="results-price-bto">{{ formatMoney(result.resolvedA.purchasePriceCents / 100) }}</p>
-              <p class="price-basis__note" data-cy="results-price-basis-bto">
-                {{ btoPriceBasis }}
-                <RouterLink to="/dashboard" data-cy="results-price-basis-change">Change the price</RouterLink>
-              </p>
-            </div>
-            <div v-if="resalePriceBasis" class="price-basis__item">
-              <p class="price-basis__label"><span class="dash-dot dash-dot--resale" aria-hidden="true"></span>Resale price</p>
-              <p class="price-basis__figure text-numeric" data-cy="results-price-resale">{{ formatMoney(result.resolvedB.purchasePriceCents / 100) }}</p>
-              <p class="price-basis__note" data-cy="results-price-basis-resale">{{ resalePriceBasis }}</p>
-            </div>
+        <!-- 2. The two prices everything rests on, in one line; where each came from one click away (D26, D33, D39). -->
+        <section class="basis" aria-label="The prices we used" data-cy="results-price-basis">
+          <div class="basis__strip">
+            <span class="basis__lead">Based on</span>
+            <span v-if="btoShort">
+              <strong>BTO <span class="text-numeric" data-cy="results-price-bto">{{ formatMoney(result.resolvedA.purchasePriceCents / 100) }}</span></strong>
+              · {{ btoShort }}
+            </span>
+            <span v-if="btoShort && resaleShort" class="basis__sep" aria-hidden="true">|</span>
+            <span v-if="resaleShort">
+              <strong>Resale <span class="text-numeric" data-cy="results-price-resale">{{ formatMoney(result.resolvedB.purchasePriceCents / 100) }}</span></strong>
+              · {{ resaleShort }}
+            </span>
+            <span class="basis__sep" aria-hidden="true">|</span>
+            <span class="badge-version" data-cy="results-ruleset-version">Ruleset {{ result.rulesetVersion }}</span>
+            <span v-if="result.mock" class="basis__mock" data-cy="results-mock-notice">Showing mock data</span>
+            <RouterLink to="/dashboard" class="basis__change d-print-none" data-cy="results-price-basis-change">Change the prices</RouterLink>
           </div>
-        </div>
-      </section>
+          <details class="basis__more">
+            <summary class="basis__more-toggle">How we chose these prices</summary>
+            <p v-if="btoPriceBasis" class="basis__note" data-cy="results-price-basis-bto">{{ btoPriceBasis }}</p>
+            <p v-if="resalePriceBasis" class="basis__note" data-cy="results-price-basis-resale">{{ resalePriceBasis }}</p>
+          </details>
+        </section>
 
-      <!-- Why one path ends ahead, line by line (D34). Arrives with /compare; hidden if an older server omits it. -->
-      <GapBreakdownPanel v-if="result.gapBreakdown" :gap="result.gapBreakdown" />
-
-      <div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
-        <button type="button" class="btn btn-outline-secondary" data-cy="results-print-button" @click="printPage">Print or save as PDF</button>
-      </div>
-      <SaveScenarioPanel class="d-print-none" :result="result" />
-
-      <h2 class="h5 mt-4 mb-2">More detail</h2>
-      <div class="results-sections">
-        <DashboardSection
-          v-if="result.outcomeA && result.outcomeB"
-          v-model:open="sections.chart"
-          title="Net position over time"
-          takeaway="How each path's net position builds up year by year. Hover or tap the chart to compare."
-          lazy
-          cy="results-section-chart"
-        >
-          <p class="text-secondary">
-            A running estimate, without selling: the flat's value minus the loan and the CPF to put back. It does not take off
-            the cash you pay in, so {{ horizonYear }} here differs a little from the net position above. For the exact figure
-            and what it is made of, see the
-            <RouterLink to="/dashboard" data-cy="results-cashflow-dashboard-link">financial dashboard</RouterLink>.
-          </p>
-          <CashFlowOverTimeChart :outcome-a="result.outcomeA" :outcome-b="result.outcomeB" :horizon-year="horizonYear" />
-        </DashboardSection>
-
-        <DashboardSection
-          v-model:open="sections.heatmap"
-          title="Where each path ends ahead"
-          :takeaway="heatmapTakeaway"
-          cy="results-section-heatmap"
-        >
-          <!-- How to read it, in plain words: the grid is easy to misread without this. -->
-          <ul class="heatmap-guide text-secondary" data-cy="results-heatmap-guide">
-            <li>Nobody knows how fast flat prices or incomes will grow, so each square tries one combination: flat price growth a year across the top, income growth a year down the side.</li>
-            <li>The colour says which path leaves you better off<template v-if="horizonYear"> in {{ horizonYear }}</template>: dark for BTO, pink for resale, grey when they're about level.</li>
-            <li>"You" marks the growth rates in your plan. Select any square to see by how much one path is ahead.</li>
-          </ul>
-          <HeatmapGrid
+        <!-- 3. Would the answer change (the heatmap in small, D35, D40), and the trade-off. -->
+        <div class="results-pair">
+          <ResultsRobustness
             :grid="result.grid"
-            :user-point="userPoint"
-            :horizon-year="horizonYear"
-            label-a="BTO"
-            label-b="Resale"
+            :break-even-sentence="result.breakEvenSentence"
+            :bto-price-sentence="result.btoPriceSentence"
+            @open-grid="openGrid"
           />
-        </DashboardSection>
+          <ResultsTradeoff :rows="keyComparison" :close="verdict.close" />
+        </div>
 
-        <!-- Part of the plan, fetches independently of /compare: which BTO application year ends highest (POST /api/timing).
-             Lazy: it only asks the server once the section is opened. -->
-        <DashboardSection
-          v-model:open="sections.timing"
-          class="d-print-none"
-          title="When to apply"
-          :takeaway="timingTakeaway"
-          lazy
-          flat
-          cy="results-section-timing"
-        >
-          <TimingOptimiserPanel @loaded="timingResult = $event" />
-        </DashboardSection>
+        <!-- 4. Why one path ends ahead, line by line (D34), with the two path cards one click away. -->
+        <ResultsWhy :gap="result.gapBreakdown">
+          <details
+            v-if="result.outcomeA && result.outcomeB"
+            class="paths"
+            :open="pathsOpen"
+            data-cy="results-paths"
+            @toggle="pathsOpen = $event.target.open"
+          >
+            <summary class="paths__toggle d-print-none">
+              See each path's full breakdown
+              <svg class="paths__chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+            </summary>
+            <h2 id="path-details-title" class="visually-hidden" tabindex="-1">Each path<template v-if="horizonYear"> in {{ horizonYear }}</template></h2>
+            <div class="row g-3 mt-1">
+              <div class="col-12 col-lg-6">
+                <PathOutcomeCard
+                  :subtitle="describe(store.choiceA)"
+                  :outcome="result.outcomeA"
+                  :horizon-year="horizonYear"
+                  cy-prefix="results-patha"
+                  tone="bto"
+                  :ahead="!verdict.close && verdict.winner === 'bto'"
+                />
+              </div>
+              <div class="col-12 col-lg-6">
+                <PathOutcomeCard
+                  :subtitle="describe(store.choiceB)"
+                  :outcome="result.outcomeB"
+                  :horizon-year="horizonYear"
+                  cy-prefix="results-pathb"
+                  tone="resale"
+                  :ahead="!verdict.close && verdict.winner === 'resale'"
+                />
+              </div>
+            </div>
+          </details>
+        </ResultsWhy>
+
+        <!-- 5. Grants (already counted, D1), and the Proximity Housing Grant when the parents question wasn't asked (D38). -->
+        <ResultsGrants
+          v-if="result.outcomeA && result.outcomeB"
+          :outcome-a="result.outcomeA"
+          :outcome-b="result.outcomeB"
+          :phg-not-asked="phgNotAsked"
+          @why="showGrantReasons"
+          @add-parents="addParents"
+        />
+
+        <!-- 6. Next: the Dashboard, the official steps, saving and printing. -->
+        <section class="next d-print-none" aria-label="Next" data-cy="results-verdict-next">
+          <p class="next__text mb-0"><strong>Next:</strong> see how the numbers change over time, then check the official steps.</p>
+          <div class="next__actions">
+            <RouterLink to="/dashboard" class="btn btn-primary" data-cy="results-dashboard-button">Open the dashboard</RouterLink>
+            <button type="button" class="btn btn-outline-secondary" data-cy="results-steps-jump" @click="jumpToSteps">Official steps</button>
+            <SaveScenarioPanel class="next__save" :result="result" />
+            <button type="button" class="btn btn-link" data-cy="results-print-button" @click="printPage">Print or save as PDF</button>
+            <RouterLink to="/plan" class="btn btn-link" data-cy="results-edit-button">Change inputs</RouterLink>
+          </div>
+        </section>
+
+        <!-- 7. More detail, folded: the chart over time, the full heatmap, when to apply, the official steps. -->
+        <section aria-labelledby="more-title" class="results-more">
+          <h2 id="more-title" class="results-more__title">More detail</h2>
+          <div class="results-sections">
+            <DashboardSection
+              v-if="result.outcomeA && result.outcomeB"
+              v-model:open="sections.chart"
+              title="Net position over time"
+              takeaway="How each path's net position builds up year by year. Hover or tap the chart to compare."
+              lazy
+              cy="results-section-chart"
+            >
+              <p class="text-secondary">
+                A running estimate, without selling: the flat's value minus the loan and the CPF to put back. It does not take off
+                the cash you pay in, so {{ horizonYear }} here differs a little from the net position above. For the exact figure
+                and what it is made of, see the
+                <RouterLink to="/dashboard" data-cy="results-cashflow-dashboard-link">financial dashboard</RouterLink>.
+              </p>
+              <CashFlowOverTimeChart :outcome-a="result.outcomeA" :outcome-b="result.outcomeB" :horizon-year="horizonYear" />
+            </DashboardSection>
+
+            <DashboardSection
+              v-model:open="sections.heatmap"
+              title="Where each path ends ahead"
+              :takeaway="heatmapTakeaway"
+              heading-id="heatmap-title"
+              cy="results-section-heatmap"
+            >
+              <ul class="heatmap-guide text-secondary" data-cy="results-heatmap-guide">
+                <li>Nobody knows how fast flat prices or incomes will grow, so each square tries one combination: flat price growth a year across the top, income growth a year down the side.</li>
+                <li>The colour says which path leaves you better off<template v-if="horizonYear"> in {{ horizonYear }}</template>: dark for BTO, pink for resale, grey when they're about level.</li>
+                <li>"You" marks the growth rates in your plan. Select any square to see by how much one path is ahead.</li>
+              </ul>
+              <HeatmapGrid
+                :grid="result.grid"
+                :user-point="userPoint"
+                :horizon-year="horizonYear"
+                label-a="BTO"
+                label-b="Resale"
+              />
+            </DashboardSection>
+
+            <!-- Fetches on its own once opened: which BTO application year ends highest (POST /api/timing). -->
+            <DashboardSection
+              v-model:open="sections.timing"
+              class="d-print-none"
+              title="When to apply"
+              :takeaway="timingTakeaway"
+              lazy
+              flat
+              cy="results-section-timing"
+            >
+              <TimingOptimiserPanel @loaded="timingResult = $event" />
+            </DashboardSection>
+
+            <DashboardSection
+              v-model:open="sections.steps"
+              title="What to do next"
+              takeaway="Five official steps: the HFE letter, grants, a budget, resale payments and the conditions after buying."
+              flat
+              heading-id="steps-title"
+              cy="results-section-steps"
+            >
+              <ResultsNextSteps />
+            </DashboardSection>
+          </div>
+        </section>
       </div>
-
-      <ResultsNextSteps class="results-next" />
-
       <!-- TODO (seat 5): strategy top 3 once /api/strategy exists (future work, off by default). -->
     </template>
 
@@ -365,13 +427,39 @@ onMounted(load);
 </template>
 
 <style scoped>
+/* Redesign (4 Nov 2026): one column of boxes, two side by side where they pair up, stacking on phones. */
+.results-page { display: flex; flex-direction: column; gap: var(--space-5); }
+.results-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: var(--space-4); }
 .results-sections { display: flex; flex-direction: column; gap: var(--space-3); }
-.results-next { margin-top: var(--space-3); }
-.price-basis__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--space-4); }
-.price-basis__item { min-width: 0; }
-.price-basis__label { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }
-.price-basis__figure { margin: var(--space-1) 0 var(--space-2); font-family: var(--font-heading); font-size: 1.75rem; font-weight: 500; line-height: 1.1; letter-spacing: -0.02em; }
-.price-basis__note { margin: 0; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; }
+.results-more__title { margin: 0 0 var(--space-3); font-size: 1.125rem; font-weight: 600; }
+
+/* "Based on" line */
+.basis { padding: var(--space-3) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); font-size: 0.875rem; color: var(--text-secondary); }
+.basis__strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.basis__strip strong { color: var(--text-primary); }
+.basis__lead { font-weight: 500; }
+.basis__mock { padding: 0.125rem 0.625rem; border-radius: var(--radius-pill); background: var(--warning-fill); color: var(--warning); font-weight: 500; }
+.basis__change { margin-left: auto; font-weight: 600; color: var(--text-primary); }
+.basis__more { margin-top: var(--space-2); }
+.basis__more-toggle { cursor: pointer; font-size: 0.8125rem; color: var(--text-secondary); }
+.basis__more-toggle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
+.basis__note { margin: var(--space-2) 0 0; line-height: 1.5; }
+
+/* "See each path's full breakdown" inside Why */
+.paths { border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); }
+.paths__toggle { display: inline-flex; align-items: center; gap: var(--space-2); padding: 0.625rem 1.125rem; border: 1px solid var(--border); border-radius: var(--radius-pill); cursor: pointer; font-weight: 500; list-style: none; }
+.paths__toggle::-webkit-details-marker { display: none; }
+.paths__toggle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.paths__chev { transition: transform var(--duration-base) var(--ease-out); }
+.paths[open] .paths__chev { transform: rotate(180deg); }
+
+/* Next bar */
+.next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); }
+.next__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.next__save { margin-bottom: 0 !important; }
+
+@media (prefers-reduced-motion: reduce) { .paths__chev { transition: none; } }
+@media print { .paths > :not(summary) { display: block; } }
 .heatmap-guide { margin: 0 0 var(--space-3); padding-left: 1.1rem; font-size: 0.9375rem; line-height: 1.5; }
 .heatmap-guide li + li { margin-top: var(--space-1); }
 </style>

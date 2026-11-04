@@ -147,29 +147,27 @@ export function keyRows(outcomeA, outcomeB, horizonYear) {
 }
 
 /**
- * One sentence on what the path that is behind still does better, from the rows: "Resale gets you the keys about
- * 4 years sooner." Only cash up front and the keys: grants are already in net position (D1), so listing them as a
- * reason would count them twice. Empty when there is nothing to say. When the result is too close to call it
- * says so instead, because the assumptions could change who ends ahead.
+ * One sentence on what the path that is behind still does better, from the rows: "But resale gets you the keys
+ * 4 years 3 months sooner and needs about S$57,000 less cash up front." Only the keys and cash up front: grants are
+ * already in net position (D1), so listing them as a reason would count them twice. Empty when there is nothing to
+ * say. When the result is too close to call it says so instead, because the assumptions could change who ends ahead.
  */
 export function reasonLine(rows, v) {
   if (!v || !v.winner) return '';
   if (v.winner === 'level') return 'Both paths leave you in about the same place.';
   if (v.close) return 'The gap is small enough that your assumptions could change who ends ahead.';
   const loser = v.winner === 'bto' ? 'b' : 'a';
+  const keys = rows.find((r) => r.id === 'keys' && r.better === loser && r.months > 0);
+  const cash = rows.find((r) => r.id === 'cash' && r.better === loser);
   const phrases = [];
-  for (const row of rows) {
-    if (row.id === 'position' || row.better !== loser) continue;
-    if (row.id === 'cash') phrases.push('a smaller cash payment up front');
-    else if (row.id === 'keys') {
-      phrases.push(row.months < 12
-        ? `the keys ${row.months} month${row.months === 1 ? '' : 's'} sooner`
-        : `the keys about ${Math.round(row.months / 12)} year${Math.round(row.months / 12) === 1 ? '' : 's'} sooner`);
-    }
+  if (keys) phrases.push(`gets you the keys ${durationText(keys.months)} sooner`);
+  if (cash && Array.isArray(cash.raw)) {
+    const less = roundToThousand(Math.abs(cash.raw[0] - cash.raw[1]));
+    if (less > 0) phrases.push(`needs about ${formatMoney(less)} less cash up front`);
   }
   if (!phrases.length) return '';
-  const list = phrases.length === 1 ? phrases[0] : `${phrases.slice(0, -1).join(', ')} and ${phrases[phrases.length - 1]}`;
-  return `${NAME[loser]} gets you ${list}.`;
+  const name = loser === 'a' ? 'BTO' : 'resale';
+  return `But ${name} ${phrases.join(' and ')}.`;
 }
 
 /**
