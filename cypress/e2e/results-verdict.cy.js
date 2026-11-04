@@ -62,36 +62,28 @@ describe('results verdict', () => {
     cy.get('[data-cy=results-patha-card]').should('contain', 'Net position').and('contain', 'what this path leaves you with, after costs');
   });
 
-  it('says whether the answer would change, with the grid in small and the full grid one click away (D35, D40)', () => {
+  it('keeps the break-even sentence in view under the verdict, with the full grid folded one click away (D35, D40, D43)', () => {
     completePlan();
-    cy.get('[data-cy=results-robustness]').should('be.visible');
-    cy.get('[data-cy=results-robustness-line]').invoke('text').should('match', /growth combinations? we tested/);
-    cy.get('[data-cy=results-mini-grid] span').should('have.length', 36); // the mock grid is 6 by 6
-    cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
+    cy.get('[data-cy=results-breakeven] [data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
+    cy.get('[data-cy=results-breakeven] [data-cy=term-break-even-button]').should('be.visible');
+    cy.get('[data-cy=results-section-heatmap]').should('not.have.attr', 'open');
     cy.get('[data-cy=results-heatmap-open]').click();
     cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open');
     cy.focused().should('have.attr', 'id', 'heatmap-title');
+    cy.get('td[data-cy^=heatmap-cell-]').should('have.length', 36); // the mock grid is 6 by 6
   });
 
-  it('shows the trade-off in three rows, the better side marked in words and with a tick, grants not a row (D1)', () => {
+  it('shows both path cards straight after the verdict, with no extra boxes or links in between', () => {
     completePlan();
-    ['position', 'cash', 'keys'].forEach((id) => {
-      cy.get(`[data-cy=results-tradeoff-${id}-bto]`).invoke('text').should('not.be.empty');
-      cy.get(`[data-cy=results-tradeoff-${id}-resale]`).invoke('text').should('not.be.empty');
-    });
-    cy.get('[data-cy=results-tradeoff]').should('contain', '(better)').and('contain', '✓');
-    cy.get('[data-cy=results-tradeoff-grants]').should('not.exist');
-  });
-
-  it('shows both path cards in plain words, and points to the Dashboard for why one ends ahead (D34)', () => {
-    completePlan();
-    cy.get('#path-details-title').should('be.visible').and('contain', 'in plain words');
+    cy.get('#path-details-title').should('be.visible').and('not.contain', 'in plain words');
+    cy.get('[data-cy=results-robustness]').should('not.exist');
+    cy.get('[data-cy=results-tradeoff]').should('not.exist');
+    cy.get('[data-cy=results-why-dashboard]').should('not.exist');
+    cy.get('[data-cy=results-price-basis-change]').should('not.exist');
     cy.get('[data-cy=results-patha-card]').should('be.visible');
     cy.get('[data-cy=results-pathb-card]').should('be.visible');
     cy.get('[data-cy=results-gap-card]').should('not.exist');
     cy.get('[data-cy=results-patha-grants-total]').should('contain', 'for resale flats only').and('not.contain', 'Not eligible for the CPF Housing Grant (Family)');
-    cy.get('[data-cy=results-why-dashboard-link]').click();
-    cy.location('pathname').should('eq', '/dashboard');
   });
 
   it('moves on: opens the dashboard from the main button, and jumps to the official steps', () => {
