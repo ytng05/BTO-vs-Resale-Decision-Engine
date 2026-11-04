@@ -15,7 +15,7 @@ import IncomeScene from '../components/IncomeScene.vue';
 import WhyWeAsk from '../components/WhyWeAsk.vue';
 import ResaleScene from '../components/ResaleScene.vue';
 import { useAuthStore } from '../stores/auth.js';
-import { ABOUT_PARTS, validateAboutPart, validateStep } from '../validation/planValidation.js';
+import { ABOUT_PARTS, isPlanComplete, validateAboutPart, validateStep } from '../validation/planValidation.js';
 import { LEASE_BANDS, btoKeysYear } from '../constants/planOptions.js';
 
 const store = useScenarioStore();
@@ -38,8 +38,9 @@ if (route.query.new) {
 const TRACK = STEPS.slice(0, -1).map((s, i) => (i === 0 ? 'What matters' : s));
 const HEADINGS = ['What matters most in your next home?', STEPS[1], 'Which BTO are you eyeing?', 'Which resale flat are you looking at?'];
 // "About you" is asked over four screens, one question each (Calm "Easier onboarding" board). The store still has
-// one step for it; `aboutPart` is the screen. Back from "Your BTO" lands on its last screen (back() below).
-const aboutPart = ref(0);
+// one step for it; `aboutPart` is the screen, kept in the store so a Change link can open a given screen. Back from
+// "Your BTO" lands on its last screen (back() below).
+const aboutPart = computed({ get: () => store.aboutPart, set: (v) => { store.aboutPart = v; } });
 const lastAboutPart = ABOUT_PARTS.length - 1;
 const onAbout = computed(() => store.step === 1);
 // Each screen's question, and one plain line on why it is asked. Only the savings screen needs a lead.
@@ -99,6 +100,12 @@ onBeforeRouteUpdate(function (to) {
 const summary = ref(null);
 const form = ref(null);
 
+// Moving between phases (user testing, 3 Nov 2026): the stepper links to every step reached so far (every step once
+// the plan has reached the results teaser), and after that each screen offers "Back to your results", so an edit
+// doesn't mean pressing Next through every question after it.
+const reachable = computed(() => (store.reviewed ? STEPS.length - 2 : store.furthest));
+const showBackToResults = computed(() => store.reviewed && !isLastInput.value);
+
 // Back to the top of the form card, with focus on its title, when the card's content changes in place.
 async function toCardTop() {
   await nextTick();
@@ -108,14 +115,64 @@ async function toCardTop() {
   title?.focus({ preventScroll: true });
 }
 
+// Shows this screen's problems. About you's screens are short, so no summary: the cursor goes to the first box to
+// fix. Longer steps focus the summary, which lists every problem, each a link to its field.
+async function showErrors() {
+  attempted.value = true;
+  await nextTick();
+  if (onAbout.value) document.querySelector('[data-cy="plan-form"] .is-invalid')?.focus();
+  else summary.value?.focus();
+}
+
+// The first screen with something still to answer, or null when the plan is complete.
+function firstIncomplete() {
+  if (isPlanComplete(store)) return null;
+  const part = ABOUT_PARTS.findIndex((_, i) => Object.keys(validateAboutPart(i, store.profile)).length);
+  if (part !== -1) return { step: 1, part };
+  const step = [2, 3].find((i) => Object.keys(validateStep(i, store)).length);
+  return step ? { step, part: 0 } : null;
+}
+
+// Off to the results teaser, unless an answer is missing: then to the first screen that needs one, with its
+// problems shown.
+async function toResults() {
+  const gap = firstIncomplete();
+  if (!gap) {
+    router.push('/preview');
+    return;
+  }
+  store.step = gap.step;
+  aboutPart.value = gap.part;
+  await toCardTop();
+  showErrors();
+}
+
+// "Back to your results": this screen must be right first, as with Next.
+function backToResults() {
+  if (!isStepValid.value) {
+    showErrors();
+    return;
+  }
+  attempted.value = false;
+  toResults();
+}
+
+// A step in the stepper: back to any step freely; forward only once this screen is right, as with Next.
+function goTo(step) {
+  if (step === store.step) return;
+  if (step > store.step && !isStepValid.value) {
+    showErrors();
+    return;
+  }
+  attempted.value = false;
+  aboutPart.value = 0;
+  store.step = step;
+  toCardTop();
+}
+
 async function next() {
   if (!isStepValid.value) {
-    attempted.value = true;
-    await nextTick();
-    // About you's screens are short, so no summary: the cursor goes to the first box to fix. Longer steps focus
-    // the summary, which lists every problem, each a link to its field.
-    if (onAbout.value) document.querySelector('[data-cy="plan-form"] .is-invalid')?.focus();
-    else summary.value?.focus();
+    showErrors();
     return;
   }
 
@@ -126,8 +183,9 @@ async function next() {
     return;
   }
   if (isLastInput.value) {
-    // Last input step done: /preview, which checks the answers (and shows the picks' figures) before Results.
-    router.push('/preview');
+    // Last input step done: /preview, which checks the answers (and shows the picks' figures) before Results. A
+    // jump in the stepper can skip a screen, so anything still missing is asked first.
+    toResults();
     return;
   }
   store.next();
@@ -182,7 +240,7 @@ function back() {
                 <path d="M15 6l-6 6 6 6" />
               </svg>
             </button>
-            <div class="plan-card__progress"><AppStepper :steps="TRACK" :current="store.step" :weights="TRACK_WEIGHTS" :fill="trackFill" /></div>
+            <div class="plan-card__progress"><AppStepper :steps="TRACK" :current="store.step" :weights="TRACK_WEIGHTS" :fill="trackFill" :reachable="reachable" @go="goTo" /></div>
             <!-- Step 1 is optional: skip it. -->
             <button v-if="store.step === 0" type="button" class="plan-card__skip" data-cy="plan-step-skip" @click="next">
               Skip
@@ -207,6 +265,9 @@ function back() {
           <PathForm v-else-if="store.step === 3" key="choiceB" choice-key="choiceB" :errors="shownErrors" />
 
           <div class="plan-card__actions">
+            <button v-if="showBackToResults" type="button" class="btn btn-outline-secondary plan-card__done" data-cy="plan-step-done" @click="backToResults">
+              Back to your results
+            </button>
             <button type="submit" class="btn btn-primary btn-disc" data-cy="plan-step-next">
               <span class="btn-disc__disc" aria-hidden="true">
                 <!-- Lucide "arrow-right" -->
@@ -251,7 +312,8 @@ function back() {
 .plan-card__title { margin: 0; }
 .plan-card__title--hero { font-size: clamp(26px, 2.8vw, 36px); font-weight: 500; letter-spacing: -0.025em; line-height: 1.15; }
 .plan-card__lead { margin: 0; font-size: 15px; color: var(--text-secondary); }
-.plan-card__actions { display: flex; justify-content: flex-end; margin-top: auto; }
+.plan-card__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; margin-top: auto; }
+.plan-card__done { border-radius: var(--radius-pill); padding-inline: 20px; min-height: 48px; }
 
 /* Steps 2 to 4 (Calm "Plan your BTO" board): the illustration panel and the form card side by side (the track is
    inside the card), stacking below 992px. */

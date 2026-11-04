@@ -17,7 +17,7 @@ export const STEPS = ['What matters most', 'About you', 'Your BTO', 'Resale flat
 export const WISHES = [
   { key: 'parents', label: 'Near my parents' },
   { key: 'moveby', label: 'Moving in by a date' },
-  { key: 'monthly', label: 'A low monthly loan' },
+  { key: 'monthly', label: 'A smaller loan' }, // the engine gives the loan size, not a monthly repayment
   { key: 'cash', label: 'Keeping cash in hand' },
   { key: 'space', label: 'More space' },
   { key: 'value', label: 'Good resale value' },
@@ -27,6 +27,12 @@ const nextYear = () => new Date().getFullYear() + 1;
 
 const blank = () => ({
   step: 0,
+  // Plan navigation, UI only (not sent, not saved): the About you screen (index into ABOUT_PARTS), the furthest input
+  // step reached (the stepper links back to any of them), and whether this plan has reached the results teaser
+  // (then every step is a link and each screen offers "Back to your results").
+  aboutPart: 0,
+  furthest: 0,
+  reviewed: false,
   wishes: [],               // keys from WISHES; UI only (not sent, not saved)
   // The saved scenario these inputs belong to (UI only, not sent): set by saving, or by opening one from My scenarios.
   savedId: null,
@@ -100,6 +106,7 @@ export const useScenarioStore = defineStore('scenario', {
   actions: {
     next() {
       if (this.step < STEPS.length - 1) this.step += 1;
+      this.furthest = Math.max(this.furthest, Math.min(this.step, STEPS.length - 2));
     },
     back() {
       if (this.step > 0) this.step -= 1;
@@ -142,6 +149,9 @@ export const useScenarioStore = defineStore('scenario', {
       const fresh = blank();
       Object.assign(this, {
         step: STEPS.length - 2,
+        // A saved plan is complete: every step is a link, and "Back to your results" is offered.
+        furthest: STEPS.length - 2,
+        reviewed: true,
         profile: {
           ...fresh.profile,
           ...saved.profile,
