@@ -6,13 +6,14 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { listScenarios } from '../api/client.js';
 import { useAuthStore } from '../stores/auth.js';
+import { useScenarioStore } from '../stores/scenario.js';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
 const LINKS = [
-  { to: '/plan', label: 'Plan', cy: 'nav-plan-link' },
+  { to: '/plan?new=1', label: 'Plan', cy: 'nav-plan-link' }, // ?new=1: a fresh plan once this one is saved (PlanView)
   { to: '/results', label: 'Results', cy: 'nav-results-link' },
   { to: '/dashboard', label: 'Dashboard', cy: 'nav-dashboard-link' },
   { to: '/sources', label: 'Sources', cy: 'nav-sources-link' },
@@ -50,8 +51,11 @@ onMounted(() => {
 });
 onBeforeUnmount(() => resize?.disconnect());
 
+const scenario = useScenarioStore();
+
 function logout() {
   auth.logout();
+  scenario.reset(); // the next person on this device starts with an empty plan
   router.push('/');
 }
 </script>

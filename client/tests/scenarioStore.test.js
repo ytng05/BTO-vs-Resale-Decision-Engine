@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useScenarioStore, STEPS } from '../src/stores/scenario.js';
+import { useAuthStore } from '../src/stores/auth.js';
 
 describe('scenario store', () => {
   beforeEach(() => setActivePinia(createPinia()));
@@ -106,5 +107,46 @@ describe('scenario store: saved scenarios', () => {
     expect(ids).toHaveLength(2);
     expect(new Set(ids).size).toBe(2);
     expect(ids).not.toContain('applicant-1');
+  });
+});
+
+describe('saved answers belong to one account', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('forgets only the saved scenario when it was deleted elsewhere, and keeps the saved answers', () => {
+    const s = useScenarioStore();
+    s.markSaved('deleted-id', 'Plan A');
+    s.keepSavedProfiles('user-a', [{ applicants: [{ age: 33 }] }]);
+    s.forgetSavedScenario();
+    expect(s.savedId).toBeNull();
+    expect(s.savedName).toBeNull();
+    expect(s.savedKey).toBeNull();
+    expect(s.savedProfilesOf('user-a')).toHaveLength(1); // same user, so their answers stay
+  });
+
+  it('are only offered to the account they were loaded for', () => {
+    const s = useScenarioStore();
+    s.keepSavedProfiles('user-a', [{ applicants: [{ age: 33 }] }]);
+    expect(s.savedProfilesOf('user-a')).toHaveLength(1);
+    expect(s.savedProfilesOf('user-b')).toBeNull();
+    expect(s.savedProfilesOf(undefined)).toBeNull();
+  });
+
+  it('are forgotten, with the saved scenario, when the user logs out', () => {
+    const s = useScenarioStore();
+    s.markSaved('scenario-of-a', 'Plan A');
+    s.keepSavedProfiles('user-a', [{ applicants: [{ age: 33 }] }]);
+    useAuthStore().logout();
+    expect(s.savedId).toBeNull();
+    expect(s.savedName).toBeNull();
+    expect(s.savedProfiles).toBeNull();
+    expect(s.savedProfilesOf('user-a')).toBeNull();
+  });
+
+  it('survive Start planning for the same user', () => {
+    const s = useScenarioStore();
+    s.keepSavedProfiles('user-a', [{ applicants: [{ age: 33 }] }]);
+    s.reset();
+    expect(s.savedProfilesOf('user-a')).toHaveLength(1);
   });
 });

@@ -9,13 +9,16 @@
 // as they type, so a half-typed number is not flagged mid-keystroke.
 // Field names follow the store (contract v2/v2.1). Money is in dollars here; client.js sends cents.
 import Term from './Term.vue';
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
-import { ehgEstimate, getRuleset } from '../api/client.js';
+import { ehgEstimate, getRuleset, getScenario, listScenarios } from '../api/client.js';
+import { useAuthStore } from '../stores/auth.js';
+import { matchingValues, savedValues, suggestionLabel, valueAt } from '../utils/savedProfiles.js';
 import { formatMoney } from '../utils/format.js';
 import { CITIZENSHIPS, REQUIRED_APPLICANTS, blankApplicant } from '../constants/planOptions.js';
 import { cpfLooksHigh } from '../validation/planValidation.js';
 import NumberField from './NumberField.vue';
+import SavedValueList from './SavedValueList.vue';
 
 const props = defineProps({
   errors: { type: Object, default: () => ({}) },
@@ -29,6 +32,117 @@ const WHO = ['You', 'The other buyer'];
 const store = useScenarioStore();
 const applicants = computed(() => store.profile.applicants);
 const currentYear = new Date().getFullYear();
+
+// Autofill, like the browser's own suggestions: each About you number box offers the different answers it had in the
+// user's saved scenarios (utils/savedProfiles.js), filtered by what is typed so far. Picking one fills that box only.
+// A box is named by the same key as its error ('applicants.0.age', 'cashSavings').
+const auth = useAuthStore();
+const openField = ref(null); // the box that has the focus, so its suggestions show
+const SCENARIOS_TO_CHECK = 10;
+
+// Loads the answers once and keeps them in the store (store.savedProfiles), so going back and forth, or a fresh
+// plan, does not fetch them again. A new save or logging out clears them.
+onMounted(async function () {
+  if (!auth.isLoggedIn || !auth.user) {
+    return;
+  }
+  const userId = auth.user.id; // whose answers these are
+  if (store.savedProfilesOf(userId) !== null) {
+    return; // already loaded for this account
+  }
+  try {
+    const list = (await listScenarios()).scenarios.slice(0, SCENARIOS_TO_CHECK);
+    const requests = [];
+    for (const s of list) {
+      requests.push(getScenario(s.id));
+    }
+    const profiles = [];
+    for (const data of await Promise.all(requests)) {
+      profiles.push(data.scenario.profile);
+    }
+    store.keepSavedProfiles(userId, profiles); // a box already focused shows its suggestions now
+  } catch (err) {
+    // No suggestions this time rather than an error; it tries again next time.
+  }
+});
+
+// The saved answers for the logged-in account only (never another account's, e.g. after a logout on this device).
+function ownSavedProfiles() {
+  if (!auth.user) {
+    return [];
+  }
+  const saved = store.savedProfilesOf(auth.user.id);
+  if (saved === null) {
+    return [];
+  }
+  return saved;
+}
+
+// The suggestions for the focused box: [{ value, label }], empty when there are none.
+const suggestions = computed(function () {
+  if (openField.value === null) {
+    return [];
+  }
+  const values = matchingValues(savedValues(ownSavedProfiles(), openField.value), valueAt(store.profile, openField.value));
+  const options = [];
+  for (const value of values) {
+    options.push({ value: value, label: suggestionLabel(openField.value, value) });
+  }
+  return options;
+});
+
+function openSuggestions(field) {
+  openField.value = field;
+}
+
+function closeSuggestions() {
+  openField.value = null;
+}
+
+// Whether a box's list is showing, and its id for aria-controls (only one list is open at a time).
+function listOpen(field) {
+  return openField.value === field && suggestions.value.length > 0;
+}
+
+function listId(field) {
+  if (listOpen(field)) {
+    return 'situation-autofill-list';
+  }
+  return null;
+}
+
+// Closes once the focus leaves the box and its list, so the down arrow and Tab can reach the list.
+function onFieldFocusOut(event) {
+  if (event.currentTarget.contains(event.relatedTarget)) {
+    return;
+  }
+  closeSuggestions();
+}
+
+// Down arrow in a box: into its list.
+function focusFirstSuggestion(event) {
+  const first = event.target.closest('.big-field').querySelector('.autofill__item');
+  if (first) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+// Esc in the list: back to the box, with the list closed.
+function backToField(inputId) {
+  document.getElementById(inputId).focus();
+  closeSuggestions();
+}
+
+function pickSuggestion(value) {
+  const parts = openField.value.split('.');
+  if (parts.length === 1) {
+    store.profile[parts[0]] = value;
+  } else {
+    store.profile.applicants[Number(parts[1])][parts[2]] = value;
+  }
+  closeSuggestions();
+}
 
 // The contract models exactly two buyers (API_CONTRACT.md), so always show two.
 while (store.profile.applicants.length < REQUIRED_APPLICANTS) {
@@ -121,7 +235,7 @@ onBeforeUnmount(() => clearTimeout(timer));
   <div data-cy="situation-form" :data-part="part">
     <!-- 0 · How old are you both? -->
     <div v-if="part === 0" class="pair">
-      <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`">
+      <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`" @focusout="onFieldFocusOut">
         <label :for="`buyer-${i}-age`" class="big-field__label">{{ WHO[i] }}</label>
         <div class="big-box">
           <NumberField
@@ -135,6 +249,20 @@ onBeforeUnmount(() => clearTimeout(timer));
             :class="{ 'is-invalid': err(`applicants.${i}.age`) }"
             :data-cy="`situation-buyer-${i + 1}-age-input`"
             @blur="leave(`applicants.${i}.age`)"
+            role="combobox"
+            aria-autocomplete="list"
+            :aria-expanded="String(listOpen(`applicants.${i}.age`))"
+            :aria-controls="listId(`applicants.${i}.age`)"
+            @focus="openSuggestions(`applicants.${i}.age`)"
+            @keydown.down="focusFirstSuggestion"
+            @keydown.esc="closeSuggestions"
+          />
+          <SavedValueList
+            id="situation-autofill-list"
+            v-if="listOpen(`applicants.${i}.age`)"
+            :options="suggestions"
+            @pick="pickSuggestion"
+            @close="backToField(`buyer-${i}-age`)"
           />
         </div>
         <div v-if="err(`applicants.${i}.age`)" :id="`buyer-${i}-age-error`" class="invalid-feedback d-block" :data-cy="`situation-buyer-${i + 1}-age-error`">{{ err(`applicants.${i}.age`) }}</div>
@@ -191,7 +319,7 @@ onBeforeUnmount(() => clearTimeout(timer));
     <!-- 2 · What do you each earn a month? The total, then the early EHG estimate. -->
     <template v-else-if="part === 2">
       <div class="pair">
-        <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`">
+        <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`" @focusout="onFieldFocusOut">
           <label :for="`buyer-${i}-income`" class="big-field__label">{{ WHO[i] }}</label>
           <div class="big-box">
             <span class="big-box__unit" aria-hidden="true">S$</span>
@@ -203,6 +331,20 @@ onBeforeUnmount(() => clearTimeout(timer));
               :class="{ 'is-invalid': err(`applicants.${i}.monthlyIncome`) }"
               :data-cy="`situation-buyer-${i + 1}-income-input`"
               @blur="leave(`applicants.${i}.monthlyIncome`)"
+              role="combobox"
+              aria-autocomplete="list"
+              :aria-expanded="String(listOpen(`applicants.${i}.monthlyIncome`))"
+              :aria-controls="listId(`applicants.${i}.monthlyIncome`)"
+              @focus="openSuggestions(`applicants.${i}.monthlyIncome`)"
+              @keydown.down="focusFirstSuggestion"
+              @keydown.esc="closeSuggestions"
+            />
+            <SavedValueList
+              id="situation-autofill-list"
+              v-if="listOpen(`applicants.${i}.monthlyIncome`)"
+              :options="suggestions"
+              @pick="pickSuggestion"
+              @close="backToField(`buyer-${i}-income`)"
             />
           </div>
           <div v-if="err(`applicants.${i}.monthlyIncome`)" class="invalid-feedback d-block" :data-cy="`situation-buyer-${i + 1}-income-error`">{{ err(`applicants.${i}.monthlyIncome`) }}</div>
@@ -247,7 +389,7 @@ onBeforeUnmount(() => clearTimeout(timer));
       <fieldset class="choice-set">
         <legend class="big-field__group">CPF Ordinary Account</legend>
         <div class="pair">
-          <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`">
+          <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`" @focusout="onFieldFocusOut">
             <label :for="`buyer-${i}-cpf`" class="big-field__label">{{ WHO[i] }}</label>
             <div class="big-box">
               <span class="big-box__unit" aria-hidden="true">S$</span>
@@ -260,6 +402,20 @@ onBeforeUnmount(() => clearTimeout(timer));
                 :class="{ 'is-invalid': err(`applicants.${i}.cpfOaBalance`) }"
                 :data-cy="`situation-buyer-${i + 1}-cpf-input`"
                 @blur="leave(`applicants.${i}.cpfOaBalance`)"
+                role="combobox"
+                aria-autocomplete="list"
+                :aria-expanded="String(listOpen(`applicants.${i}.cpfOaBalance`))"
+                :aria-controls="listId(`applicants.${i}.cpfOaBalance`)"
+                @focus="openSuggestions(`applicants.${i}.cpfOaBalance`)"
+                @keydown.down="focusFirstSuggestion"
+                @keydown.esc="closeSuggestions"
+              />
+              <SavedValueList
+                id="situation-autofill-list"
+                v-if="listOpen(`applicants.${i}.cpfOaBalance`)"
+                :options="suggestions"
+                @pick="pickSuggestion"
+                @close="backToField(`buyer-${i}-cpf`)"
               />
             </div>
             <div v-if="err(`applicants.${i}.cpfOaBalance`)" class="invalid-feedback d-block" :data-cy="`situation-buyer-${i + 1}-cpf-error`">{{ err(`applicants.${i}.cpfOaBalance`) }}</div>
@@ -271,7 +427,7 @@ onBeforeUnmount(() => clearTimeout(timer));
         </div>
       </fieldset>
       <div class="pair">
-        <div class="big-field">
+          <div class="big-field" @focusout="onFieldFocusOut">
           <label for="cash-savings" class="big-field__group">Cash savings (both of you)</label>
           <div class="big-box">
             <span class="big-box__unit" aria-hidden="true">S$</span>
@@ -284,6 +440,20 @@ onBeforeUnmount(() => clearTimeout(timer));
               :class="{ 'is-invalid': err('cashSavings') }"
               data-cy="situation-cash-savings-input"
               @blur="leave('cashSavings')"
+              role="combobox"
+              aria-autocomplete="list"
+              :aria-expanded="String(listOpen('cashSavings'))"
+              :aria-controls="listId('cashSavings')"
+              @focus="openSuggestions('cashSavings')"
+              @keydown.down="focusFirstSuggestion"
+              @keydown.esc="closeSuggestions"
+            />
+            <SavedValueList
+              id="situation-autofill-list"
+              v-if="listOpen('cashSavings')"
+              :options="suggestions"
+              @pick="pickSuggestion"
+              @close="backToField('cash-savings')"
             />
           </div>
           <p v-if="!err('cashSavings')" id="cash-savings-help" class="big-field__help">Enter 0 if none.</p>
@@ -388,4 +558,7 @@ legend.big-field__group { margin-bottom: 12px; }
 @media (prefers-reduced-motion: reduce) {
   .big-box, .cit__face, .switch__track, .switch__knob { transition: none; }
 }
+/* Autofill: each box's suggestion list (SavedValueList.vue) hangs just under it */
+.big-box { position: relative; }
+
 </style>

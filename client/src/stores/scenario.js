@@ -34,6 +34,10 @@ const blank = () => ({
   furthest: 0,
   reviewed: false,
   wishes: [],               // keys from WISHES; UI only (not sent, not saved)
+  // The saved scenario these inputs belong to (UI only, not sent): set by saving, or by opening one from My scenarios.
+  savedId: null,
+  savedName: null,
+  savedKey: null,           // the inputs as they were at that save, to tell "nothing changed" from "changed since"
 
   profile: {
     // One buyer to start; the form can add a second. blankApplicant() lives in
@@ -92,7 +96,19 @@ const blank = () => ({
 });
 
 export const useScenarioStore = defineStore('scenario', {
-  state: blank,
+  // savedProfiles: the About you answers of the newest saved scenarios, loaded once for the autofill (SituationForm).
+  // Kept outside blank(), so a fresh plan does not load them again; null means not loaded yet.
+  state: function () {
+    // savedProfilesOwner: the id of the account the saved answers were loaded for (auth.user.id). They are only
+    // ever offered to that account.
+    return { ...blank(), savedProfiles: null, savedProfilesOwner: null };
+  },
+  getters: {
+    // The inputs as one string, so the inputs now can be compared with the inputs at the last save.
+    inputsKey(state) {
+      return JSON.stringify([state.profile, state.choiceA, state.choiceB, state.assumptions]);
+    },
+  },
   actions: {
     next() {
       if (this.step < STEPS.length - 1) this.step += 1;
@@ -126,6 +142,38 @@ export const useScenarioStore = defineStore('scenario', {
       if (result) payload.result = result;
       return payload;
     },
+    // After a save (or opening a saved scenario): these inputs now belong to that scenario.
+    markSaved(id, name) {
+      this.savedId = id;
+      this.savedName = name;
+      this.savedKey = this.inputsKey;
+      this.savedProfiles = null; // a new save: load the answers again next time
+    },
+    // The saved scenario was deleted elsewhere: these inputs no longer belong to one.
+    forgetSavedScenario() {
+      this.savedId = null;
+      this.savedName = null;
+      this.savedKey = null;
+    },
+    // Logging out: the plan no longer belongs to a saved scenario, and the saved answers must not be offered to
+    // whoever logs in next.
+    forgetSaved() {
+      this.forgetSavedScenario();
+      this.savedProfiles = null;
+      this.savedProfilesOwner = null;
+    },
+    // The saved answers, but only for the account they were loaded for; anyone else gets null.
+    savedProfilesOf(userId) {
+      if (!userId || this.savedProfiles === null || this.savedProfilesOwner !== userId) {
+        return null;
+      }
+      return this.savedProfiles;
+    },
+    // Keeps the answers just loaded for this account.
+    keepSavedProfiles(userId, profiles) {
+      this.savedProfiles = profiles;
+      this.savedProfilesOwner = userId;
+    },
     // Refills the store from a saved scenario. Each part is laid over the blank one, so a scenario saved
     // before a field existed still loads, with that field's default. Lands on the last input step, as
     // after "See results", so "Change inputs" opens Path B.
@@ -155,6 +203,8 @@ export const useScenarioStore = defineStore('scenario', {
           ...(saved.profile?.constraints?.moveInByYear ? ['moveby'] : []),
         ],
       });
+      // Saving again updates this scenario instead of making a copy.
+      this.markSaved(saved.id, saved.name);
     },
   },
 });

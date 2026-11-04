@@ -137,6 +137,35 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
     expect(list[0]).not.toHaveProperty('result');
   });
 
+  it('updates a scenario in place, only for its owner, and a save without a result removes it', async () => {
+    const owner = await register('henry@example.com');
+    const other = await register('iris@example.com');
+    const { id } = (await request(app).post('/api/scenarios').set(auth(owner)).send(scenario)).body.scenario;
+
+    const changed = { ...scenario, name: 'Renamed', choiceB: { ...scenario.choiceB, town: 'TAMPINES' } };
+    const updated = await request(app).put(`/api/scenarios/${id}`).set(auth(owner)).send(changed);
+    expect(updated.status).toBe(200);
+    expect(updated.body.scenario).toMatchObject({ id, name: 'Renamed', rulesetVersion: 'test-ruleset' });
+    expect(updated.body.scenario.choiceB.town).toBe('TAMPINES');
+    // Updated, not copied: still one scenario.
+    expect((await request(app).get('/api/scenarios').set(auth(owner))).body.scenarios).toHaveLength(1);
+
+    // Another user's token on this id: 404, and the scenario is unchanged.
+    const theirs = await request(app).put(`/api/scenarios/${id}`).set(auth(other)).send({ ...changed, name: 'Not yours' });
+    expect(theirs.status).toBe(404);
+
+    // Saved again without a result: the old result is removed, and the year falls back to this year.
+    const { result, ...withoutResult } = changed;
+    const cleared = await request(app).put(`/api/scenarios/${id}`).set(auth(owner)).send(withoutResult);
+    expect(cleared.status).toBe(200);
+    expect(cleared.body.scenario).not.toHaveProperty('result');
+    expect(cleared.body.scenario.evaluationStartYear).toBe(new Date().getFullYear());
+
+    const loaded = (await request(app).get(`/api/scenarios/${id}`).set(auth(owner))).body.scenario;
+    expect(loaded.name).toBe('Renamed');
+    expect(loaded).not.toHaveProperty('result');
+  });
+
   it('never shows one user’s scenario to another', async () => {
     const owner = await register('carol@example.com');
     const other = await register('dave@example.com');
