@@ -68,7 +68,6 @@ describe('My scenarios filter bar', () => {
     cy.get('[data-cy=scenarios-filter-town]').should('have.value', '');
   });
 
-  
   it('keeps ticked scenarios in the list while filtering in compare mode', () => {
     visitScenarios();
     cy.get('[data-cy=scenarios-compare-mode-button]').click();
@@ -76,6 +75,7 @@ describe('My scenarios filter bar', () => {
     cy.get('[data-cy=scenarios-row-s2] [data-cy=scenarios-compare-checkbox]').check();
     cy.get('[data-cy=scenarios-filter-search]').type('draft');
     cy.get('[data-cy=scenarios-list] li').should('have.length', 3);
+    cy.get('[data-cy=scenarios-filter-count]').should('have.text', '1 of 3 scenarios');
     cy.get('[data-cy=scenarios-row-s1] [data-cy=scenarios-compare-checkbox]').uncheck();
     cy.get('[data-cy=scenarios-list] li').should('have.length', 2);
     cy.get('[data-cy=scenarios-row-s1]').should('not.exist');

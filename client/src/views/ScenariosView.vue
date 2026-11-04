@@ -26,6 +26,10 @@ const error = ref(null);
 const confirmingId = ref(null); // the row asking "Delete this scenario?"
 const busyId = ref(null); // the row being opened or deleted
 
+// Compare mode: Open and Delete are hidden so a tap cannot delete by accident.
+const compareMode = ref(false);
+const picker = useComparePicker();
+
 // The filter bar. Everything is worked out on the page from the list, with no extra requests.
 const filters = ref(emptyFilters());
 
@@ -59,6 +63,17 @@ function setScenarios(list) {
   filters.value = keepValidFilters(filters.value, list);
 }
 
+// How many scenarios match the filters (not counting ticked ones kept visible in compare mode).
+const matchCount = computed(function () {
+  let count = 0;
+  for (const s of scenarios.value) {
+    if (matchesFilters(s, filters.value)) {
+      count = count + 1;
+    }
+  }
+  return count;
+});
+
 // "3 scenarios", or "1 of 3 scenarios" while filtering.
 const countText = computed(function () {
   const total = scenarios.value.length;
@@ -67,7 +82,7 @@ const countText = computed(function () {
     word = 'scenario';
   }
   if (filtersSet.value) {
-    return shownScenarios.value.length + ' of ' + total + ' ' + word;
+    return matchCount.value + ' of ' + total + ' ' + word;
   }
   return total + ' ' + word;
 });
@@ -75,10 +90,6 @@ const countText = computed(function () {
 function clearFilters() {
   filters.value = emptyFilters();
 }
-
-// Compare mode: Open and Delete are hidden so a tap cannot delete by accident.
-const compareMode = ref(false);
-const picker = useComparePicker();
 
 function startCompare() {
   confirmingId.value = null;
@@ -108,7 +119,7 @@ async function load() {
   loading.value = true;
   error.value = null;
   try {
-    scenarios.value = setScenarios((await listScenarios()).scenarios);
+    setScenarios((await listScenarios()).scenarios);
   } catch (e) {
     if (!handledAuthError(e)) {
       error.value = messageOf(e, 'Your scenarios could not be loaded. Check your connection and try again.');
@@ -129,7 +140,7 @@ async function open(id) {
     if (handledAuthError(e)) return;
     if (e?.response?.status === 404) {
       // Deleted elsewhere (another tab or device) since the list loaded.
-      scenarios.value = setScenarios((await listScenarios()).scenarios);
+      setScenarios(scenarios.value.filter((s) => s.id !== id));
       error.value = 'That scenario no longer exists. It may have been deleted in another tab.';
     } else {
       error.value = messageOf(e, 'The scenario could not be opened. Check your connection and try again.');
@@ -144,13 +155,13 @@ async function remove(id) {
   error.value = null;
   try {
     await deleteScenario(id);
-    scenarios.value = setScenarios((await listScenarios()).scenarios);
+    setScenarios(scenarios.value.filter((s) => s.id !== id));
     confirmingId.value = null;
   } catch (e) {
     if (handledAuthError(e)) return;
     if (e?.response?.status === 404) {
       // Already gone: the outcome the user wanted.
-      scenarios.value = setScenarios((await listScenarios()).scenarios);
+      setScenarios(scenarios.value.filter((s) => s.id !== id));
       confirmingId.value = null;
     } else {
       error.value = messageOf(e, 'The scenario could not be deleted. Check your connection and try again.');

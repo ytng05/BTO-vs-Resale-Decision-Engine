@@ -113,7 +113,7 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
     expect(saved.body.scenario.evaluationStartYear).toBe(new Date().getFullYear());
   });
 
-    it('lists a summary from the nested choice and result fields, only for the owner', async () => {
+  it('lists a summary from the nested choice and result fields, only for the owner', async () => {
     const owner = await register('frank@example.com');
     const other = await register('grace@example.com');
     const result = {
