@@ -1,6 +1,6 @@
 // Results page (mock data). Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 // Selector convention: data-cy="<area>-<element>-<action>" (see docs/CONVENTIONS.md).
-import { backTimes, completePlan, fillPath, fillSituation, next, openPathCards, seeResults } from './helpers/plan.js';
+import { backTimes, completePlan, fillPath, fillSituation, next, seeResults } from './helpers/plan.js';
 
 describe('results page', () => {
   it('shows an empty state when opened without a plan', () => {
@@ -19,7 +19,6 @@ describe('results page', () => {
 
   it('compares both paths with grants, CPF refund and every eligibility reason', () => {
     completePlan();
-    openPathCards();
     ['results-patha', 'results-pathb'].forEach((p) => {
       cy.get(`[data-cy=${p}-card]`).should('be.visible');
       cy.get(`[data-cy=${p}-net-position]`).invoke('text').should('match', /S\$[\d,]+/);

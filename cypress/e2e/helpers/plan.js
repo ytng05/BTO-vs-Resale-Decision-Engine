@@ -47,8 +47,6 @@ export function fillSituation({ moveInBy } = {}) {
 }
 // Back n times (from Resale flat to About you's ages screen is 5: Your BTO, savings, incomes, who is buying, ages).
 export const backTimes = (n) => Cypress._.times(n, () => back());
-// Results: the two path cards sit under "See each path's full breakdown" (folded at first).
-export const openPathCards = () => cy.get('[data-cy=results-paths] > summary').click();
 
 // Steps 3 and 4. BTO: town, then the launch (default: the newest, which also sets the classification), then the
 // flat types that launch offers. living only works when 'parents' was picked in step 1.

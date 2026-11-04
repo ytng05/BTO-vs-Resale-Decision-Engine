@@ -5,8 +5,7 @@ import { compareReusing } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import ResultsRobustness from '../components/ResultsRobustness.vue';
 import ResultsTradeoff from '../components/ResultsTradeoff.vue';
-import ResultsWhy from '../components/ResultsWhy.vue';
-import ResultsGrants from '../components/ResultsGrants.vue';
+import ResultsPhgCard from '../components/ResultsPhgCard.vue';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
 import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
@@ -52,7 +51,6 @@ const horizonYear = computed(() => result.value?.horizonYear ?? store.assumption
 // heatmap sections only draw once opened, so open them first and give the chart a moment to draw.
 async function printPage() {
   sections.value = { ...sections.value, chart: true, heatmap: true, steps: true };
-  pathsOpen.value = true;
   await nextTick();
   await new Promise((resolve) => { setTimeout(resolve, 400); });
   window.print();
@@ -72,11 +70,9 @@ const userPoint = computed(() => ({
 }));
 
 // Progressive disclosure (redesign, 4 Nov 2026): the answer, "Would the answer change?" (the heatmap in small, so the
-// central idea stays in view, D35), the trade-off, why and the grants are open; the full heatmap, the chart over
+// central idea stays in view, D35), the trade-off and the two path cards are open; the full heatmap, the chart over
 // time, when to apply and the official steps open on request (DashboardSection), each with a one-line takeaway.
 const sections = ref({ chart: false, heatmap: false, timing: false, steps: false });
-// The two path cards, under "See each path's full breakdown".
-const pathsOpen = ref(false);
 
 // Open a folded part, then move to its heading with focus, so keyboard and screen-reader users land there too.
 async function openAndGo(id) {
@@ -95,11 +91,7 @@ function jumpToSteps() {
   sections.value = { ...sections.value, steps: true };
   openAndGo('steps-title');
 }
-// "Why" in the Grants card: the path cards hold each grant's checks with their official sources.
-function showGrantReasons() {
-  pathsOpen.value = true;
-  openAndGo('path-details-title');
-}
+
 // Filled once the timing panel has loaded (it only loads when its section is first opened).
 const timingResult = ref(null);
 const timingTakeaway = computed(() => {
@@ -290,54 +282,39 @@ onMounted(load);
           <ResultsTradeoff :rows="keyComparison" :close="verdict.close" />
         </div>
 
-        <!-- 4. Why one path ends ahead, line by line (D34), with the two path cards one click away. -->
-        <ResultsWhy :gap="result.gapBreakdown">
-          <details
-            v-if="result.outcomeA && result.outcomeB"
-            class="paths"
-            :open="pathsOpen"
-            data-cy="results-paths"
-            @toggle="pathsOpen = $event.target.open"
-          >
-            <summary class="paths__toggle d-print-none">
-              See each path's full breakdown
-              <svg class="paths__chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
-            </summary>
-            <h2 id="path-details-title" class="visually-hidden" tabindex="-1">Each path<template v-if="horizonYear"> in {{ horizonYear }}</template></h2>
-            <div class="row g-3 mt-1">
-              <div class="col-12 col-lg-6">
-                <PathOutcomeCard
-                  :subtitle="describe(store.choiceA)"
-                  :outcome="result.outcomeA"
-                  :horizon-year="horizonYear"
-                  cy-prefix="results-patha"
-                  tone="bto"
-                  :ahead="!verdict.close && verdict.winner === 'bto'"
-                />
-              </div>
-              <div class="col-12 col-lg-6">
-                <PathOutcomeCard
-                  :subtitle="describe(store.choiceB)"
-                  :outcome="result.outcomeB"
-                  :horizon-year="horizonYear"
-                  cy-prefix="results-pathb"
-                  tone="resale"
-                  :ahead="!verdict.close && verdict.winner === 'resale'"
-                />
-              </div>
+        <!-- 4. Each path in plain words (D1). Why one path ends ahead, line by line (D34), is on the Dashboard. -->
+        <section v-if="result.outcomeA && result.outcomeB" class="paths" aria-labelledby="path-details-title">
+          <h2 id="path-details-title" class="paths__title" tabindex="-1">Each path<template v-if="horizonYear"> in {{ horizonYear }}</template>, in plain words</h2>
+          <div class="row g-3">
+            <div class="col-12 col-lg-6">
+              <PathOutcomeCard
+                :subtitle="describe(store.choiceA)"
+                :outcome="result.outcomeA"
+                :horizon-year="horizonYear"
+                cy-prefix="results-patha"
+                tone="bto"
+                :ahead="!verdict.close && verdict.winner === 'bto'"
+              />
             </div>
-          </details>
-        </ResultsWhy>
+            <div class="col-12 col-lg-6">
+              <PathOutcomeCard
+                :subtitle="describe(store.choiceB)"
+                :outcome="result.outcomeB"
+                :horizon-year="horizonYear"
+                cy-prefix="results-pathb"
+                tone="resale"
+                :ahead="!verdict.close && verdict.winner === 'resale'"
+              />
+            </div>
+          </div>
+          <p class="paths__why d-print-none" data-cy="results-why-dashboard">
+            Why one path comes out ahead, line by line, is on the
+            <RouterLink to="/dashboard" data-cy="results-why-dashboard-link">Dashboard</RouterLink>.
+          </p>
+        </section>
 
-        <!-- 5. Grants (already counted, D1), and the Proximity Housing Grant when the parents question wasn't asked (D38). -->
-        <ResultsGrants
-          v-if="result.outcomeA && result.outcomeB"
-          :outcome-a="result.outcomeA"
-          :outcome-b="result.outcomeB"
-          :phg-not-asked="phgNotAsked"
-          @why="showGrantReasons"
-          @add-parents="addParents"
-        />
+        <!-- 5. The Proximity Housing Grant, when the parents question wasn't asked (D38). Each card has its own grants. -->
+        <ResultsPhgCard v-if="phgNotAsked" @add-parents="addParents" />
 
         <!-- 6. Next: the Dashboard, the official steps, saving and printing. -->
         <section class="next d-print-none" aria-label="Next" data-cy="results-verdict-next">
@@ -445,21 +422,17 @@ onMounted(load);
 .basis__more-toggle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
 .basis__note { margin: var(--space-2) 0 0; line-height: 1.5; }
 
-/* "See each path's full breakdown" inside Why */
-.paths { border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); }
-.paths__toggle { display: inline-flex; align-items: center; gap: var(--space-2); padding: 0.625rem 1.125rem; border: 1px solid var(--border); border-radius: var(--radius-pill); cursor: pointer; font-weight: 500; list-style: none; }
-.paths__toggle::-webkit-details-marker { display: none; }
-.paths__toggle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.paths__chev { transition: transform var(--duration-base) var(--ease-out); }
-.paths[open] .paths__chev { transform: rotate(180deg); }
+/* Each path in plain words */
+.paths { display: flex; flex-direction: column; gap: var(--space-3); }
+.paths__title { margin: 0; font-size: 1.5rem; font-weight: 600; }
+.paths__why { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }
+.paths__why a { font-weight: 600; color: var(--text-primary); }
 
 /* Next bar */
 .next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); }
 .next__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .next__save { margin-bottom: 0 !important; }
 
-@media (prefers-reduced-motion: reduce) { .paths__chev { transition: none; } }
-@media print { .paths > :not(summary) { display: block; } }
 .heatmap-guide { margin: 0 0 var(--space-3); padding-left: 1.1rem; font-size: 0.9375rem; line-height: 1.5; }
 .heatmap-guide li + li { margin-top: var(--space-1); }
 </style>

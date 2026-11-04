@@ -1,7 +1,7 @@
-// Results page (redesign, 4 Nov 2026): the winner-first summary, "Would the answer change?", the trade-off, why one
-// path comes out ahead, the grants, the two path cards (folded), the next step and the hover chart (mock data).
+// Results page (redesign, 4 Nov 2026): the winner-first summary, "Would the answer change?", the trade-off, the two
+// path cards in plain words, the next step and the hover chart (mock data). Why one path ends ahead is on the Dashboard.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
-import { completePlan, openPathCards } from './helpers/plan.js';
+import { completePlan } from './helpers/plan.js';
 
 describe('results verdict', () => {
   it('leads with who comes out ahead, in plain words', () => {
@@ -39,8 +39,6 @@ describe('results verdict', () => {
 
   it('explains each path in three plain lines, with the exact parts in "Full breakdown"', () => {
     completePlan();
-    cy.get('[data-cy=results-paths]').should('not.have.attr', 'open'); // folded under "Why"
-    openPathCards();
     ['results-patha', 'results-pathb'].forEach((p) => {
       cy.get(`[data-cy=${p}-summary-value]`).should('be.visible').and('contain', 'would be worth about');
       cy.get(`[data-cy=${p}-summary-owed]`).should('be.visible').and('contain', 'Taken off');
@@ -55,7 +53,6 @@ describe('results verdict', () => {
 
   it('opens the full breakdown from "Why" next to the grants', () => {
     completePlan();
-    openPathCards();
     cy.get('[data-cy=results-patha-grants-why]').click();
     cy.get('[data-cy=results-patha-eligibility]').should('be.visible');
   });
@@ -86,23 +83,15 @@ describe('results verdict', () => {
     cy.get('[data-cy=results-tradeoff-grants]').should('not.exist');
   });
 
-  it('says why one path comes out ahead, line by line, adding up to the gap (D34)', () => {
+  it('shows both path cards in plain words, and points to the Dashboard for why one ends ahead (D34)', () => {
     completePlan();
-    cy.get('[data-cy=results-gap-card]').should('contain', 'comes out ahead');
-    cy.get('[data-cy=results-why-sentence]').invoke('text').should('match', /mostly on the .+ in its favour\./);
-    cy.get('[data-cy^=results-gap-line-]').should('have.length.greaterThan', 0).each(($li) => {
-      cy.wrap($li).invoke('text').should('match', /Favours (BTO|resale)/);
-    });
-    cy.get('[data-cy=results-gap-total]').invoke('text').should('match', /ends S\$[\d,]+ ahead/);
-  });
-
-  it('lists the grants as already counted, never "not eligible" for the resale-only ones on a BTO', () => {
-    completePlan();
-    cy.get('[data-cy=results-grants]').should('contain', 'Already counted');
-    cy.get('[data-cy=results-grants-bto]').should('not.contain', 'Family').and('not.contain', 'Proximity');
-    cy.get('[data-cy=results-grants-why]').click();
-    cy.get('[data-cy=results-paths]').should('have.attr', 'open');
-    cy.focused().should('have.attr', 'id', 'path-details-title');
+    cy.get('#path-details-title').should('be.visible').and('contain', 'in plain words');
+    cy.get('[data-cy=results-patha-card]').should('be.visible');
+    cy.get('[data-cy=results-pathb-card]').should('be.visible');
+    cy.get('[data-cy=results-gap-card]').should('not.exist');
+    cy.get('[data-cy=results-patha-grants-total]').should('contain', 'for resale flats only').and('not.contain', 'Not eligible for the CPF Housing Grant (Family)');
+    cy.get('[data-cy=results-why-dashboard-link]').click();
+    cy.location('pathname').should('eq', '/dashboard');
   });
 
   it('moves on: opens the dashboard from the main button, and jumps to the official steps', () => {
