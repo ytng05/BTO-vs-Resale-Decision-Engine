@@ -3,6 +3,7 @@
 // the server's break-even sentence, and the BTO price where the answer flips (D40). The full grid with its labels
 // and the tap-to-explain squares is one click away ("See the full grid"), under More detail. Not a forecast.
 import { computed } from 'vue';
+import Term from './Term.vue';
 import { gridSummary } from '../utils/resultsSummary.js';
 
 const props = defineProps({
@@ -38,7 +39,8 @@ const label = computed(() => (g.value.total ? `${g.value.total} squares: BTO ahe
       </div>
     </div>
     <p class="rb__caption">
-      Each square is one combination of flat price and income growth: dark for BTO ahead, pink for resale.
+      Each square is one combination of flat price and income growth: dark for BTO ahead, pink for resale. The
+      <Term id="break-even">break-even</Term> line is not a prediction of prices.
       <button type="button" class="rb__link d-print-none" data-cy="results-heatmap-open" @click="emit('open-grid')">See the full grid</button>
     </p>
   </section>
