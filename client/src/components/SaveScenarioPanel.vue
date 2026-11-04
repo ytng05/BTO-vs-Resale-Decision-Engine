@@ -125,8 +125,8 @@ async function update() {
     store.markSaved(store.savedId, newName);
   } catch (e) {
     if (e && e.response && e.response.status === 404) {
-      // Deleted elsewhere since: save it as a new scenario instead.
-      store.savedId = null;
+      // Deleted elsewhere since: these inputs no longer belong to a saved scenario, so offer "Save scenario" instead.
+      store.forgetSavedScenario();
       error.value = 'That scenario no longer exists. Save this as a new scenario instead.';
       return;
     }

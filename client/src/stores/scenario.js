@@ -98,7 +98,7 @@ const blank = () => ({
 export const useScenarioStore = defineStore('scenario', {
   // savedProfiles: the About you answers of the newest saved scenarios, loaded once for the autofill (SituationForm).
   // Kept outside blank(), so a fresh plan does not load them again; null means not loaded yet.
-    state: function () {
+  state: function () {
     // savedProfilesOwner: the id of the account the saved answers were loaded for (auth.user.id). They are only
     // ever offered to that account.
     return { ...blank(), savedProfiles: null, savedProfilesOwner: null };
@@ -158,13 +158,11 @@ export const useScenarioStore = defineStore('scenario', {
     // Logging out: the plan no longer belongs to a saved scenario, and the saved answers must not be offered to
     // whoever logs in next.
     forgetSaved() {
-      this.savedId = null;
-      this.savedName = null;
-      this.savedKey = null;
+      this.forgetSavedScenario();
       this.savedProfiles = null;
       this.savedProfilesOwner = null;
     },
-        // The saved answers, but only for the account they were loaded for; anyone else gets null.
+    // The saved answers, but only for the account they were loaded for; anyone else gets null.
     savedProfilesOf(userId) {
       if (!userId || this.savedProfiles === null || this.savedProfilesOwner !== userId) {
         return null;

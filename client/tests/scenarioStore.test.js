@@ -113,6 +113,17 @@ describe('scenario store: saved scenarios', () => {
 describe('saved answers belong to one account', () => {
   beforeEach(() => setActivePinia(createPinia()));
 
+  it('forgets only the saved scenario when it was deleted elsewhere, and keeps the saved answers', () => {
+    const s = useScenarioStore();
+    s.markSaved('deleted-id', 'Plan A');
+    s.keepSavedProfiles('user-a', [{ applicants: [{ age: 33 }] }]);
+    s.forgetSavedScenario();
+    expect(s.savedId).toBeNull();
+    expect(s.savedName).toBeNull();
+    expect(s.savedKey).toBeNull();
+    expect(s.savedProfilesOf('user-a')).toHaveLength(1); // same user, so their answers stay
+  });
+
   it('are only offered to the account they were loaded for', () => {
     const s = useScenarioStore();
     s.keepSavedProfiles('user-a', [{ applicants: [{ age: 33 }] }]);
