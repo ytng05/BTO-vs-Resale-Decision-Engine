@@ -6,7 +6,6 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import Term from '../Term.vue';
 import { formatMoney } from '../../utils/format.js';
-import { bars } from '../../utils/dashboardSummary.js';
 
 const props = defineProps({
   outcomeA: { type: Object, required: true },
@@ -17,6 +16,10 @@ const props = defineProps({
   flats: { type: Object, required: true }, // { bto: 'Tampines · 4-room · Standard', resale: 'Jurong East · 4-room' }
   rulesetVersion: { type: String, default: '' }, // '2026-08-24'
   blockedYear: { type: Number, default: null },
+  // The net positions (cents) at the saved plan, before any What-if: drawn as faint "ghost" bars behind the
+  // current ones, so you can see how far a slider moved each path. Null hides them.
+  baseline: { type: Object, default: null }, // { a, b }
+  updating: { type: Boolean, default: false }, // a What-if recalculation is running: the numbers dim
 });
 
 // A path is named as ahead only outside the "too close to call" line (D42), the same rule as the Results page.
@@ -69,24 +72,43 @@ const amountText = computed(() => (parts.value.amount ? formatMoney(Math.round(a
 const btoShown = useCount(computed(() => props.outcomeA.netPositionCents));
 const resaleShown = useCount(computed(() => props.outcomeB.netPositionCents));
 
+// Bar widths: every bar (now and ghost) on the same scale, so they can be compared. Below S$0 shows as empty.
 const rows = computed(() => {
-  const w = bars(props.outcomeA.netPositionCents, props.outcomeB.netPositionCents);
+  const a = props.outcomeA.netPositionCents;
+  const b = props.outcomeB.netPositionCents;
+  const ga = props.baseline?.a ?? null;
+  const gb = props.baseline?.b ?? null;
+  const max = Math.max(1, ...[a, b, ga, gb].filter((n) => typeof n === 'number'));
+  const pct = (n) => (typeof n === 'number' ? Math.max(0, Math.min(100, (n / max) * 100)) : null);
+  const moved = (now, before) => typeof before === 'number' && Math.abs(now - before) >= 100000; // at least S$1,000
   return [
-    { key: 'bto', label: 'BTO', place: props.flats.bto, value: money(btoShown.value), width: w.a },
-    { key: 'resale', label: 'Resale', place: props.flats.resale, value: money(resaleShown.value), width: w.b },
+    { key: 'bto', label: 'BTO', place: props.flats.bto, value: money(btoShown.value), width: pct(a), ghost: moved(a, ga) ? pct(ga) : null, was: moved(a, ga) ? money(ga) : '' },
+    { key: 'resale', label: 'Resale', place: props.flats.resale, value: money(resaleShown.value), width: pct(b), ghost: moved(b, gb) ? pct(gb) : null, was: moved(b, gb) ? money(gb) : '' },
   ];
 });
+
+// When a What-if change makes the other path come out ahead, say so for a few seconds.
+const flipped = ref('');
+let flipTimer = 0;
+watch(() => props.call?.winner, (now, before) => {
+  if (!before || !now || now === before || props.call?.close) return;
+  flipped.value = now === 'level' ? 'Now the two paths end level' : `Now ${now === 'bto' ? 'BTO' : 'resale'} comes out ahead`;
+  clearTimeout(flipTimer);
+  flipTimer = setTimeout(() => { flipped.value = ''; }, 4000);
+});
+onBeforeUnmount(() => clearTimeout(flipTimer));
 </script>
 
 <template>
   <div class="dash-hero">
-    <section class="dash-hero__answer" aria-labelledby="dashboard-heading" data-cy="dashboard-verdict">
+    <section class="dash-hero__answer" :class="{ 'is-updating': updating, 'is-flipped': flipped }" aria-labelledby="dashboard-heading" data-cy="dashboard-verdict">
       <div class="dash-hero__top">
         <span class="dash-hero__ruleset" data-cy="dashboard-ruleset-version">
           <span class="dash-hero__dot" aria-hidden="true"></span>Ruleset as of {{ rulesetDate }}
         </span>
         <span v-if="call?.close || call?.winner === 'level'" class="dash-hero__eyebrow" data-cy="dashboard-verdict-eyebrow">{{ eyebrow }}</span>
       </div>
+      <p class="dash-hero__flip mb-0" role="status" aria-live="polite" data-cy="dashboard-flip"><span v-if="flipped">⇄ {{ flipped }}</span></p>
       <h1 id="dashboard-heading" class="dash-hero__headline" data-cy="dashboard-headline">{{ parts.before }}<span class="dash-hero__amount">{{ amountText }}</span>{{ parts.after }}</h1>
       <p class="visually-hidden" data-cy="dashboard-subtitle">BTO {{ flats.bto }} <span aria-hidden="true">·</span><span class="visually-hidden">versus</span> Resale {{ flats.resale }}</p>
       <a v-if="blockedYear" href="#dashboard-critical" class="dash-hero__blocked" data-cy="dashboard-verdict-blocked">
@@ -95,14 +117,18 @@ const rows = computed(() => {
       <div class="dash-hero__actions"><slot /></div>
     </section>
 
-    <section class="dash-hero__walk" aria-labelledby="walk-heading">
+    <section class="dash-hero__walk" :class="{ 'is-updating': updating }" aria-labelledby="walk-heading">
       <h2 id="walk-heading" class="dash-hero__walk-title">What you'd walk away with<template v-if="horizon"> in {{ horizon }}</template></h2>
       <div v-for="r in rows" :key="r.key" class="dash-hero__row">
         <div class="dash-hero__row-head">
           <span><span class="dash-hero__key" :class="`dash-hero__key--${r.key}`" aria-hidden="true"></span>{{ r.label }} · {{ r.place }}</span>
           <strong class="text-numeric" :data-cy="`dashboard-summary-${r.key}-net`">{{ r.value }}</strong>
         </div>
-        <span class="dash-hero__track" aria-hidden="true"><span class="dash-hero__fill" :class="`dash-hero__fill--${r.key}`" :style="{ width: `${r.width}%` }"></span></span>
+        <span class="dash-hero__track" aria-hidden="true">
+          <span v-if="r.ghost !== null" class="dash-hero__ghost" :style="{ width: `${r.ghost}%` }"></span>
+          <span class="dash-hero__fill" :class="`dash-hero__fill--${r.key}`" :style="{ width: `${r.width}%` }"></span>
+        </span>
+        <span v-if="r.was" class="dash-hero__was">Was {{ r.was }} with your inputs</span>
       </div>
       <p class="dash-hero__note mb-0">
         <Term id="net-position">Net position</Term>: the flat's value, minus the loan left and the cash spent.
@@ -160,5 +186,18 @@ const rows = computed(() => {
 @keyframes hero-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes hero-pop { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: none; } }
 .dash-hero__note { font-size: 0.8125rem; color: var(--text-secondary); }
-@media (prefers-reduced-motion: reduce) { .dash-hero__fill, .dash-hero__answer, .dash-hero__walk, .dash-hero__amount { transition: none; animation: none; } }
+/* Ghost bar: where the path was at your saved inputs, as a dashed outline behind today's bar. */
+.dash-hero__track { position: relative; }
+.dash-hero__ghost { position: absolute; inset: 0 auto 0 0; border: 1.5px dashed var(--text-secondary); border-radius: var(--radius-pill); transition: width var(--duration-base) var(--ease-out); }
+.dash-hero__fill { position: relative; }
+.dash-hero__was { font-size: 0.8125rem; color: var(--text-secondary); }
+/* While a What-if recalculates, the numbers dim a little. */
+.dash-hero__headline, .dash-hero__row strong { transition: opacity 0.2s ease; }
+.is-updating .dash-hero__headline, .is-updating .dash-hero__row strong { opacity: 0.55; }
+/* The flip alert: a pink pill that pops in, and the dark card pulses once. */
+.dash-hero__flip { min-height: 0; }
+.dash-hero__flip span { display: inline-block; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--accent-fill-1); color: var(--text-primary); font-size: 0.875rem; font-weight: 600; animation: hero-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.dash-hero__answer.is-flipped { animation: hero-flash 0.9s ease; }
+@keyframes hero-flash { 0%, 100% { box-shadow: none; } 40% { box-shadow: 0 0 0 6px var(--accent-fill-1); } }
+@media (prefers-reduced-motion: reduce) { .dash-hero__fill, .dash-hero__ghost, .dash-hero__answer, .dash-hero__walk, .dash-hero__amount, .dash-hero__flip span { transition: none; animation: none; } }
 </style>

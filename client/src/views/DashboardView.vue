@@ -88,6 +88,8 @@ const whatIfPlan = computed(() => ({
 
 const result = ref(null);
 const baselineGapCents = ref(null);
+// Each path's net position at the saved plan, for the ghost bars at the top.
+const baselineNets = ref(null);
 // What the sliders changed from the saved plan, in words (empty when nothing moved).
 const changes = computed(() => whatIfChanges(whatIf, planValues.value));
 
@@ -124,6 +126,7 @@ async function run() {
       // The answer at the saved plan's own values, for "since your inputs" once a slider moves.
       if (changes.value.length === 0 && res?.outcomeA && res?.outcomeB) {
         baselineGapCents.value = res.outcomeA.netPositionCents - res.outcomeB.netPositionCents;
+        baselineNets.value = { a: res.outcomeA.netPositionCents, b: res.outcomeB.netPositionCents };
       }
     }
   } catch (e) {
@@ -307,6 +310,8 @@ const detailLine = computed(() => ({
         :flats="{ bto: cardSubtitle(store.choiceA, true), resale: cardSubtitle(store.choiceB, false) }"
         :ruleset-version="result.rulesetVersion"
         :blocked-year="warningGroups.blocking.length ? whatIf.applicationYear : null"
+        :baseline="changes.length ? baselineNets : null"
+        :updating="updating"
       >
         <RouterLink to="/results" class="btn btn-disc dash-btn dash-btn--light" data-cy="dashboard-results-button">
           <span class="btn-disc__disc" aria-hidden="true">
