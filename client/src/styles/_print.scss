@@ -15,3 +15,8 @@
   // Disclosures print open, so nothing is hidden on paper.
   details > :not(summary) { display: block !important; }
 }
+
+// The fixed navbar is hidden in print, so drop the space kept for it at the top of the page.
+@media print {
+  body { padding-top: 0 !important; }
+}

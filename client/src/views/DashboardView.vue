@@ -247,6 +247,10 @@ const EXPLORE = [
 ];
 const openKey = ref(null);
 const closeBtn = ref(null);
+const everOpened = ref(false);
+const seen = reactive({}); // the details opened so far: they stay mounted, only hidden
+// The navbar sits outside this page, so it is made inert by hand while a pop-up is open.
+const setNavInert = (on) => document.querySelector('[data-cy=nav-bar]')?.toggleAttribute('inert', on);
 let openedFrom = null;
 const openItem = computed(() => EXPLORE.find((e) => e.key === openKey.value) ?? null);
 function onKey(e) {
@@ -254,17 +258,22 @@ function onKey(e) {
 }
 async function openDetail(key) {
   openedFrom = document.activeElement;
+  everOpened.value = true;
+  seen[key] = true;
   openKey.value = key;
+  setNavInert(true);
   document.body.classList.add('dash-modal-open'); // stops the page behind from scrolling
   document.addEventListener('keydown', onKey);
   await nextTick();
   closeBtn.value?.focus();
 }
-function closeDetail() {
+async function closeDetail() {
   if (!openKey.value) return;
   openKey.value = null;
+  setNavInert(false);
   document.body.classList.remove('dash-modal-open');
   document.removeEventListener('keydown', onKey);
+  await nextTick(); // the page stops being inert on the next update; only then can the card take focus back
   openedFrom?.focus?.();
 }
 onBeforeUnmount(closeDetail);
@@ -309,7 +318,9 @@ const detailLine = computed(() => ({
       <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="dashboard-retry-button" @click="run">Try again</button>
     </div>
 
-    <div v-else class="dash-e">
+    <template v-else>
+    <!-- While a pop-up is open the page behind is inert: Tab can't reach the sliders under the backdrop. -->
+    <div class="dash-e" :inert="openKey ? '' : null">
       <!-- 1. The answer -->
       <DashboardHero
         v-if="A && B"
@@ -455,13 +466,22 @@ const detailLine = computed(() => ({
       </div>
 
 
-      <!-- The detail pop-up. Clicking the dark backdrop (but not the box) closes it. -->
-      <div v-if="openItem" class="dash-modal" @click.self="closeDetail">
-        <div class="dash-modal__box" role="dialog" aria-modal="true" aria-labelledby="dash-modal-title" :data-cy="`dashboard-section-${openItem.key}`">
+    </div>
+
+      <!-- The detail pop-up. Clicking the dark backdrop (but not the box) closes it. It is created on the first open
+           and then only hidden, so each detail keeps what was typed (PHG postal codes) and doesn't load again. -->
+      <div v-if="everOpened" v-show="openItem" class="dash-modal" @click.self="closeDetail">
+        <div
+          class="dash-modal__box"
+          :role="openItem ? 'dialog' : null"
+          aria-modal="true"
+          aria-labelledby="dash-modal-title"
+          :data-cy="openItem ? `dashboard-section-${openItem.key}` : null"
+        >
           <header class="dash-modal__head">
-            <span class="dash-modal__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="openItem.icon" /></svg></span>
+            <span class="dash-modal__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="openItem?.icon" /></svg></span>
             <div class="dash-modal__titles">
-              <h2 id="dash-modal-title" class="dash-modal__title">{{ openItem.title }}</h2>
+              <h2 id="dash-modal-title" class="dash-modal__title">{{ openItem?.title }}</h2>
               <p v-if="detailLine" class="dash-modal__sub mb-0">{{ detailLine }}</p>
             </div>
             <button ref="closeBtn" type="button" class="dash-modal__close" aria-label="Close" data-cy="dashboard-modal-close" @click="closeDetail">
@@ -469,25 +489,32 @@ const detailLine = computed(() => ({
             </button>
           </header>
           <div class="dash-modal__body">
-            <template v-if="openItem.key === 'grants'">
+            <div v-if="seen.grants" v-show="openKey === 'grants'">
               <GrantsTable v-if="A && B" :outcome-a="A" :outcome-b="B" />
               <p class="small text-secondary mt-3 mb-0">
                 <RouterLink to="/sources" data-cy="dashboard-sources-link">See the official sources for each rule</RouterLink>
               </p>
-            </template>
-            <CostBreakdownTable v-else-if="openItem.key === 'costs' && A && B" :outcome-a="A" :outcome-b="B" />
-            <HistoricalRpiChart v-else-if="openItem.key === 'rpi'" />
-            <PhgMapCard
-              v-else-if="openItem.key === 'map'"
-              :bto-town="store.choiceA.town"
-              :resale-town="store.choiceB.town"
-              :living-arrangement="store.choiceB.livingArrangement"
-            />
-            <SizePriceTable v-else-if="openItem.key === 'size'" :choice-a="store.choiceA" :choice-b="store.choiceB" :result="result" />
+            </div>
+            <div v-if="seen.costs && A && B" v-show="openKey === 'costs'">
+              <CostBreakdownTable :outcome-a="A" :outcome-b="B" />
+            </div>
+            <div v-if="seen.rpi" v-show="openKey === 'rpi'">
+              <HistoricalRpiChart />
+            </div>
+            <div v-if="seen.map" v-show="openKey === 'map'">
+              <PhgMapCard
+                :bto-town="store.choiceA.town"
+                :resale-town="store.choiceB.town"
+                :living-arrangement="store.choiceB.livingArrangement"
+              />
+            </div>
+            <div v-if="seen.size" v-show="openKey === 'size'">
+              <SizePriceTable :choice-a="store.choiceA" :choice-b="store.choiceB" :result="result" />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
   </section>
 </template>
 

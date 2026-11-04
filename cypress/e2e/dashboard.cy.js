@@ -101,7 +101,8 @@ describe('financial dashboard', () => {
     openDashboard();
     // Mock: the flip is 80% of the way up MOCK Tampines Bliss's S$481,000 to S$600,000 range, at S$576,200.
     cy.get('[data-cy=whatif-bto-price-hint]')
-      .should('contain', 'From MOCK Tampines Bliss')
+      .should('contain', 'Estimated from MOCK Tampines Bliss')
+      .and('contain', 'Starts at the middle')
       .and('contain', 'Above about S$576,000 (the mark), resale comes out ahead.');
     cy.get('[data-cy=whatif-bto-price-mark]').should('have.attr', 'aria-hidden', 'true')
       .invoke('attr', 'style').should('contain', '--at: 0.8');

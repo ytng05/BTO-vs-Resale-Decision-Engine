@@ -29,8 +29,13 @@ describe('dashboard sections', () => {
     cy.get('[data-cy=dashboard-section-costs]').should('be.visible').and('have.attr', 'aria-modal', 'true');
     cy.get('[data-cy=dashboard-costs], [data-cy=dashboard-costs-empty]').should('exist');
     cy.focused().should('have.attr', 'data-cy', 'dashboard-modal-close');
+    // The page behind can't be reached with Tab while the pop-up is open.
+    cy.get('.dash-e').should('have.attr', 'inert');
+    cy.get('[data-cy=nav-bar]').should('have.attr', 'inert');
     cy.get('[data-cy=dashboard-modal-close]').click();
     cy.get('[role=dialog]').should('not.exist');
+    cy.get('.dash-e').should('not.have.attr', 'inert');
+    cy.get('[data-cy=nav-bar]').should('not.have.attr', 'inert');
     cy.focused().should('have.attr', 'data-cy', 'dashboard-explore-costs');
     // Escape
     cy.get('[data-cy=dashboard-explore-rpi]').click({ scrollBehavior: 'center' });

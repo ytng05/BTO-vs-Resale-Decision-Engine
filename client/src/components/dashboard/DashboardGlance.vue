@@ -1,8 +1,8 @@
 <script setup>
 // "At a glance": one coloured tile per thing that matters (money long-term, then each Side by side row), in the home
 // page's tile colours. Each tile says in words which path is better, with both values underneath; hover a tile to
-// read what it measures. Under the tiles, "Why BTO comes out ahead" shows the biggest lines of the gap (D34) as a
-// left/right bar chart, open from the start (as on the Results page); "Show every line" adds the smaller ones.
+// read what it measures. Under the tiles, a closed "Why does … come out ahead?" bar opens the biggest lines of the
+// gap (D34) as a left/right bar chart; "Show all" adds the smaller ones. Hidden when it's too close to call or level.
 // Keeps the tested hooks: dashboard-side-by-side, dashboard-sbs-{id}, dashboard-why-toggle, dashboard-why.
 import { computed, ref } from 'vue';
 import { formatMoney } from '../../utils/format.js';
@@ -34,7 +34,13 @@ const ICONS = [
 const THEMES = ['pink', 'amber', 'green', 'indigo'];
 
 const gapCents = computed(() => props.outcomeA.netPositionCents - props.outcomeB.netPositionCents);
-const leader = computed(() => (gapCents.value === 0 ? null : gapCents.value > 0 ? 'BTO' : 'resale'));
+// The leader comes from the same verdict as the top of the page (D42), not the raw gap: when it's too close to call
+// or level, the section is hidden so it can't ask "Why does BTO come out ahead?" under "Too close to call".
+const leader = computed(() => {
+  const c = props.call;
+  if (!c || c.close || !['bto', 'resale'].includes(c.winner)) return null;
+  return c.winner === 'bto' ? 'BTO' : 'resale';
+});
 
 const tiles = computed(() => {
   const rows = sideBySide(props.outcomeA, props.outcomeB, props.horizon).filter((r) => r.id !== 'net');

@@ -72,7 +72,6 @@ function logout() {
   <header ref="bar" class="pill-nav" data-cy="nav-bar">
     <!-- Logo + app name: one link back home. -->
     <a href="/" class="pill-nav__home" aria-label="PropertyEngine home" data-cy="nav-brand-home" @click.prevent="goHome">
-    <router-link to="/" class="pill-nav__home" aria-label="PropertyEngine home" data-cy="nav-brand-home">
       <span class="pill-nav__logo">
         <!-- An HDB block -->
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -82,7 +81,6 @@ function logout() {
       </span>
       <span class="pill-nav__brand" aria-hidden="true">Property<span>Engine</span></span>
     </a>
-    </router-link>
 
     <nav class="pill-nav__pill" aria-label="Main">
       <span class="pill-nav__links">
@@ -147,9 +145,6 @@ function logout() {
    The bar is fixed to the top of the screen on every page and stays there as you scroll, full width, with a 1px line
    underneath. The page is pushed down by the bar's height (--nav-height, measured in the script) so nothing hides
    under it. */
-   The bar runs the full screen width (logo and Log in at the ends, lined up with the home page's hero box) and stays
-   at the top while you scroll. Its white background reaches the screen edges through a large box-shadow, with a
-   1px line underneath; clip-path stops that shadow spilling above or below the bar. */
 .pill-nav {
   --nav-gutter: clamp(12px, 2.5vw, 40px);
   display: grid;
@@ -167,18 +162,7 @@ function logout() {
   padding-right: var(--nav-gutter);
   /* the bar matches the page behind it: mist by default, white on Home and the Dashboard (they set --nav-surface) */
   background: var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent));
-  border-bottom: 1px solid var(--border-subtle);
-  position: sticky;
-  top: 0;
-  z-index: 1030;
-  width: calc(100vw - 2 * var(--nav-gutter));
-  max-width: none;
-  margin-left: calc(50% - 50vw + var(--nav-gutter));
-  margin-right: 0;
-  /* the bar matches the page behind it: mist by default, white on Home (which sets --nav-surface) */
-  background: var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent));
-  box-shadow: 0 0 0 100vmax var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent)), 0 1px 0 100vmax var(--border-subtle);
-  clip-path: inset(0 -100vmax -1px);
+  border: 0; /* no lines above or below the bar */
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
@@ -227,6 +211,11 @@ function logout() {
   .pill-nav__brand { display: none; }
 }
 
+/* Phone landscape (short screens): let the bar scroll away so it doesn't cover a fifth of the page. */
+@media (max-height: 500px) {
+  .pill-nav { position: absolute; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pill-nav__home .pill-nav__logo, .pill-nav__link { transition: none; }
   .pill-nav__home:hover .pill-nav__logo { transform: none; }
@@ -238,7 +227,4 @@ function logout() {
    instead of under it. --nav-height is set from the bar's real height in the script above. */
 body { padding-top: var(--nav-height, 88px); }
 html { scroll-padding-top: calc(var(--nav-height, 88px) + var(--space-3, 12px)); }
-/* The navbar is sticky, so in-page jumps (#links, scrollIntoView) stop below it instead of under it.
-   --nav-height is set from the bar's real height in the script above. */
-html { scroll-padding-top: calc(var(--nav-height, 80px) + var(--space-3, 12px)); }
 </style>

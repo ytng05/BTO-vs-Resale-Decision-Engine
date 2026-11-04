@@ -5,6 +5,7 @@
 // -subtitle, -summary-{bto|resale}-net. The default slot holds the buttons.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import Term from '../Term.vue';
+import { getRuleset } from '../../api/client.js';
 import { formatMoney } from '../../utils/format.js';
 
 const props = defineProps({
@@ -43,6 +44,18 @@ const rulesetDate = computed(() => {
     ? d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
     : props.rulesetVersion;
 });
+// Whether the ruleset has been checked against its sources. Green dot only when it has; amber "not yet verified"
+// when it hasn't; no dot while it's loading or if it can't be loaded (never claim a status we don't know).
+const rulesetStatus = ref(null);
+onMounted(async () => {
+  try {
+    rulesetStatus.value = (await getRuleset())?.status ?? null;
+  } catch {
+    rulesetStatus.value = null;
+  }
+});
+const verified = computed(() => rulesetStatus.value === 'VERIFIED');
+const unverified = computed(() => rulesetStatus.value !== null && !verified.value);
 const money = (cents) => formatMoney(Math.round(cents / 100 / 1000) * 1000);
 // Numbers count up to their value when the page opens, and count to the new value when a What-if slider moves.
 // People who turn off motion see the final number straight away.
@@ -112,14 +125,26 @@ const badges = computed(() => {
   return out;
 });
 
-// When a What-if change makes the other path come out ahead, say so for a few seconds.
+// When a What-if change makes the other path come out ahead (or the two end level), say so for a few seconds.
+// Watches winner and close together: "too close to call" is a stop on the way, not a result, so going
+// BTO -> too close -> resale still counts as a flip. Level always counts.
 const flipped = ref('');
 let flipTimer = 0;
-watch(() => props.call?.winner, (now, before) => {
-  if (!before || !now || now === before || props.call?.close) return;
-  flipped.value = now === 'level' ? 'Now the two paths end level' : `Now ${now === 'bto' ? 'BTO' : 'resale'} comes out ahead`;
-  clearTimeout(flipTimer);
-  flipTimer = setTimeout(() => { flipped.value = ''; }, 4000);
+const settled = (c) => {
+  if (!c?.winner) return null;
+  if (c.winner === 'level') return 'level';
+  return c.close ? null : c.winner;
+};
+let lastSettled = settled(props.call);
+watch(() => [props.call?.winner, props.call?.close], () => {
+  const now = settled(props.call);
+  if (!now) return; // too close to call: keep the last clear answer to compare with
+  if (lastSettled && now !== lastSettled) {
+    flipped.value = now === 'level' ? 'Now the two paths end level' : `Now ${now === 'bto' ? 'BTO' : 'resale'} comes out ahead`;
+    clearTimeout(flipTimer);
+    flipTimer = setTimeout(() => { flipped.value = ''; }, 4000);
+  }
+  lastSettled = now;
 });
 onBeforeUnmount(() => clearTimeout(flipTimer));
 </script>
@@ -129,7 +154,7 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
     <section class="dash-hero__answer" :class="{ 'is-updating': updating, 'is-flipped': flipped }" aria-labelledby="dashboard-heading" data-cy="dashboard-verdict">
       <div class="dash-hero__top">
         <span class="dash-hero__ruleset" data-cy="dashboard-ruleset-version">
-          <span class="dash-hero__dot" aria-hidden="true"></span>Ruleset as of {{ rulesetDate }}
+          <span v-if="verified || unverified" class="dash-hero__dot" :class="{ 'is-warn': unverified }" aria-hidden="true"></span>Ruleset as of {{ rulesetDate }}<template v-if="unverified"> · not yet verified</template>
         </span>
         <span v-if="call?.close || call?.winner === 'level'" class="dash-hero__eyebrow" data-cy="dashboard-verdict-eyebrow">{{ eyebrow }}</span>
       </div>
@@ -178,6 +203,7 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
 .dash-hero__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .dash-hero__ruleset { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.1); font-size: 0.8125rem; }
 .dash-hero__dot { width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--success) 55%, var(--bg-surface)); }
+.dash-hero__dot.is-warn { background: var(--warning-fill); }
 .dash-hero__eyebrow { font-size: 0.875rem; color: rgba(255, 255, 255, 0.75); }
 .dash-hero__headline { margin: var(--space-2) 0 0; color: var(--on-primary); font-family: var(--font-heading); font-size: clamp(1.75rem, 3.2vw, 2.5rem); font-weight: 600; line-height: 1.1; letter-spacing: -0.03em; }
 .dash-hero__amount { color: var(--accent-fill-1); }
