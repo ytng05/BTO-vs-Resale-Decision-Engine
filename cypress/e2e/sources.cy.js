@@ -75,6 +75,32 @@ describe('sources page', () => {
     });
   });
 
+  it('shows every chosen topic, drops one when its chip is clicked again, and folds when none are left', () => {
+    cy.contains('button.sources-chip', 'EHG').click();
+    cy.contains('button.sources-chip', 'Loans').click();
+    cy.get('[data-cy=sources-rules-table] details').should('have.length', 2);
+    cy.get('#sources-section-ehg').should('be.visible');
+    cy.get('#sources-section-loans').should('be.visible');
+    cy.get('[data-cy=sources-rules-hint]').should('contain', 'Showing EHG and Loans only');
+    cy.contains('button.sources-chip', 'EHG').click();
+    cy.get('[data-cy=sources-rules-table] details').should('have.length', 1);
+    cy.get('#sources-section-ehg').should('not.exist');
+    cy.get('#sources-section-loans').should('be.visible');
+    cy.contains('button.sources-chip', 'Loans').click();
+    cy.get('[data-cy=sources-rules-toggle]').should('have.attr', 'aria-expanded', 'false');
+    cy.get('[data-cy=sources-rules-table]').should('not.be.visible');
+    cy.get('button.sources-chip[aria-pressed=true]').should('not.exist');
+  });
+
+  it('folding the rules from the heading turns the chips off', () => {
+    cy.contains('button.sources-chip', 'CPF').click();
+    cy.get('[data-cy=sources-rules-toggle]').click();
+    cy.get('[data-cy=sources-rules-table]').should('not.be.visible');
+    cy.get('button.sources-chip[aria-pressed=true]').should('not.exist');
+    cy.get('[data-cy=sources-rules-toggle]').click();
+    cy.get('[data-cy=sources-rules-table] details').should('have.length.greaterThan', 2);
+  });
+
   it('"Show all topics" clears a chip filter', () => {
     cy.contains('button.sources-chip', 'Loans').click();
     cy.get('[data-cy=sources-rules-table] details').should('have.length', 1);

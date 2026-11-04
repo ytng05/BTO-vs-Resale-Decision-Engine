@@ -78,9 +78,10 @@ const ruleLabels = {
 const tierArrayKeys = new Set(['tiers', 'ehgTiers', 'buyerStampDutyTiers']);
 const omittedRuleKeys = new Set(['appliesTo', 'sources', 'partialMonthTreatment', 'legalFees', 'agentFees']);
 // "Rules and sources" starts folded: its heading opens and closes it. A topic chip, a search or /sources#<topic>
-// opens it. Inside, every rule section shows; a topic chip filters to its sections (null = no filter).
+// opens it. Inside, every rule section shows; topic chips filter to their sections. Several chips can be on at once
+// (in click order; empty = no filter).
 const rulesOpen = ref(false);
-const filterChipKey = ref(null);
+const activeChipKeys = ref([]);
 // Sections the user collapsed with the chevron or "Collapse all"; every other shown section is open.
 const collapsedSectionIds = ref(new Set());
 const expandedTierKeys = ref(new Set());
@@ -329,10 +330,15 @@ const ruleGroups = computed(() => {
 });
 
 const chipKey = (chip) => chip.ids[0];
-const activeChip = computed(() => ruleChips.find((chip) => chipKey(chip) === filterChipKey.value) ?? null);
+const activeChips = computed(() => ruleChips.filter((chip) => activeChipKeys.value.includes(chipKey(chip))));
+// "EHG", "EHG and Loans", "EHG, PHG and Loans"
+const activeChipsLabel = computed(() => {
+  const labels = activeChips.value.map((chip) => chip.label);
+  return labels.length > 1 ? `${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}` : (labels[0] ?? '');
+});
 
 function isChipActive(chip) {
-  return filterChipKey.value === chipKey(chip);
+  return activeChipKeys.value.includes(chipKey(chip));
 }
 
 function isSectionOpen(id) {
@@ -343,26 +349,37 @@ function expandSections(ids) {
   collapsedSectionIds.value = new Set([...collapsedSectionIds.value].filter((id) => !ids.includes(id)));
 }
 
-// Clears the filter, and drops a hash that pointed at the filtered topic so it doesn't linger in the URL.
-function clearFilter() {
-  const chip = activeChip.value;
-  filterChipKey.value = null;
+// Drops a hash that pointed at one of these chips' topics, so it doesn't linger in the URL once they're off.
+function dropHashFor(chips) {
   const hashId = decodeURIComponent(route.hash.replace(/^#/, '')).replace(/^sources-section-/, '');
-  if (chip && hashId && chip.ids.includes(hashId)) router.replace({ path: route.path, query: route.query, hash: '' });
+  if (hashId && chips.some((chip) => chip.ids.includes(hashId))) router.replace({ path: route.path, query: route.query, hash: '' });
 }
 
-// Clicking a chip opens the rules on its topic; clicking the active chip again clears the filter and folds the rules
-// back up ("Show all topics" clears it and keeps them open).
+// Turns every chip off ("Show all topics" keeps the rules open; the heading folds them).
+function clearFilter() {
+  dropHashFor(activeChips.value);
+  activeChipKeys.value = [];
+}
+
+// Each chip adds its topic and opens the rules; clicking an active chip removes its topic, and once no chip is on
+// the rules fold back up.
 function toggleChip(chip) {
   if (isChipActive(chip)) {
-    clearFilter();
-    rulesOpen.value = false;
+    dropHashFor([chip]);
+    activeChipKeys.value = activeChipKeys.value.filter((key) => key !== chipKey(chip));
+    if (!activeChipKeys.value.length) rulesOpen.value = false;
     return;
   }
-  filterChipKey.value = chipKey(chip);
+  activeChipKeys.value = [...activeChipKeys.value, chipKey(chip)];
   rulesOpen.value = true;
   expandSections(chip.ids);
   nextTick(() => scrollToSection(chip.ids[0]));
+}
+
+// The heading opens every topic, or folds the rules and turns any chips off.
+function toggleRules() {
+  if (rulesOpen.value) clearFilter();
+  rulesOpen.value = !rulesOpen.value;
 }
 
 const allShownOpen = computed(() => shownRuleGroups.value.every((section) => isSectionOpen(section.id)));
@@ -490,11 +507,11 @@ async function clearSearch() {
   searchInput.value?.focus();
 }
 
-// A search shows every matching section; otherwise every section, or only the active chip's.
+// A search shows every matching section; otherwise every section, or only the active chips'.
 const shownRuleGroups = computed(() => {
   if (normalizedQuery.value) return visibleRuleGroups.value;
-  const chip = activeChip.value;
-  return chip ? ruleGroups.value.filter((section) => chip.ids.includes(section.id)) : ruleGroups.value;
+  const ids = activeChips.value.flatMap((chip) => chip.ids);
+  return ids.length ? ruleGroups.value.filter((section) => ids.includes(section.id)) : ruleGroups.value;
 });
 
 // Announced to screen readers while searching (the no-match state has its own message).
@@ -530,7 +547,7 @@ function applyHash() {
   if (!id) return;
   const chip = ruleChips.find((item) => item.ids.includes(id));
   if (chip) {
-    filterChipKey.value = chipKey(chip);
+    activeChipKeys.value = [chipKey(chip)];
     rulesOpen.value = true;
     expandSections([id]);
     nextTick(() => scrollToSection(id));
@@ -638,7 +655,7 @@ onMounted(async () => {
               data-cy="sources-rules-toggle"
               :aria-expanded="rulesOpen"
               aria-controls="sources-rules-body"
-              @click="rulesOpen = !rulesOpen"
+              @click="toggleRules"
             >
               Rules and sources
               <svg class="sources-rules-toggle__chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
@@ -661,8 +678,8 @@ onMounted(async () => {
           Every grant, loan and cost rule the app uses, with its value and official source.
         </p>
         <div v-show="rulesOpen" id="sources-rules-body">
-        <p v-if="activeChip && !normalizedQuery" class="sources-hint" data-cy="sources-rules-hint">
-          Showing {{ activeChip.label }} only.
+        <p v-if="activeChips.length && !normalizedQuery" class="sources-hint" data-cy="sources-rules-hint">
+          Showing {{ activeChipsLabel }} only.
           <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-cy="sources-show-all-topics" @click="clearFilter">Show all topics</button>
         </p>
         <div data-cy="sources-rules-table" class="sources-rule-cards">
