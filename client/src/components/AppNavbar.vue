@@ -135,8 +135,8 @@ function logout() {
 <style scoped>
 /* Three slots: brand (left), links (centre, always in the middle), account (right).
    The bar runs the full screen width (logo and Log in at the ends, lined up with the home page's hero box) and stays
-   at the top while you scroll. Its white background reaches the screen edges through a large box-shadow, with a
-   1px line underneath; clip-path stops that shadow spilling above or below the bar. */
+   at the top while you scroll. Its background is the ::before layer below, so nothing
+   is clipped and the dropdowns can open below the bar. */
 .pill-nav {
   --nav-gutter: clamp(12px, 2.5vw, 40px);
   display: grid;
@@ -150,9 +150,20 @@ function logout() {
   margin-left: calc(50% - 50vw + var(--nav-gutter));
   margin-right: 0;
   /* the bar matches the page behind it: mist by default, white on Home (which sets --nav-surface) */
+}
+
+.pill-nav::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-1 * var(--nav-gutter));
+  right: calc(-1 * var(--nav-gutter));
+  z-index: -1;
+  /* The bar's background, reaching the screen edges, with a 1px line underneath. A layer behind the bar rather than a
+   clipped shadow, so the account and menu dropdowns can open below the bar. */
   background: var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent));
-  box-shadow: 0 0 0 100vmax var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent)), 0 1px 0 100vmax var(--border-subtle);
-  clip-path: inset(0 -100vmax -1px);
+  border-bottom: 1px solid var(--border-subtle);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
