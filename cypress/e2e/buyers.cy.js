@@ -2,7 +2,7 @@
 // Singapore Citizen (D21), so both are always shown and there are no add/remove buttons. About you asks one question
 // per screen: ages, who is buying (citizenship, first-timer), incomes, then CPF, cash and the move-in year.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
-import { back, backTimes, fillAges, fillIncomes, fillPath, fillSavings, next, seeResults } from './helpers/plan.js';
+import { back, backTimes, fillAges, fillIncomes, fillPath, fillSavings, fillSituation, next, seeResults } from './helpers/plan.js';
 
 // Citizenship is a two-option choice: pick(n, 'PR') ticks it, citizenship(n, 'SC') gets that option's radio.
 const citizenship = (n, value) => cy.get(`[data-cy=situation-buyer-${n}-citizenship-${value}]`);
@@ -124,6 +124,21 @@ describe('buyers on the About you step', () => {
     next();
     cy.get('[data-cy=situation-buyer-1-cpf-input]').clear().type('45,123.67');
     cy.get('[data-cy=situation-buyer-1-cpf-input]').should('have.value', '45,123.67');
+  });
+
+  it('uses one box size across the plan on a phone: About you, Your BTO and the resale flat', () => {
+    cy.viewport(375, 667);
+    const is56 = ($el) => expect($el[0].getBoundingClientRect().height).to.equal(56);
+    cy.get('[data-cy=situation-buyer-1-age-input]').closest('.big-box').should(is56);
+    cy.get('[data-cy=situation-buyer-1-age-input]').should('have.css', 'font-size', '19px');
+    fillSituation();
+    next();
+    cy.get('[data-cy=patha-town-select]').should(is56);
+    fillPath('patha');
+    next();
+    cy.get('[data-cy=pathb-town-select]').should(is56);
+    cy.get('[data-cy=pathb-asking-price-input]').closest('.pf__box').should(is56);
+    cy.get('[data-cy=pathb-asking-price-input]').should('have.css', 'font-size', '19px');
   });
 
   it('accepts a citizen with a Permanent Resident', () => {

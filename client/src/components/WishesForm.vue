@@ -67,7 +67,7 @@ watch(() => store.wishes.includes('parents'), (on) => {
    black thing on every screen). */
 .wish-tile__input:checked + .wish-tile__face { background: var(--accent-tint); border-color: var(--text-primary); }
 .wish-tile__input:checked + .wish-tile__face .wish-tile__art { background: var(--bg-surface); }
-.wish-tile__input:focus-visible + .wish-tile__face { outline: 2px solid var(--text-primary); outline-offset: 3px; }
+.wish-tile__input:focus-visible + .wish-tile__face { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 @media (max-width: 767.98px) {
   .wish-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   /* Phones: a two-across tile is too narrow for icon and label side by side, so the icon sits above. */
