@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { login as apiLogin, register as apiRegister } from '../api/client.js';
+import { useScenarioStore } from './scenario.js';
 
 // Holds the logged-in user and JWT. Persisted to localStorage so a refresh (or closing the tab)
 // does not sign the user out; router/index.js reads `isLoggedIn` to guard /plan and /results.
@@ -70,6 +71,8 @@ export const useAuthStore = defineStore('auth', {
       this.user = null;
       this.error = null;
       writeStored(null, null);
+      // The next person on this device must not see this user's saved scenario or saved answers.
+      useScenarioStore().forgetSaved();
     },
   },
 });

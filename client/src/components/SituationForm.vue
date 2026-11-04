@@ -43,8 +43,12 @@ const SCENARIOS_TO_CHECK = 10;
 // Loads the answers once and keeps them in the store (store.savedProfiles), so going back and forth, or a fresh
 // plan, does not fetch them again. A new save or logging out clears them.
 onMounted(async function () {
-  if (!auth.isLoggedIn || store.savedProfiles !== null) {
+  if (!auth.isLoggedIn || !auth.user) {
     return;
+  }
+  const userId = auth.user.id; // whose answers these are
+  if (store.savedProfilesOf(userId) !== null) {
+    return; // already loaded for this account
   }
   try {
     const list = (await listScenarios()).scenarios.slice(0, SCENARIOS_TO_CHECK);
@@ -56,18 +60,30 @@ onMounted(async function () {
     for (const data of await Promise.all(requests)) {
       profiles.push(data.scenario.profile);
     }
-    store.savedProfiles = profiles; // a box already focused shows its suggestions now
+    store.keepSavedProfiles(userId, profiles); // a box already focused shows its suggestions now
   } catch (err) {
     // No suggestions this time rather than an error; it tries again next time.
   }
 });
+
+// The saved answers for the logged-in account only (never another account's, e.g. after a logout on this device).
+function ownSavedProfiles() {
+  if (!auth.user) {
+    return [];
+  }
+  const saved = store.savedProfilesOf(auth.user.id);
+  if (saved === null) {
+    return [];
+  }
+  return saved;
+}
 
 // The suggestions for the focused box: [{ value, label }], empty when there are none.
 const suggestions = computed(function () {
   if (openField.value === null) {
     return [];
   }
-  const values = matchingValues(savedValues(store.savedProfiles || [], openField.value), valueAt(store.profile, openField.value));
+  const values = matchingValues(savedValues(ownSavedProfiles(), openField.value), valueAt(store.profile, openField.value));
   const options = [];
   for (const value of values) {
     options.push({ value: value, label: suggestionLabel(openField.value, value) });

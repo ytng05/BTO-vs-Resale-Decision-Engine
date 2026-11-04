@@ -61,12 +61,11 @@ function suggestedName() {
   return nameFor(store.choiceA, store.choiceB);
 }
 
-// The name to update under. An automatic name ("<town> BTO vs <town> resale", whichever towns, so one left out of
-// date by an earlier update also catches up) follows the new towns; a name the user typed themselves is kept.
-const AUTOMATIC_NAME = /^(.+ )?BTO vs (.+ )?resale$/;
-
+// The name to update under. Renamed only if it is still the automatic name for the inputs it was last saved with
+// (so it follows the new towns); any name the user typed, even one shaped like "X BTO vs Y resale", is kept.
 function updatedName() {
-  if (AUTOMATIC_NAME.test(store.savedName)) {
+  const saved = JSON.parse(store.savedKey); // [profile, choiceA, choiceB, assumptions] at the last save
+  if (store.savedName === nameFor(saved[1], saved[2])) {
     return nameFor(store.choiceA, store.choiceB);
   }
   return store.savedName;
