@@ -6,14 +6,19 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { listScenarios } from '../api/client.js';
 import { useAuthStore } from '../stores/auth.js';
+import { useScenarioStore } from '../stores/scenario.js';
 
 const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
 const LINKS = [
+ui/dashboard
   { to: '/', label: 'Home', cy: 'nav-home-link' },
   { to: '/plan', label: 'Plan', cy: 'nav-plan-link' },
+
+  { to: '/plan?new=1', label: 'Plan', cy: 'nav-plan-link' }, // ?new=1: a fresh plan once this one is saved (PlanView)
+main
   { to: '/results', label: 'Results', cy: 'nav-results-link' },
   { to: '/dashboard', label: 'Dashboard', cy: 'nav-dashboard-link' },
   { to: '/sources', label: 'Sources', cy: 'nav-sources-link' },
@@ -51,6 +56,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => resize?.disconnect());
 
+ui/dashboard
 // The logo: on another page it goes home; on Home it brings you back to the top, like a refresh. (A real page reload
 // would wipe the plan, which only lives in memory, so it isn't used.)
 function goHome() {
@@ -62,8 +68,12 @@ function goHome() {
   }
 }
 
+const scenario = useScenarioStore();
+main
+
 function logout() {
   auth.logout();
+  scenario.reset(); // the next person on this device starts with an empty plan
   router.push('/');
 }
 </script>
@@ -224,8 +234,14 @@ function logout() {
 </style>
 
 <style>
+ui/dashboard
 /* The navbar is fixed, so: the page starts below it, and in-page jumps (#links, scrollIntoView) stop below it
    instead of under it. --nav-height is set from the bar's real height in the script above. */
 body { padding-top: var(--nav-height, 88px); }
 html { scroll-padding-top: calc(var(--nav-height, 88px) + var(--space-3, 12px)); }
+
+/* The navbar is sticky, so in-page jumps (#links, scrollIntoView) stop below it instead of under it.
+   --nav-height is set from the bar's real height in the script above. */
+html { scroll-padding-top: calc(var(--nav-height, 80px) + var(--space-3, 12px)); }
+main
 </style>
