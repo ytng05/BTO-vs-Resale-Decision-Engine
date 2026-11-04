@@ -215,7 +215,7 @@ export function validateChoice(choice, { currentYear = new Date().getFullYear(),
       min: 50000,
       max: 3000000,
       required: false,
-      rangeMessage: 'Enter an asking price from $50,000 to $3,000,000, or leave it blank to use the median.',
+      rangeMessage: 'Enter an asking price from S$50,000 to S$3,000,000, or leave it blank to use the median.',
     });
   }
 
