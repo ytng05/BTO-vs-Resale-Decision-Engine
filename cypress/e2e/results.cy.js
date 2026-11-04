@@ -34,10 +34,7 @@ describe('results page', () => {
 
   it('marks the user’s own assumptions on the heatmap and explains any square on tap', () => {
     completePlan(); // growth defaults: 3% price, 2% income (D38)
-    // The central idea stays in view as the small grid (D35); the full grid opens from "See the full grid".
-    cy.get('[data-cy=results-mini-grid]').should('be.visible');
-    cy.get('[data-cy=results-section-heatmap]').should('not.have.attr', 'open');
-    cy.get('[data-cy=results-heatmap-open]').click();
+    // The heatmap is the central idea (D35), so its section starts open.
     cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open');
     cy.get('td[data-cy^=heatmap-cell-]').should('have.length', 36);
     cy.get('[data-cy=heatmap-legend]').should('be.visible');
