@@ -64,7 +64,7 @@ const STEPS = [
 // "What you'll get": what the app gives a household, from the project report. Icons are 24×24 strokes.
 const FEATURES = [
   { title: 'Find out the best year to apply', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h3' },
-  { title: 'Every cost and grant counted', icon: 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3' },
+  { title: 'The main costs and grants, counted', icon: 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3' },
   { title: 'Try what-ifs, then compare', icon: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4' },
   { title: 'Built on real HDB historical data', icon: 'M3 17l6-6 4 4 8-8M15 7h6v6' },
   { title: 'Personalised dashboards and results', icon: 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z' },
@@ -242,11 +242,7 @@ const FAQS = [
     <section class="home-section home-get" aria-labelledby="get-title" data-cy="home-get">
       <div class="home-reveal home-head home-head--center">
         <h2 id="get-title" class="home-title">What you'll get</h2>
-<<<<<<< HEAD
         <p class="home-sub">Everything you need to decide, in one place. Not a price prediction: a clear picture of both paths, built from your own numbers and today's rules.</p>
-=======
-        <p class="home-sub">Everything you need to decide, in one place.</p>
->>>>>>> 3913282541d3f5941e0009a4e2c138d254784114
       </div>
       <!-- What you get: a plain list of features (icon + title, thin dividers) beside the break-even illustration. -->
       <div class="home-get-grid">
@@ -297,7 +293,7 @@ const FAQS = [
           What we count
         </span>
         <h2 id="costs-title" class="home-costs__title">The costs people usually forget</h2>
-        <p class="home-lead text-center">Most calculators leave these out. We work every one of them into your answer.</p>
+        <p class="home-lead text-center">Costs that are easy to forget. We count these in your answer.</p>
       </div>
       <!-- A strip that moves by itself, with buttons to step through it or pause it. The second copy only makes the loop
            seamless, so screen readers skip it. -->

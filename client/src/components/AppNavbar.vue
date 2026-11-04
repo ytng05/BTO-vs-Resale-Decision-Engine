@@ -131,8 +131,7 @@ function logout() {
 <style scoped>
 /* Three slots: brand (left), links (centre, always in the middle), account (right).
    The bar runs the full screen width (logo and Log in at the ends, lined up with the home page's hero box) and stays
-   at the top while you scroll. Its white background reaches the screen edges through a large box-shadow, with a
-   1px line underneath; clip-path stops that shadow spilling above or below the bar. */
+   at the top while you scroll, with no lines above or below it. */
 .pill-nav {
   --nav-gutter: clamp(12px, 2.5vw, 40px);
   display: grid;
@@ -145,10 +144,19 @@ function logout() {
   max-width: none;
   margin-left: calc(50% - 50vw + var(--nav-gutter));
   margin-right: 0;
-  /* the bar matches the page behind it: mist by default, white on Home (which sets --nav-surface) */
+  border: 0;
+}
+/* The bar's background sits on its own layer behind the pills, stretched to the screen edges with a big box-shadow
+   and trimmed to the bar's height. Only this layer is trimmed, so the pills' own shadows aren't cut off in a hard
+   line along the bottom of the bar. It matches the page: mist by default, white on Home (which sets --nav-surface). */
+.pill-nav::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent));
-  box-shadow: 0 0 0 100vmax var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent)), 0 1px 0 100vmax var(--border-subtle);
-  clip-path: inset(0 -100vmax -1px);
+  box-shadow: 0 0 0 100vmax var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent));
+  clip-path: inset(0 -100vmax);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
@@ -197,6 +205,11 @@ function logout() {
   .pill-nav__brand { display: none; }
 }
 
+/* Phone landscape (short screens): the bar scrolls away with the page so it doesn't cover a fifth of the screen. */
+@media (max-height: 500px) {
+  .pill-nav { position: relative; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pill-nav__home .pill-nav__logo, .pill-nav__link { transition: none; }
   .pill-nav__home:hover .pill-nav__logo { transform: none; }
@@ -207,11 +220,4 @@ function logout() {
 /* The navbar is sticky, so in-page jumps (#links, scrollIntoView) stop below it instead of under it.
    --nav-height is set from the bar's real height in the script above. */
 html { scroll-padding-top: calc(var(--nav-height, 80px) + var(--space-3, 12px)); }
-<<<<<<< HEAD
-
-@media (min-width: 768px) and (max-width: 1000px), (max-width: 380px) {
-  .pill-nav__brand { display: none; }
-}
-=======
->>>>>>> 3913282541d3f5941e0009a4e2c138d254784114
 </style>
