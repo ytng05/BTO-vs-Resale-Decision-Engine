@@ -10,6 +10,11 @@
 @import 'tokens';
 
 // ---- Colour ------------------------------------------------------------------
+// ---- Scrolling -----------------------------------------------------------------
+// No page-wide smooth scrolling: every smooth scroll in the app asks for it per call (behavior: 'smooth', or 'auto'
+// under reduced motion). A page-wide default (Bootstrap's, and one SourcesView set on <html>) turned "scroll to the
+// bottom" into an animation still running when the router jumped to the top of the next page: 69px down on CI.
+$enable-smooth-scroll: false;
 $color-contrast-dark: $color-ink;
 $color-contrast-light: $color-white;
 $primary:   $primary;
