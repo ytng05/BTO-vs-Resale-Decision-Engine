@@ -11,6 +11,15 @@ export function formatMoney(amount) {
   return rounded < 0 ? `−${text}` : text;
 }
 
+// One rounding rule for the whole app (4 Nov 2026): headlines and summaries (the verdict, the net position bars, the
+// "At a glance" tiles) round to the nearest S$1,000, because the projection isn't accurate to the dollar; breakdowns
+// that must add up (How you'd pay, the cost and grant tables) stay exact with formatMoney().
+// Takes integer cents, like the API: 51_095_900 -> "S$511,000"; -12_345_600 -> "−S$123,000".
+export function formatMoneyRounded(cents) {
+  if (typeof cents !== 'number' || !Number.isFinite(cents)) return '—';
+  return formatMoney(Math.round(cents / 100 / 1000) * 1000);
+}
+
 // Growth rates are fractions in the store and the API (0.03 = 3%). 0.025 -> "2.5%".
 export function formatPercent(fraction) {
   if (typeof fraction !== 'number' || !Number.isFinite(fraction)) return '—';

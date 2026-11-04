@@ -1,6 +1,6 @@
-// Dashboard layout...the answer and the net position bars at the top, ...the savings strip, "At a glance" tiles, "Why … comes
-// out ahead?" (closed until asked), how each purchase is paid, the What-if analysis chart beside the What-if panel, and
-// "Explore the detail" cards whose detail opens in a pop-up.
+// Dashboard layout: the answer as a compact card tinted in the leading path's colour, the savings strip,
+// "At a glance" tiles, "Why … comes out ahead?" (closed until asked), how each purchase is paid, how each net position
+// adds up, the heatmap (a square tries its rates in the What-if panel), and "Explore the detail" pop-ups.
 // Mock data; same setup as dashboard.cy.js (`VITE_USE_MOCK=true npm run build`, `npm start`, `npm run test:e2e`).
 import { completePlan } from './helpers/plan.js';
 
@@ -108,5 +108,23 @@ describe('dashboard sections', () => {
       cy.get('[data-cy=whatif-year-plus]').click({ scrollBehavior: 'center' });
       cy.get('[data-cy=whatif-year-value]').should('have.text', String(Number(year) + 1));
     });
+  });
+
+  it('tints the answer card in the leading path\'s colour, and scrolls with the page', () => {
+    openDashboard();
+    cy.get('[data-cy=dashboard-verdict]').should('not.have.css', 'position', 'sticky');
+    cy.get('[data-cy=dashboard-headline]').invoke('text').then((h) => {
+      const tone = /^BTO leaves/.test(h) ? 'bto' : /^Resale leaves/.test(h) ? 'resale' : 'none';
+      cy.get('[data-cy=dashboard-verdict]').should('have.class', `dash-verdict-bar--${tone}`);
+    });
+  });
+
+  it('tries a heatmap square in the What-if panel: both growth sliders move to it', () => {
+    openDashboard();
+    cy.get('[data-cy=dashboard-section-heatmap]').scrollIntoView().should('be.visible');
+    cy.get('[data-cy=dashboard-since-inputs]').should('contain', 'Try a what-if');
+    cy.get('[data-cy=dashboard-section-heatmap] [data-cy=heatmap-button-r0-c0]').click({ scrollBehavior: 'center' });
+    cy.get('[data-cy=dashboard-updating]', { timeout: 10000 }).should('not.exist');
+    cy.get('[data-cy=dashboard-since-inputs]').should('contain', 'Since your inputs');
   });
 });

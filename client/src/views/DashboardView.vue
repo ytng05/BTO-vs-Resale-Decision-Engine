@@ -1,10 +1,10 @@
 <script setup>
-// Feature 2: the financial dashboard. Both paths, measured in the same year (contract v2, D1), in the home page's
-// style (every page is white now, _tokens.scss $bg-app). Top to bottom: the answer (pink hero with the two net positions), whether today's savings
-// cover the cash, the notes no card already says, "At a glance" (one coloured tile per thing that matters), then
-// "How you'd pay for it" (both paths side by side), how the net position adds up, and "Explore the detail" (each
-// card opens its detail in a pop-up), with
-// the What-if panel beside them, sticky on large screens.
+// Feature 2: the financial dashboard, where you test the answer the Results page gives. Both paths, measured in the
+// same year (contract v2, D1). Top to bottom: the answer as a compact card tinted in the leading path's colour
+// (DashboardVerdictBar), whether today's savings cover the cash, quick scenario chips, the notes no card already
+// says, "At a glance", then "How you'd pay for it", how each net position adds up, where each path comes out ahead
+// (the heatmap: click a square to try its rates), and "Explore the detail" (pop-ups), with the What-if panel
+// beside them, sticky on large screens.
 // What-if sliders re-run the comparison with changed assumptions. They are local only: the saved plan
 // in the store never changes, and "Reset" goes back to it.
 // Store and sliders hold dollars and fractions; client.js turns them into the contract's cents (D14).
@@ -15,13 +15,14 @@ import { compare } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import { isPlanComplete } from '../validation/planValidation.js';
 import { CLASSIFICATIONS, FLAT_TYPES, TOWNS } from '../constants/planOptions.js';
-import { formatMoney } from '../utils/format.js';
+import { formatMoneyRounded } from '../utils/format.js';
 import { costsTakeaway, grantsTakeaway, monthYear } from '../utils/dashboardFormat.js';
 import WhatIfPanel from '../components/dashboard/WhatIfPanel.vue';
 import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
 import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
-import DashboardHero from '../components/dashboard/DashboardHero.vue';
+import DashboardVerdictBar from '../components/dashboard/DashboardVerdictBar.vue';
+import HeatmapGrid from '../components/HeatmapGrid.vue';
 import DashboardCashCard from '../components/dashboard/DashboardCashCard.vue';
 import DashboardGlance from '../components/dashboard/DashboardGlance.vue';
 import DashboardPaid from '../components/dashboard/DashboardPaid.vue';
@@ -171,18 +172,32 @@ const gapCents = computed(() => {
 // ahead, so the two pages never disagree.
 const call = computed(() => verdict(A.value, B.value, horizon.value));
 
-const headline = computed(() => {
-  if (gapCents.value === null) return 'Your financial dashboard';
-  if (call.value.close) return call.value.headline; // "Too close to call: …" or "… about the same by …", as on Results
-  // Rounded to S$1,000 like every summary on the page; the exact figures are in "How each purchase is paid".
-  return `${gapCents.value > 0 ? 'BTO' : 'Resale'} ends ${formatMoney(Math.round(Math.abs(gapCents.value) / 100 / 1000) * 1000)} ahead by ${horizon.value}`;
+// The same sentence as the top of the Results page (verdict() in utils/resultsVerdict.js), so the two pages never
+// word the answer differently: "BTO leaves you about S$104,000 better off by 2039", "Too close to call: …".
+const headline = computed(() => (gapCents.value === null ? 'Your financial dashboard' : call.value.headline));
+
+// The heatmap: every combination of flat price and income growth the server tested (D33). "You" marks the rates
+// being tried now; clicking a square moves both growth sliders to it, and the whole page updates.
+const heatmapUser = computed(() => ({ priceGrowth: whatIf.annualPriceGrowth, incomeGrowth: whatIf.annualIncomeGrowth }));
+const heatmapLine = computed(() => {
+  const cells = (result.value?.grid ?? []).flat();
+  if (!cells.length) return '';
+  const a = cells.filter((c) => c.winner === 'A').length;
+  const b = cells.filter((c) => c.winner === 'B').length;
+  if (a === cells.length) return `BTO comes out ahead in all ${cells.length} futures tested.`;
+  if (b === cells.length) return `Resale comes out ahead in all ${cells.length} futures tested.`;
+  return `BTO comes out ahead in ${a} of ${cells.length} futures tested, resale in ${b}.`;
 });
+function tryCell(cell) {
+  if (!cell) return;
+  setWhatIf({ ...whatIf, annualPriceGrowth: cell.annualPriceGrowth, annualIncomeGrowth: cell.annualIncomeGrowth });
+}
 
 // Where the answer flips on the flat price growth slider, at the income growth being tried now.
 const flip = computed(() => priceFlip(result.value, whatIf.annualIncomeGrowth));
 
 // "Since your inputs": the answer at the saved plan against the answer now.
-const k = (cents) => formatMoney(Math.round(Math.abs(cents) / 100 / 1000) * 1000);
+const k = (cents) => formatMoneyRounded(Math.abs(cents)); // one rounding rule: summaries to S$1,000
 const sinceInputs = computed(() => {
   if (!changes.value.length || baselineGapCents.value === null || gapCents.value === null) return null;
   const before = baselineGapCents.value;
@@ -318,7 +333,7 @@ const detailLine = computed(() => ({
     <!-- While a pop-up is open the page behind is inert: Tab can't reach the sliders under the backdrop. -->
     <div class="dash-e" :inert="openKey ? '' : null">
       <!-- 1. The answer -->
-      <DashboardHero
+      <DashboardVerdictBar
         v-if="A && B"
         :outcome-a="A"
         :outcome-b="B"
@@ -331,16 +346,16 @@ const detailLine = computed(() => ({
         :baseline="changes.length ? baselineNets : null"
         :updating="updating"
       >
-        <RouterLink to="/results" class="btn btn-disc dash-btn dash-btn--light" data-cy="dashboard-results-button">
+        <RouterLink to="/results" class="btn btn-primary btn-disc dash-btn" data-cy="dashboard-results-button">
           <span class="btn-disc__disc" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
           </span>
           Back to results
         </RouterLink>
-        <RouterLink to="/plan" class="btn dash-btn dash-btn--ghost" data-cy="dashboard-edit-button">Edit inputs</RouterLink>
+        <RouterLink to="/plan" class="btn btn-outline-secondary dash-btn" data-cy="dashboard-edit-button">Edit inputs</RouterLink>
         <span v-if="result.mock" class="dash-status" data-cy="dashboard-mock-notice">Example data</span>
         <span v-if="updating" class="dash-status" role="status" data-cy="dashboard-updating">Updating…</span>
-      </DashboardHero>
+      </DashboardVerdictBar>
       <h1 v-else id="dashboard-heading" class="hero-statement" data-cy="dashboard-headline">{{ headline }}</h1>
 
       <div v-if="error" class="alert alert-warning mb-0" role="alert" data-cy="dashboard-update-error">
@@ -400,6 +415,22 @@ const detailLine = computed(() => ({
               <p class="section-head__sub">What each path leaves you with in {{ horizon }}, line by line. Move a What-if slider to see it change.</p>
             </div>
             <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
+          </section>
+
+          <!-- Where each path comes out ahead: the heatmap, linked to the What-if panel. -->
+          <section v-if="result.grid?.length" class="dash-panel" aria-labelledby="heatmap-heading" data-cy="dashboard-section-heatmap">
+            <div>
+              <h2 id="heatmap-heading" class="section-head__title">Where each path comes out ahead</h2>
+              <p class="section-head__sub">{{ heatmapLine }} Click a square to try its rates in the What-if.</p>
+            </div>
+            <HeatmapGrid
+              :grid="result.grid"
+              :user-point="heatmapUser"
+              :horizon-year="horizon"
+              label-a="BTO"
+              label-b="Resale"
+              @pick="tryCell"
+            />
           </section>
 
           <section class="dash-explore" aria-labelledby="explore-heading" data-cy="dashboard-more-detail">
@@ -521,25 +552,28 @@ const detailLine = computed(() => ({
   --dash-resale: var(--path-resale); --dash-resale-tint: var(--path-resale-fill); --dash-resale-pale: var(--path-resale-tint);
   display: flex; flex-direction: column; gap: clamp(40px, 5vw, 64px);
 }
-/* The savings strip sits close under the hero. */
+/* The savings strip sits close under the verdict bar. */
 .dash-e > :deep(.dash-cash) { margin-top: calc(clamp(40px, 5vw, 64px) * -0.6); }
-/* Buttons on the dark answer card: a white one with the pink disc, and an outlined one. */
-.dash-btn--light { background: var(--bg-surface); color: var(--text-primary); }
-.dash-btn--light:hover { background: var(--accent-tint); color: var(--text-primary); }
 
-/* Hero buttons, as on the home page. */
-.dash-btn { min-height: 52px; display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 500; }
+/* The verdict bar's buttons: the primary one with the pink disc (as on Home), and an outlined one. */
+.dash-btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); font-weight: 500; white-space: nowrap; }
 .dash-btn.btn-disc { padding-right: var(--space-5); }
-.dash-btn--ghost { padding: 0 var(--space-5); background: transparent; border: 1px solid rgba(255, 255, 255, 0.4); color: var(--on-primary); }
-.dash-btn--ghost:hover { border-color: var(--accent-fill-1); color: var(--on-primary); }
-.dash-status { font-size: 0.8125rem; color: rgba(255, 255, 255, 0.7); }
+.dash-status { font-size: 0.8125rem; color: var(--text-secondary); }
 
 /* Main area: content left, What-if right (sticky on large screens, below the sticky navbar). */
 .dash-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); align-items: start; }
 @media (min-width: 992px) {
   .dash-main { grid-template-columns: minmax(0, 1fr) minmax(300px, 380px); }
   .dash-main__side { align-self: stretch; }
-  .dash-sticky { position: sticky; top: calc(var(--nav-height, 0px) + var(--space-4)); }
+  /* Sticks below the navbar, and scrolls inside itself if it is taller than the screen, so Reset is always reachable. */
+  .dash-sticky {
+    position: sticky;
+    top: calc(var(--nav-height, 0px) + var(--space-4));
+    max-height: calc(100vh - var(--nav-height, 0px) - var(--space-6));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: var(--radius-lg);
+  }
   .dash-sticky :deep(.dash-whatif) { position: static; }
 }
 .dash-main__content { display: flex; flex-direction: column; gap: clamp(32px, 4vw, 48px); min-width: 0; }

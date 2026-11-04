@@ -25,8 +25,9 @@ describe('financial dashboard', () => {
 
   it('leads with who ends ahead in which year, and shows the ruleset version', () => {
     openDashboard();
+    // The same sentence as the top of Results (verdict(), D42).
     cy.get('[data-cy=dashboard-headline]').invoke('text')
-      .should('match', /(BTO|Resale) ends S\$[\d,]+ ahead by \d{4}|Both paths end level by \d{4}/);
+      .should('match', /(BTO|Resale) leaves you about S\$[\d,]+ better off by \d{4}|Too close to call: .+ by \d{4}|about the same by \d{4}/);
     cy.get('[data-cy=dashboard-ruleset-version]').should('contain', 'Ruleset');
     ['bto', 'resale'].forEach((p) => {
       cy.get(`[data-cy=dashboard-summary-${p}-net]`).invoke('text').should('match', /S\$[\d,]+/);

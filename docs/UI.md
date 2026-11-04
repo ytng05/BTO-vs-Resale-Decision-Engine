@@ -535,3 +535,4 @@ requirement.
 - White boxes on the page carry a 1px `$border-subtle` border (or use `.card` / `.quiet-panel`).
 - BTO is always `--path-bto` (indigo); resale is `--path-resale` (berry, text) and `--path-resale-bar` (pink, bars).
 - Section headings use `.section-head`, `.section-head__title`, `.section-head__sub`.
+- Rounding: headlines and summaries round to the nearest S$1,000 (`formatMoneyRounded`); breakdowns that must add up (How you'd pay, cost    and grant tables) are exact (`formatMoney`).
