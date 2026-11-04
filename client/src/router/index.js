@@ -26,7 +26,11 @@ const router = createRouter({
   // A new page starts at the top; Back returns to where you were; /sources#loans scrolls to its section.
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) return savedPosition;
-    if (to.hash) return { el: to.hash, top: 24 };
+    // Clear the fixed navbar (its height is set as --nav-height by AppNavbar.vue), plus a small gap.
+    if (to.hash) {
+      const nav = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height'), 10) || 88;
+      return { el: to.hash, top: nav + 12 };
+    }
     if (to.path !== from.path) return { top: 0, behavior: 'instant' };
     return false;
   },
@@ -56,4 +60,6 @@ router.afterEach((to) => {
   document.title = page && page !== 'BTO or resale' ? `${page} · ${SITE}` : SITE;
 });
 
+
 export default router;
+

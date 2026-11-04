@@ -133,14 +133,14 @@ describe('difference text, reason line and bars', () => {
 
   it('gives the reason the path that is behind still has going for it', () => {
     const v = verdict(a, b, 2041);
-    expect(reasonLine(rows, v)).toBe('Resale gets you the keys about 4 years sooner.');
+    expect(reasonLine(rows, v)).toBe('But resale gets you the keys 4 years 4 months sooner.');
   });
 
-  it('lists three things with commas, and says months when the keys gap is under a year', () => {
+  it('names the keys and the cash, keys first, and says months when the keys gap is under a year', () => {
     const behind = out(10, { totalGrantsCents: 9_000_000, cashRequiredAtPurchaseCents: 1_000_000, timeline: { keyCollectionDate: '2027-01-01' } });
     const ahead = out(99_000_000, { totalGrantsCents: 1_000_000, cashRequiredAtPurchaseCents: 5_000_000, timeline: { keyCollectionDate: '2027-08-01' } });
     const text = reasonLine(keyRows(behind, ahead, 2041), verdict(behind, ahead, 2041));
-    expect(text).toBe('BTO gets you a smaller cash payment up front and the keys 7 months sooner.');
+    expect(text).toBe('But BTO gets you the keys 7 months sooner and needs about S$40,000 less cash up front.');
   });
 
   it('says nothing when the path that is behind is not better at anything else', () => {

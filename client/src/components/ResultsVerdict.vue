@@ -1,19 +1,19 @@
 <script setup>
-// Top of the Results page: who ends ahead, by how much, why the other path still has something going for it, and the
-// few numbers that decide it (the side-by-side table lives on the Dashboard). Everything is derived from the two Outcomes by utils/resultsVerdict.js
+// Top of the Results page (redesign, 4 Nov 2026): who ends ahead and by how much (the amount in pink), what the path
+// that is behind still does better, and both net positions as bars. The "Would the answer change?", trade-off, why
+// and grants boxes follow in ResultsView; the full side-by-side table lives on the Dashboard. Everything is derived from the two Outcomes by utils/resultsVerdict.js
 // (pure, unit-tested); this component only lays it out. Wording follows the guardrails: "net position" (what a
 // path leaves you with, after costs), never "profit". Colour is never the only signal: the leading path is named in
 // words and each bar carries its figure.
 // data-cy names: docs/CONVENTIONS.md "Results verdict".
 import Term from './Term.vue';
-import { computed, nextTick } from 'vue';
+import { computed } from 'vue';
+import { formatMoney } from '../utils/format.js';
 import { barShares, reasonLine } from '../utils/resultsVerdict.js';
 
 const props = defineProps({
   verdict: { type: Object, required: true }, // from verdict()
   rows: { type: Array, required: true }, // from keyRows()
-  gapSentence: { type: String, default: '' }, // the exact figure, kept for the existing Results spec
-  breakEvenSentence: { type: String, default: '' },
   horizonYear: { type: Number, default: null },
   labelA: { type: String, default: 'BTO' }, // e.g. 'BTO · Tampines', for the bars
   labelB: { type: String, default: 'Resale' },
@@ -27,19 +27,13 @@ const bars = computed(() => [
   { key: 'resale', label: props.labelB, value: position.value?.b, pct: shares.value.b },
 ]);
 const named = computed(() => (props.verdict.winner === 'bto' || props.verdict.winner === 'resale') && !props.verdict.close);
-
-// "Jump to the official steps" scrolls to the existing "What to do next" card and moves focus there, so
-// keyboard and screen-reader users land on it too.
-async function jumpTo(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-  await nextTick();
-  el.setAttribute('tabindex', '-1');
-  el.focus({ preventScroll: true });
-}
-const jumpToSteps = () => jumpTo('next-steps-title');
+// The headline with its amount picked out in pink: [before, amount, after]. The whole sentence stays one h1.
+const headlineParts = computed(() => {
+  const h = props.verdict.headline ?? '';
+  const amount = props.verdict.roundedDollars ? formatMoney(props.verdict.roundedDollars) : '';
+  const at = amount ? h.indexOf(amount) : -1;
+  return at === -1 ? [h, '', ''] : [h.slice(0, at), amount, h.slice(at + amount.length)];
+});
 </script>
 
 <template>
@@ -54,7 +48,7 @@ const jumpToSteps = () => jumpTo('next-steps-title');
           <!-- Within the "too close to call" line (D42) no path is named as ahead, here or on the cards. -->
           <template v-else>{{ verdict.close ? 'Too close to call' : 'Your result' }}<template v-if="horizonYear"> in {{ horizonYear }}</template></template>
         </p>
-        <h1 id="verdict-headline" class="verdict__headline" data-cy="results-verdict-headline">{{ verdict.headline }}</h1>
+        <h1 id="verdict-headline" class="verdict__headline" data-cy="results-verdict-headline">{{ headlineParts[0] }}<span v-if="headlineParts[1]" class="verdict__amount">{{ headlineParts[1] }}</span>{{ headlineParts[2] }}</h1>
         <p v-if="reason" class="verdict__reason" data-cy="results-verdict-reason">{{ reason }}</p>
       </div>
 
@@ -72,34 +66,19 @@ const jumpToSteps = () => jumpTo('next-steps-title');
           </div>
         </div>
         <p class="verdict__diff mb-1" data-cy="results-verdict-diff">{{ verdict.diffLine }}</p>
-        <p class="text-caption mb-0">Bars start at S$0.</p>
+        <p class="text-caption mb-0">What the flat is worth, minus the loan, the CPF going back to your accounts and the cash you've spent. Grants are already counted. Bars start at S$0.</p>
       </div>
     </div>
 
-    <p v-if="gapSentence" class="verdict__exact" data-cy="results-gap-sentence">{{ gapSentence }}</p>
-    <p v-if="breakEvenSentence" class="text-secondary mb-4" data-cy="results-breakeven-sentence">{{ breakEvenSentence }}</p>
-
-    <!-- The next step: move on from "which is better" to "what is it made of", then to the official steps. -->
-    <div class="verdict__next d-print-none" data-cy="results-verdict-next">
-      <p class="verdict__next-text mb-0">
-        <strong>Next:</strong> see what these numbers are made of, then check the official steps.
-      </p>
-      <div class="d-flex flex-wrap gap-2">
-        <RouterLink to="/dashboard" class="btn btn-primary" data-cy="results-dashboard-button">Open the dashboard</RouterLink>
-        <button type="button" class="btn btn-outline-secondary" data-cy="results-steps-jump" @click="jumpToSteps">Jump to the official steps</button>
-        <RouterLink to="/plan" class="btn btn-link" data-cy="results-edit-button">Change inputs</RouterLink>
-      </div>
-    </div>
   </section>
 </template>
 
 <style scoped>
-.verdict { margin-bottom: var(--space-4); }
-.verdict__hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--space-3); margin-bottom: var(--space-4); }
+.verdict__hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--space-4); }
 .verdict__lead {
   display: flex; flex-direction: column; gap: var(--space-3);
-  padding: var(--space-5);
-  border-radius: var(--radius-md);
+  padding: clamp(24px, 3vw, 40px);
+  border-radius: var(--radius-lg);
   background: var(--accent-deep);
   color: var(--on-primary);
 }
@@ -114,29 +93,22 @@ const jumpToSteps = () => jumpTo('next-steps-title');
   color: var(--text-primary);
 }
 .verdict__eyebrow .verdict__dot { margin-right: 0; }
-.verdict__headline { margin: 0; font-family: var(--font-heading); font-weight: 500; font-size: clamp(1.625rem, 4vw, 2.25rem); line-height: 1.15; letter-spacing: -0.02em; color: inherit; }
-.verdict__reason { margin: 0; opacity: 0.88; line-height: 1.5; }
-.verdict__bars { padding: var(--space-4) var(--space-5); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--bg-surface); }
+.verdict__headline { margin: 0; font-family: var(--font-heading); font-weight: 700; font-size: clamp(1.875rem, 3.6vw, 2.875rem); line-height: 1.08; letter-spacing: -0.03em; color: inherit; }
+.verdict__amount { color: var(--accent-fill-1); } /* pink on indigo, large text: 4.3:1, above the 3:1 for large text */
+.verdict__reason { margin: 0; opacity: 0.92; font-size: 1.0625rem; line-height: 1.5; }
+.verdict__bars { display: flex; flex-direction: column; justify-content: center; padding: clamp(20px, 3vw, 36px); border-radius: var(--radius-lg); background: var(--bg-surface); }
 .verdict__bars-title { font-size: 0.9375rem; font-weight: 500; }
 .verdict__bar { margin-bottom: var(--space-3); }
 .verdict__bar-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); font-size: 0.9375rem; }
 .verdict__bar-value { font-family: var(--font-heading); font-weight: 500; font-size: 1.25rem; letter-spacing: -0.015em; }
 .verdict__track { height: 0.75rem; margin-top: var(--space-1); border-radius: var(--radius-pill); background: var(--accent-fill-3); overflow: hidden; }
 .verdict__fill { height: 100%; border-radius: var(--radius-pill); }
-.verdict__fill--bto { background: var(--primary); }
+.verdict__fill--bto { background: var(--accent-deep); }
 .verdict__fill--resale { background: var(--accent-fill-1); box-shadow: inset 0 0 0 1px var(--primary); }
 .verdict__diff { font-size: 0.9375rem; }
 .verdict__dot { display: inline-block; width: 0.625rem; height: 0.625rem; border-radius: 50%; margin-right: var(--space-2); }
-.verdict__dot--bto { background: var(--primary); }
+.verdict__dot--bto { background: var(--accent-deep); }
 .verdict__dot--resale { background: var(--accent-fill-1); box-shadow: 0 0 0 1px var(--primary); }
-.verdict__exact { margin-bottom: var(--space-1); }
-
-.verdict__next {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
-  background: var(--accent-fill-2);
-}
 @media (max-width: 991.98px) {
   .verdict__hero { grid-template-columns: minmax(0, 1fr); }
 }

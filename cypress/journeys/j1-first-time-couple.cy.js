@@ -7,12 +7,12 @@ describe('Journey 1: first-time couple, "BTO or resale?"', () => {
 
     // The verdict: one sentence, then the gap.
     cy.get('[data-cy=results-breakeven-sentence]').should('contain', 'Path A (BTO)');
-    cy.get('[data-cy=results-gap-sentence]').should('contain', 'BTO ends');
+    cy.get('[data-cy=results-verdict-headline]').should('contain', 'BTO leaves you');
     beat();
 
-    // Why: the gap line by line, and where the user's own assumptions sit on the heatmap.
-    cy.get('[data-cy=results-gap-card]').scrollIntoView().should('be.visible');
-    cy.get('[data-cy=results-gap-list]').should('be.visible');
+    // Each path in plain words, and where the user's own assumptions sit on the heatmap.
+    cy.get('[data-cy=results-patha-card]').scrollIntoView().should('be.visible');
+    cy.get('[data-cy=results-pathb-card]').should('be.visible');
     beat();
     cy.get('[data-cy=heatmap-user-marker]').scrollIntoView().should('be.visible');
     beat();

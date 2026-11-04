@@ -12,7 +12,8 @@ describe('results: next steps and print', () => {
   afterEach(() => media(''));
 
   it('lists what to do next, each step linking to an official page in a new tab', () => {
-    cy.get('[data-cy=results-next-steps]').scrollIntoView().should('contain', 'HDB Flat Eligibility (HFE) letter');
+    cy.get('[data-cy=results-steps-jump]').click(); // "Official steps" opens them under More detail
+    cy.get('[data-cy=results-next-steps]').should('be.visible').and('contain', 'HDB Flat Eligibility (HFE) letter');
     cy.get('[data-cy=results-next-steps] a').should('have.length', 5).each(($a) => {
       expect($a.attr('href')).to.match(/^https:\/\/www\.(hdb|cpf|moneysense|mynicehome)\.gov\.sg\//);
       expect($a.attr('target')).to.eq('_blank');
