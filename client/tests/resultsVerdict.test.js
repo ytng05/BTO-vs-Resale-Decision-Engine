@@ -46,15 +46,25 @@ describe('verdict', () => {
 });
 
 describe('keyRows', () => {
-  const a = out(18_500_000, { totalGrantsCents: 3_000_000, cashRequiredAtPurchaseCents: 4_500_000, timeline: { keyCollectionDate: '2031-05-01' } });
-  const b = out(17_200_000, { totalGrantsCents: 13_000_000, cashRequiredAtPurchaseCents: 9_000_000, timeline: { keyCollectionDate: '2027-01-15' } });
+  const a = out(18_500_000, { totalGrantsCents: 3_000_000, cashRequiredAtPurchaseCents: 4_500_000, housingCashSpentCents: 45_000_000, timeline: { keyCollectionDate: '2031-05-01' } });
+  const b = out(17_200_000, { totalGrantsCents: 13_000_000, cashRequiredAtPurchaseCents: 9_000_000, housingCashSpentCents: 65_000_000, timeline: { keyCollectionDate: '2027-01-15' } });
 
   it('marks the better side of each row', () => {
     const rows = Object.fromEntries(keyRows(a, b, 2041).map((r) => [r.id, r]));
     expect(rows.position.better).toBe('a');
     expect(rows.grants.better).toBe(null); // grants are already in net position (D1): never tagged
     expect(rows.cash.better).toBe('a'); // lower cash up front is better
+    expect(rows.spent.better).toBe('a'); // less cash spent on housing by the horizon is better
     expect(rows.keys.better).toBe('b'); // earlier keys are better
+  });
+
+  it('lists the rows in the order the table shows them, with the labels the page uses', () => {
+    const rows = keyRows(a, b, 2041);
+    expect(rows.map((r) => r.id)).toEqual(['position', 'cash', 'spent', 'grants', 'keys']);
+    expect(rows.map((r) => r.label)).toEqual([
+      'Net position in 2041', 'Cash needed at purchase', 'Cash spent on housing by 2041', 'Grants you may get', 'You get the keys',
+    ]);
+    expect(rows.find((r) => r.id === 'spent')).toMatchObject({ a: 'S$450,000', b: 'S$650,000', diffLead: 'S$200,000', diffRest: 'less with BTO' });
   });
 
   it('formats money and key dates', () => {

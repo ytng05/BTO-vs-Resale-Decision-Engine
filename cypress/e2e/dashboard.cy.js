@@ -45,12 +45,15 @@ describe('financial dashboard', () => {
 
   it('draws how the net position adds up, and lists the costs', () => {
     openDashboard();
+    cy.get('[data-cy=dashboard-more-detail] > summary').click(); // the sections sit under "More detail", closed at first
+    cy.get('[data-cy=dashboard-section-cashflow] summary').click();
     cy.get('[data-cy=dashboard-cashflow] canvas').should('be.visible');
     cy.get('[data-cy=dashboard-costs], [data-cy=dashboard-costs-empty]').should('exist');
   });
 
   it('puts the two flats side by side: size, price and price per m²', () => {
     openDashboard();
+    cy.get('[data-cy=dashboard-more-detail] > summary').click();
     cy.get('[data-cy=dashboard-section-size] summary').click();
     cy.get('[data-cy=dashboard-size-price]').should('be.visible');
     ['bto', 'resale'].forEach((p) => {
@@ -65,10 +68,10 @@ describe('financial dashboard', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-headline]').invoke('text').then((before) => {
       const startYear = before.match(/by (\d{4})/)[1];
-      cy.get('[data-cy=whatif-horizon-slider]').invoke('attr', 'max').then((max) => {
-        cy.get('[data-cy=whatif-horizon-slider]').invoke('val', max).trigger('input');
-        cy.get('[data-cy=whatif-horizon-value]').should('contain', max);
-        cy.get('[data-cy=dashboard-headline]').should('contain', `by ${max}`);
+      cy.get('[data-cy=whatif-horizon-value]').invoke('text').then((year) => {
+        cy.get('[data-cy=whatif-horizon-plus]').click(); // "Compare in" is a stepper
+        cy.get('[data-cy=whatif-horizon-value]').should('contain', String(Number(year) + 1));
+        cy.get('[data-cy=dashboard-headline]').should('contain', `by ${Number(year) + 1}`);
         cy.get('[data-cy=dashboard-whatif-reset]').click();
         cy.get('[data-cy=dashboard-headline]').should('contain', `by ${startYear}`);
       });
