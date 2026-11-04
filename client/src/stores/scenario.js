@@ -138,27 +138,6 @@ export const useScenarioStore = defineStore('scenario', {
       this.savedName = name;
       this.savedKey = this.inputsKey;
     },
-    // About you autofill: the household's answers from a saved scenario. The move-in deadline is kept, as it belongs
-    // to this plan, not to the household. New buyer ids, as in loadSaved.
-    fillProfile(savedProfile) {
-      const applicants = [];
-      let saved = [];
-      if (savedProfile && Array.isArray(savedProfile.applicants)) {
-        saved = savedProfile.applicants;
-      }
-      for (const a of saved) {
-        const b = blankApplicant();
-        applicants.push({ ...b, ...a, id: b.id });
-      }
-      if (applicants.length === 0) {
-        applicants.push(blankApplicant());
-      }
-      let cash = null;
-      if (savedProfile && typeof savedProfile.cashSavings === 'number') {
-        cash = savedProfile.cashSavings;
-      }
-      this.profile = { ...this.profile, applicants: applicants, cashSavings: cash };
-    },
     loadSaved(saved) {
       const fresh = blank();
       Object.assign(this, {

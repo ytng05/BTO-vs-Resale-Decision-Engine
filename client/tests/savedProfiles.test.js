@@ -1,62 +1,65 @@
-// About you autofill: only distinct, complete household details are suggested, newest first, at most three.
+// About you autofill: each box suggests the different answers it had in saved scenarios, newest first.
 import { describe, it, expect } from 'vitest';
-import { profileKey, uniqueProfiles } from '../src/utils/savedProfiles.js';
+import { MAX_SUGGESTIONS, matchingValues, savedValues, suggestionLabel, valueAt } from '../src/utils/savedProfiles.js';
 
-function buyer(id, age, monthlyIncome, cpfOaBalance) {
-  return { id: id, age: age, citizenship: 'SC', firstTimer: true, monthlyIncome: monthlyIncome, cpfOaBalance: cpfOaBalance };
+function buyer(age, monthlyIncome, cpfOaBalance) {
+  return { id: 'x', age: age, citizenship: 'SC', firstTimer: true, monthlyIncome: monthlyIncome, cpfOaBalance: cpfOaBalance };
 }
 function household(cash, a, b) {
   return { applicants: [a, b], cashSavings: cash, constraints: { moveInByYear: null } };
 }
 
-const ours = household(20000, buyer('applicant-1', 29, 5000, 40000), buyer('applicant-2', 31, 4800, 30000));
-// Same answers, saved in another session: different buyer ids and move-in year.
-const oursAgain = { ...household(20000, buyer('applicant-7', 29, 5000, 40000), buyer('applicant-8', 31, 4800, 30000)), constraints: { moveInByYear: 2030 } };
-const raise = household(20000, buyer('applicant-3', 29, 6200, 40000), buyer('applicant-4', 31, 4800, 30000));
-const moreCash = household(35000, buyer('applicant-5', 29, 5000, 40000), buyer('applicant-6', 31, 4800, 30000));
+// Newest first, as GET /api/scenarios lists them.
+const newest = household(20000, buyer(33, 5000, 40000), buyer(44, 6000, 4000));
+const older = household(20000, buyer(37, 5000, 45123.67), buyer(44, 6200, 4000));
+const oldest = household(null, buyer(33, null, null), buyer(null, null, null));
+const saved = [newest, older, oldest];
 
-describe('uniqueProfiles', () => {
-  it('shows the same household once, however many times it was saved', () => {
-    const list = uniqueProfiles([ours, oursAgain, ours]);
-    expect(list).toHaveLength(1);
-    expect(list[0].title).toBe('Ages 29 and 31');
-    expect(list[0].detail).toBe('S$5,000 + S$4,800 a month');
+describe('savedValues', () => {
+  it('gives each box its own different answers, newest first', () => {
+    expect(savedValues(saved, 'applicants.0.age')).toEqual([33, 37]);
+    expect(savedValues(saved, 'applicants.1.age')).toEqual([44]);
+    expect(savedValues(saved, 'applicants.1.monthlyIncome')).toEqual([6000, 6200]);
+    expect(savedValues(saved, 'cashSavings')).toEqual([20000]);
   });
 
-  it('keeps looking past repeats, so older different households still appear (newest first)', () => {
-    const list = uniqueProfiles([ours, oursAgain, ours, oursAgain, raise]);
-    expect(list.map((s) => s.detail)).toEqual(['S$5,000 + S$4,800 a month', 'S$6,200 + S$4,800 a month']);
+  it('skips empty answers and odd saved data', () => {
+    expect(savedValues([oldest, null, {}, { applicants: [] }], 'applicants.1.age')).toEqual([]);
+    expect(savedValues([oldest, null, {}], 'cashSavings')).toEqual([]);
   });
 
-  it('stops at three suggestions', () => {
-    const others = [];
-    for (let age = 25; age < 30; age += 1) {
-      others.push(household(1000, buyer('x', age, 3000, 1000), buyer('y', 30, 3000, 1000)));
+  it('stops at MAX_SUGGESTIONS', () => {
+    const many = [];
+    for (let age = 21; age < 31; age += 1) {
+      many.push(household(0, buyer(age, 0, 0), buyer(30, 0, 0)));
     }
-    expect(uniqueProfiles(others)).toHaveLength(3);
-  });
-
-  it('adds the CPF and cash line only where two suggestions would otherwise look the same', () => {
-    const list = uniqueProfiles([ours, moreCash, raise]);
-    expect(list).toHaveLength(3);
-    expect(list[0].showSavings).toBe(true);
-    expect(list[0].savings).toBe('CPF OA S$40,000 + S$30,000 · cash S$20,000');
-    expect(list[1].showSavings).toBe(true);
-    expect(list[1].savings).toContain('cash S$35,000');
-    expect(list[2].showSavings).toBe(false);
-  });
-
-  it('skips profiles with a missing age, and copes with odd saved data', () => {
-    const halfDone = household(null, buyer('a', 29, null, null), buyer('b', null, null, null));
-    expect(uniqueProfiles([halfDone, null, {}, { applicants: [] }, ours])).toHaveLength(1);
+    expect(savedValues(many, 'applicants.0.age')).toHaveLength(MAX_SUGGESTIONS);
   });
 });
 
-describe('profileKey', () => {
-  it('ignores buyer ids and the move-in year, but not the answers or their order', () => {
-    expect(profileKey(ours)).toBe(profileKey(oursAgain));
-    expect(profileKey(ours)).not.toBe(profileKey(raise));
-    const swapped = household(20000, ours.applicants[1], ours.applicants[0]);
-    expect(profileKey(ours)).not.toBe(profileKey(swapped));
+describe('matchingValues', () => {
+  it('shows every value in an empty box', () => {
+    expect(matchingValues([33, 37], null)).toEqual([33, 37]);
+  });
+
+  it('keeps only the values that start with what is typed, without the one already in the box', () => {
+    expect(matchingValues([33, 37, 44], 3)).toEqual([33, 37]);
+    expect(matchingValues([33, 37], 33)).toEqual([]);
+    expect(matchingValues([5000, 6200], 50)).toEqual([5000]);
+    expect(matchingValues([33, 37], 4)).toEqual([]);
+  });
+});
+
+describe('suggestionLabel and valueAt', () => {
+  it('shows ages as plain numbers and money in dollars, cents kept', () => {
+    expect(suggestionLabel('applicants.0.age', 33)).toBe('33');
+    expect(suggestionLabel('applicants.0.monthlyIncome', 5000)).toBe('S$5,000');
+    expect(suggestionLabel('applicants.0.cpfOaBalance', 45123.67)).toBe('S$45,123.67');
+  });
+
+  it('reads a box by its key, or null', () => {
+    expect(valueAt(newest, 'applicants.1.cpfOaBalance')).toBe(4000);
+    expect(valueAt(newest, 'applicants.2.age')).toBeNull();
+    expect(valueAt(null, 'cashSavings')).toBeNull();
   });
 });

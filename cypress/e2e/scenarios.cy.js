@@ -94,7 +94,7 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=scenarios-list] li').should('have.length', 1).and('contain', 'First plan');
   });
 
-  it('offers the saved About you answers under the "You" age box, and fills them in', () => {
+  it('offers each About you box its saved answers, and fills only that box', () => {
     registerFreshUser();
     completePlan();
     cy.get('[data-cy=results-save-button]').click();
@@ -105,11 +105,27 @@ describe('saved scenarios', () => {
     cy.visit('/plan');
     next();
     cy.wait('@loadSaved', { timeout: 30000 });
-    cy.get('[data-cy=situation-buyer-1-age-input]').focus();
-    cy.get('[data-cy=situation-autofill-option]').should('have.length', 1).and('contain', 'Ages 30 and 29').click();
+        cy.get('[data-cy=situation-buyer-1-age-input]').focus();
+    cy.get('[data-cy=situation-autofill-option]').should('have.length', 1).and('have.text', '30').click();
     cy.get('[data-cy=situation-autofill]').should('not.exist');
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
+    cy.get('[data-cy=situation-buyer-2-age-input]').should('have.value', '');
+
+    // The other buyer's box offers the other buyer's age; typing a digit that doesn't match hides it.
+    cy.get('[data-cy=situation-buyer-2-age-input]').focus();
+    cy.get('[data-cy=situation-autofill-option]').should('have.text', '29');
+    cy.get('[data-cy=situation-buyer-2-age-input]').type('4');
+    cy.get('[data-cy=situation-autofill]').should('not.exist');
+    cy.get('[data-cy=situation-buyer-2-age-input]').clear().type('2');
+    cy.get('[data-cy=situation-autofill-option]').should('have.text', '29').click();
     cy.get('[data-cy=situation-buyer-2-age-input]').should('have.value', '29');
+
+    // Money boxes too, e.g. the first income.
+    next();
+    next();
+    cy.get('[data-cy=situation-buyer-1-income-input]').should('have.value', '').focus();
+    cy.get('[data-cy=situation-autofill-option]').should('have.text', 'S$5,000').click();
+    cy.get('[data-cy=situation-buyer-1-income-input]').should('have.value', '5,000');
   });
 
   it('starts a fresh plan from the Plan link once the plan is saved, and offers the saved details', () => {
@@ -129,7 +145,7 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=wish-parents]').should('be.visible');
     next();
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '').focus();
-    cy.get('[data-cy=situation-autofill-option]', { timeout: 30000 }).should('have.length', 1).click();
+    cy.get('[data-cy=situation-autofill-option]', { timeout: 30000 }).should('have.text', '30').click();
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
   });
 });
