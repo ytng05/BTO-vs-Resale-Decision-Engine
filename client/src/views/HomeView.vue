@@ -242,7 +242,11 @@ const FAQS = [
     <section class="home-section home-get" aria-labelledby="get-title" data-cy="home-get">
       <div class="home-reveal home-head home-head--center">
         <h2 id="get-title" class="home-title">What you'll get</h2>
+<<<<<<< HEAD
         <p class="home-sub">Everything you need to decide, in one place. Not a price prediction: a clear picture of both paths, built from your own numbers and today's rules.</p>
+=======
+        <p class="home-sub">Everything you need to decide, in one place.</p>
+>>>>>>> 3913282541d3f5941e0009a4e2c138d254784114
       </div>
       <!-- What you get: a plain list of features (icon + title, thin dividers) beside the break-even illustration. -->
       <div class="home-get-grid">

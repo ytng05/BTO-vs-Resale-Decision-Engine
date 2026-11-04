@@ -207,8 +207,11 @@ function logout() {
 /* The navbar is sticky, so in-page jumps (#links, scrollIntoView) stop below it instead of under it.
    --nav-height is set from the bar's real height in the script above. */
 html { scroll-padding-top: calc(var(--nav-height, 80px) + var(--space-3, 12px)); }
+<<<<<<< HEAD
 
 @media (min-width: 768px) and (max-width: 1000px), (max-width: 380px) {
   .pill-nav__brand { display: none; }
 }
+=======
+>>>>>>> 3913282541d3f5941e0009a4e2c138d254784114
 </style>
