@@ -1,6 +1,6 @@
 <script setup>
 // Top of the dashboard, matching the Results page: a dark card with the answer (the amount in pink), the two flats,
-// the ruleset date and the page's buttons; beside it a white card, "What you'd walk away with", with both net
+// the ruleset date and the page's buttons; beside it a white card, "Net position in {year}" (D1), with both net
 // positions as bars. Keeps the tested hooks: dashboard-verdict, -headline, -verdict-eyebrow, -verdict-blocked,
 // -subtitle, -summary-{bto|resale}-net. The default slot holds the buttons.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -100,7 +100,8 @@ const rows = computed(() => {
   ];
 });
 
-// Listing-style badges, as on property sites: the path ahead long-term gets "★ Better long-term"; the other path gets
+// Listing-style badges, as on property sites: the path ahead in the comparison year gets "★ Better by {year}" (net
+// position is measured in that one year, D1); the other path gets
 // what it's better at, if anything (keys sooner, or less cash up front). Nothing when it's too close to call.
 const ym = (d) => { const m = String(d ?? '').match(/^(\d{4})-(\d{2})/); return m ? Number(m[1]) * 12 + Number(m[2]) : null; };
 const monthsText = (n) => {
@@ -113,7 +114,7 @@ const badges = computed(() => {
   if (!c || c.close || !['bto', 'resale'].includes(c.winner)) return out;
   const win = c.winner;
   const other = win === 'bto' ? 'resale' : 'bto';
-  out[win] = { text: '★ Better long-term', tone: 'win' };
+  out[win] = { text: props.horizon ? `★ Better by ${props.horizon}` : '★ Comes out ahead', tone: 'win' };
   const o = { bto: props.outcomeA, resale: props.outcomeB };
   const kw = ym(o[win].timeline?.keyCollectionDate);
   const ko = ym(o[other].timeline?.keyCollectionDate);
@@ -168,7 +169,11 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
     </section>
 
     <section class="dash-hero__walk" :class="{ 'is-updating': updating }" aria-labelledby="walk-heading">
-      <h2 id="walk-heading" class="dash-hero__walk-title">What you'd walk away with<template v-if="horizon"> in {{ horizon }}</template></h2>
+      <!-- Same wording as Results (D1): net position without selling the flat, not "walk away with". -->
+      <div>
+        <h2 id="walk-heading" class="dash-hero__walk-title"><Term id="net-position">Net position</Term><template v-if="horizon"> in {{ horizon }}</template></h2>
+        <p class="dash-hero__walk-sub mb-0">What this path leaves you with, after costs</p>
+      </div>
       <div v-for="r in rows" :key="r.key" class="dash-hero__row">
         <div class="dash-hero__row-head">
           <span class="dash-hero__name">
@@ -183,9 +188,6 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
         </span>
         <span v-if="r.was" class="dash-hero__was">Was {{ r.was }} with your inputs</span>
       </div>
-      <p class="dash-hero__note mb-0">
-        <Term id="net-position">Net position</Term>: the flat's value, minus the loan left and the cash spent.
-      </p>
     </section>
   </div>
 </template>
@@ -217,6 +219,7 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
   background: var(--bg-surface); border: 1px solid var(--border-subtle);
 }
 .dash-hero__walk-title { margin: 0; font-size: 1rem; font-weight: 600; }
+.dash-hero__walk-sub { font-size: 0.875rem; color: var(--text-secondary); }
 .dash-hero__row { display: flex; flex-direction: column; gap: var(--space-2); margin: 0 calc(var(--space-3) * -1); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); transition: background 0.2s ease; }
 /* Point at a path: its row turns pale pink and its bar gets thicker. */
 .dash-hero__row:hover { background: var(--accent-tint); }

@@ -142,8 +142,8 @@ function logout() {
 
 <style scoped>
 /* Three slots: brand (left), links (centre, always in the middle), account (right).
-   The bar is fixed to the top of the screen on every page and stays there as you scroll, full width, with a 1px line
-   underneath. The page is pushed down by the bar's height (--nav-height, measured in the script) so nothing hides
+   The bar is fixed to the top of the screen on every page and stays there as you scroll, full width, with no lines
+   above or below. The page is pushed down by the bar's height (--nav-height, measured in the script) so nothing hides
    under it. */
 .pill-nav {
   --nav-gutter: clamp(12px, 2.5vw, 40px);
@@ -176,7 +176,7 @@ function logout() {
   height: 44px;
   border: 0;
   border-radius: 50%;
-  background: var(--accent-fill-2, #fbd5e5);
+  background: var(--accent-fill-2);
   color: inherit;
   font-weight: 600;
   display: grid;

@@ -18,7 +18,7 @@ describe('dashboard overview', () => {
     });
     // The path ahead long-term is badged (unless it's too close to call).
     cy.get('[data-cy=dashboard-headline]').invoke('text').then((h) => {
-      if (/ends S\$/.test(h)) cy.get('[data-cy^=dashboard-badge-]').should('contain', 'Better long-term');
+      if (/ends S\$/.test(h)) cy.get('[data-cy^=dashboard-badge-]').invoke('text').should('match', /Better by \d{4}|Comes out ahead/);
     });
     cy.get('[data-cy=dashboard-cash-card]').invoke('text')
       .should('match', /don't cover|cover the cash|Add your cash savings/);

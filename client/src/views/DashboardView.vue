@@ -425,8 +425,9 @@ const detailLine = computed(() => ({
               <div class="col-12 col-md-6">
                 <p class="dash-note mb-0" data-cy="dashboard-note-eip">
                   <strong>Ethnic Integration Policy</strong><br>
-                  Some resale blocks may not be open to you. Check before you commit.
-                  <a href="https://www.hdb.gov.sg" target="_blank" rel="noopener noreferrer">EIP checker<span class="visually-hidden"> (opens in a new tab)</span> ↗</a>
+                  Some resale blocks may have reached their ethnic or PR quota (EIP and SPR quota), so you may not be able to
+                  buy there. Check the block before you pay for an Option to Purchase.
+                  <a href="https://www.hdb.gov.sg/check-ethnic-integration-policy-or-singapore-permanent-resident-quota" target="_blank" rel="noopener noreferrer">Check the EIP and SPR quota<span class="visually-hidden"> (HDB, opens in a new tab)</span> ↗</a>
                 </p>
               </div>
             </div>

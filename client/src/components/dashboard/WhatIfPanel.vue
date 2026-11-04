@@ -82,7 +82,7 @@ const sliders = computed(() => {
       : []),
     { group: 'Timing', key: 'applicationYear', id: 'whatif-year', label: 'Apply / buy in', hint: 'Both paths move together', min: thisYear, max: thisYear + 6, step: 1, scale: 1, value: v.applicationYear, text: String(v.applicationYear) },
     priceGrowthSlider.value,
-    { group: 'Housing costs', key: 'annualIncomeGrowth', id: 'whatif-income-growth', label: 'Income growth', hint: 'Only matters if it changes your grants or loan.', min: 0, max: 10, step: 0.5, scale: 100, value: pct(v.annualIncomeGrowth), text: `${pct(v.annualIncomeGrowth)}% / yr` },
+    { group: 'Housing costs', key: 'annualIncomeGrowth', id: 'whatif-income-growth', label: 'Income growth', hint: "Only matters if it changes your grants, your loan, or whether you're under the BTO income ceiling.", min: 0, max: 10, step: 0.5, scale: 100, value: pct(v.annualIncomeGrowth), text: `${pct(v.annualIncomeGrowth)}% / yr` },
     { group: 'Timing', key: 'horizonYear', id: 'whatif-horizon', label: 'Compare in', hint: `Earliest ${props.horizonMin} (both keys in)`, min: props.horizonMin, max: props.horizonMax, step: 1, scale: 1, value: horizon, text: String(horizon) },
     { group: 'Housing costs', key: 'monthlyHousingCostWhileWaiting', id: 'whatif-rent', label: 'Rent while waiting for keys', hint: '0 = living with parents.', link: { href: RENT_GUIDE_URL, text: 'Median rents by town' }, min: 0, max: 5000, step: 100, scale: 1, value: v.monthlyHousingCostWhileWaiting, text: `${formatMoney(v.monthlyHousingCostWhileWaiting)}/mo` },
     { group: 'Housing costs', key: 'renovationA', id: 'whatif-reno-bto', label: 'Renovation, BTO', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationA, text: formatMoney(v.renovationA) },
