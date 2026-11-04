@@ -183,7 +183,12 @@ async function showWhy() {
 
 <style scoped>
 /* Spacing follows the design mockup: roomy card, larger figures, rows with air between them. */
-.path { border-top: 6px solid var(--primary); }
+/* BTO in its indigo, resale in pink (as the verdict, bars and Dashboard). The card lifts a little on hover; the
+   "ahead" ring stays on while it does (the shared .card hover swaps the shadow, which made the ring flash). */
+.path { border-top: 6px solid var(--accent-deep); transition: box-shadow var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out); }
+.path:hover, .path:focus-within { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.path.compare-card--winner { border-color: var(--accent-deep); box-shadow: 0 0 0 2px var(--accent-deep), var(--shadow-sm); }
+.path.compare-card--winner:hover, .path.compare-card--winner:focus-within { box-shadow: 0 0 0 2px var(--accent-deep), var(--shadow-md); }
 .path--resale { border-top-color: var(--accent-fill-1); }
 .path > .card-body { padding: 1.75rem 1.75rem 1.5rem; }
 .path__pill {
@@ -193,7 +198,7 @@ async function showWhy() {
   font-family: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
-  background: var(--primary);
+  background: var(--accent-deep);
   color: var(--on-primary);
 }
 .path--resale .path__pill { background: var(--accent-fill-2); color: var(--text-primary); }
@@ -277,5 +282,8 @@ async function showWhy() {
   .path > .card-body { padding: 1.25rem 1.25rem 1.125rem; }
   .path-lines li { font-size: 1rem; }
 }
-@media (prefers-reduced-motion: reduce) { .path-more__chev { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .path-more__chev, .path { transition: none; }
+  .path:hover, .path:focus-within { transform: none; }
+}
 </style>

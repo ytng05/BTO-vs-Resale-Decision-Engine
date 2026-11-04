@@ -285,7 +285,8 @@ onMounted(load);
         <!-- 4. Each path in plain words (D1). Why one path ends ahead, line by line (D34), is on the Dashboard. -->
         <section v-if="result.outcomeA && result.outcomeB" class="paths" aria-labelledby="path-details-title">
           <h2 id="path-details-title" class="paths__title" tabindex="-1">Each path<template v-if="horizonYear"> in {{ horizonYear }}</template>, in plain words</h2>
-          <div class="row g-3">
+          <!-- align-items-start: opening one card's Full breakdown doesn't stretch the other card. -->
+          <div class="row g-3 align-items-start">
             <div class="col-12 col-lg-6">
               <PathOutcomeCard
                 :subtitle="describe(store.choiceA)"
