@@ -1,9 +1,12 @@
 <script setup>
 // Under the verdict: can today's savings pay the cash each path needs up front? A slim strip, not a big card: amber
 // when either path is short, green when both are covered. "Try a later year" moves focus to the What-if panel.
+// Everything is written out (no hover tooltips): how much each path's cash is covered, the exact amount short (a
+// shortfall is never rounded), and the stated assumption that no more is saved before buying (D19).
 // data-cy: CONVENTIONS "Dashboard".
 import { computed } from 'vue';
 import { cashCard } from '../../utils/dashboardSummary.js';
+import { formatMoney } from '../../utils/format.js';
 
 const props = defineProps({
   outcomeA: { type: Object, required: true },
@@ -18,7 +21,21 @@ const title = computed(() => {
   if (card.value.anyShort) return `Your savings today don't cover the cash for the ${card.value.rows[0].shortCents > 0 ? 'BTO' : 'resale flat'}`;
   return 'Your savings today cover the cash for both flats';
 });
-const rows = computed(() => (card.value?.rows ?? []).map((r) => ({ ...r, key: r.side === 'a' ? 'bto' : 'resale', label: r.side === 'a' ? 'BTO' : 'Resale' })));
+const rows = computed(() => (card.value?.rows ?? []).map((r) => ({
+  ...r,
+  key: r.side === 'a' ? 'bto' : 'resale',
+  label: r.side === 'a' ? 'BTO' : 'Resale',
+  // Short: the exact amount (S$91,344 short, never rounded), with "S$20,000 of S$111,000 covered" under the bar.
+  // Covered: one phrase, "Covered, S$9,000 to spare".
+  shortText: r.shortCents > 0 ? `${formatMoney(r.shortCents / 100)} short` : r.text,
+  ofText: r.shortCents > 0 ? r.text : '',
+})));
+// The stated assumption under the rows. "The loans are capped" only when a loan really is (affordability.withinLimit).
+const capped = computed(() => [props.outcomeA, props.outcomeB].some((o) => o?.affordability && !o.affordability.withinLimit));
+const assumption = computed(() => {
+  if (!card.value?.anyShort) return '';
+  return `${capped.value ? 'The loans are capped, so the rest is paid in cash. ' : ''}We don't assume you save more before you buy.`;
+});
 </script>
 
 <template>
@@ -28,13 +45,14 @@ const rows = computed(() => (card.value?.rows ?? []).map((r) => ({ ...r, key: r.
       <h2 id="cash-card-title" class="dash-cash__title">{{ title }}</h2>
       <!-- One compact line per path: name, a thin bar of how much is covered, and how much is short. -->
       <div class="dash-cash__rows">
-        <div v-for="r in rows" :key="r.key" class="dash-cash__row" :data-cy="`dashboard-cash-card-${r.key}`" :title="r.text">
+        <div v-for="r in rows" :key="r.key" class="dash-cash__row" :data-cy="`dashboard-cash-card-${r.key}`">
           <strong :class="`dash-cash__name--${r.key}`">{{ r.label }}</strong>
           <span class="dash-cash__track" aria-hidden="true"><span class="dash-cash__fill" :class="`dash-cash__fill--${r.key}`" :style="{ width: `${Math.max(r.coveredPct, 2)}%` }"></span></span>
           <span class="dash-cash__short">{{ r.shortText }}</span>
-          <span class="visually-hidden">{{ r.text }}</span>
+          <span v-if="r.ofText" class="dash-cash__of">{{ r.ofText }}</span>
         </div>
       </div>
+      <p v-if="assumption" class="dash-cash__note mb-0" data-cy="dashboard-cash-card-assumption">{{ assumption }}</p>
     </div>
     <button v-if="card?.anyShort" type="button" class="dash-cash__btn" data-cy="dashboard-cash-card-whatif" @click="emit('jump-whatif')">Try a later year in What if ›</button>
   </section>
@@ -72,6 +90,9 @@ const rows = computed(() => (card.value?.rows ?? []).map((r) => ({ ...r, key: r.
 .dash-cash__fill--bto { background: var(--dash-bto); }
 .dash-cash__fill--resale { background: var(--color-pink-deep); }
 .dash-cash__short { font-weight: 500; white-space: nowrap; }
+/* "S$20,000 of S$111,000 covered", under the bar, spanning the row. */
+.dash-cash__of { grid-column: 2 / -1; margin-top: -6px; font-size: 0.8125rem; color: var(--text-secondary); }
+.dash-cash__note { font-size: 0.8125rem; color: var(--text-secondary); }
 .dash-cash__btn {
   flex: none;
   padding: var(--space-2) var(--space-4);

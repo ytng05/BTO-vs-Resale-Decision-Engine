@@ -118,14 +118,14 @@ Kept as an alias of Ink so existing code that links or highlights with it still 
 
 | Token | Hex | Use |
 |---|---|---|
-| `$bg-app` | `#FFFFFF` | **The page background on every route** (4 Nov 2026, D45) |
+| `$bg-app` | `#FFFFFF` | **The page background on every route** (4 Nov 2026, D46) |
 | `$bg-subtle` | `#F3F3F5` (Mist) | Pale fills inside cards and controls: slider tracks, steppers, tags |
 | `$bg-page` | `#F3F3F5` (Mist) | Legacy name for `$bg-subtle`, kept because components use `var(--bg-page)` as a pale fill. New code: `$bg-app` for the page, `$bg-subtle` for a fill |
 | `$bg-surface` | `#FFFFFF` | Cards, panels |
 | `$bg-surface-raised` | `#FFFFFF` | Modals, popovers |
 | `$accent-fill-3` | `#E9ECF6` (Periwinkle) | The single highlighted ("feature") card on a screen, with a 1px white edge |
 
-**Decided trade-off (updated 4 Nov 2026, D45):** every page is now white, like Home and the Dashboard already
+**Decided trade-off (updated 4 Nov 2026, D46):** every page is now white, like Home and the Dashboard already
 were, so a white card has no colour step from the page at all. **Every white box on the page MUST carry a 1px
 `$border-subtle` border** (Bootstrap's `.card` does; `.quiet-panel` in `_components.scss` is the lighter version for strips: border,
 no shadow); cards may also keep `$shadow-sm`. Tinted boxes (path panels, semantic banners) separate
@@ -177,7 +177,7 @@ pair against §2.2 before shipping if attempted.
 For charts and any grid/matrix visual (e.g. a heatmap), use the Calm palette, never arbitrary chart-library
 defaults:
 
-- **Path colours (4 Nov 2026, D45): one colour per path, on every page.** Components ask for the path, never
+- **Path colours (4 Nov 2026, D46): one colour per path, on every page.** Components ask for the path, never
   for ink or a pink of their own: BTO / Path A is `--path-bto` (Indigo `#3D4A8F`, 8:1 on white; text, bars,
   dots, card edges), with `--path-bto-fill` and `--path-bto-tint` for tiles and pale panels. Resale / Path B is
   `--path-resale` (Berry, text, 5.57:1 on white) and `--path-resale-bar` (Pink, bars, dots, charts), with
@@ -539,7 +539,7 @@ requirement.
 
 ---
 
-## Changes, 4 Nov 2026 (D45)
+## Changes, 4 Nov 2026 (D46)
 
 - **White page on every route** (`$bg-app`) and borders on white boxes: §2.5.
 - **One colour per path** (`--path-bto` indigo, `--path-resale` / `--path-resale-bar`): §3.

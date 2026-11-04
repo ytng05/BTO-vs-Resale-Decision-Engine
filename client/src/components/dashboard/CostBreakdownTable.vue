@@ -13,7 +13,7 @@ const props = defineProps({
 });
 
 // Sentence case, like the rest of the app. 'NONE' is the CPF accrued interest you pay back into your own CPF later.
-const PAID_FROM = { CASH: 'Paid from cash', CPF: 'Paid from CPF', NONE: 'Repaid to CPF later' };
+const PAID_FROM = { CASH: 'Paid from cash', CPF: 'Paid from CPF', NONE: 'Goes back to your CPF' };
 const dollars = (cents) => (typeof cents === 'number' ? cents / 100 : null);
 
 const unsorted = computed(() => {

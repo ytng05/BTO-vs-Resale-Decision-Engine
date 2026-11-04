@@ -97,16 +97,11 @@ const cards = computed(() => [
             <div>
               <dt>
                 Housing loan
-                <span
-                  v-if="p.limitTag"
-                  class="dash-paid__tag"
-                  :class="p.limitOk ? 'dash-paid__tag--ok' : 'dash-paid__tag--warn'"
-                  tabindex="0"
-                  :title="p.limit"
-                  :data-cy="`dashboard-summary-${p.key}-affordability`"
-                >{{ p.limitTag }}<span class="visually-hidden">: {{ p.limit }}</span></span>
+                <span v-if="p.limitTag" class="dash-paid__tag" :class="p.limitOk ? 'dash-paid__tag--ok' : 'dash-paid__tag--warn'">{{ p.limitTag }}</span>
               </dt>
               <dd><span class="text-numeric">{{ p.c.lines.loan }}</span></dd>
+              <!-- The loan limit, written out (not a hover tooltip, which phones never show). Exact figures. -->
+              <dd v-if="p.limit" class="dash-paid__limit" :class="p.limitOk ? 'is-ok' : 'is-warn'" :data-cy="`dashboard-summary-${p.key}-affordability`">{{ p.limit }}</dd>
             </div>
             <div v-if="p.c.hasPrice"><dt>Stamp duty and fees</dt><dd><span class="text-numeric">{{ p.c.lines.other }}</span></dd></div>
           </dl>
@@ -114,7 +109,7 @@ const cards = computed(() => [
             <span>Cash needed<small>{{ p.when }}<template v-if="p.c.covCents"> · incl. {{ money(p.c.covCents) }} over valuation</template></small></span>
             <span class="text-numeric">{{ p.c.lines.cash }}</span>
           </div>
-          <p v-if="p.leaseNote" class="dash-paid__note mb-0" tabindex="0" :title="p.leaseNote">Short lease: smaller loan and CPF use<span class="visually-hidden">. {{ p.leaseNote }}</span></p>
+          <p v-if="p.leaseNote" class="dash-paid__note mb-0"><strong>Short lease:</strong> {{ p.leaseNote }}</p>
         </div>
       </article>
     </div>
@@ -149,13 +144,15 @@ const cards = computed(() => [
 /* Each part of the bar: hover it to see its share; it brightens. */
 .dash-paid__seg { display: block; height: 100%; cursor: help; transition: filter 0.2s ease, width var(--duration-base) var(--ease-out); }
 .dash-paid__seg:hover { filter: brightness(1.12) saturate(1.2); }
-.dash-paid__lines > div { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--border-subtle); font-size: 0.9375rem; }
+.dash-paid__lines > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--border-subtle); font-size: 0.9375rem; }
 .dash-paid__lines > div.is-price { font-weight: 600; }
 .dash-paid__lines dt { font-weight: inherit; display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
-.dash-paid__tag { padding: 1px 8px; border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 600; cursor: help; }
+.dash-paid__tag { padding: 1px 8px; border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 600; }
 .dash-paid__tag--warn { background: var(--danger-fill); color: var(--danger); }
 .dash-paid__tag--ok { background: var(--success-fill); color: var(--success); }
-.dash-paid__tag:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+/* The loan limit, on its own line under the loan row (a second <dd> for the same <dt>). */
+.dash-paid__lines .dash-paid__limit { display: block; flex-basis: 100%; margin-top: 2px; text-align: left; font-size: 0.8125rem; line-height: 1.4; color: var(--text-secondary); }
+.dash-paid__lines .dash-paid__limit.is-warn { color: var(--danger); }
 .dash-paid__lines dt small, .dash-paid__total small { color: var(--text-secondary); font-weight: 400; font-size: 0.8125rem; }
 .dash-paid__lines dd { margin: 0; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
 .is-vs { color: var(--text-secondary); font-size: 0.8125rem; }
@@ -163,7 +160,7 @@ const cards = computed(() => [
 .dash-paid__total { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0 0; border-top: 2px solid var(--text-primary); font-weight: 700; font-size: 1.0625rem; }
 .dash-paid__total > span:last-child { color: var(--dash-ink); }
 .dash-paid__total > span:first-child { display: flex; flex-direction: column; }
-.dash-paid__note { align-self: flex-start; margin-top: var(--space-3); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--warning-fill); color: var(--warning); font-size: 0.8125rem; font-weight: 600; cursor: help; }
+.dash-paid__note { align-self: flex-start; margin-top: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--warning-fill); color: var(--warning); font-size: 0.8125rem; line-height: 1.45; }
 /* The one-line takeaway: plain text with a thin accent line, not another coloured box. */
 .dash-paid__sentence { padding-left: var(--space-4); border-left: 3px solid var(--dash-resale); font-weight: 500; }
 </style>

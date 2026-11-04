@@ -1,11 +1,12 @@
 <script setup>
 // "At a glance": one coloured tile per thing that matters (money long-term, then each Side by side row), in the home
-// page's tile colours. Each tile says in words which path is better, with both values underneath; hover a tile to
-// read what it measures. Under the tiles, a closed "Why does … come out ahead?" bar opens the biggest lines of the
+// page's tile colours. Each tile says in words which path is better, with both values underneath and, written out,
+// what it measures. The grants tile names no side: grants are already inside net position (D1), so a bigger grant
+// isn't a win on its own. Figures are rounded to S$1,000 (the one rounding rule, utils/format.js) and shown in full. Under the tiles, a closed "Why does … come out ahead?" bar opens the biggest lines of the
 // gap (D34) as a left/right bar chart; "Show all" adds the smaller ones. Hidden when it's too close to call or level.
 // Keeps the tested hooks: dashboard-side-by-side, dashboard-sbs-{id}, dashboard-why-toggle, dashboard-why.
 import { computed, ref } from 'vue';
-import { formatMoney } from '../../utils/format.js';
+import { formatMoney } from '../../utils/format.js'; // exact figures in the "Why" bars
 import { sideBySide } from '../../utils/dashboardSummary.js';
 
 const props = defineProps({
@@ -16,13 +17,6 @@ const props = defineProps({
   gap: { type: Object, default: null }, // gapBreakdown from /api/compare
 });
 
-// "S$193,000" -> "S$193k" inside any text.
-const short = (text) => String(text ?? '').replace(/S\$(\d{1,3}(?:,\d{3})+)/g, (m, n) => {
-  const v = Number(n.replace(/,/g, ''));
-  if (v >= 1000000) return `S$${Math.round(v / 100000) / 10}M`;
-  if (v >= 1000) return `S$${Math.round(v / 1000)}k`;
-  return m;
-});
 
 // 24×24 stroke icons, one per tile in order.
 const ICONS = [
@@ -45,7 +39,13 @@ const leader = computed(() => {
 const tiles = computed(() => {
   const rows = sideBySide(props.outcomeA, props.outcomeB, props.horizon).filter((r) => r.id !== 'net');
   // Money long-term is left out: the cards at the top already show it.
-  return rows.map((r, i) => ({ ...r, icon: ICONS[i % ICONS.length], theme: THEMES[i % THEMES.length] }));
+  return rows.map((r, i) => ({
+    ...r,
+    // Grants are counted inside net position (D1): the tile says so instead of naming the path with more.
+    ...(r.id === 'grants' ? { favours: null, diff: 'Already counted in net position' } : {}),
+    icon: ICONS[i % ICONS.length],
+    theme: THEMES[i % THEMES.length],
+  }));
 });
 
 const showWhy = ref(false);
@@ -78,15 +78,14 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
         :key="t.id"
         class="glance-tile"
         :class="`glance-tile--${t.theme}`"
-        tabindex="0"
         :data-cy="`dashboard-sbs-${t.id}`"
       >
         <span class="glance-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="t.icon" /></svg></span>
         <span class="glance-tile__label">{{ t.label }}</span>
-        <strong class="glance-tile__winner" :class="t.favours === 'a' ? 'is-bto' : t.favours === 'b' ? 'is-resale' : ''">{{ short(t.diff) }}</strong>
+        <strong class="glance-tile__winner" :class="t.favours === 'a' ? 'is-bto' : t.favours === 'b' ? 'is-resale' : ''">{{ t.diff }}</strong>
         <span class="glance-tile__vals">
-          <span :class="{ 'is-bto': t.favours === 'a' }"><small>BTO</small> {{ short(t.a) }}</span>
-          <span :class="{ 'is-resale': t.favours === 'b' }"><small>Resale</small> {{ short(t.b) }}</span>
+          <span :class="{ 'is-bto': t.favours === 'a' }"><small>BTO</small> {{ t.a }}</span>
+          <span :class="{ 'is-resale': t.favours === 'b' }"><small>Resale</small> {{ t.b }}</span>
         </span>
         <span class="glance-tile__hint">{{ t.hint }}</span>
       </li>
@@ -163,7 +162,7 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
   cursor: default;
   transition: translate 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
-.glance-tile:hover, .glance-tile:focus-visible { translate: 0 -6px; border-color: var(--tile-well); box-shadow: 0 14px 30px rgba(60, 64, 90, 0.12); outline: none; }
+/* No hover lift: the tiles aren't buttons or links, so they shouldn't look clickable. */
 .glance-tile--pink { --tile-bg: var(--accent-tint); --tile-well: var(--accent-fill-2); --tile-ink: var(--color-berry); }
 .glance-tile--indigo { --tile-bg: var(--indigo-tint); --tile-well: var(--indigo-tint-strong); --tile-ink: var(--indigo); }
 .glance-tile--green { --tile-bg: color-mix(in srgb, var(--success-fill) 50%, var(--bg-surface)); --tile-well: var(--success-fill); --tile-ink: var(--success); }
@@ -227,6 +226,5 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
   .glance-why__body, .glance-why__half i { animation: none; }
   .glance-why__chev { transition: none; }
   .glance-tile { transition: none; }
-  .glance-tile:hover, .glance-tile:focus-visible { translate: none; }
 }
 </style>
