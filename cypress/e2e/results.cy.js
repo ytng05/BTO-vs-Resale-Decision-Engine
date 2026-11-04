@@ -13,7 +13,7 @@ describe('results page', () => {
   it('leads with the break-even sentence and shows the ruleset version', () => {
     completePlan();
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
-    cy.get('[data-cy=results-gap-sentence]').should('contain', 'net position');
+    cy.get('[data-cy=results-verdict-diff]').should('contain', 'in favour of');
     cy.get('[data-cy=results-ruleset-version]').should('contain', 'Ruleset');
   });
 
@@ -23,6 +23,7 @@ describe('results page', () => {
       cy.get(`[data-cy=${p}-card]`).should('be.visible');
       cy.get(`[data-cy=${p}-net-position]`).invoke('text').should('match', /S\$[\d,]+/);
       cy.get(`[data-cy=${p}-grants-total]`).invoke('text').should('match', /S\$[\d,]+/);
+      cy.get(`[data-cy=${p}-full-breakdown] > summary`).click();
       cy.get(`[data-cy=${p}-cpf-refund]`).should('be.visible');
       // Every eligibility test carries its own reason, never one generic message.
       cy.get(`[data-cy^=${p}-eligibility-item-]`).should('have.length.greaterThan', 0).each(($item) => {
@@ -33,7 +34,11 @@ describe('results page', () => {
 
   it('marks the user’s own assumptions on the heatmap and explains any square on tap', () => {
     completePlan(); // growth defaults: 3% price, 2% income (D38)
-    cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open'); // open by default: the central idea (D35)
+    // The central idea stays in view as the small grid (D35); the full grid opens from "See the full grid".
+    cy.get('[data-cy=results-mini-grid]').should('be.visible');
+    cy.get('[data-cy=results-section-heatmap]').should('not.have.attr', 'open');
+    cy.get('[data-cy=results-heatmap-open]').click();
+    cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open');
     cy.get('td[data-cy^=heatmap-cell-]').should('have.length', 36);
     cy.get('[data-cy=heatmap-legend]').should('be.visible');
 

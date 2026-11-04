@@ -8,7 +8,7 @@ describe('Journey 2: living near parents', () => {
     cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
     // They answered the parents question (picked in step 1), so Results doesn't say the PHG was left out.
     cy.get('[data-cy=results-phg-note]').should('not.exist');
-    cy.get('[data-cy=results-gap-grants]').scrollIntoView().should('be.visible');
+    cy.get('[data-cy=results-pathb-grants-total]').scrollIntoView().should('be.visible');
     beat();
 
     // The grants, with every check's reason: the Proximity Housing Grant only on resale, near parents.
