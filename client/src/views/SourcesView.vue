@@ -77,7 +77,9 @@ const ruleLabels = {
 
 const tierArrayKeys = new Set(['tiers', 'ehgTiers', 'buyerStampDutyTiers']);
 const omittedRuleKeys = new Set(['appliesTo', 'sources', 'partialMonthTreatment', 'legalFees', 'agentFees']);
-// Every rule section shows on load. A topic chip filters to its sections (null = no filter: every section).
+// "Rules and sources" starts folded: its heading opens and closes it. A topic chip, a search or /sources#<topic>
+// opens it. Inside, every rule section shows; a topic chip filters to its sections (null = no filter).
+const rulesOpen = ref(false);
 const filterChipKey = ref(null);
 // Sections the user collapsed with the chevron or "Collapse all"; every other shown section is open.
 const collapsedSectionIds = ref(new Set());
@@ -356,6 +358,7 @@ function toggleChip(chip) {
     return;
   }
   filterChipKey.value = chipKey(chip);
+  rulesOpen.value = true;
   expandSections(chip.ids);
   nextTick(() => scrollToSection(chip.ids[0]));
 }
@@ -436,6 +439,10 @@ function metadataValue(value) {
 const query = ref('');
 const searchInput = ref(null);
 const normalizedQuery = computed(() => query.value.trim().toLowerCase());
+// A search shows its matches, so it opens "Rules and sources".
+watch(normalizedQuery, (q) => {
+  if (q) rulesOpen.value = true;
+});
 
 function matches(...parts) {
   const q = normalizedQuery.value;
@@ -522,6 +529,7 @@ function applyHash() {
   const chip = ruleChips.find((item) => item.ids.includes(id));
   if (chip) {
     filterChipKey.value = chipKey(chip);
+    rulesOpen.value = true;
     expandSections([id]);
     nextTick(() => scrollToSection(id));
   } else if (linkChips.some((item) => item.id === id)) {
@@ -621,8 +629,23 @@ onMounted(async () => {
 
       <section v-if="!normalizedQuery || visibleRuleGroups.length" class="sources-section" aria-labelledby="rules-title">
         <div class="sources-section__heading">
-          <h2 class="h4 mb-0" id="rules-title">Rules and sources</h2>
+          <h2 class="h4 mb-0" id="rules-title">
+            <button
+              type="button"
+              class="sources-rules-toggle"
+              data-cy="sources-rules-toggle"
+              :aria-expanded="rulesOpen"
+              aria-controls="sources-rules-body"
+              @click="rulesOpen = !rulesOpen"
+            >
+              Rules and sources
+              <svg class="sources-rules-toggle__chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" />
+              </svg>
+            </button>
+          </h2>
           <button
+            v-if="rulesOpen"
             class="btn btn-link btn-sm sources-expand-link"
             type="button"
             data-cy="sources-expand-all"
@@ -632,6 +655,10 @@ onMounted(async () => {
             {{ allShownOpen ? 'Collapse all' : 'Expand all' }}
           </button>
         </div>
+        <p v-if="!rulesOpen" class="sources-rules-teaser" data-cy="sources-rules-teaser">
+          Every grant, loan and cost rule the app uses, with its value and official source.
+        </p>
+        <div v-show="rulesOpen" id="sources-rules-body">
         <p v-if="activeChip && !normalizedQuery" class="sources-hint" data-cy="sources-rules-hint">
           Showing {{ activeChip.label }} only.
           <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-cy="sources-show-all-topics" @click="clearFilter">Show all topics</button>
@@ -711,6 +738,7 @@ onMounted(async () => {
               </div>
             </div>
           </details>
+        </div>
         </div>
       </section>
 
@@ -833,6 +861,43 @@ onMounted(async () => {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
+}
+
+.sources-rules-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sources-rules-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.sources-rules-toggle__chevron {
+  width: 1.1em;
+  height: 1.1em;
+  transition: transform 0.2s ease;
+}
+
+.sources-rules-toggle[aria-expanded='true'] .sources-rules-toggle__chevron {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sources-rules-toggle__chevron { transition: none; }
+}
+
+.sources-rules-teaser {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
 }
 
 .sources-hint {
