@@ -44,7 +44,7 @@ describe('results verdict', () => {
       cy.get(`[data-cy=${p}-summary-cash]`).should('be.visible').and('contain', 'in cash');
       cy.get(`[data-cy=${p}-grants-total]`).should('be.visible');
       cy.get(`[data-cy=${p}-full-breakdown]`).should('not.have.attr', 'open');
-      cy.get(`[data-cy=${p}-full-breakdown] summary`).click();
+      cy.get(`[data-cy=${p}-full-breakdown] > summary`).click();
       cy.get(`[data-cy=${p}-full-breakdown]`).should('have.attr', 'open');
       cy.get(`[data-cy=${p}-breakdown]`).should('be.visible');
     });

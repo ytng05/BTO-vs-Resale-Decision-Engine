@@ -8,7 +8,7 @@ describe('glossary and terms', () => {
     completePlan();
     cy.location('pathname').should('eq', '/results');
     // The grant names live inside each path card's "Full breakdown": open it first.
-    cy.get('[data-cy$=-full-breakdown] summary').click({ multiple: true });
+    cy.get('[data-cy$=-full-breakdown] > summary').click({ multiple: true });
     cy.get('[data-cy=term-ehg-definition]').first().should('not.be.visible');
     cy.get('[data-cy=term-ehg-button]').first().scrollIntoView().click();
     cy.get('[data-cy=term-ehg-button]').first().should('have.attr', 'aria-expanded', 'true');
@@ -28,7 +28,7 @@ describe('glossary and terms', () => {
     cy.viewport(375, 667);
     completePlan();
     // Some terms (grant names, "CPF to put back") are inside each path card's "Full breakdown": open it first.
-    cy.get('[data-cy$=-full-breakdown] summary').click({ multiple: true });
+    cy.get('[data-cy$=-full-breakdown] > summary').click({ multiple: true });
     cy.get('[data-cy$=-button][data-cy^=term-]').each(($btn) => {
       cy.wrap($btn).scrollIntoView().click();
       cy.get(`#${$btn.attr('aria-controls')}`).should('be.visible').then(($pop) => {
