@@ -118,15 +118,18 @@ Kept as an alias of Ink so existing code that links or highlights with it still 
 
 | Token | Hex | Use |
 |---|---|---|
-| `$bg-page` | `#F3F3F5` (Mist) | Main page background, body |
+| `$bg-app` | `#FFFFFF` | **The page background on every route** (4 Nov 2026, D45) |
+| `$bg-subtle` | `#F3F3F5` (Mist) | Pale fills inside cards and controls: slider tracks, steppers, tags |
+| `$bg-page` | `#F3F3F5` (Mist) | Legacy name for `$bg-subtle`, kept because components use `var(--bg-page)` as a pale fill. New code: `$bg-app` for the page, `$bg-subtle` for a fill |
 | `$bg-surface` | `#FFFFFF` | Cards, panels |
 | `$bg-surface-raised` | `#FFFFFF` | Modals, popovers |
 | `$accent-fill-3` | `#E9ECF6` (Periwinkle) | The single highlighted ("feature") card on a screen, with a 1px white edge |
 
-**Decided trade-off:** White vs Mist measures a contrast ratio of only **1.11**, so colour alone does not
-separate a card from the page. The Calm direction separates cards with a **soft shadow, not a border**:
-**every card MUST carry `$shadow-sm` (§6) at rest.** This replaces the earlier rule (1.1) that required a
-border as well. Never ship a card with neither a shadow nor a colour step.
+**Decided trade-off (updated 4 Nov 2026, D45):** every page is now white, like Home and the Dashboard already
+were, so a white card has no colour step from the page at all. **Every white box on the page MUST carry a 1px
+`$border-subtle` border** (Bootstrap's `.card` does; `.quiet-panel` in `_components.scss` is the lighter version for strips: border,
+no shadow); cards may also keep `$shadow-sm`. Tinted boxes (path panels, semantic banners) separate
+by their fill. Never ship a white box with neither a border nor a fill.
 
 ### 2.6 Primary action and tints
 
@@ -174,11 +177,15 @@ pair against §2.2 before shipping if attempted.
 For charts and any grid/matrix visual (e.g. a heatmap), use the Calm palette, never arbitrary chart-library
 defaults:
 
-- **Path colours:** BTO / Path A is **Ink** (`$color-ink`); resale / Path B is **Pink** (`$color-pink`). A tie
-  or break-even value is **Berry** (`$color-berry`). Unplayed or neutral marks use `$border`.
+- **Path colours (4 Nov 2026, D45): one colour per path, on every page.** Components ask for the path, never
+  for ink or a pink of their own: BTO / Path A is `--path-bto` (Indigo `#3D4A8F`, 8:1 on white; text, bars,
+  dots, card edges), with `--path-bto-fill` and `--path-bto-tint` for tiles and pale panels. Resale / Path B is
+  `--path-resale` (Berry, text, 5.57:1 on white) and `--path-resale-bar` (Pink, bars, dots, charts), with
+  `--path-resale-fill` and `--path-resale-tint`. Ink stays the colour of text and buttons, so BTO no longer
+  reads as "plain text". Unplayed or neutral marks use `$border`.
 - **Pink is only 1.92:1 on white, so resale never relies on colour.** It also sits below the baseline
   (timeline bars), uses a dotted line (line charts), or carries a text label.
-- **Heatmap:** Ink where BTO is ahead, Pink where resale is ahead, `$border` for a tie. Cells keep a text
+- **Heatmap:** Indigo (`$path-bto`) where BTO is ahead, Pink (`$path-resale-bar`) where resale is ahead, `$border` for a tie. Cells keep a text
   `title`/`aria-label` stating the value in words.
 - **Never colour-only.** Every chart needs a legend or inline label; every heatmap cell needs a text
   tooltip/`title`/`aria-label` stating its value and meaning, not just a fill colour. A matrix or heatmap
@@ -530,9 +537,13 @@ requirement.
 3. **Dark mode is included as a stub idea only (§2.8)** and is not built — confirm this is out of scope for
    the grading, since it isn't a module requirement.
 
-  ### Page and path colours (4 Nov 2026)
-- Every page is white (`$bg-app`). `$bg-subtle` / `--bg-page` (mist) is for pale fills inside cards.
-- White boxes on the page carry a 1px `$border-subtle` border (or use `.card` / `.quiet-panel`).
-- BTO is always `--path-bto` (indigo); resale is `--path-resale` (berry, text) and `--path-resale-bar` (pink, bars).
-- Section headings use `.section-head`, `.section-head__title`, `.section-head__sub`.
-- Rounding: headlines and summaries round to the nearest S$1,000 (`formatMoneyRounded`); breakdowns that must add up (How you'd pay, cost    and grant tables) are exact (`formatMoney`).
+---
+
+## Changes, 4 Nov 2026 (D45)
+
+- **White page on every route** (`$bg-app`) and borders on white boxes: §2.5.
+- **One colour per path** (`--path-bto` indigo, `--path-resale` / `--path-resale-bar`): §3.
+- **Section headings:** every section on Results and the Dashboard uses `.section-head`,
+  `.section-head__title` (h2 size, left-aligned) and `.section-head__sub` (one line).
+- **Rounding:** headlines and summaries round to the nearest S$1,000 (`formatMoneyRounded` in
+  `utils/format.js`); breakdowns that must add up (How you'd pay, cost and grant tables) are exact (`formatMoney`).

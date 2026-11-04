@@ -234,7 +234,9 @@ function jumpToWhatIf() {
   (panel?.querySelector('[data-cy=whatif-year-plus]') ?? panel?.querySelector('button, input'))?.focus({ preventScroll: true });
 }
 // Quick scenarios, as filter chips along the top (like a property site's search filters): each sets a few
-// assumptions at once on top of the current ones; "Reset" in the What-if panel goes back to the plan.
+// assumptions at once on top of the current ones, and clicking it again puts those back to your plan's values;
+// "Clear" and the What-if panel's Reset go back to the plan. A line under the chips says what is being tried and
+// how far the answer moved, right where you clicked (the What-if panel's "Since your inputs" box can be far away).
 const PRESETS = [
   { id: 'boom', label: 'Prices boom', hint: 'Flat prices +5% a year', set: { annualPriceGrowth: 0.05 } },
   { id: 'flat', label: 'Prices stay flat', hint: 'Flat prices 0% a year', set: { annualPriceGrowth: 0 } },
@@ -242,7 +244,19 @@ const PRESETS = [
   { id: 'reno', label: 'Big renovation', hint: 'S$60,000 on each flat', set: { renovationA: 60000, renovationB: 60000 } },
 ];
 const presetOn = (p) => Object.entries(p.set).every(([k, val]) => whatIf[k] === val);
-const applyPreset = (p) => setWhatIf({ ...whatIf, ...p.set });
+function togglePreset(p) {
+  if (presetOn(p)) {
+    const back = Object.fromEntries(Object.keys(p.set).map((key) => [key, planValues.value[key]]));
+    setWhatIf({ ...whatIf, ...back });
+  } else {
+    setWhatIf({ ...whatIf, ...p.set });
+  }
+}
+const activePresets = computed(() => PRESETS.filter(presetOn));
+// "flat prices +5% a year and S$2,500 a month until the keys"
+const presetLine = computed(() => activePresets.value
+  .map((p) => p.hint.charAt(0).toLowerCase() + p.hint.slice(1))
+  .join(' and '));
 
 // "How it changes over time" (the net position chart) is always open, beside the What-if panel, so dragging a
 // slider shows its effect straight away.
@@ -365,7 +379,7 @@ const detailLine = computed(() => ({
       <!-- 2. Can today's savings pay the cash up front? -->
       <DashboardCashCard v-if="A && B" :outcome-a="A" :outcome-b="B" :cash-savings="store.profile.cashSavings" @jump-whatif="jumpToWhatIf" />
 
-      <!-- Quick scenarios, as filter chips. "More options" jumps to the full What-if panel. -->
+      <!-- Quick scenarios, as filter chips: click to try, click again to undo. "More options" jumps to the What-if panel. -->
       <div class="dash-chips" role="group" aria-label="Quick scenarios" data-cy="whatif-presets">
         <span class="dash-chips__label">Try a scenario</span>
         <button
@@ -375,12 +389,21 @@ const detailLine = computed(() => ({
           class="dash-chip-btn"
           :class="{ 'is-on': presetOn(p) }"
           :aria-pressed="presetOn(p)"
-          :title="p.hint"
           :data-cy="`whatif-preset-${p.id}`"
-          @click="applyPreset(p)"
-        >{{ p.label }}</button>
+          @click="togglePreset(p)"
+        ><span v-if="presetOn(p)" class="dash-chip-btn__tick" aria-hidden="true">✓</span>{{ p.label }}</button>
         <button v-if="changes.length" type="button" class="dash-chip-btn dash-chip-btn--reset" data-cy="dashboard-chips-reset" @click="reset">✕ Clear</button>
         <button type="button" class="dash-chip-btn dash-chip-btn--more" @click="jumpToWhatIf">More options ▾</button>
+        <!-- What is being tried and what it did, written out under the chips (no hover tooltips). -->
+        <p class="dash-chips__status mb-0" aria-live="polite" data-cy="whatif-presets-status">
+          <template v-if="activePresets.length">
+            Trying {{ presetLine }}.
+            <strong v-if="sinceInputs" data-cy="whatif-presets-effect">{{ sinceInputs.status }}: gap {{ sinceInputs.before }} → {{ sinceInputs.now }}.</strong>
+            <span v-if="updating"> Updating…</span>
+            <span v-if="result.mock"> Example data doesn't change with assumptions; run with live data to see the effect.</span>
+          </template>
+          <template v-else>Each chip changes one or two assumptions at once. Click it again to undo.</template>
+        </p>
       </div>
 
       <!-- Warnings no tile already says -->
@@ -648,6 +671,10 @@ const detailLine = computed(() => ({
 .dash-chip-btn:hover { border-color: var(--accent-fill-1); background: var(--accent-tint); translate: 0 -1px; }
 .dash-chip-btn.is-on { background: var(--text-primary); border-color: var(--text-primary); color: var(--on-primary); }
 .dash-chip-btn--reset { border-style: dashed; }
+.dash-chip-btn__tick { margin-right: var(--space-1); font-weight: 700; }
+/* The status line takes its own row under the chips. */
+.dash-chips__status { flex-basis: 100%; margin-top: var(--space-1); font-size: 0.875rem; color: var(--text-secondary); }
+.dash-chips__status strong { color: var(--text-primary); font-weight: 600; }
 .dash-chip-btn--more { margin-left: auto; }
 .dash-chip-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .dash-modal, .dash-modal__box { animation: none; } .dash-chip-btn { transition: none; } }

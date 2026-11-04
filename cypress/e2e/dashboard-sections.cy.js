@@ -127,4 +127,15 @@ describe('dashboard sections', () => {
     cy.get('[data-cy=dashboard-updating]', { timeout: 10000 }).should('not.exist');
     cy.get('[data-cy=dashboard-since-inputs]').should('contain', 'Since your inputs');
   });
+
+  it('undoes a quick scenario when its chip is clicked again, and says what it is trying', () => {
+    openDashboard();
+    cy.get('[data-cy=whatif-presets-status]').should('contain', 'Click it again to undo');
+    cy.get('[data-cy=whatif-preset-boom]').click({ scrollBehavior: 'center' }).should('have.attr', 'aria-pressed', 'true');
+    cy.get('[data-cy=whatif-presets-status]').should('contain', 'Trying flat prices +5% a year');
+    cy.get('[data-cy=whatif-price-growth-value]').should('contain', '5% / yr');
+    cy.get('[data-cy=whatif-preset-boom]').click({ scrollBehavior: 'center' }).should('have.attr', 'aria-pressed', 'false');
+    cy.get('[data-cy=whatif-price-growth-value]').should('contain', '3% / yr');
+    cy.get('[data-cy=whatif-presets-status]').should('contain', 'Click it again to undo');
+  });
 });

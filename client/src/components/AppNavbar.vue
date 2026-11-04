@@ -195,6 +195,7 @@ function logout() {
 }
 .pill-nav__home .pill-nav__logo {
   flex: none;
+  margin-right: 0; /* the shared .pill-nav__logo adds 8px for the old layout; the 10px gap above is the only space here */
   color: var(--on-primary);
   transition: background 0.3s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
