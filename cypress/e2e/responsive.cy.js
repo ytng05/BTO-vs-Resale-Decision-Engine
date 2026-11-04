@@ -1,4 +1,5 @@
-// Every page fits a phone, a tablet and a laptop screen without sideways scrolling (mock data).
+// Every page fits a phone, a tablet and a laptop screen, upright and on its side, without sideways scrolling; on a
+// short landscape screen, bars pinned to the top or bottom leave at least half the height for the page (mock data).
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 
 import { completePlan } from './helpers/plan.js';
@@ -7,6 +8,8 @@ const SCREENS = [
   { name: 'phone (iPhone SE)', width: 375, height: 667 },
   { name: 'tablet', width: 768, height: 1024 },
   { name: 'laptop', width: 1280, height: 800 },
+  { name: 'phone landscape', width: 667, height: 375 },
+  { name: 'tablet landscape', width: 1024, height: 768 },
 ];
 
 // Pages that open straight from a URL, each with one element that shows it has finished loading.
@@ -26,26 +29,48 @@ function fitsWidth() {
   });
 }
 
+// Bars pinned across the screen (position fixed or sticky, e.g. the compare bar) together take at most half the height.
+// A pinned side column (the dashboard's What-if panel) sits beside the content, not over it, so it does not count.
+// Measured at the top of the page only, so a bar that appears only after scrolling is not checked. Retries, in case a
+// bar is still animating in.
+function leavesRoomToRead() {
+  cy.window().should((win) => {
+    const pinned = [...win.document.body.querySelectorAll('*')].filter((el) => {
+      const { position } = win.getComputedStyle(el);
+      if (position !== 'fixed' && position !== 'sticky') return false;
+      const rect = el.getBoundingClientRect();
+      return rect.height > 0 && rect.bottom > 0 && rect.top < win.innerHeight && rect.width >= win.innerWidth * 0.8;
+    });
+    // Count only the outermost pinned elements, so a pinned bar inside another is not counted twice.
+    const outermost = pinned.filter((el) => !pinned.some((other) => other !== el && other.contains(el)));
+    const height = outermost.reduce((sum, el) => sum + el.getBoundingClientRect().height, 0);
+    expect(height, 'height of pinned bars').to.be.at.most(win.innerHeight / 2);
+  });
+}
+
 describe('responsive layout', () => {
   SCREENS.forEach((screen) => {
     describe(screen.name, () => {
       beforeEach(() => cy.viewport(screen.width, screen.height));
 
       PAGES.forEach((page) => {
-        it(`${page.path} has no sideways scrolling`, () => {
+        it(`${page.path} fits the screen`, () => {
           cy.visit(page.path);
           cy.get(page.ready).should('be.visible');
           fitsWidth();
+          leavesRoomToRead();
         });
       });
 
-      it('/results and the dashboard have no sideways scrolling after a full plan', () => {
+      it('/results and the dashboard fit the screen after a full plan', () => {
         completePlan();
         cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
         fitsWidth();
+        leavesRoomToRead();
         cy.get('[data-cy=results-dashboard-button]').click();
         cy.get('[data-cy=dashboard-headline]').should('be.visible');
         fitsWidth();
+        leavesRoomToRead();
       });
     });
   });
