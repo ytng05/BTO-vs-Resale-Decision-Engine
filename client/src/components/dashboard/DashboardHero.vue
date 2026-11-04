@@ -95,13 +95,13 @@ const rows = computed(() => {
   const pct = (n) => (typeof n === 'number' ? Math.max(0, Math.min(100, (n / max) * 100)) : null);
   const moved = (now, before) => typeof before === 'number' && Math.abs(now - before) >= 100000; // at least S$1,000
   return [
-    { key: 'bto', label: 'BTO', place: props.flats.bto, value: money(btoShown.value), width: pct(a), ghost: moved(a, ga) ? pct(ga) : null, was: moved(a, ga) ? money(ga) : '' },
-    { key: 'resale', label: 'Resale', place: props.flats.resale, value: money(resaleShown.value), width: pct(b), ghost: moved(b, gb) ? pct(gb) : null, was: moved(b, gb) ? money(gb) : '' },
+    { key: 'bto', label: 'BTO', place: props.flats.bto, value: money(btoShown.value), final: money(a), width: pct(a), ghost: moved(a, ga) ? pct(ga) : null, was: moved(a, ga) ? money(ga) : '' },
+    { key: 'resale', label: 'Resale', place: props.flats.resale, value: money(resaleShown.value), final: money(b), width: pct(b), ghost: moved(b, gb) ? pct(gb) : null, was: moved(b, gb) ? money(gb) : '' },
   ];
 });
 
-// Listing-style badges, as on property sites: the path ahead in the comparison year gets "★ Better by {year}" (net
-// position is measured in that one year, D1); the other path gets
+// Listing-style badges, as on property sites: the path ahead in the comparison year gets "★ Ahead in {year}" (net
+// position is measured in that one year, D1; "ahead in" matches "comes out ahead"); the other path gets
 // what it's better at, if anything (keys sooner, or less cash up front). Nothing when it's too close to call.
 const ym = (d) => { const m = String(d ?? '').match(/^(\d{4})-(\d{2})/); return m ? Number(m[1]) * 12 + Number(m[2]) : null; };
 const monthsText = (n) => {
@@ -114,14 +114,14 @@ const badges = computed(() => {
   if (!c || c.close || !['bto', 'resale'].includes(c.winner)) return out;
   const win = c.winner;
   const other = win === 'bto' ? 'resale' : 'bto';
-  out[win] = { text: props.horizon ? `★ Better by ${props.horizon}` : '★ Comes out ahead', tone: 'win' };
+  out[win] = { icon: '★', text: props.horizon ? `Ahead in ${props.horizon}` : 'Comes out ahead', tone: 'win' };
   const o = { bto: props.outcomeA, resale: props.outcomeB };
   const kw = ym(o[win].timeline?.keyCollectionDate);
   const ko = ym(o[other].timeline?.keyCollectionDate);
   if (kw && ko && ko < kw) {
-    out[other] = { text: `⚡ Keys ${monthsText(kw - ko)} sooner`, tone: 'plus' };
+    out[other] = { icon: '⚡', text: `Keys ${monthsText(kw - ko)} sooner`, tone: 'plus' };
   } else if ((o[other].cashRequiredAtPurchaseCents ?? Infinity) < (o[win].cashRequiredAtPurchaseCents ?? -Infinity)) {
-    out[other] = { text: '◆ Less cash up front', tone: 'plus' };
+    out[other] = { icon: '◆', text: 'Less cash up front', tone: 'plus' };
   }
   return out;
 });
@@ -159,8 +159,10 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
         </span>
         <span v-if="call?.close || call?.winner === 'level'" class="dash-hero__eyebrow" data-cy="dashboard-verdict-eyebrow">{{ eyebrow }}</span>
       </div>
-      <p class="dash-hero__flip mb-0" role="status" aria-live="polite" data-cy="dashboard-flip"><span v-if="flipped">⇄ {{ flipped }}</span></p>
-      <h1 id="dashboard-heading" class="dash-hero__headline" data-cy="dashboard-headline">{{ parts.before }}<span class="dash-hero__amount">{{ amountText }}</span>{{ parts.after }}</h1>
+      <p class="dash-hero__flip mb-0" role="status" aria-live="polite" data-cy="dashboard-flip"><span v-if="flipped"><span aria-hidden="true">⇄ </span>{{ flipped }}</span></p>
+      <!-- The final headline is in the DOM from the start (visually hidden) for screen readers and tests; the counting
+           copy is aria-hidden, so nobody reads a number on its way up from S$0. -->
+      <h1 id="dashboard-heading" class="dash-hero__headline" data-cy="dashboard-headline"><span class="visually-hidden">{{ headline }}</span><span aria-hidden="true">{{ parts.before }}<span class="dash-hero__amount">{{ amountText }}</span>{{ parts.after }}</span></h1>
       <p class="visually-hidden" data-cy="dashboard-subtitle">BTO {{ flats.bto }} <span aria-hidden="true">·</span><span class="visually-hidden">versus</span> Resale {{ flats.resale }}</p>
       <a v-if="blockedYear" href="#dashboard-critical" class="dash-hero__blocked" data-cy="dashboard-verdict-blocked">
         <span aria-hidden="true">⚠</span> You couldn't buy this BTO in {{ blockedYear }}: your income is above the new-flat ceiling. See below.
@@ -178,9 +180,9 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
         <div class="dash-hero__row-head">
           <span class="dash-hero__name">
             <span><span class="dash-hero__key" :class="`dash-hero__key--${r.key}`" aria-hidden="true"></span>{{ r.label }} · {{ r.place }}</span>
-            <span v-if="badges[r.key]" class="dash-hero__badge" :class="`dash-hero__badge--${badges[r.key].tone}`" :data-cy="`dashboard-badge-${r.key}`">{{ badges[r.key].text }}</span>
+            <span v-if="badges[r.key]" class="dash-hero__badge" :class="`dash-hero__badge--${badges[r.key].tone}`" :data-cy="`dashboard-badge-${r.key}`"><span aria-hidden="true">{{ badges[r.key].icon }} </span>{{ badges[r.key].text }}</span>
           </span>
-          <strong class="text-numeric" :data-cy="`dashboard-summary-${r.key}-net`">{{ r.value }}</strong>
+          <strong class="text-numeric" :data-cy="`dashboard-summary-${r.key}-net`"><span class="visually-hidden">{{ r.final }}</span><span aria-hidden="true">{{ r.value }}</span></strong>
         </div>
         <span class="dash-hero__track" aria-hidden="true">
           <span v-if="r.ghost !== null" class="dash-hero__ghost" :style="{ width: `${r.ghost}%` }"></span>
@@ -225,8 +227,6 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
 .dash-hero__row:hover { background: var(--accent-tint); }
 .dash-hero__track { transition: height 0.2s ease; }
 .dash-hero__row:hover .dash-hero__track { height: 16px; }
-.dash-hero__answer, .dash-hero__walk { transition: translate 0.35s ease, box-shadow 0.3s ease; }
-.dash-hero__answer:hover, .dash-hero__walk:hover { translate: 0 -3px; box-shadow: 0 18px 40px rgba(29, 29, 36, 0.12); }
 .dash-hero__row-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); font-size: 0.9375rem; }
 .dash-hero__row-head strong { font-size: 1.375rem; letter-spacing: -0.01em; }
 .dash-hero__key { display: inline-block; width: 8px; height: 8px; margin-right: var(--space-2); border-radius: 50%; vertical-align: 1px; }

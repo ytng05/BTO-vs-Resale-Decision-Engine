@@ -425,9 +425,8 @@ const detailLine = computed(() => ({
               <div class="col-12 col-md-6">
                 <p class="dash-note mb-0" data-cy="dashboard-note-eip">
                   <strong>Ethnic Integration Policy</strong><br>
-                  Some resale blocks may have reached their ethnic or PR quota (EIP and SPR quota), so you may not be able to
-                  buy there. Check the block before you pay for an Option to Purchase.
-                  <a href="https://www.hdb.gov.sg/buying-a-flat/resale-flats/process-for-buying-a-resale-flat/resale-flat-planning/eip-and-spr-quota" target="_blank" rel="noopener noreferrer">Check the EIP and SPR quota<span class="visually-hidden"> (HDB, opens in a new tab)</span> ↗</a>
+                  Some resale blocks are full on their ethnic or PR quota. Check the block before you pay for an Option to Purchase.
+                  <a href="https://www.hdb.gov.sg/buying-a-flat/resale-flats/process-for-buying-a-resale-flat/resale-flat-planning/eip-and-spr-quota" target="_blank" rel="noopener noreferrer">Check the quota<span class="visually-hidden"> (EIP and SPR, HDB, opens in a new tab)</span> <span aria-hidden="true">↗</span></a>
                 </p>
               </div>
             </div>
@@ -629,10 +628,10 @@ const detailLine = computed(() => ({
 
 /* Before you decide */
 .dash-before__title { margin: 0 0 var(--space-3); font-family: var(--font-heading); font-size: 1.125rem; font-weight: 600; }
-/* Pale pink and pale indigo instead of grey; they lift a little on hover. */
-.dash-note { height: 100%; padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--accent-tint); border: 1px solid var(--accent-fill-2); font-size: 0.9375rem; line-height: 1.55; transition: translate 0.3s ease, box-shadow 0.25s ease; }
+/* Pale pink and pale indigo instead of grey. Compact, and the same height side by side (height: 100% in a .row).
+   No hover lift: they aren't clickable, so only real buttons move. */
+.dash-note { height: 100%; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--accent-tint); border: 1px solid var(--accent-fill-2); font-size: 0.875rem; line-height: 1.5; }
 .col-12:last-child > .dash-note { background: var(--indigo-tint); border-color: var(--indigo-tint-strong); }
-.dash-note:hover { translate: 0 -3px; box-shadow: 0 10px 24px rgba(60, 64, 90, 0.08); }
 </style>
 
 <style>

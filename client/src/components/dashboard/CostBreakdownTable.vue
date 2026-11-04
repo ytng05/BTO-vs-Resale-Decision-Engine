@@ -56,10 +56,10 @@ const rows = computed(() => {
       <tr v-for="row in rows" :key="row.id" :data-cy="`dashboard-cost-${row.id.toLowerCase()}`">
         <th scope="row" class="fw-semibold">{{ row.label }}</th>
         <td v-for="(c, i) in [row.a, row.b]" :key="i" :data-label="i === 0 ? 'BTO' : 'Resale'">
-          <template v-if="c">
+          <div v-if="c" class="cost-cell">
             <span class="text-numeric">{{ formatMoney(c.amount) }}</span>
             <span v-if="c.paidFrom" class="cost-chip">{{ c.paidFrom }}</span>
-          </template>
+          </div>
           <span v-else class="text-secondary">—</span>
         </td>
       </tr>
@@ -68,13 +68,23 @@ const rows = computed(() => {
 </template>
 
 <style scoped>
+/* Flex + gap spaces the amount and chip evenly, horizontally and when the chip wraps onto its own line. */
+.cost-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.25rem;
+}
+
 .cost-chip {
   display: inline-block;
-  margin-top: 0.25rem;
+  margin: 0;
   padding: 0.0625rem 0.5rem;
   border-radius: var(--radius-pill);
   background: var(--accent-fill-3);
   color: var(--text-primary);
   font-size: 0.75rem;
+  white-space: nowrap;
 }
 </style>
