@@ -3,8 +3,6 @@ import { computed, nextTick, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { compareReusing } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
-import ResultsRobustness from '../components/ResultsRobustness.vue';
-import ResultsTradeoff from '../components/ResultsTradeoff.vue';
 import ResultsPhgCard from '../components/ResultsPhgCard.vue';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
@@ -15,6 +13,7 @@ import ResultsNextSteps from '../components/ResultsNextSteps.vue';
 import ResultsVerdict from '../components/ResultsVerdict.vue';
 import BackToTop from '../components/BackToTop.vue';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
+import Term from '../components/Term.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, LEASE_BANDS, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
 import { keyRows, verdict as buildVerdict } from '../utils/resultsVerdict.js';
@@ -69,9 +68,9 @@ const userPoint = computed(() => ({
   incomeGrowth: store.assumptions.annualIncomeGrowth,
 }));
 
-// Progressive disclosure (redesign, 4 Nov 2026): the answer, "Would the answer change?" (the heatmap in small, so the
-// central idea stays in view, D35), the trade-off and the two path cards are open; the full heatmap, the chart over
-// time, when to apply and the official steps open on request (DashboardSection), each with a one-line takeaway.
+// Progressive disclosure (redesign, 4 Nov 2026): the answer and the two path cards are open; the chart over time, the
+// heatmap with the break-even sentence (D35, D40; its takeaway line stays in view), when to apply and the official
+// steps open on request (DashboardSection), each with a one-line takeaway.
 const sections = ref({ chart: false, heatmap: false, timing: false, steps: false });
 
 // Open a folded part, then move to its heading with focus, so keyboard and screen-reader users land there too.
@@ -82,10 +81,6 @@ async function openAndGo(id) {
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   el.focus({ preventScroll: true });
-}
-function openGrid() {
-  sections.value = { ...sections.value, heatmap: true };
-  openAndGo('heatmap-title');
 }
 function jumpToSteps() {
   sections.value = { ...sections.value, steps: true };
@@ -262,7 +257,6 @@ onMounted(load);
             <span class="basis__sep" aria-hidden="true">|</span>
             <span class="badge-version" data-cy="results-ruleset-version">Ruleset {{ result.rulesetVersion }}</span>
             <span v-if="result.mock" class="basis__mock" data-cy="results-mock-notice">Showing mock data</span>
-            <RouterLink to="/dashboard" class="basis__change d-print-none" data-cy="results-price-basis-change">Change the prices</RouterLink>
           </div>
           <details class="basis__more">
             <summary class="basis__more-toggle">How we chose these prices</summary>
@@ -271,20 +265,9 @@ onMounted(load);
           </details>
         </section>
 
-        <!-- 3. Would the answer change (the heatmap in small, D35, D40), and the trade-off. -->
-        <div class="results-pair">
-          <ResultsRobustness
-            :grid="result.grid"
-            :break-even-sentence="result.breakEvenSentence"
-            :bto-price-sentence="result.btoPriceSentence"
-            @open-grid="openGrid"
-          />
-          <ResultsTradeoff :rows="keyComparison" :close="verdict.close" />
-        </div>
-
-        <!-- 4. Each path in plain words (D1). Why one path ends ahead, line by line (D34), is on the Dashboard. -->
+        <!-- 3. Each path in plain words (D1). Why one path ends ahead, line by line (D34), is on the Dashboard. -->
         <section v-if="result.outcomeA && result.outcomeB" class="paths" aria-labelledby="path-details-title">
-          <h2 id="path-details-title" class="paths__title" tabindex="-1">Each path<template v-if="horizonYear"> in {{ horizonYear }}</template>, in plain words</h2>
+          <h2 id="path-details-title" class="paths__title" tabindex="-1">Each path<template v-if="horizonYear"> in {{ horizonYear }}</template></h2>
           <!-- Same height while both are closed; once a Full breakdown opens, each card is its own height (CSS below). -->
           <div class="row g-3 paths__row">
             <div class="col-12 col-lg-6">
@@ -308,10 +291,6 @@ onMounted(load);
               />
             </div>
           </div>
-          <p class="paths__why d-print-none" data-cy="results-why-dashboard">
-            Why one path comes out ahead, line by line, is on the
-            <RouterLink to="/dashboard" data-cy="results-why-dashboard-link">Dashboard</RouterLink>.
-          </p>
         </section>
 
         <!-- 5. The Proximity Housing Grant, when the parents question wasn't asked (D38). Each card has its own grants. -->
@@ -357,6 +336,11 @@ onMounted(load);
               heading-id="heatmap-title"
               cy="results-section-heatmap"
             >
+              <div v-if="result.breakEvenSentence || result.btoPriceSentence" class="breakeven">
+                <p v-if="result.breakEvenSentence" class="breakeven__sentence" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</p>
+                <p v-if="result.btoPriceSentence" class="breakeven__sentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
+                <p class="breakeven__note">The <Term id="break-even">break-even</Term> line is not a prediction of prices.</p>
+              </div>
               <ul class="heatmap-guide text-secondary" data-cy="results-heatmap-guide">
                 <li>Nobody knows how fast flat prices or incomes will grow, so each square tries one combination: flat price growth a year across the top, income growth a year down the side.</li>
                 <li>The colour says which path leaves you better off<template v-if="horizonYear"> in {{ horizonYear }}</template>: dark for BTO, pink for resale, grey when they're about level.</li>
@@ -407,7 +391,6 @@ onMounted(load);
 <style scoped>
 /* Redesign (4 Nov 2026): one column of boxes, two side by side where they pair up, stacking on phones. */
 .results-page { display: flex; flex-direction: column; gap: var(--space-5); }
-.results-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: var(--space-4); }
 .results-sections { display: flex; flex-direction: column; gap: var(--space-3); }
 .results-more__title { margin: 0 0 var(--space-3); font-size: 1.125rem; font-weight: 600; }
 
@@ -417,24 +400,24 @@ onMounted(load);
 .basis__strip strong { color: var(--text-primary); }
 .basis__lead { font-weight: 500; }
 .basis__mock { padding: 0.125rem 0.625rem; border-radius: var(--radius-pill); background: var(--warning-fill); color: var(--warning); font-weight: 500; }
-.basis__change { margin-left: auto; font-weight: 600; color: var(--text-primary); }
 .basis__more { margin-top: var(--space-2); }
 .basis__more-toggle { cursor: pointer; font-size: 0.8125rem; color: var(--text-secondary); }
 .basis__more-toggle:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
 .basis__note { margin: var(--space-2) 0 0; line-height: 1.5; }
 
-/* Each path in plain words */
+/* Each path */
 .paths { display: flex; flex-direction: column; gap: var(--space-3); }
 .paths__title { margin: 0; font-size: 1.5rem; font-weight: 600; }
 .paths__row:has(details[open]) { align-items: flex-start; }
-.paths__why { margin: 0; font-size: 0.875rem; color: var(--text-secondary); }
-.paths__why a { font-weight: 600; color: var(--text-primary); }
 
 /* Next bar */
 .next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); }
 .next__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .next__save { margin-bottom: 0 !important; }
 
+.breakeven { margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--indigo-tint); }
+.breakeven__sentence { margin: 0 0 var(--space-2); line-height: 1.5; }
+.breakeven__note { margin: 0; font-size: 0.8125rem; color: var(--text-secondary); }
 .heatmap-guide { margin: 0 0 var(--space-3); padding-left: 1.1rem; font-size: 0.9375rem; line-height: 1.5; }
 .heatmap-guide li + li { margin-top: var(--space-1); }
 </style>

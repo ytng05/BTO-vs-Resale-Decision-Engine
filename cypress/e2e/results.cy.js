@@ -10,9 +10,9 @@ describe('results page', () => {
     cy.location('pathname').should('eq', '/plan');
   });
 
-  it('leads with the break-even sentence and shows the ruleset version', () => {
+  it('has the break-even sentence (under the heatmap) and shows the ruleset version', () => {
     completePlan();
-    cy.get('[data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
+    cy.get('[data-cy=results-breakeven-sentence]').should('exist').and('not.be.empty');
     cy.get('[data-cy=results-verdict-diff]').should('contain', 'in favour of');
     cy.get('[data-cy=results-ruleset-version]').should('contain', 'Ruleset');
   });
@@ -34,10 +34,9 @@ describe('results page', () => {
 
   it('marks the user’s own assumptions on the heatmap and explains any square on tap', () => {
     completePlan(); // growth defaults: 3% price, 2% income (D38)
-    // The central idea stays in view as the small grid (D35); the full grid opens from "See the full grid".
-    cy.get('[data-cy=results-mini-grid]').should('be.visible');
+    // The heatmap is folded, with its takeaway line in view; it opens from its summary.
     cy.get('[data-cy=results-section-heatmap]').should('not.have.attr', 'open');
-    cy.get('[data-cy=results-heatmap-open]').click();
+    cy.get('[data-cy=results-section-heatmap] > summary').click();
     cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open');
     cy.get('td[data-cy^=heatmap-cell-]').should('have.length', 36);
     cy.get('[data-cy=heatmap-legend]').should('be.visible');
@@ -186,7 +185,7 @@ describe('results page', () => {
     seeResults();
     cy.location('pathname').should('eq', '/results');
     // They were asked and chose "Neither", so Results doesn't say the grant was left out.
-    cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
+    cy.get('[data-cy=results-breakeven-sentence]').should('exist');
     cy.get('[data-cy=results-phg-note]').should('not.exist');
   });
 });
