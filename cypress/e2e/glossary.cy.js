@@ -17,7 +17,7 @@ describe('glossary and terms', () => {
     cy.get('[data-cy=term-ehg-definition]').first().should('not.be.visible');
     cy.focused().should('have.attr', 'data-cy', 'term-ehg-button');
 
-    cy.get('[data-cy=term-break-even-button]').first().click();
+    cy.get('[data-cy=term-break-even-button]').first().scrollIntoView().click();
     cy.get('[data-cy=term-break-even-definition]').first().contains('More in the glossary').click();
     cy.location('pathname').should('eq', '/sources');
     cy.location('hash').should('eq', '#glossary-break-even');
