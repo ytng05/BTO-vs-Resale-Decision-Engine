@@ -351,10 +351,12 @@ function clearFilter() {
   if (chip && hashId && chip.ids.includes(hashId)) router.replace({ path: route.path, query: route.query, hash: '' });
 }
 
-// Clicking a chip filters to its topic, open; clicking the active chip again shows every section.
+// Clicking a chip opens the rules on its topic; clicking the active chip again clears the filter and folds the rules
+// back up ("Show all topics" clears it and keeps them open).
 function toggleChip(chip) {
   if (isChipActive(chip)) {
     clearFilter();
+    rulesOpen.value = false;
     return;
   }
   filterChipKey.value = chipKey(chip);

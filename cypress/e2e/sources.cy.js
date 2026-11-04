@@ -58,7 +58,7 @@ describe('sources page', () => {
     });
   });
 
-  it('filters to a topic when its chip is clicked, and shows everything when clicked again', () => {
+  it('filters to a topic when its chip is clicked, and folds the rules again when clicked again', () => {
     cy.get('[data-cy=sources-rules-table] details').its('length').then((total) => {
       cy.contains('button.sources-chip', 'EHG').should('have.attr', 'aria-pressed', 'false').click();
       cy.contains('button.sources-chip', 'EHG').should('have.attr', 'aria-pressed', 'true').and('have.class', 'btn-primary');
@@ -67,6 +67,8 @@ describe('sources page', () => {
       cy.get('#sources-section-ehg').should('have.attr', 'open');
       cy.get('[data-cy=sources-rules-hint]').should('contain', 'Showing EHG only');
       cy.contains('button.sources-chip', 'EHG').click();
+      cy.get('[data-cy=sources-rules-toggle]').should('have.attr', 'aria-expanded', 'false');
+      cy.get('[data-cy=sources-rules-table]').should('not.be.visible');
       cy.get('[data-cy=sources-rules-table] details').should('have.length', total);
       cy.contains('button.sources-chip', 'EHG').should('have.attr', 'aria-pressed', 'false').and('have.class', 'btn-outline-primary');
       cy.get('[data-cy=sources-rules-hint]').should('not.exist');
@@ -78,6 +80,7 @@ describe('sources page', () => {
     cy.get('[data-cy=sources-rules-table] details').should('have.length', 1);
     cy.get('[data-cy=sources-show-all-topics]').click();
     cy.get('[data-cy=sources-rules-table] details').should('have.length.greaterThan', 1);
+    cy.get('[data-cy=sources-rules-table]').should('be.visible'); // "Show all topics" keeps the rules open
     cy.contains('button.sources-chip', 'Loans').should('have.attr', 'aria-pressed', 'false');
   });
 
