@@ -9,6 +9,7 @@
 // Resale price = choiceB.resalePriceCents (D39), 80% to 130% of the median; the median stays the valuation.
 import { computed } from 'vue';
 import WhatIfSlider from './WhatIfSlider.vue';
+import WhatIfStepper from './WhatIfStepper.vue';
 import { formatMoney } from '../../utils/format.js';
 import { RENT_GUIDE_URL } from '../../constants/planOptions.js';
 
@@ -26,6 +27,8 @@ const props = defineProps({
   resaleMedian: { type: Object, default: null },
   // The values from the saved plan, to count how many hidden assumptions have been changed.
   baseline: { type: Object, default: null },
+  // Where the answer flips on flat price growth ({ atPct, winnerAbove, approx } from priceFlip()), or null.
+  priceFlip: { type: Object, default: null },
 });
 const emit = defineEmits(['update:modelValue', 'reset']);
 
@@ -76,25 +79,46 @@ const sliders = computed(() => {
         value: v.resalePrice ?? props.resaleMedian.used, text: formatMoney(v.resalePrice ?? props.resaleMedian.used),
       }]
       : []),
-    { key: 'renovationA', id: 'whatif-reno-bto', label: 'Renovation, BTO', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationA, text: formatMoney(v.renovationA) },
-    { key: 'renovationB', id: 'whatif-reno-resale', label: 'Renovation, resale', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationB, text: formatMoney(v.renovationB) },
     { group: 'Timing', key: 'applicationYear', id: 'whatif-year', label: 'Apply / buy in', hint: 'Both paths move together', min: thisYear, max: thisYear + 6, step: 1, scale: 1, value: v.applicationYear, text: String(v.applicationYear) },
-    { group: 'Market', key: 'annualPriceGrowth', id: 'whatif-price-growth', label: 'Flat price growth', min: -2, max: 8, step: 0.5, scale: 100, value: pct(v.annualPriceGrowth), text: `${pct(v.annualPriceGrowth)}% / yr` },
-    { group: 'Market', key: 'annualIncomeGrowth', id: 'whatif-income-growth', label: 'Income growth', hint: 'Changes the answer only if it moves your grants or how much you can borrow, so it often does nothing.', min: 0, max: 10, step: 0.5, scale: 100, value: pct(v.annualIncomeGrowth), text: `${pct(v.annualIncomeGrowth)}% / yr` },
-    { group: 'Timing', key: 'horizonYear', id: 'whatif-horizon', label: 'Compare in', hint: 'Not before both sets of keys', min: props.horizonMin, max: props.horizonMax, step: 1, scale: 1, value: horizon, text: String(horizon) },
+    priceGrowthSlider.value,
+    { group: 'Housing costs', key: 'annualIncomeGrowth', id: 'whatif-income-growth', label: 'Income growth', hint: 'Changes the answer only if it moves your grants or how much you can borrow, so it often does nothing.', min: 0, max: 10, step: 0.5, scale: 100, value: pct(v.annualIncomeGrowth), text: `${pct(v.annualIncomeGrowth)}% / yr` },
+    { group: 'Timing', key: 'horizonYear', id: 'whatif-horizon', label: 'Compare in', hint: `Earliest ${props.horizonMin} (both keys in)`, min: props.horizonMin, max: props.horizonMax, step: 1, scale: 1, value: horizon, text: String(horizon) },
     { group: 'Housing costs', key: 'monthlyHousingCostWhileWaiting', id: 'whatif-rent', label: 'Rent while waiting for keys', hint: '0 = living with parents.', link: { href: RENT_GUIDE_URL, text: 'Median rents by town' }, min: 0, max: 5000, step: 100, scale: 1, value: v.monthlyHousingCostWhileWaiting, text: `${formatMoney(v.monthlyHousingCostWhileWaiting)}/mo` },
     { group: 'Housing costs', key: 'renovationA', id: 'whatif-reno-bto', label: 'Renovation, BTO', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationA, text: formatMoney(v.renovationA) },
     { group: 'Housing costs', key: 'renovationB', id: 'whatif-reno-resale', label: 'Renovation, resale', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationB, text: formatMoney(v.renovationB) },
   ];
 });
 
-// The sliders in three groups. Timing and Market are always shown (they move the answer most);
-// Housing costs sit under "More assumptions" so the panel stays short.
+// Flat price growth, the lever that moves the answer most: quick picks, a reset to your input, a tick where your
+// input sits, and the zone where the answer flips (from /api/compare's break-even line, at your income growth).
+const PRICE_MIN = -2;
+const PRICE_MAX = 8;
+const along = (p) => (p - PRICE_MIN) / (PRICE_MAX - PRICE_MIN);
+const priceGrowthSlider = computed(() => {
+  const now = pct(props.modelValue.annualPriceGrowth);
+  const mine = typeof props.baseline?.annualPriceGrowth === 'number' ? pct(props.baseline.annualPriceGrowth) : null;
+  const flip = props.priceFlip;
+  return {
+    group: 'Market', key: 'annualPriceGrowth', id: 'whatif-price-growth', label: 'Flat price growth',
+    min: PRICE_MIN, max: PRICE_MAX, step: 0.5, scale: 100, value: now, text: `${now}% / yr`,
+    strong: true,
+    // 3% is the app's default assumption (D33), not a forecast; 1% and 5% bracket it.
+    presets: [{ label: 'Slow 1%', value: 1 }, { label: 'Default 3%', value: 3 }, { label: 'Fast 5%', value: 5 }],
+    resetTo: mine,
+    mineAt: mine === null ? null : along(mine),
+    mineText: mine === null ? '' : `Your input ${mine}%`,
+    zone: flip ? { at: along(flip.atPct), tone: flip.winnerAbove === 'BTO' ? 'bto' : 'resale', label: `${flip.winnerAbove} wins above ${flip.approx ? 'about ' : ''}${flip.atPct}%` } : null,
+  };
+});
+
+// Timing is two year steppers; Market is flat price growth; income growth and the housing costs sit under
+// "More assumptions" so the panel stays short.
 const groups = computed(() => ['Timing', 'Market', 'Housing costs'].map((title) => ({
   title,
   items: sliders.value.filter((s) => s.group === title),
 })));
 const mainGroups = computed(() => groups.value.filter((g) => g.title !== 'Housing costs'));
+const isYear = (s) => s.key === 'applicationYear' || s.key === 'horizonYear';
 const moreGroup = computed(() => groups.value.find((g) => g.title === 'Housing costs'));
 
 // How many of the hidden sliders differ from the saved plan, so a closed panel never hides a change.
@@ -107,12 +131,16 @@ const moreChanged = computed(() => {
 <template>
   <aside class="card dash-whatif" aria-labelledby="whatif-heading" data-cy="dashboard-whatif">
     <div class="card-body">
-      <h2 id="whatif-heading" class="h5 mb-1">What if…</h2>
-      <p class="text-secondary small mb-4">Move a slider and the comparison runs again. Your saved plan does not change.</p>
+      <h2 id="whatif-heading" class="whatif-title">What if…</h2>
+      <!-- The Dashboard's "since your inputs" card: what the answer was at the saved plan, and what it is now. -->
+      <slot name="live" />
 
       <fieldset v-for="g in mainGroups" :key="g.title" class="whatif-group">
-        <legend class="whatif-group__title">{{ g.title }}</legend>
-        <WhatIfSlider v-for="s in g.items" :key="s.key" :slider="s" @change="set" />
+        <legend class="visually-hidden">{{ g.title }}</legend>
+        <template v-for="s in g.items" :key="s.key">
+          <WhatIfStepper v-if="isYear(s)" :stepper="s" @change="set" />
+          <WhatIfSlider v-else :slider="s" @change="set" />
+        </template>
       </fieldset>
 
       <details v-if="moreGroup && moreGroup.items.length" class="whatif-more" data-cy="dashboard-whatif-more">
@@ -124,19 +152,20 @@ const moreChanged = computed(() => {
           </svg>
         </summary>
         <fieldset class="whatif-group">
-          <legend class="whatif-group__title">{{ moreGroup.title }}</legend>
+          <legend class="visually-hidden">Income growth and housing costs</legend>
           <WhatIfSlider v-for="s in moreGroup.items" :key="s.key" :slider="s" @change="set" />
         </fieldset>
       </details>
 
       <button type="button" class="btn btn-outline-secondary w-100 mt-3" data-cy="dashboard-whatif-reset" @click="emit('reset')">
-        Reset to my inputs
+        Reset all to my inputs
       </button>
     </div>
   </aside>
 </template>
 
 <style scoped>
+.whatif-title { margin: 0 0 var(--space-4); font-family: var(--font-heading); font-size: 1.375rem; font-weight: 600; }
 .whatif-group { border: 0; padding: 0; margin: 0; min-width: 0; }
 .whatif-group + .whatif-group { border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); }
 .whatif-group__title {
