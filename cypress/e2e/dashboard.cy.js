@@ -52,7 +52,7 @@ describe('financial dashboard', () => {
 
   it('draws how the net position adds up, and lists the costs', () => {
     openDashboard();
-    // The chart is always open (What-if analysis); the costs open from their Explore card.
+    // The chart is always open (How each net position adds up); the costs open from their Explore card.
     cy.get('[data-cy=dashboard-section-cashflow]').scrollIntoView();
     cy.get('[data-cy=dashboard-cashflow] canvas').should('be.visible');
     openDetail('costs');
