@@ -427,7 +427,7 @@ const detailLine = computed(() => ({
                   <strong>Ethnic Integration Policy</strong><br>
                   Some resale blocks may have reached their ethnic or PR quota (EIP and SPR quota), so you may not be able to
                   buy there. Check the block before you pay for an Option to Purchase.
-                  <a href="https://www.hdb.gov.sg/check-ethnic-integration-policy-or-singapore-permanent-resident-quota" target="_blank" rel="noopener noreferrer">Check the EIP and SPR quota<span class="visually-hidden"> (HDB, opens in a new tab)</span> ↗</a>
+                  <a href="https://www.hdb.gov.sg/buying-a-flat/resale-flats/process-for-buying-a-resale-flat/resale-flat-planning/eip-and-spr-quota" target="_blank" rel="noopener noreferrer">Check the EIP and SPR quota<span class="visually-hidden"> (HDB, opens in a new tab)</span> ↗</a>
                 </p>
               </div>
             </div>

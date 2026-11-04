@@ -1,4 +1,4 @@
-// Dashboard layout: the answer and the walk-away bars at the top, the savings strip, "At a glance" tiles, "Why … comes
+// Dashboard layout...the answer and the net position bars at the top, ...the savings strip, "At a glance" tiles, "Why … comes
 // out ahead?" (closed until asked), how each purchase is paid, the What-if analysis chart beside the What-if panel, and
 // "Explore the detail" cards whose detail opens in a pop-up.
 // Mock data; same setup as dashboard.cy.js (`VITE_USE_MOCK=true npm run build`, `npm start`, `npm run test:e2e`).

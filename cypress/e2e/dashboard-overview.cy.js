@@ -1,5 +1,5 @@
-// Dashboard overview: the walk-away bars and badges, the savings strip, the "At a glance" tiles, and the grants pop-up.
-// Mock data; same setup as dashboard.cy.js (`VITE_USE_MOCK=true npm run build`, `npm start`, `npm run test:e2e`).
+//Dashboard overview: the net position bars and badges, ... the savings strip, the "At a glance" tiles, and the grants pop-up.
+//Mock data; same setup as dashboard.cy.js (`VITE_USE_MOCK=true npm run build`, `npm start`, `npm run test:e2e`).
 import { completePlan } from './helpers/plan.js';
 
 function openDashboard() {
@@ -16,7 +16,7 @@ describe('dashboard overview', () => {
       cy.get(`[data-cy=dashboard-summary-${p}-net]`).invoke('text').should('match', /S\$[\d,]+/);
       cy.get(`[data-cy=dashboard-paid-${p}-tags]`).should('contain', 'Keys');
     });
-    // The path ahead long-term is badged (unless it's too close to call).
+    // The path ahead in the comparison year is badged (unless it's too close to call).
     cy.get('[data-cy=dashboard-headline]').invoke('text').then((h) => {
       if (/ends S\$/.test(h)) cy.get('[data-cy^=dashboard-badge-]').invoke('text').should('match', /Better by \d{4}|Comes out ahead/);
     });
