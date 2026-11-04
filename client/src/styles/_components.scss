@@ -573,10 +573,14 @@ a:focus-visible,
 // ---- Pill navigation (design system, 29 Oct 2026) ----------------------------------
 // Three floating pills: a status pill (left), logo + links (centre), an account pill (right).
 .pill-nav {
-  display: flex;
+  // Links centred on the page, the account pill at the right edge. Phones: side by side (below).
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: $space-4;
+
+  > nav { grid-column: 2; }
+  > :last-child { grid-column: 3; justify-self: end; }
 
   &__pill {
     display: inline-flex;
@@ -591,7 +595,6 @@ a:focus-visible,
     box-shadow: 0 3px 0 rgba($color-ink, 0.08), 0 8px 20px rgba(60, 64, 90, 0.06);
   }
 
-  &__status,
   &__end {
     padding: 0 $space-5;
     gap: 10px;
@@ -602,16 +605,6 @@ a:focus-visible,
   }
 
   &__end:hover { background: $surface-disabled; color: $text-primary; }
-
-  &__dot {
-    width: 12px;
-    height: 12px;
-    flex: none;
-    border-radius: 50%;
-    background: $success;
-    box-shadow: 0 0 0 0 rgba($success, 0.35);
-    animation: pill-nav-pulse 2.4s ease-out infinite;
-  }
 
   &__logo {
     width: 44px;
@@ -657,25 +650,14 @@ a:focus-visible,
     outline-offset: 2px;
   }
 
-  @include media-breakpoint-down(lg) {
-    &__status { display: none; }
-  }
-
   @include media-breakpoint-down(md) {
+    display: flex;
+    justify-content: space-between;
     &__links { display: none; }
     &__menu { display: grid; }
     &__end-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     &__end { padding: 0; width: 56px; justify-content: center; }
   }
-}
-
-@keyframes pill-nav-pulse {
-  0% { box-shadow: 0 0 0 0 rgba($success, 0.35); }
-  70%, 100% { box-shadow: 0 0 0 8px rgba($success, 0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pill-nav__dot { animation: none; }
 }
 
 // ---- Numbered step track (design system, 29 Oct 2026) -------------------------------

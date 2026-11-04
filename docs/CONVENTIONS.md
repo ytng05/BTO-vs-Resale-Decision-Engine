@@ -3,7 +3,7 @@
 ## Selectors (Cypress)
 `data-cy="<area>-<element>-<action>"`, kebab-case, never based on text or styling.
 Examples: `plan-step-next`, `plan-step-back`, `stepper-step-2`, `results-breakeven-sentence`,
-`heatmap-cell-r0-c3`, `disclaimer-banner`, `nav-ruleset-status`, `login-email-input`, `login-submit-button`.
+`heatmap-cell-r0-c3`, `disclaimer-banner`, `nav-brand-home`, `login-email-input`, `login-submit-button`.
 (`ruleset-badge` is now only on the scenario compare cards, from `RulesetBadge.vue`, kept on purpose for that.)
 
 ### Selectors in use (keep in sync; the Cypress specs depend on them)

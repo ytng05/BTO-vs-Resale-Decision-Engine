@@ -1,9 +1,9 @@
 <script setup>
-// The top navigation as three floating pills (design system Navbar, .pill-nav in _components.scss):
-// ruleset freshness (left), logo + links (centre), My scenarios or Log in (right). Keep data-cy attributes stable.
-import { computed, onMounted, ref, watch } from 'vue';
+// The top navigation as two floating pills (design system Navbar, .pill-nav in _components.scss):
+// logo + links (centre), My scenarios or Log in (right). Keep data-cy attributes stable.
+import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getRuleset, listScenarios } from '../api/client.js';
+import { listScenarios } from '../api/client.js';
 import { useAuthStore } from '../stores/auth.js';
 
 const auth = useAuthStore();
@@ -16,23 +16,6 @@ const LINKS = [
   { to: '/dashboard', label: 'Dashboard', cy: 'nav-dashboard-link' },
   { to: '/sources', label: 'Sources', cy: 'nav-sources-link' },
 ];
-
-// Freshness line: only says "up to date" when the ruleset has been checked against its sources.
-const ruleset = ref(null);
-const rulesetDate = computed(() => {
-  const d = ruleset.value?.version ? new Date(`${ruleset.value.version}T00:00:00`) : null;
-  return d && !Number.isNaN(d.getTime())
-    ? d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
-    : null;
-});
-const verified = computed(() => ruleset.value?.status === 'VERIFIED');
-onMounted(async () => {
-  try {
-    ruleset.value = await getRuleset();
-  } catch {
-    ruleset.value = null; // no freshness line rather than a wrong one
-  }
-});
 
 // "My scenarios · 2": the count of the user's saved scenarios, refreshed on each page change.
 const scenarioCount = ref(null);
@@ -60,13 +43,6 @@ function logout() {
 
 <template>
   <header class="pill-nav" data-cy="nav-bar">
-    <span v-if="rulesetDate" class="pill-nav__pill pill-nav__status" data-cy="nav-ruleset-status">
-      <span v-if="verified" class="pill-nav__dot" aria-hidden="true"></span>
-      <template v-if="verified">Ruleset up to date · {{ rulesetDate }}</template>
-      <template v-else>Ruleset {{ rulesetDate }} · not yet verified</template>
-    </span>
-    <span v-else class="pill-nav__spacer" aria-hidden="true"></span>
-
     <nav class="pill-nav__pill" aria-label="Main">
       <router-link to="/" class="pill-nav__logo" aria-label="BTO vs resale home" data-cy="nav-brand-home">
         <!-- An HDB block -->
