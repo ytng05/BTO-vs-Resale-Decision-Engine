@@ -247,7 +247,8 @@ A user only ever sees their own scenarios. Someone else's scenario returns `404`
 Inputs are saved in the client store's shape (dollars, store field names), not the cents `CompareRequest`, so loading can refill the form directly.
 
 ### GET /api/scenarios
-Response `200`: `{ scenarios: [{ id, name, rulesetVersion, createdAt, updatedAt }] }`, newest first. Inputs and result are left out to keep the list small.
+
+Response `200`: `{ scenarios: [{ id, name, rulesetVersion, createdAt, updatedAt, summary }] }`, newest first. `summary` (additive, for filtering My scenarios) is `{ btoTown, btoFlatType, resaleTown, resaleFlatType, ahead, btoPriceCents, resalePriceCents }`: `ahead` is `A`, `B` or `TIE` from `result.gapBreakdown.marginCents`; prices are today's (`result.resolvedA/B.purchasePriceCents`, else `outcomeA/B` for older saves); any field is `null` when it was not saved (e.g. no result). Inputs and the full result are left out to keep the list small.
 
 ### POST /api/scenarios
 Request: `{ name, profile, choiceA, choiceB, assumptions, result? }`. `name` 1 to 100 characters; `profile`, `choiceA`, `choiceB`, `assumptions` (and `result` if given) must be objects.
