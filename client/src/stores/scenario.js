@@ -149,6 +149,12 @@ export const useScenarioStore = defineStore('scenario', {
       this.savedKey = this.inputsKey;
       this.savedProfiles = null; // a new save: load the answers again next time
     },
+    // The saved scenario was deleted elsewhere: these inputs no longer belong to one.
+    forgetSavedScenario() {
+      this.savedId = null;
+      this.savedName = null;
+      this.savedKey = null;
+    },
     // Logging out: the plan no longer belongs to a saved scenario, and the saved answers must not be offered to
     // whoever logs in next.
     forgetSaved() {

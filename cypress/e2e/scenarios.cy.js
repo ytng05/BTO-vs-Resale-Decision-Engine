@@ -112,6 +112,25 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=scenarios-list] li').should('have.length', 1).and('contain', 'Tampines BTO vs Tampines resale');
   });
 
+    it('keeps a typed name on Update, even one shaped like "X BTO vs Y resale"', () => {
+    registerFreshUser();
+    completePlan(); // Tampines BTO vs Bedok resale
+    cy.get('[data-cy=results-save-button]').click();
+    cy.get('[data-cy=results-save-name-input]').clear().type('Punggol BTO vs Yishun resale');
+    cy.get('[data-cy=results-save-submit]').click();
+    cy.get('[data-cy=results-save-success]').should('contain', 'Punggol BTO vs Yishun resale');
+
+    cy.get('[data-cy=results-edit-button]').click();
+    fillPath('pathb', { town: 'TAMPINES' });
+    next();
+    seeResults();
+    cy.get('[data-cy=results-update-button]').click();
+    cy.get('[data-cy=results-save-success]').should('contain', 'Punggol BTO vs Yishun resale');
+
+    cy.visit('/scenarios');
+    cy.get('[data-cy=scenarios-list] li').should('have.length', 1).and('contain', 'Punggol BTO vs Yishun resale');
+  });
+
   it('offers each About you box its saved answers, and fills only that box', () => {
     registerFreshUser();
     completePlan();
@@ -165,5 +184,19 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '').focus();
     cy.get('[data-cy=situation-autofill-option]', { timeout: 30000 }).should('have.text', '30').click();
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '30');
+  });
+
+    it('shows Saved, not Update, after opening a saved scenario without changing it', () => {
+    registerFreshUser();
+    completePlan();
+    cy.get('[data-cy=results-save-button]').click();
+    cy.get('[data-cy=results-save-submit]').click();
+    cy.get('[data-cy=results-save-success]').should('be.visible');
+
+    cy.visit('/scenarios');
+    cy.get('[data-cy=scenarios-open-button]').click();
+    cy.location('pathname').should('eq', '/results');
+    cy.get('[data-cy=results-save-success]').should('be.visible');
+    cy.get('[data-cy=results-update-button]').should('not.exist');
   });
 });
