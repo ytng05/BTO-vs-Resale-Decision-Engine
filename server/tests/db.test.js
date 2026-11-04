@@ -113,6 +113,29 @@ describe.skipIf(!uri)('with a real MongoDB', () => {
     expect(saved.body.scenario.evaluationStartYear).toBe(new Date().getFullYear());
   });
 
+  it('lists a summary from the nested choice and result fields, only for the owner', async () => {
+    const owner = await register('frank@example.com');
+    const other = await register('grace@example.com');
+    const result = {
+      ...scenario.result,
+      gapBreakdown: { marginCents: -250_000 },
+      resolvedA: { purchasePriceCents: 54_050_000 },
+      resolvedB: { purchasePriceCents: 68_000_000 },
+    };
+    await request(app).post('/api/scenarios').set(auth(owner)).send({ ...scenario, result });
+    await request(app).post('/api/scenarios').set(auth(other)).send({ ...scenario, name: 'Not yours' });
+
+    const list = (await request(app).get('/api/scenarios').set(auth(owner))).body.scenarios;
+    expect(list).toHaveLength(1);
+    expect(list[0].name).toBe(scenario.name);
+    expect(list[0].summary).toEqual({
+      btoTown: 'TAMPINES', btoFlatType: '4 ROOM', resaleTown: 'BEDOK', resaleFlatType: '4 ROOM',
+      ahead: 'B', btoPriceCents: 54_050_000, resalePriceCents: 68_000_000,
+    });
+    // Only the summary fields come back, not the rest of the inputs or result.
+    expect(list[0]).not.toHaveProperty('choiceA');
+    expect(list[0]).not.toHaveProperty('result');
+  });
 
   it('never shows one user’s scenario to another', async () => {
     const owner = await register('carol@example.com');

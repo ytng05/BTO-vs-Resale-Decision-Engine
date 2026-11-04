@@ -5,6 +5,7 @@ import { Scenario } from '../models/Scenario.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireDb } from '../middleware/requireDb.js';
 import { loadRuleset } from '../engine/rules/loadRuleset.js';
+import { SUMMARY_FIELDS, scenarioSummary } from '../services/scenarioSummary.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -39,15 +40,19 @@ function validateScenario(req, res, next) {
   return next();
 }
 
-// GET /api/scenarios -> { scenarios: [{ id, name, rulesetVersion, createdAt, updatedAt }] }, newest first.
-// The list leaves out the inputs and result to stay small; GET /:id returns everything.
+// GET /api/scenarios -> { scenarios: [{ id, name, rulesetVersion, createdAt, updatedAt, summary }] }, newest first.
+// The list leaves out the inputs and result to stay small, apart from the few fields My scenarios filters on
+// (summary, services/scenarioSummary.js); GET /:id returns everything.
 router.get('/', requireDb, async (req, res, next) => {
   try {
     const docs = await Scenario.find({ userId: req.user.id })
-      .select('name rulesetVersion createdAt updatedAt')
+      .select(['name', 'rulesetVersion', 'createdAt', 'updatedAt', ...SUMMARY_FIELDS].join(' '))
       .sort({ updatedAt: -1 })
       .lean();
-    res.json({ scenarios: docs.map(toJson) });
+    const scenarios = docs.map(({ _id, name, rulesetVersion, createdAt, updatedAt, ...saved }) => ({
+      id: String(_id), name, rulesetVersion, createdAt, updatedAt, summary: scenarioSummary(saved),
+    }));
+    res.json({ scenarios });
   } catch (err) {
     next(err);
   }
