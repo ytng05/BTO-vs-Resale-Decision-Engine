@@ -548,14 +548,12 @@ const detailLine = computed(() => ({
 }
 .dash-main__content { display: flex; flex-direction: column; gap: clamp(32px, 4vw, 48px); min-width: 0; }
 
-/* Cards: white, thin border, lift-free; pink border on hover, as on the home page. */
+/* Cards: white, thin border. No hover effect: the panels aren't clickable, so only real buttons move. */
 .dash-main :deep(.dash-panel) {
   display: flex; flex-direction: column; gap: var(--space-4);
   padding: clamp(20px, 3vw, 32px); border-radius: var(--radius-lg);
   background: var(--bg-surface); border: 1px solid var(--border-subtle);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
-.dash-main :deep(.dash-panel:hover) { border-color: var(--accent-fill-2); box-shadow: 0 14px 34px rgba(240, 138, 182, 0.14); }
 .dash-main :deep(.dash-panel__title) { margin: 0; font-family: var(--font-heading); font-size: 1.375rem; font-weight: 600; }
 
 /* What-if: a white card with a pink "live" box at the top. */

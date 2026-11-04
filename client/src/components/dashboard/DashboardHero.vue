@@ -100,9 +100,10 @@ const rows = computed(() => {
   ];
 });
 
-// Listing-style badges, as on property sites: the path ahead in the comparison year gets "★ Ahead in {year}" (net
+// Listing-style badges, as on property sites: the path ahead in the comparison year gets "Ahead in {year}" (net
 // position is measured in that one year, D1; "ahead in" matches "comes out ahead"); the other path gets
 // what it's better at, if anything (keys sooner, or less cash up front). Nothing when it's too close to call.
+// Plain text only: no emoji or symbols in the badges.
 const ym = (d) => { const m = String(d ?? '').match(/^(\d{4})-(\d{2})/); return m ? Number(m[1]) * 12 + Number(m[2]) : null; };
 const monthsText = (n) => {
   const y = Math.floor(n / 12); const m = n % 12;
@@ -114,14 +115,14 @@ const badges = computed(() => {
   if (!c || c.close || !['bto', 'resale'].includes(c.winner)) return out;
   const win = c.winner;
   const other = win === 'bto' ? 'resale' : 'bto';
-  out[win] = { icon: '★', text: props.horizon ? `Ahead in ${props.horizon}` : 'Comes out ahead', tone: 'win' };
+  out[win] = { text: props.horizon ? `Ahead in ${props.horizon}` : 'Comes out ahead', tone: 'win' };
   const o = { bto: props.outcomeA, resale: props.outcomeB };
   const kw = ym(o[win].timeline?.keyCollectionDate);
   const ko = ym(o[other].timeline?.keyCollectionDate);
   if (kw && ko && ko < kw) {
-    out[other] = { icon: '⚡', text: `Keys ${monthsText(kw - ko)} sooner`, tone: 'plus' };
+    out[other] = { text: `Keys ${monthsText(kw - ko)} sooner`, tone: 'plus' };
   } else if ((o[other].cashRequiredAtPurchaseCents ?? Infinity) < (o[win].cashRequiredAtPurchaseCents ?? -Infinity)) {
-    out[other] = { icon: '◆', text: 'Less cash up front', tone: 'plus' };
+    out[other] = { text: 'Less cash up front', tone: 'plus' };
   }
   return out;
 });
@@ -159,7 +160,7 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
         </span>
         <span v-if="call?.close || call?.winner === 'level'" class="dash-hero__eyebrow" data-cy="dashboard-verdict-eyebrow">{{ eyebrow }}</span>
       </div>
-      <p class="dash-hero__flip mb-0" role="status" aria-live="polite" data-cy="dashboard-flip"><span v-if="flipped"><span aria-hidden="true">⇄ </span>{{ flipped }}</span></p>
+      <p class="dash-hero__flip mb-0" role="status" aria-live="polite" data-cy="dashboard-flip"><span v-if="flipped">{{ flipped }}</span></p>
       <!-- The final headline is in the DOM from the start (visually hidden) for screen readers and tests; the counting
            copy is aria-hidden, so nobody reads a number on its way up from S$0. -->
       <h1 id="dashboard-heading" class="dash-hero__headline" data-cy="dashboard-headline"><span class="visually-hidden">{{ headline }}</span><span aria-hidden="true">{{ parts.before }}<span class="dash-hero__amount">{{ amountText }}</span>{{ parts.after }}</span></h1>
@@ -180,7 +181,7 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
         <div class="dash-hero__row-head">
           <span class="dash-hero__name">
             <span><span class="dash-hero__key" :class="`dash-hero__key--${r.key}`" aria-hidden="true"></span>{{ r.label }} · {{ r.place }}</span>
-            <span v-if="badges[r.key]" class="dash-hero__badge" :class="`dash-hero__badge--${badges[r.key].tone}`" :data-cy="`dashboard-badge-${r.key}`"><span aria-hidden="true">{{ badges[r.key].icon }} </span>{{ badges[r.key].text }}</span>
+            <span v-if="badges[r.key]" class="dash-hero__badge" :class="`dash-hero__badge--${badges[r.key].tone}`" :data-cy="`dashboard-badge-${r.key}`">{{ badges[r.key].text }}</span>
           </span>
           <strong class="text-numeric" :data-cy="`dashboard-summary-${r.key}-net`"><span class="visually-hidden">{{ r.final }}</span><span aria-hidden="true">{{ r.value }}</span></strong>
         </div>
