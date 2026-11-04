@@ -1,4 +1,4 @@
-// Results page: the winner-first summary, the side-by-side numbers, the next step and the hover chart (mock data).
+// Results page: the winner-first summary, the two path cards, the next step and the hover chart (mock data).
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 import { completePlan } from './helpers/plan.js';
 
@@ -21,23 +21,6 @@ describe('results verdict', () => {
     });
   });
 
-  it('shows the numbers that matter side by side, with the better side tinted', () => {
-    completePlan();
-    cy.get('[data-cy=results-key-comparison]').should('be.visible');
-    ['position', 'cash', 'spent', 'grants', 'keys'].forEach((id) => {
-      cy.get(`[data-cy=results-key-row-${id}]`).should('be.visible');
-      cy.get(`[data-cy=results-key-${id}-bto]`).invoke('text').should('not.be.empty');
-      cy.get(`[data-cy=results-key-${id}-resale]`).invoke('text').should('not.be.empty');
-    });
-  });
-
-  it('links the grants row to the reasons on the path cards', () => {
-    completePlan();
-    cy.get('[data-cy=results-key-grants-link]').click();
-    cy.get('[data-cy=results-patha-card]').should('be.visible');
-    cy.focused().should('have.attr', 'id', 'path-details-title');
-  });
-
   it('shows a Back to top button after scrolling, and it returns to the top', () => {
     completePlan();
     cy.get('[data-cy=back-to-top]').should('not.exist');
@@ -47,9 +30,33 @@ describe('results verdict', () => {
     cy.get('[data-cy=back-to-top]').should('not.exist');
   });
 
-  it('uses the team name, "net position", in the table and on the path cards', () => {
+  it('has no side-by-side table on Results (it lives on the Dashboard)', () => {
     completePlan();
-    cy.get('[data-cy=results-key-row-position]').should('contain', 'Net position');
+    cy.get('[data-cy=results-verdict]').should('be.visible');
+    cy.get('[data-cy=results-key-comparison]').should('not.exist');
+  });
+
+  it('explains each path in three plain lines, with the exact parts in "Full breakdown"', () => {
+    completePlan();
+    ['results-patha', 'results-pathb'].forEach((p) => {
+      cy.get(`[data-cy=${p}-summary-value]`).should('be.visible').and('contain', 'Your flat is worth about');
+      cy.get(`[data-cy=${p}-summary-owed]`).should('be.visible').and('contain', 'still pay back');
+      cy.get(`[data-cy=${p}-summary-cash]`).should('be.visible').and('contain', 'in cash');
+      cy.get(`[data-cy=${p}-grants-total]`).should('be.visible');
+      cy.get(`[data-cy=${p}-breakdown]`).should('not.be.visible');
+      cy.get(`[data-cy=${p}-full-breakdown] summary`).click();
+      cy.get(`[data-cy=${p}-breakdown]`).should('be.visible');
+    });
+  });
+
+  it('opens the full breakdown from "Why" next to the grants', () => {
+    completePlan();
+    cy.get('[data-cy=results-patha-grants-why]').click();
+    cy.get('[data-cy=results-patha-eligibility]').should('be.visible');
+  });
+
+  it('uses the team name, "net position", on the path cards', () => {
+    completePlan();
     cy.get('[data-cy=results-patha-card]').should('contain', 'Net position').and('contain', 'what this path leaves you with, after costs');
   });
 
@@ -94,10 +101,4 @@ describe('results verdict', () => {
     });
   });
 
-  it('adds a Difference column to the side-by-side table, in words', () => {
-    completePlan();
-    ['position', 'cash', 'spent', 'grants', 'keys'].forEach((id) => {
-      cy.get(`[data-cy=results-key-${id}-diff]`).invoke('text').should('match', /more with|less with|sooner with|Same for both/);
-    });
-  });
 });
