@@ -183,13 +183,14 @@ async function showWhy() {
 
 <style scoped>
 /* Spacing follows the design mockup: roomy card, larger figures, rows with air between them. */
-/* BTO in its indigo, resale in pink (as the verdict, bars and Dashboard). The card lifts a little on hover; the
-   "ahead" ring stays on while it does (the shared .card hover swaps the shadow, which made the ring flash). */
-.path { border-top: 6px solid var(--accent-deep); transition: box-shadow var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out); }
-.path:hover, .path:focus-within { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-.path.compare-card--winner { border-color: var(--accent-deep); box-shadow: 0 0 0 2px var(--accent-deep), var(--shadow-sm); }
-.path.compare-card--winner:hover, .path.compare-card--winner:focus-within { box-shadow: 0 0 0 2px var(--accent-deep), var(--shadow-md); }
-.path--resale { border-top-color: var(--accent-fill-1); }
+/* Each card is outlined in its path's colour, BTO indigo and resale pink (as the verdict, bars and Dashboard); the
+   path ahead is said in words by its "Ahead" tag. The card lifts a little on hover and keeps its outline while it
+   does (the shared .card hover swaps the shadow, which made the outline flash). */
+.path { --path-ring: var(--accent-deep); border-color: var(--path-ring); border-top: 6px solid var(--path-ring); box-shadow: 0 0 0 1px var(--path-ring), var(--shadow-sm); transition: box-shadow var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out); }
+.path--resale { --path-ring: var(--accent-fill-1); }
+.path:hover, .path:focus-within { transform: translateY(-3px); box-shadow: 0 0 0 1px var(--path-ring), var(--shadow-md); }
+.path.compare-card--winner { border-color: var(--path-ring); box-shadow: 0 0 0 1px var(--path-ring), var(--shadow-sm); }
+.path.compare-card--winner:hover, .path.compare-card--winner:focus-within { box-shadow: 0 0 0 1px var(--path-ring), var(--shadow-md); }
 .path > .card-body { padding: 1.75rem 1.75rem 1.5rem; }
 .path__pill {
   display: inline-block;
