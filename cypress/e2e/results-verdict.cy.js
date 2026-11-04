@@ -62,13 +62,14 @@ describe('results verdict', () => {
     cy.get('[data-cy=results-patha-card]').should('contain', 'Net position').and('contain', 'what this path leaves you with, after costs');
   });
 
-  it('folds the heatmap, which opens with the break-even sentence and the term explained (D35, D40)', () => {
+  it('keeps the break-even sentence in view under the verdict, with the full grid folded one click away (D35, D40, D43)', () => {
     completePlan();
+    cy.get('[data-cy=results-breakeven] [data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
+    cy.get('[data-cy=results-breakeven] [data-cy=term-break-even-button]').should('be.visible');
     cy.get('[data-cy=results-section-heatmap]').should('not.have.attr', 'open');
-    cy.get('[data-cy=results-section-heatmap] > summary').click();
+    cy.get('[data-cy=results-heatmap-open]').click();
     cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open');
-    cy.get('[data-cy=results-section-heatmap] [data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
-    cy.get('[data-cy=results-section-heatmap] [data-cy=term-break-even-button]').should('be.visible');
+    cy.focused().should('have.attr', 'id', 'heatmap-title');
     cy.get('td[data-cy^=heatmap-cell-]').should('have.length', 36); // the mock grid is 6 by 6
   });
 

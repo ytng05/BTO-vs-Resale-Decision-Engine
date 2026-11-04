@@ -64,7 +64,7 @@ describe('responsive layout', () => {
 
       it('/results and the dashboard fit the screen after a full plan', () => {
         completePlan();
-        cy.get('[data-cy=results-breakeven-sentence]').should('exist');
+        cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
         fitsWidth();
         leavesRoomToRead();
         cy.get('[data-cy=results-dashboard-button]').click();

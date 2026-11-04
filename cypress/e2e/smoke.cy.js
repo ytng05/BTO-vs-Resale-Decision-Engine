@@ -35,7 +35,7 @@ describe('smoke', () => {
     next(); // resale flat -> results
     seeResults();
     cy.location('pathname').should('eq', '/results');
-    cy.get('[data-cy=results-breakeven-sentence]').should('exist');
+    cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
     cy.get('[data-cy^=heatmap-cell-]').should('have.length.greaterThan', 0);
   });
 

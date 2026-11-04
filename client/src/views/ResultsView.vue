@@ -68,9 +68,9 @@ const userPoint = computed(() => ({
   incomeGrowth: store.assumptions.annualIncomeGrowth,
 }));
 
-// Progressive disclosure (redesign, 4 Nov 2026): the answer and the two path cards are open; the chart over time, the
-// heatmap with the break-even sentence (D35, D40; its takeaway line stays in view), when to apply and the official
-// steps open on request (DashboardSection), each with a one-line takeaway.
+// Progressive disclosure (redesign, 4 Nov 2026): the answer, the break-even and BTO price sentences (D35, D40, D43)
+// and the two path cards are open; the chart over time, the full heatmap, when to apply and the official steps open
+// on request (DashboardSection), each with a one-line takeaway.
 const sections = ref({ chart: false, heatmap: false, timing: false, steps: false });
 
 // Open a folded part, then move to its heading with focus, so keyboard and screen-reader users land there too.
@@ -81,6 +81,10 @@ async function openAndGo(id) {
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   el.focus({ preventScroll: true });
+}
+function openGrid() {
+  sections.value = { ...sections.value, heatmap: true };
+  openAndGo('heatmap-title');
 }
 function jumpToSteps() {
   sections.value = { ...sections.value, steps: true };
@@ -241,6 +245,22 @@ onMounted(load);
         />
         <h1 v-else class="hero-statement">Your result</h1>
 
+        <!-- Would the answer change: the break-even sentence (D35, D43) and the BTO price where the verdict flips (D40),
+             always in view under the verdict. The full grid is folded under More detail. -->
+        <section
+          v-if="result.breakEvenSentence || result.btoPriceSentence"
+          class="breakeven"
+          aria-label="Would the answer change?"
+          data-cy="results-breakeven"
+        >
+          <p v-if="result.breakEvenSentence" class="breakeven__sentence" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</p>
+          <p v-if="result.btoPriceSentence" class="breakeven__sentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
+          <p class="breakeven__note">
+            The <Term id="break-even">break-even</Term> line is not a prediction of prices.
+            <button type="button" class="breakeven__link d-print-none" data-cy="results-heatmap-open" @click="openGrid">See every combination</button>
+          </p>
+        </section>
+
         <!-- 2. The two prices everything rests on, in one line; where each came from one click away (D26, D33, D39). -->
         <section class="basis" aria-label="The prices we used" data-cy="results-price-basis">
           <div class="basis__strip">
@@ -336,11 +356,6 @@ onMounted(load);
               heading-id="heatmap-title"
               cy="results-section-heatmap"
             >
-              <div v-if="result.breakEvenSentence || result.btoPriceSentence" class="breakeven">
-                <p v-if="result.breakEvenSentence" class="breakeven__sentence" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</p>
-                <p v-if="result.btoPriceSentence" class="breakeven__sentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
-                <p class="breakeven__note">The <Term id="break-even">break-even</Term> line is not a prediction of prices.</p>
-              </div>
               <ul class="heatmap-guide text-secondary" data-cy="results-heatmap-guide">
                 <li>Nobody knows how fast flat prices or incomes will grow, so each square tries one combination: flat price growth a year across the top, income growth a year down the side.</li>
                 <li>The colour says which path leaves you better off<template v-if="horizonYear"> in {{ horizonYear }}</template>: dark for BTO, pink for resale, grey when they're about level.</li>
@@ -415,9 +430,12 @@ onMounted(load);
 .next__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .next__save { margin-bottom: 0 !important; }
 
-.breakeven { margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--indigo-tint); }
-.breakeven__sentence { margin: 0 0 var(--space-2); line-height: 1.5; }
+/* Would the answer change (break-even, D40) */
+.breakeven { padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--indigo-tint); }
+.breakeven__sentence { margin: 0 0 var(--space-2); line-height: 1.5; max-width: 90ch; }
 .breakeven__note { margin: 0; font-size: 0.8125rem; color: var(--text-secondary); }
+.breakeven__link { margin-left: var(--space-2); padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--text-primary); text-decoration: underline; cursor: pointer; }
+.breakeven__link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
 .heatmap-guide { margin: 0 0 var(--space-3); padding-left: 1.1rem; font-size: 0.9375rem; line-height: 1.5; }
 .heatmap-guide li + li { margin-top: var(--space-1); }
 </style>

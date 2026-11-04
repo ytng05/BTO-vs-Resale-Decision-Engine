@@ -17,8 +17,6 @@ describe('glossary and terms', () => {
     cy.get('[data-cy=term-ehg-definition]').first().should('not.be.visible');
     cy.focused().should('have.attr', 'data-cy', 'term-ehg-button');
 
-    // "break-even" is in the heatmap section, folded by default: open it first.
-    cy.get('[data-cy=results-section-heatmap] > summary').click();
     cy.get('[data-cy=term-break-even-button]').first().scrollIntoView().click();
     cy.get('[data-cy=term-break-even-definition]').first().contains('More in the glossary').click();
     cy.location('pathname').should('eq', '/sources');
@@ -29,11 +27,8 @@ describe('glossary and terms', () => {
   it('keeps every definition on screen at 375px, with no sideways scrolling', () => {
     cy.viewport(375, 667);
     completePlan();
-    // Some terms (grant names, "CPF to put back") are inside each path card's "Full breakdown", and "break-even" is in
-    // the heatmap section, folded by default: open them first.
+    // Some terms (grant names, "CPF to put back") are inside each path card's "Full breakdown": open it first.
     cy.get('[data-cy$=-full-breakdown] > summary').click({ multiple: true });
-    cy.get('[data-cy=results-section-heatmap] > summary').click();
-    cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open');
     cy.get('[data-cy$=-button][data-cy^=term-]').each(($btn) => {
       cy.wrap($btn).scrollIntoView().click();
       cy.get(`#${$btn.attr('aria-controls')}`).should('be.visible').then(($pop) => {
