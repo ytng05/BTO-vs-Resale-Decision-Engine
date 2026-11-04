@@ -427,7 +427,7 @@ onBeforeUnmount(() => clearTimeout(timer));
         </div>
       </fieldset>
       <div class="pair">
-                <div class="big-field" @focusout="onFieldFocusOut">
+          <div class="big-field" @focusout="onFieldFocusOut">
           <label for="cash-savings" class="big-field__group">Cash savings (both of you)</label>
           <div class="big-box">
             <span class="big-box__unit" aria-hidden="true">S$</span>

@@ -199,4 +199,22 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=results-save-success]').should('be.visible');
     cy.get('[data-cy=results-update-button]').should('not.exist');
   });
+
+    it('offers Save scenario again after the saved scenario is deleted on My scenarios', () => {
+    registerFreshUser();
+    completePlan();
+    cy.get('[data-cy=results-save-button]').click();
+    cy.get('[data-cy=results-save-submit]').click();
+    cy.get('[data-cy=results-save-success]').should('be.visible');
+
+    cy.get('[data-cy=results-save-scenarios-link]').click();
+    cy.get('[data-cy=scenarios-delete-button]').click();
+    cy.get('[data-cy=scenarios-delete-confirm]').click();
+    cy.get('[data-cy=scenarios-empty]').should('be.visible');
+
+    // Back to Results through the navbar (not cy.visit, which would reload and empty the store).
+    cy.get('[data-cy=nav-results-link]').click({ force: true });
+    cy.get('[data-cy=results-save-success]').should('not.exist');
+    cy.get('[data-cy=results-save-button]').should('be.visible');
+  });
 });
