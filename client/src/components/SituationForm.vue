@@ -326,7 +326,8 @@ onBeforeUnmount(() => clearTimeout(timer));
   border-radius: 16px; background: var(--bg-surface); border: 1.5px solid var(--border);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.big-box:focus-within { border-color: var(--text-primary); box-shadow: 0 0 0 4px var(--accent-fill-2); }
+/* The transparent outline shows in Windows high-contrast mode, which drops box-shadow. */
+.big-box:focus-within { border-color: var(--text-primary); box-shadow: 0 0 0 4px var(--accent-fill-2); outline: 2px solid transparent; }
 .big-box:has(.is-invalid) { border-color: var(--danger); }
 .big-box__input {
   flex: 1; min-width: 0; padding: 0; border: 0; outline: none; background: transparent;

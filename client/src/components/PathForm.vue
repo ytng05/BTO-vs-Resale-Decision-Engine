@@ -447,7 +447,8 @@ const LIVING = [
 .pf__label { margin: 0; font-size: 17px; font-weight: 600; } /* = About you's field labels (big-field__group) */
 /* Fields match About you's boxes: 64px, 16px corners; focus is an ink border with the soft ring. */
 .pf__select { height: 64px; border-radius: 16px; border: 1.5px solid var(--border); font-size: 17px; font-weight: 500; padding-inline: 18px 44px; }
-.pf__select:focus { border-color: var(--text-primary); box-shadow: 0 0 0 4px var(--accent-fill-2); outline: none; }
+/* The transparent outline shows in Windows high-contrast mode, which drops box-shadow. */
+.pf__select:focus { border-color: var(--text-primary); box-shadow: 0 0 0 4px var(--accent-fill-2); outline: 2px solid transparent; }
 .pf__hint { margin: 0; font-size: 14px; color: var(--text-secondary); line-height: 1.45; }
 
 .est { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: 20px; background: var(--indigo-tint); }
@@ -498,12 +499,16 @@ const LIVING = [
   display: flex; align-items: center; gap: 10px; height: 64px; padding: 0 18px; border-radius: 16px;
   border: 1.5px solid var(--border); background: var(--bg-surface); transition: border-color 0.15s, box-shadow 0.15s;
 }
-.pf__box:focus-within { border-color: var(--text-primary); box-shadow: 0 0 0 4px var(--accent-fill-2); }
+.pf__box:focus-within { border-color: var(--text-primary); box-shadow: 0 0 0 4px var(--accent-fill-2); outline: 2px solid transparent; }
 .pf__box--invalid { border-color: var(--danger); }
 .pf__unit { font-size: 16px; font-weight: 500; color: var(--text-secondary); }
 .pf__input { flex: 1; min-width: 0; padding: 0; border: 0; outline: none; background: transparent; font-size: 22px; font-weight: 600; color: var(--text-primary); }
 /* Five lease bands on one row from a small laptop up; two rows on phones. */
 @media (max-width: 575.98px) {
+  /* The same phone sizes as About you's .big-box (SituationForm). */
+  .pf__box { height: 56px; padding: 0 14px; }
+  .pf__select { height: 56px; padding-inline: 14px 44px; }
+  .pf__input { font-size: 19px; }
   .choice-row--five { flex-wrap: wrap; }
   .choice-row--five .choice { flex: 1 1 calc(33% - 8px); }
 }
