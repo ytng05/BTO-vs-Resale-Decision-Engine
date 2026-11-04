@@ -261,7 +261,7 @@ const LIVING = [
             <template v-if="activeFlat">
               <br /><span class="est__meta" :data-cy="`${prefix}-price-basis`">
                 Price used: <strong class="est__price" :data-cy="`${prefix}-price-estimate`">{{ formatMoney(midpointCents / 100) }}</strong>, the middle of HDB's
-                <span class="est__range">{{ formatMoney(activeFlat.priceMinCents / 100) }}–{{ formatMoney(activeFlat.priceMaxCents / 100).replace('S$', '') }} range</span>
+                <span class="est__range">{{ formatMoney(activeFlat.priceMinCents / 100) }}–{{ formatMoney(activeFlat.priceMaxCents / 100).replace('S$', '') }}</span> range
               </span>
             </template>
           </p>
@@ -454,7 +454,7 @@ const LIVING = [
 .est { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: 20px; background: var(--indigo-tint); }
 .est__line { display: flex; gap: 14px; align-items: flex-start; }
 .est__ic { flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px; background: var(--indigo-tint-strong); display: grid; place-items: center; }
-.est__line p { margin: 0; font-size: 16px; line-height: 1.5; }
+.est__line p { flex: 1; min-width: 0; margin: 0; font-size: 16px; line-height: 1.5; } /* min-width: 0 lets it wrap inside the card */
 .est__meta { font-size: 15px; color: var(--text-secondary); }
 .est__price { color: var(--text-primary); font-weight: 600; } /* the figure the comparison uses (#107) */
 .est__range { white-space: nowrap; } /* the range never splits at its dash */
@@ -511,6 +511,9 @@ const LIVING = [
   .pf__input { font-size: 19px; }
   .choice-row--five { flex-wrap: wrap; }
   .choice-row--five .choice { flex: 1 1 calc(33% - 8px); }
+  .est { padding: 16px; }
+  .est__line { gap: 10px; }
+  .est__ic { width: 34px; height: 34px; }
 }
 .choice { position: relative; flex: 1 1 0; min-width: 0; margin: 0; } /* three across at every width */
 .choice__face {
