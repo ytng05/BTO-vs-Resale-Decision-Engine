@@ -74,11 +74,13 @@ describe('buyers on the About you step', () => {
       const stops = [...$form[0].querySelectorAll('input, button')]
         .filter((el) => el.type !== 'radio' || el.checked)
         .map((el) => el.dataset.cy);
-      expect(stops.slice(1)).to.deep.equal([
+      // First Back and the stepper's link to the step already reached (What matters), then the form.
+      expect(stops.slice(0, 2)).to.deep.equal(['plan-step-back', 'stepper-go-1']);
+      expect(stops.slice(2)).to.deep.equal([
         'situation-buyer-1-citizenship-SC', 'situation-buyer-1-first-timer-switch',
         'situation-buyer-2-citizenship-SC', 'situation-buyer-2-first-timer-switch',
         'about-why', 'plan-step-next',
-      ]); // stops[0] is Back
+      ]);
     });
     // The switch: on by default, named by its "First-timer" label, its state also in words.
     cy.get('[data-cy=situation-buyer-1-first-timer-switch]')
