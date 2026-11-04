@@ -203,7 +203,7 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
 .dash-hero__answer {
   display: flex; flex-direction: column; gap: var(--space-3);
   padding: clamp(24px, 3.5vw, 40px); border-radius: var(--radius-lg);
-  background: var(--text-primary); color: var(--on-primary);
+  background: var(--path-bto); color: var(--on-primary); /* the same indigo card as Results */
 }
 .dash-hero__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .dash-hero__ruleset { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.1); font-size: 0.8125rem; }
@@ -231,8 +231,8 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
 .dash-hero__row-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); font-size: 0.9375rem; }
 .dash-hero__row-head strong { font-size: 1.375rem; letter-spacing: -0.01em; }
 .dash-hero__key { display: inline-block; width: 8px; height: 8px; margin-right: var(--space-2); border-radius: 50%; vertical-align: 1px; }
-.dash-hero__key--bto, .dash-hero__fill--bto { background: var(--text-primary); }
-.dash-hero__key--resale, .dash-hero__fill--resale { background: var(--color-pink-deep); }
+.dash-hero__key--bto, .dash-hero__fill--bto { background: var(--path-bto); }
+.dash-hero__key--resale, .dash-hero__fill--resale { background: var(--path-resale-bar); }
 .dash-hero__track { display: block; height: 12px; border-radius: var(--radius-pill); background: var(--bg-page); overflow: hidden; }
 .dash-hero__fill { display: block; height: 100%; border-radius: var(--radius-pill); transform-origin: left; transition: width var(--duration-base) var(--ease-out); animation: hero-grow 1s 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 .dash-hero__row + .dash-hero__row .dash-hero__fill { animation-delay: 0.5s; }
@@ -251,7 +251,7 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
 .dash-hero__was { font-size: 0.8125rem; color: var(--text-secondary); }
 .dash-hero__name { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
 .dash-hero__badge { padding: 2px var(--space-3); border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 600; animation: hero-pop 0.5s 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-.dash-hero__badge--win { background: var(--text-primary); color: var(--on-primary); }
+.dash-hero__badge--win { background: var(--path-bto); color: var(--on-primary); }
 .dash-hero__badge--plus { background: var(--accent-fill-2); color: var(--color-berry); }
 /* While a What-if recalculates, the numbers dim a little. */
 .dash-hero__headline, .dash-hero__row strong { transition: opacity 0.2s ease; }

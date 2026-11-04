@@ -60,8 +60,8 @@ const amounts = computed(() => {
 .cash-ring__dial { position: relative; width: 7.5rem; height: 7.5rem; }
 .cash-ring__svg { width: 100%; height: 100%; display: block; }
 .cash-ring__track { stroke: var(--accent-fill-3); }
-.cash-ring__bar--bto { stroke: var(--primary); }
-.cash-ring__bar--resale { stroke: var(--accent-fill-1); }
+.cash-ring__bar--bto { stroke: var(--path-bto); }
+.cash-ring__bar--resale { stroke: var(--path-resale-bar); }
 .cash-ring__pct {
   position: absolute;
   inset: 0;

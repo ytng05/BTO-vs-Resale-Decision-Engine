@@ -63,8 +63,8 @@ const cards = computed(() => [
   <section class="dash-panel" aria-labelledby="paid-heading" data-cy="dashboard-paid">
     <div class="dash-paid__top">
       <div>
-        <h2 id="paid-heading" class="dash-panel__title">How you'd pay for it</h2>
-        <p v-if="cashSavings !== null" class="text-secondary mb-0">
+        <h2 id="paid-heading" class="section-head__title">How you'd pay for it</h2>
+        <p v-if="cashSavings !== null" class="section-head__sub">
           You have {{ formatMoney(cashSavings) }} cash<template v-if="cpfOa !== null"> and {{ formatMoney(cpfOa) }} CPF</template> today.
         </p>
       </div>

@@ -1,6 +1,6 @@
 <script setup>
 // Feature 2: the financial dashboard. Both paths, measured in the same year (contract v2, D1), in the home page's
-// style on a white page. Top to bottom: the answer (pink hero with the two net positions), whether today's savings
+// style (every page is white now, _tokens.scss $bg-app). Top to bottom: the answer (pink hero with the two net positions), whether today's savings
 // cover the cash, the notes no card already says, "At a glance" (one coloured tile per thing that matters), then
 // "How you'd pay for it" (both paths side by side), how the net position adds up, and "Explore the detail" (each
 // card opens its detail in a pop-up), with
@@ -146,10 +146,6 @@ watch(whatIf, () => {
   timer = setTimeout(run, 250);
 });
 onBeforeUnmount(() => clearTimeout(timer));
-// The dashboard sits on a white page, like Home (the other pages keep the mist page, so their white cards show).
-// The class is added while the dashboard is open and removed when you leave; the rule is in the unscoped style.
-onMounted(() => document.body.classList.add('is-white-page'));
-onBeforeUnmount(() => document.body.classList.remove('is-white-page'));
 
 const A = computed(() => result.value?.outcomeA);
 const B = computed(() => result.value?.outcomeB);
@@ -400,20 +396,20 @@ const detailLine = computed(() => ({
           <!-- How the net position adds up: always open, so the What-if panel's effect shows right here. -->
           <section class="dash-panel" aria-labelledby="cashflow-heading" data-cy="dashboard-section-cashflow">
             <div>
-              <h2 id="cashflow-heading" class="dash-panel__title">What-if analysis</h2>
-              <p class="text-secondary mb-0">How each net position adds up in {{ horizon }}. Move a slider on the right to see it change.</p>
+              <h2 id="cashflow-heading" class="section-head__title">How each net position adds up</h2>
+              <p class="section-head__sub">What each path leaves you with in {{ horizon }}, line by line. Move a What-if slider to see it change.</p>
             </div>
             <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
           </section>
 
           <section class="dash-explore" aria-labelledby="explore-heading" data-cy="dashboard-more-detail">
-            <h2 id="explore-heading" class="dash-explore__title">Explore the detail</h2>
+            <h2 id="explore-heading" class="section-head__title">Explore the detail</h2>
             <DashboardExplore :items="EXPLORE" :picked="openKey" @pick="openDetail" />
           </section>
 
           <!-- Before you decide -->
           <section class="dash-before" aria-labelledby="notes-heading">
-            <h2 id="notes-heading" class="dash-before__title">Before you decide</h2>
+            <h2 id="notes-heading" class="section-head__title mb-3">Before you decide</h2>
             <div class="row g-3">
               <div class="col-12 col-md-6">
                 <p class="dash-note mb-0" data-cy="dashboard-note-mop">
@@ -519,10 +515,10 @@ const detailLine = computed(() => ({
 </template>
 
 <style scoped>
-/* BTO in ink and resale in berry, as on the Results page, with pale tints behind (all pass 4.5:1). */
+/* The two path colours come from the path tokens (_tokens.scss): BTO indigo, resale berry/pink, as on Results. */
 .dash-e {
-  --dash-bto: var(--text-primary); --dash-bto-tint: var(--accent-fill-3); --dash-bto-pale: var(--bg-page);
-  --dash-resale: var(--color-berry); --dash-resale-tint: var(--accent-fill-2); --dash-resale-pale: var(--accent-tint);
+  --dash-bto: var(--path-bto); --dash-bto-tint: var(--path-bto-fill); --dash-bto-pale: var(--path-bto-tint);
+  --dash-resale: var(--path-resale); --dash-resale-tint: var(--path-resale-fill); --dash-resale-pale: var(--path-resale-tint);
   display: flex; flex-direction: column; gap: clamp(40px, 5vw, 64px);
 }
 /* The savings strip sits close under the hero. */
@@ -554,7 +550,6 @@ const detailLine = computed(() => ({
   padding: clamp(20px, 3vw, 32px); border-radius: var(--radius-lg);
   background: var(--bg-surface); border: 1px solid var(--border-subtle);
 }
-.dash-main :deep(.dash-panel__title) { margin: 0; font-family: var(--font-heading); font-size: 1.375rem; font-weight: 600; }
 
 /* What-if: a white card with a pink "live" box at the top. */
 .dash-sticky :deep(.dash-whatif) { border-radius: var(--radius-lg); border: 1px solid var(--border-subtle); box-shadow: 0 10px 30px rgba(60, 64, 90, 0.06); }
@@ -568,7 +563,6 @@ const detailLine = computed(() => ({
 
 /* Explore the detail */
 .dash-explore { display: flex; flex-direction: column; gap: var(--space-4); }
-.dash-explore__title { margin: 0; font-family: var(--font-heading); font-size: 1.375rem; font-weight: 600; }
 
 /* The detail pop-up: a dark backdrop over the page, a white box in the middle that scrolls inside if it's long.
    On phones it slides up from the bottom. */
@@ -625,7 +619,6 @@ const detailLine = computed(() => ({
 @media (prefers-reduced-motion: reduce) { .dash-modal, .dash-modal__box { animation: none; } .dash-chip-btn { transition: none; } }
 
 /* Before you decide */
-.dash-before__title { margin: 0 0 var(--space-3); font-family: var(--font-heading); font-size: 1.125rem; font-weight: 600; }
 /* Pale pink and pale indigo instead of grey. Compact, and the same height side by side (height: 100% in a .row).
    No hover lift: they aren't clickable, so only real buttons move. */
 .dash-note { height: 100%; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--accent-tint); border: 1px solid var(--accent-fill-2); font-size: 0.875rem; line-height: 1.5; }
@@ -633,11 +626,6 @@ const detailLine = computed(() => ({
 </style>
 
 <style>
-/* Dashboard (and Home): white page. The navbar reads --nav-surface so its bar matches. */
-/* While a detail pop-up is open, the page behind it doesn't scroll. */
+/* While a detail pop-up is open, the page behind it doesn't scroll. (Every page is white now: _tokens.scss.) */
 body.dash-modal-open { overflow: hidden; }
-body.is-white-page {
-  background-color: var(--bg-surface);
-  --nav-surface: color-mix(in srgb, var(--bg-surface) 92%, transparent);
-}
 </style>

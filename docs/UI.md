@@ -529,3 +529,9 @@ requirement.
    or correctness-critical, such as a failed-eligibility banner.
 3. **Dark mode is included as a stub idea only (§2.8)** and is not built — confirm this is out of scope for
    the grading, since it isn't a module requirement.
+
+  ### Page and path colours (4 Nov 2026)
+- Every page is white (`$bg-app`). `$bg-subtle` / `--bg-page` (mist) is for pale fills inside cards.
+- White boxes on the page carry a 1px `$border-subtle` border (or use `.card` / `.quiet-panel`).
+- BTO is always `--path-bto` (indigo); resale is `--path-resale` (berry, text) and `--path-resale-bar` (pink, bars).
+- Section headings use `.section-head`, `.section-head__title`, `.section-head__sub`.

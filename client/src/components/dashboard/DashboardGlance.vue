@@ -67,9 +67,9 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
 <template>
   <div class="glance-wrap">
   <section class="glance" aria-labelledby="glance-heading" data-cy="dashboard-side-by-side">
-    <div class="glance__head">
-      <h2 id="glance-heading" class="glance__title">At a glance</h2>
-      <p class="glance__sub">Who wins on each thing that matters.</p>
+    <div class="section-head">
+      <h2 id="glance-heading" class="section-head__title">At a glance</h2>
+      <p class="section-head__sub">Who wins on each thing that matters.</p>
     </div>
 
     <ul class="glance__tiles">
@@ -79,7 +79,6 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
         class="glance-tile"
         :class="`glance-tile--${t.theme}`"
         tabindex="0"
-        :title="t.hint"
         :data-cy="`dashboard-sbs-${t.id}`"
       >
         <span class="glance-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="t.icon" /></svg></span>
@@ -89,7 +88,7 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
           <span :class="{ 'is-bto': t.favours === 'a' }"><small>BTO</small> {{ short(t.a) }}</span>
           <span :class="{ 'is-resale': t.favours === 'b' }"><small>Resale</small> {{ short(t.b) }}</span>
         </span>
-        <span class="visually-hidden">{{ t.hint }}</span>
+        <span class="glance-tile__hint">{{ t.hint }}</span>
       </li>
     </ul>
 
@@ -147,9 +146,9 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
 <style scoped>
 .glance-wrap { display: flex; flex-direction: column; gap: clamp(40px, 5vw, 64px); }
 .glance { display: flex; flex-direction: column; gap: var(--space-6); }
-.glance__head { text-align: center; }
-.glance__title { margin: 0; font-family: var(--font-heading); font-size: clamp(1.75rem, 3vw, 2.5rem); font-weight: 600; letter-spacing: -0.03em; }
-.glance__sub { margin: var(--space-1) 0 0; color: var(--text-secondary); }
+/* The heading uses the shared .section-head (_components.scss), left-aligned like every other section. */
+/* What the tile measures, written out (it used to be a hover tooltip, which phones and screen readers miss). */
+.glance-tile__hint { font-size: 0.8125rem; line-height: 1.4; color: var(--text-secondary); }
 
 /* Tiles: as many per row as fit (5 on a laptop, 2 on a tablet, 1 on a phone). */
 .glance__tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
@@ -212,8 +211,8 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
 .glance-why__half { display: flex; }
 .glance-why__half--resale { justify-content: flex-end; border-right: 1.5px solid var(--text-primary); }
 .glance-why__half i { display: block; height: 100%; }
-.glance-why__half--resale i { background: var(--color-pink-deep); border-radius: 4px 0 0 4px; }
-.glance-why__half--bto i { background: var(--text-primary); border-radius: 0 4px 4px 0; }
+.glance-why__half--resale i { background: var(--path-resale-bar); border-radius: 4px 0 0 4px; }
+.glance-why__half--bto i { background: var(--path-bto); border-radius: 0 4px 4px 0; }
 .glance-why__amount { text-align: right; }
 .glance-why__row--total { font-weight: 700; border-top: 2px solid var(--text-primary); }
 .glance-why__row--total strong { grid-column: 2 / 4; text-align: right; }

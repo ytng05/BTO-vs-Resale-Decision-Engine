@@ -21,7 +21,8 @@ $info:      $info;
 $light:     $bg-surface;
 $dark:      $text-primary;
 
-$body-bg:    $bg-page;
+// White page on every route (4 Nov 2026).
+$body-bg:    $bg-app;
 $body-color: $text-primary;
 
 $border-color: $border;
@@ -79,7 +80,8 @@ $btn-padding-x-sm: $space-4;
 // 44px minimum touch target (UI.md §8/§11): with $font-size-base 1rem and the
 // padding above, computed button height clears 44px; verify in StyleGuide.vue
 // if $font-size-base or padding is ever changed.
-$btn-focus-box-shadow: 0 0 0 2px $bg-page, 0 0 0 4px $focus-ring; // 2px ring, 2px offset
+// The 2px gap in the focus ring is the page colour, so the ring looks detached from the button.
+$btn-focus-box-shadow: 0 0 0 2px $bg-app, 0 0 0 4px $focus-ring; // 2px ring, 2px offset
 $btn-focus-width: 0; // disable Bootstrap's default blurred focus ring; use the box-shadow ring above instead
 $btn-disabled-opacity: 0.5;
 $btn-hover-bg-shade-amount: 10%; // UI.md: hover darkens fill ~10%
@@ -96,7 +98,7 @@ $input-bg: $color-white;
 $input-disabled-bg: $surface-disabled;
 $input-placeholder-color: $text-tertiary;
 $input-focus-border-color: $focus-ring;
-$input-focus-box-shadow: 0 0 0 2px $bg-page, 0 0 0 4px $focus-ring;
+$input-focus-box-shadow: 0 0 0 2px $bg-app, 0 0 0 4px $focus-ring;
 $form-label-font-size: 0.8125rem;   // matches $type-scale label
 $form-label-font-weight: 500;
 $form-label-color: $text-primary;
@@ -106,8 +108,8 @@ $form-feedback-valid-color: $success;
 
 // ---- Cards (UI.md §8 Cards) ----------------------------------------------------------
 $card-bg: $bg-surface;
-$card-border-color: $border-subtle; // required — see UI.md §2.5: colour alone
-                                      // does not separate Meteor from Milky Way
+$card-border-color: $border-subtle; // required on a white page: the border, not the fill,
+                                    // is what separates a card from the page (UI.md §2.5)
 $card-border-radius: $radius-md;
 $card-box-shadow: $shadow-sm; // "at rest"; components.scss adds the hover step-up
 
