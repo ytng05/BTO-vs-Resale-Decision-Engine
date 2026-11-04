@@ -51,8 +51,8 @@ Rename one only in the same PR that updates the specs. `{n}` = buyer 1/2, `{pref
 3. Only then FEATURE 3 backtest (`FEATURE_BACKTEST=true`). Freeze new features around week 10 or 11.
 
 ### Results verdict
-`results-verdict`, `results-verdict-eyebrow`, `results-verdict-headline`, `results-key-comparison`, `results-key-row-<position|cash|spent|grants|keys>`, `results-key-<row>-<bto|resale>`, `results-verdict-next`, `results-steps-jump`, `results-<patha|pathb>-ahead-tag`, `results-trend-readout`, `results-trend-stage`, `results-trend-year`, `results-trend-bto`, `results-trend-resale`, `results-trend-lead`.
+`results-verdict`, `results-verdict-eyebrow`, `results-verdict-headline`, `results-verdict-next`, `results-steps-jump`, `results-<patha|pathb>-ahead-tag`, `results-trend-readout`, `results-trend-stage`, `results-trend-year`, `results-trend-bto`, `results-trend-resale`, `results-trend-lead`.
 Moved into the verdict: `results-gap-sentence`, `results-breakeven-sentence`, `results-dashboard-button`, `results-edit-button`.
 
 ### Results verdict, bars and difference
-`results-verdict-reason`, `results-verdict-bars`, `results-verdict-bar-<bto|resale>`, `results-verdict-diff`, `results-key-<position|cash|spent|grants|keys>-diff`, `results-key-hint`, `results-key-grants-link`, `back-to-top`.
+`results-verdict-reason`, `results-verdict-bars`, `results-verdict-bar-<bto|resale>`, `results-verdict-diff`, `back-to-top`, `results-<patha|pathb>-summary-<value|owed|cash>`, `results-<patha|pathb>-grants-why`, `results-<patha|pathb>-full-breakdown`.
