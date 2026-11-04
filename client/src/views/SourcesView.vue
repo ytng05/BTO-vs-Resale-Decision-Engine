@@ -77,8 +77,11 @@ const ruleLabels = {
 
 const tierArrayKeys = new Set(['tiers', 'ehgTiers', 'buyerStampDutyTiers']);
 const omittedRuleKeys = new Set(['appliesTo', 'sources', 'partialMonthTreatment', 'legalFees', 'agentFees']);
-// Every rule section shows on load. A topic chip filters to its sections (null = no filter: every section).
-const filterChipKey = ref(null);
+// "Rules and sources" starts folded: its heading opens and closes it. A topic chip, a search or /sources#<topic>
+// opens it. Inside, every rule section shows; topic chips filter to their sections. Several chips can be on at once
+// (in click order; empty = no filter).
+const rulesOpen = ref(false);
+const activeChipKeys = ref([]);
 // Sections the user collapsed with the chevron or "Collapse all"; every other shown section is open.
 const collapsedSectionIds = ref(new Set());
 const expandedTierKeys = ref(new Set());
@@ -327,10 +330,15 @@ const ruleGroups = computed(() => {
 });
 
 const chipKey = (chip) => chip.ids[0];
-const activeChip = computed(() => ruleChips.find((chip) => chipKey(chip) === filterChipKey.value) ?? null);
+const activeChips = computed(() => ruleChips.filter((chip) => activeChipKeys.value.includes(chipKey(chip))));
+// "EHG", "EHG and Loans", "EHG, PHG and Loans"
+const activeChipsLabel = computed(() => {
+  const labels = activeChips.value.map((chip) => chip.label);
+  return labels.length > 1 ? `${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}` : (labels[0] ?? '');
+});
 
 function isChipActive(chip) {
-  return filterChipKey.value === chipKey(chip);
+  return activeChipKeys.value.includes(chipKey(chip));
 }
 
 function isSectionOpen(id) {
@@ -341,23 +349,37 @@ function expandSections(ids) {
   collapsedSectionIds.value = new Set([...collapsedSectionIds.value].filter((id) => !ids.includes(id)));
 }
 
-// Clears the filter, and drops a hash that pointed at the filtered topic so it doesn't linger in the URL.
-function clearFilter() {
-  const chip = activeChip.value;
-  filterChipKey.value = null;
+// Drops a hash that pointed at one of these chips' topics, so it doesn't linger in the URL once they're off.
+function dropHashFor(chips) {
   const hashId = decodeURIComponent(route.hash.replace(/^#/, '')).replace(/^sources-section-/, '');
-  if (chip && hashId && chip.ids.includes(hashId)) router.replace({ path: route.path, query: route.query, hash: '' });
+  if (hashId && chips.some((chip) => chip.ids.includes(hashId))) router.replace({ path: route.path, query: route.query, hash: '' });
 }
 
-// Clicking a chip filters to its topic, open; clicking the active chip again shows every section.
+// Turns every chip off ("Show all topics" keeps the rules open; the heading folds them).
+function clearFilter() {
+  dropHashFor(activeChips.value);
+  activeChipKeys.value = [];
+}
+
+// Each chip adds its topic and opens the rules; clicking an active chip removes its topic, and once no chip is on
+// the rules fold back up.
 function toggleChip(chip) {
   if (isChipActive(chip)) {
-    clearFilter();
+    dropHashFor([chip]);
+    activeChipKeys.value = activeChipKeys.value.filter((key) => key !== chipKey(chip));
+    if (!activeChipKeys.value.length) rulesOpen.value = false;
     return;
   }
-  filterChipKey.value = chipKey(chip);
+  activeChipKeys.value = [...activeChipKeys.value, chipKey(chip)];
+  rulesOpen.value = true;
   expandSections(chip.ids);
   nextTick(() => scrollToSection(chip.ids[0]));
+}
+
+// The heading opens every topic, or folds the rules and turns any chips off.
+function toggleRules() {
+  if (rulesOpen.value) clearFilter();
+  rulesOpen.value = !rulesOpen.value;
 }
 
 const allShownOpen = computed(() => shownRuleGroups.value.every((section) => isSectionOpen(section.id)));
@@ -436,6 +458,10 @@ function metadataValue(value) {
 const query = ref('');
 const searchInput = ref(null);
 const normalizedQuery = computed(() => query.value.trim().toLowerCase());
+// A search shows its matches, so it opens "Rules and sources".
+watch(normalizedQuery, (q) => {
+  if (q) rulesOpen.value = true;
+});
 
 function matches(...parts) {
   const q = normalizedQuery.value;
@@ -481,11 +507,11 @@ async function clearSearch() {
   searchInput.value?.focus();
 }
 
-// A search shows every matching section; otherwise every section, or only the active chip's.
+// A search shows every matching section; otherwise every section, or only the active chips'.
 const shownRuleGroups = computed(() => {
   if (normalizedQuery.value) return visibleRuleGroups.value;
-  const chip = activeChip.value;
-  return chip ? ruleGroups.value.filter((section) => chip.ids.includes(section.id)) : ruleGroups.value;
+  const ids = activeChips.value.flatMap((chip) => chip.ids);
+  return ids.length ? ruleGroups.value.filter((section) => ids.includes(section.id)) : ruleGroups.value;
 });
 
 // Announced to screen readers while searching (the no-match state has its own message).
@@ -521,7 +547,8 @@ function applyHash() {
   if (!id) return;
   const chip = ruleChips.find((item) => item.ids.includes(id));
   if (chip) {
-    filterChipKey.value = chipKey(chip);
+    activeChipKeys.value = [chipKey(chip)];
+    rulesOpen.value = true;
     expandSections([id]);
     nextTick(() => scrollToSection(id));
   } else if (linkChips.some((item) => item.id === id)) {
@@ -621,8 +648,23 @@ onMounted(async () => {
 
       <section v-if="!normalizedQuery || visibleRuleGroups.length" class="sources-section" aria-labelledby="rules-title">
         <div class="sources-section__heading">
-          <h2 class="h4 mb-0" id="rules-title">Rules and sources</h2>
+          <h2 class="h4 mb-0" id="rules-title">
+            <button
+              type="button"
+              class="sources-rules-toggle"
+              data-cy="sources-rules-toggle"
+              :aria-expanded="rulesOpen"
+              aria-controls="sources-rules-body"
+              @click="toggleRules"
+            >
+              Rules and sources
+              <svg class="sources-rules-toggle__chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" />
+              </svg>
+            </button>
+          </h2>
           <button
+            v-if="rulesOpen"
             class="btn btn-link btn-sm sources-expand-link"
             type="button"
             data-cy="sources-expand-all"
@@ -632,8 +674,12 @@ onMounted(async () => {
             {{ allShownOpen ? 'Collapse all' : 'Expand all' }}
           </button>
         </div>
-        <p v-if="activeChip && !normalizedQuery" class="sources-hint" data-cy="sources-rules-hint">
-          Showing {{ activeChip.label }} only.
+        <p v-if="!rulesOpen" class="sources-rules-teaser" data-cy="sources-rules-teaser">
+          Every grant, loan and cost rule the app uses, with its value and official source.
+        </p>
+        <div v-show="rulesOpen" id="sources-rules-body">
+        <p v-if="activeChips.length && !normalizedQuery" class="sources-hint" data-cy="sources-rules-hint">
+          Showing {{ activeChipsLabel }} only.
           <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-cy="sources-show-all-topics" @click="clearFilter">Show all topics</button>
         </p>
         <div data-cy="sources-rules-table" class="sources-rule-cards">
@@ -711,6 +757,7 @@ onMounted(async () => {
               </div>
             </div>
           </details>
+        </div>
         </div>
       </section>
 
@@ -833,6 +880,43 @@ onMounted(async () => {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
+}
+
+.sources-rules-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sources-rules-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.sources-rules-toggle__chevron {
+  width: 1.1em;
+  height: 1.1em;
+  transition: transform 0.2s ease;
+}
+
+.sources-rules-toggle[aria-expanded='true'] .sources-rules-toggle__chevron {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sources-rules-toggle__chevron { transition: none; }
+}
+
+.sources-rules-teaser {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
 }
 
 .sources-hint {

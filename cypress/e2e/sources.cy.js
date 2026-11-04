@@ -1,6 +1,11 @@
 // Sources page: the ruleset behind every figure, its sources, assumptions and datasets (mock data).
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
-// Every rule section shows on load; a topic chip, a search or /sources#<section> filters them.
+// "Rules and sources" starts folded: its heading opens and closes it. A topic chip, a search or /sources#<section>
+// opens it. Inside, every rule section shows, open; a chip, a search or the hash filters them.
+const openRules = () => {
+  cy.get('[data-cy=sources-rules-toggle]').click();
+  cy.get('[data-cy=sources-rules-toggle]').should('have.attr', 'aria-expanded', 'true');
+};
 
 describe('sources page', () => {
   beforeEach(() => {
@@ -20,7 +25,21 @@ describe('sources page', () => {
     });
   });
 
-  it('shows every rule section, open, on load', () => {
+  it('hides the rules on load, and its heading opens and closes them', () => {
+    cy.get('[data-cy=sources-rules-toggle]').should('have.attr', 'aria-expanded', 'false');
+    cy.get('[data-cy=sources-rules-table]').should('not.be.visible');
+    cy.get('[data-cy=sources-rules-teaser]').should('be.visible');
+    cy.get('[data-cy=sources-expand-all]').should('not.exist');
+    openRules();
+    cy.get('[data-cy=sources-rules-table]').should('be.visible');
+    cy.get('[data-cy=sources-rules-teaser]').should('not.exist');
+    cy.get('[data-cy=sources-rules-toggle]').click();
+    cy.get('[data-cy=sources-rules-toggle]').should('have.attr', 'aria-expanded', 'false');
+    cy.get('[data-cy=sources-rules-table]').should('not.be.visible');
+  });
+
+  it('shows every rule section, open, once opened', () => {
+    openRules();
     cy.get('[data-cy=sources-rules-table] details').should('have.length.greaterThan', 1).then(($all) => {
       cy.get('[data-cy=sources-rules-table] details[open]').should('have.length', $all.length);
     });
@@ -29,6 +48,7 @@ describe('sources page', () => {
   });
 
   it('collapses and expands every shown section with one button', () => {
+    openRules();
     cy.get('[data-cy=sources-expand-all]').should('contain', 'Collapse all').click();
     cy.get('[data-cy=sources-rules-table] details').should('have.length.greaterThan', 1);
     cy.get('[data-cy=sources-rules-table] details[open]').should('not.exist');
@@ -38,18 +58,47 @@ describe('sources page', () => {
     });
   });
 
-  it('filters to a topic when its chip is clicked, and shows everything when clicked again', () => {
+  it('filters to a topic when its chip is clicked, and folds the rules again when clicked again', () => {
     cy.get('[data-cy=sources-rules-table] details').its('length').then((total) => {
       cy.contains('button.sources-chip', 'EHG').should('have.attr', 'aria-pressed', 'false').click();
       cy.contains('button.sources-chip', 'EHG').should('have.attr', 'aria-pressed', 'true').and('have.class', 'btn-primary');
+      cy.get('[data-cy=sources-rules-toggle]').should('have.attr', 'aria-expanded', 'true'); // a chip opens the rules
       cy.get('[data-cy=sources-rules-table] details').should('have.length', 1);
       cy.get('#sources-section-ehg').should('have.attr', 'open');
       cy.get('[data-cy=sources-rules-hint]').should('contain', 'Showing EHG only');
       cy.contains('button.sources-chip', 'EHG').click();
+      cy.get('[data-cy=sources-rules-toggle]').should('have.attr', 'aria-expanded', 'false');
+      cy.get('[data-cy=sources-rules-table]').should('not.be.visible');
       cy.get('[data-cy=sources-rules-table] details').should('have.length', total);
       cy.contains('button.sources-chip', 'EHG').should('have.attr', 'aria-pressed', 'false').and('have.class', 'btn-outline-primary');
       cy.get('[data-cy=sources-rules-hint]').should('not.exist');
     });
+  });
+
+  it('shows every chosen topic, drops one when its chip is clicked again, and folds when none are left', () => {
+    cy.contains('button.sources-chip', 'EHG').click();
+    cy.contains('button.sources-chip', 'Loans').click();
+    cy.get('[data-cy=sources-rules-table] details').should('have.length', 2);
+    cy.get('#sources-section-ehg').should('be.visible');
+    cy.get('#sources-section-loans').should('be.visible');
+    cy.get('[data-cy=sources-rules-hint]').should('contain', 'Showing EHG and Loans only');
+    cy.contains('button.sources-chip', 'EHG').click();
+    cy.get('[data-cy=sources-rules-table] details').should('have.length', 1);
+    cy.get('#sources-section-ehg').should('not.exist');
+    cy.get('#sources-section-loans').should('be.visible');
+    cy.contains('button.sources-chip', 'Loans').click();
+    cy.get('[data-cy=sources-rules-toggle]').should('have.attr', 'aria-expanded', 'false');
+    cy.get('[data-cy=sources-rules-table]').should('not.be.visible');
+    cy.get('button.sources-chip[aria-pressed=true]').should('not.exist');
+  });
+
+  it('folding the rules from the heading turns the chips off', () => {
+    cy.contains('button.sources-chip', 'CPF').click();
+    cy.get('[data-cy=sources-rules-toggle]').click();
+    cy.get('[data-cy=sources-rules-table]').should('not.be.visible');
+    cy.get('button.sources-chip[aria-pressed=true]').should('not.exist');
+    cy.get('[data-cy=sources-rules-toggle]').click();
+    cy.get('[data-cy=sources-rules-table] details').should('have.length.greaterThan', 2);
   });
 
   it('"Show all topics" clears a chip filter', () => {
@@ -57,10 +106,12 @@ describe('sources page', () => {
     cy.get('[data-cy=sources-rules-table] details').should('have.length', 1);
     cy.get('[data-cy=sources-show-all-topics]').click();
     cy.get('[data-cy=sources-rules-table] details').should('have.length.greaterThan', 1);
+    cy.get('[data-cy=sources-rules-table]').should('be.visible'); // "Show all topics" keeps the rules open
     cy.contains('button.sources-chip', 'Loans').should('have.attr', 'aria-pressed', 'false');
   });
 
   it('collapses one section with its chevron, leaving it listed', () => {
+    openRules();
     cy.get('#sources-section-ehg > summary').click();
     cy.get('#sources-section-ehg').should('exist').and('not.have.attr', 'open');
     cy.get('#sources-section-ehg > summary').click();
@@ -69,7 +120,8 @@ describe('sources page', () => {
 
   it('opens the topic named in the URL hash', () => {
     cy.visit('/sources#loans');
-    cy.get('#sources-section-loans').should('have.attr', 'open');
+    cy.get('[data-cy=sources-rules-toggle]').should('have.attr', 'aria-expanded', 'true');
+    cy.get('#sources-section-loans').should('be.visible').and('have.attr', 'open');
     cy.contains('button.sources-chip', 'Loans').should('have.attr', 'aria-pressed', 'true');
   });
 
@@ -92,7 +144,14 @@ describe('sources page', () => {
     cy.get('[data-cy=sources-search-status]').should('have.text', '');
   });
 
+  it('opens the rules when a search matches them', () => {
+    cy.get('[data-cy=sources-search-input]').type('stamp duty');
+    cy.get('[data-cy=sources-rules-toggle]').should('have.attr', 'aria-expanded', 'true');
+    cy.get('[data-cy=sources-rules-table] details').should('be.visible');
+  });
+
   it('scrolls back to a band table after it is collapsed', () => {
+    openRules();
     cy.contains('#sources-section-ehg button.sources-tier-toggle', /Show all \d+ bands/).scrollIntoView().click();
     cy.contains('#sources-section-ehg button.sources-tier-toggle', 'Show first 5 bands').scrollIntoView().click();
     cy.get('#sources-section-ehg .sources-table__caption').should(($caption) => {
@@ -103,6 +162,7 @@ describe('sources page', () => {
   });
 
   it('lists rules with values', () => {
+    openRules();
     cy.get('[data-cy=sources-rules-table] tbody tr').should('have.length.greaterThan', 0);
     cy.get('[data-cy=sources-rules-table] .sources-table__value').first().invoke('text').should('not.be.empty');
   });
