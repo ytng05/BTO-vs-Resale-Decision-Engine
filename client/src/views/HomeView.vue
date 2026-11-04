@@ -1,12 +1,12 @@
 <script setup>
 // Home, after the Calm home board (CalmHome.dc.html): the question and the two ways in (start, or see an example),
-// the crossing scene, how it works in four steps, what the results tell you, the costs people forget, a short FAQ
+// a small static city illustration, how it works in four steps, what the results tell you, the costs people forget, a short FAQ
 // and a closing call to action. The navbar and the disclaimer footer come from App.vue, as on every page.
-import { computed, nextTick, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useScenarioStore } from '../stores/scenario.js';
 import { EXAMPLE_PLAN } from '../constants/examplePlan.js';
-import CrossingScene from '../components/CrossingScene.vue';
+import { getRuleset } from '../api/client.js';
 
 const store = useScenarioStore();
 const router = useRouter();
@@ -35,22 +35,43 @@ async function seeExample(from, force = false) {
   router.push('/results');
 }
 
+// Ruleset freshness, shown under Good to know: green when checked against its sources, amber when not.
+// Left out if the ruleset can't be loaded, rather than shown wrong.
+const ruleset = ref(null);
+const rulesetDate = computed(() => {
+  const d = ruleset.value?.version ? new Date(`${ruleset.value.version}T00:00:00`) : null;
+  return d && !Number.isNaN(d.getTime())
+    ? d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null;
+});
+const rulesetVerified = computed(() => ruleset.value?.status === 'VERIFIED');
+onMounted(async () => {
+  try {
+    ruleset.value = await getRuleset();
+  } catch {
+    ruleset.value = null;
+  }
+});
+
 // The four plan steps, as the stepper names them, with what to have to hand for each.
 const STEPS = [
-  { title: 'What matters', text: 'Pick what you care about, like living near your parents or keeping cash in hand.', need: 'Nothing to prepare' },
-  { title: 'About you', text: 'Ages, incomes, CPF and cash for the two of you, and a move-in date if you have one.', need: 'Your CPF statement, or an estimate' },
-  { title: 'Your BTO', text: "The town, launch and flat type you're eyeing. We use a recent launch to estimate price and wait.", need: 'A town in mind' },
-  { title: 'Resale flat', text: 'The town, flat type and remaining lease of the listing. Asking price is optional.', need: 'A listing you like' },
+  { title: 'What matters', text: 'Pick what you care about, like living near family or keeping cash in hand.', need: 'Nothing to prepare' },
+  { title: 'About you', text: 'Ages, incomes, CPF and savings for both of you.', need: 'Your CPF statement, or an estimate' },
+  { title: 'Your BTO', text: "The town, launch and flat type you're eyeing.", need: 'A town in mind' },
+  { title: 'Resale flat', text: 'The town, flat type and lease left. Asking price is optional.', need: 'A listing you like' },
 ];
 
-const GETS = [
-  { tag: 'Break-even line', fill: 'var(--accent-fill-2)', text: 'The price growth at which both paths leave you equally well off' },
-  { tag: 'Net position', fill: 'var(--accent-fill-3)', text: 'How far ahead each path is, year by year' },
-  { tag: 'What would flip it', fill: 'var(--bg-page)', text: 'The BTO price at which the answer changes, and how rent and growth move it' },
+// "What you'll get": what the app gives a household, from the project report. Icons are 24×24 strokes.
+const FEATURES = [
+  { title: 'Find out the best year to apply', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h3' },
+  { title: 'Every cost and grant counted', icon: 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3' },
+  { title: 'Try what-ifs, then compare', icon: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4' },
+  { title: 'Built on real HDB historical data', icon: 'M3 17l6-6 4 4 8-8M15 7h6v6' },
+  { title: 'Personalised dashboards and results', icon: 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z' },
 ];
 
-// "The costs people usually forget": each tile names a cost the engine counts; hover, focus or tap shows what it means.
-// Icons are 24×24 strokes, drawn in .home-tile__icon.
+// "The costs people usually forget": each tile names a cost the engine counts and what it means.
+// They run past in a strip that moves by itself, coloured in turn by TILE_THEMES. Icons are 24×24 strokes.
 const TILES = [
   { title: 'Grants you qualify for', text: 'Checked against your income, citizenship and the flat you pick.', icon: 'M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7c-2-4-6-4-6-1s6 1 6 1 6 2 6-1-4-3-6 1z' },
   { title: 'Rent while you wait', text: 'What BTO buyers pay before they get their keys, which resale buyers skip.', icon: 'M6 2h12M6 22h12M7 2c0 5 5 6 5 10s-5 5-5 10M17 2c0 5-5 6-5 10s5 5 5 10' },
@@ -61,6 +82,62 @@ const TILES = [
   { title: 'Minimum occupation', text: 'How long you must live there before you can sell or rent out the whole flat.', icon: 'M7 11h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 11V7a4 4 0 0 1 8 0v4' },
   { title: 'Subsidy clawback', text: 'Plus and Prime flats return part of their subsidy when you sell.', icon: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5' },
 ];
+
+const TILE_THEMES = ['pink', 'indigo', 'green', 'amber'];
+
+// The moving strip. It scrolls itself a little each frame and loops (the tiles are listed twice, so jumping back by
+// one copy looks seamless). Pointing at it pauses it; the arrows step one tile at a time and pause it; the middle
+// button plays or pauses. People who turn off motion in their settings start paused.
+const strip = ref(null);
+const prefersStill = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const playing = ref(!prefersStill);
+let hovering = false;
+let pos = 0;
+let lastTime = 0;
+let frame = 0;
+const SPEED = 0.04; // pixels per millisecond
+
+const loopWidth = () => (strip.value ? strip.value.scrollWidth / 2 : 0);
+function tileStep() {
+  const tile = strip.value?.querySelector('.home-tile');
+  if (!tile) return 296;
+  return tile.offsetWidth + parseFloat(getComputedStyle(tile).marginRight || 0);
+}
+function tick(time) {
+  const el = strip.value;
+  if (el && playing.value && !hovering) {
+    pos += (lastTime ? time - lastTime : 16) * SPEED;
+    if (pos >= loopWidth()) pos -= loopWidth();
+    el.scrollLeft = pos;
+  }
+  lastTime = time;
+  frame = requestAnimationFrame(tick);
+}
+function step(dir) {
+  const el = strip.value;
+  if (!el) return;
+  playing.value = false;
+  const w = tileStep();
+  const loop = loopWidth();
+  if (dir > 0 && el.scrollLeft + w >= loop) el.scrollLeft -= loop;
+  if (dir < 0 && el.scrollLeft < w) el.scrollLeft += loop;
+  el.scrollTo({ left: (Math.round(el.scrollLeft / w) + dir) * w, behavior: prefersStill ? 'auto' : 'smooth' });
+}
+function togglePlay() {
+  if (strip.value) pos = strip.value.scrollLeft;
+  playing.value = !playing.value;
+}
+function setHover(on) {
+  hovering = on;
+  if (!on && strip.value) pos = strip.value.scrollLeft;
+}
+onMounted(() => { frame = requestAnimationFrame(tick); });
+onBeforeUnmount(() => cancelAnimationFrame(frame));
+
+// Home is the one page on a white background (the others keep the mist page so their white cards stand out).
+// The class is added while Home is shown and removed when you leave it; the rule is in the unscoped style below.
+onMounted(() => document.body.classList.add('is-home'));
+onBeforeUnmount(() => document.body.classList.remove('is-home'));
 
 const FAQS = [
   {
@@ -117,14 +194,39 @@ const FAQS = [
           </span>
         </div>
       </div>
-      <CrossingScene />
+        <svg viewBox="0 0 440 330" class="home-hero__art" data-cy="hero-scene" role="img" aria-label="Illustration: a new BTO block and a resale block, with trees">
+          <circle cx="240" cy="160" r="150" style="fill: var(--accent-fill-3)" />
+          <rect x="44" y="110" width="40" height="180" rx="4" style="fill: var(--border)" /><rect x="352" y="80" width="46" height="210" rx="4" style="fill: var(--border)" />
+          <!-- BTO block (left) -->
+          <rect x="66" y="152" width="124" height="138" rx="6" style="fill: var(--bg-surface)" /><rect x="58" y="144" width="140" height="11" rx="5.5" style="fill: var(--color-pink-deep)" />
+          <rect x="80" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="108" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="136" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="164" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="80" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="108" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="136" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="164" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="80" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="108" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="136" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="164" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="80" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="108" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="136" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="164" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" />
+          <!-- Resale block (centre) -->
+          <rect x="212" y="92" width="132" height="198" rx="6" style="fill: var(--bg-surface)" /><rect x="204" y="84" width="148" height="11" rx="5.5" style="fill: var(--color-pink-deep)" />
+          <rect x="226" y="110" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="110" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="288" y="110" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="110" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="226" y="134" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="134" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="288" y="134" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="134" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="226" y="158" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="257" y="158" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="288" y="158" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="158" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="226" y="182" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="182" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="288" y="182" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="319" y="182" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="226" y="206" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="206" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="288" y="206" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="206" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="226" y="230" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="230" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="288" y="230" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="230" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="226" y="254" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="257" y="254" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="288" y="254" width="22" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="319" y="254" width="22" height="14" rx="3" style="fill: var(--accent-fill-1)" />
+          <!-- Small block (right) -->
+          <rect x="352" y="196" width="66" height="94" rx="6" style="fill: var(--bg-surface)" /><rect x="346" y="189" width="78" height="9" rx="4.5" style="fill: var(--accent-fill-1)" />
+          <rect x="364" y="210" width="16" height="12" rx="3" style="fill: var(--accent-fill-3)" /><rect x="390" y="210" width="16" height="12" rx="3" style="fill: var(--accent-fill-3)" /><rect x="364" y="236" width="16" height="12" rx="3" style="fill: var(--accent-fill-1)" /><rect x="390" y="236" width="16" height="12" rx="3" style="fill: var(--accent-fill-3)" /><rect x="364" y="262" width="16" height="12" rx="3" style="fill: var(--accent-fill-3)" /><rect x="390" y="262" width="16" height="12" rx="3" style="fill: var(--accent-fill-3)" />
+          <!-- Ground and road -->
+          <path d="M0 282 Q 220 258 440 280 V330 H0 Z" style="fill: var(--accent-fill-2)" />
+          <rect x="0" y="300" width="440" height="30" style="fill: var(--bg-surface)" />
+          <path d="M12 316 H412" style="stroke: var(--border)" stroke-width="3" stroke-dasharray="18 14" />
+          <!-- Trees -->
+          <path d="M34 296 V240" style="stroke: var(--text-secondary)" stroke-width="3" stroke-linecap="round" /><ellipse cx="34" cy="232" rx="30" ry="24" style="fill: var(--color-pink-deep)" /><ellipse cx="26" cy="224" rx="12" ry="7" style="fill: var(--accent-fill-2)" />
+          <path d="M200 296 V258" style="stroke: var(--text-secondary)" stroke-width="3" stroke-linecap="round" /><ellipse cx="200" cy="252" rx="20" ry="16" style="fill: var(--accent-fill-1)" /><ellipse cx="195" cy="247" rx="8" ry="5" style="fill: var(--accent-fill-2)" />
+          <path d="M410 298 V262" style="stroke: var(--text-secondary)" stroke-width="3" stroke-linecap="round" /><ellipse cx="410" cy="254" rx="24" ry="19" style="fill: var(--color-pink-deep)" /><ellipse cx="403" cy="248" rx="9" ry="6" style="fill: var(--accent-fill-2)" />
+          <!-- Labels -->
+          <g font-size="14" font-weight="600" text-anchor="middle" style="font-family: var(--font-body)">
+            <rect x="82" y="104" width="92" height="30" rx="15" style="fill: var(--bg-surface); stroke: var(--border-subtle)" /><text x="128" y="124" style="fill: var(--text-primary)">BTO</text>
+            <rect x="232" y="40" width="92" height="30" rx="15" style="fill: var(--bg-surface); stroke: var(--border-subtle)" /><text x="278" y="60" style="fill: var(--color-berry)">Resale</text>
+          </g>
+        </svg>
     </section>
 
     <!-- How it works -->
     <section class="home-section" aria-labelledby="how-title" data-cy="home-steps">
-      <div class="home-reveal home-head">
-        <p class="home-eyebrow">How it works</p>
-        <h2 id="how-title" class="home-h2">Four short steps, then your answer</h2>
+      <div class="home-reveal home-head home-head--center">
+        <h2 id="how-title" class="home-title">How it works</h2>
+        <p class="home-sub">Four short steps, then your answer.</p>
       </div>
       <ol class="home-steps home-stagger">
         <li v-for="(s, i) in STEPS" :key="s.title" class="home-card home-step" :data-cy="`home-step-${i + 1}`">
@@ -136,49 +238,50 @@ const FAQS = [
       </ol>
     </section>
 
-    <!-- What you'll get -->
-    <section class="home-card home-get home-reveal" aria-labelledby="get-title" data-cy="home-get">
-      <div class="home-get__copy">
-        <p class="home-eyebrow">What you'll get</p>
-        <h2 id="get-title" class="home-h2">Not a price prediction. The point where the answer flips.</h2>
-        <p class="home-lead">
-          We don't predict prices: we use growth rates you can change. We follow both paths year by year with today's
-          rules, show when one pulls ahead, and tell you which assumptions would change that.
-        </p>
-        <ul class="home-get__list">
-          <li v-for="g in GETS" :key="g.tag">
-            <span class="home-tag" :style="{ background: g.fill }">{{ g.tag }}</span>
-            <span class="home-muted">{{ g.text }}</span>
+    <!-- What you'll get: one big card with the break-even illustration, and a card per feature around it. -->
+    <section class="home-section home-get" aria-labelledby="get-title" data-cy="home-get">
+      <div class="home-reveal home-head home-head--center">
+        <h2 id="get-title" class="home-title">What you'll get</h2>
+        <p class="home-sub">Everything you need to decide, in one place.</p>
+      </div>
+      <!-- What you get: a plain list of features (icon + title, thin dividers) beside the break-even illustration. -->
+      <div class="home-get-grid">
+        <ul class="home-feat-list">
+          <li v-for="(f, i) in FEATURES" :key="f.title" class="home-feat" :data-cy="`home-feat-${i + 1}`">
+            <span class="home-feat__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="f.icon" /></svg></span>
+            <span class="home-feat__title">{{ f.title }}</span>
           </li>
         </ul>
-        <button type="button" class="btn btn-link p-0 home-get__link" data-cy="home-example-link" @click="seeExample('get')">See an example result</button>
-        <div v-if="confirming === 'get'" class="home-confirm" role="group" aria-labelledby="home-confirm-get" data-cy="home-example-confirm">
-          <p id="home-confirm-get" class="mb-2">The example replaces what you've entered in your plan so far.</p>
-          <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample('get', true)">Show the example</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
+        <div class="home-get-panel home-reveal" data-cy="home-feat-breakeven">
+          <div class="home-get__chart">
+            <div class="home-get__legend">
+              <span class="home-muted fw-normal">Illustration of a result</span>
+              <span class="home-get__key"><span class="home-get__swatch home-get__swatch--bto" aria-hidden="true"></span>BTO</span>
+              <span class="home-get__key"><span class="home-get__swatch home-get__swatch--resale" aria-hidden="true"></span>Resale</span>
+            </div>
+            <svg viewBox="0 0 520 250" class="home-get__svg" role="img" aria-label="Illustration: resale starts ahead, then the BTO line overtakes it and stays ahead">
+              <g class="home-grid"><line x1="20" y1="40" x2="500" y2="40" /><line x1="20" y1="100" x2="500" y2="100" /><line x1="20" y1="160" x2="500" y2="160" /><line x1="20" y1="210" x2="500" y2="210" /></g>
+              <g class="home-drawline">
+                <polyline points="30,150 72,140 114,130 156,122 198,114 240,106 282,98 324,90 366,83 408,76 450,70 492,64" fill="none" class="home-line-resale" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 10" />
+                <polyline points="30,205 72,200 114,190 156,175 198,146 240,126 282,108 324,90 366,70 408,52 450,36 492,22" fill="none" class="home-line-bto" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+              </g>
+              <g class="home-meetpop">
+                <circle class="home-pulse home-berry" cx="324" cy="90" r="8" /><circle cx="324" cy="90" r="8" class="home-berry" /><circle cx="324" cy="90" r="3" class="home-white" />
+                <rect x="336" y="98" width="146" height="30" rx="15" class="home-white" /><text x="409" y="118" text-anchor="middle" font-size="13" font-weight="600" class="home-berry">Where they cross</text>
+              </g>
+              <g font-size="12" text-anchor="middle" class="home-axis"><text x="30" y="242">Today</text><text x="500" y="242" text-anchor="end">Years ahead</text></g>
+            </svg>
+            <p class="home-get__note">Example figures. Illustrative projection, not financial advice.</p>
+          </div>
+          <button type="button" class="btn btn-link p-0 home-get__link" data-cy="home-example-link" @click="seeExample('get')">See an example result</button>
+          <div v-if="confirming === 'get'" class="home-confirm" role="group" aria-labelledby="home-confirm-get" data-cy="home-example-confirm">
+            <p id="home-confirm-get" class="mb-2">The example replaces what you've entered in your plan so far.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample('get', true)">Show the example</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="home-get__chart">
-        <div class="home-get__legend">
-          <span class="home-muted fw-normal">Illustration of a result</span>
-          <span class="home-get__key"><span class="home-get__swatch home-get__swatch--bto" aria-hidden="true"></span>BTO</span>
-          <span class="home-get__key"><span class="home-get__swatch home-get__swatch--resale" aria-hidden="true"></span>Resale</span>
-        </div>
-        <svg viewBox="0 0 520 250" class="home-get__svg" role="img" aria-label="Illustration: resale starts ahead, then the BTO line overtakes it and stays ahead">
-          <g class="home-grid"><line x1="20" y1="40" x2="500" y2="40" /><line x1="20" y1="100" x2="500" y2="100" /><line x1="20" y1="160" x2="500" y2="160" /><line x1="20" y1="210" x2="500" y2="210" /></g>
-          <g class="home-drawline">
-            <polyline points="30,150 72,140 114,130 156,122 198,114 240,106 282,98 324,90 366,83 408,76 450,70 492,64" fill="none" class="home-line-resale" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 10" />
-            <polyline points="30,205 72,200 114,190 156,175 198,146 240,126 282,108 324,90 366,70 408,52 450,36 492,22" fill="none" class="home-line-bto" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-          </g>
-          <g class="home-meetpop">
-            <circle class="home-pulse home-berry" cx="324" cy="90" r="8" /><circle cx="324" cy="90" r="8" class="home-berry" /><circle cx="324" cy="90" r="3" class="home-white" />
-            <rect x="336" y="98" width="146" height="30" rx="15" class="home-white" /><text x="409" y="118" text-anchor="middle" font-size="13" font-weight="600" class="home-berry">Where they cross</text>
-          </g>
-          <g font-size="12" text-anchor="middle" class="home-axis"><text x="30" y="242">Today</text><text x="492" y="242">Years ahead</text></g>
-        </svg>
-        <p class="home-get__note">Example figures. Illustrative projection, not financial advice.</p>
       </div>
     </section>
 
@@ -190,20 +293,36 @@ const FAQS = [
           What we count
         </span>
         <h2 id="costs-title" class="home-costs__title">The costs people usually forget</h2>
-        <p class="home-lead text-center">Hover or tap a tile to see what it means for you.</p>
+        <p class="home-lead text-center">Most calculators leave these out. We work every one of them into your answer.</p>
       </div>
-      <!-- Each tile takes focus so keyboard users can open it too; the text is always in the page for screen readers. -->
-      <ul class="home-tiles home-stagger">
-        <li v-for="(t, i) in TILES" :key="t.title" class="home-tile" tabindex="0" :data-cy="`home-cost-${i + 1}`">
-          <div class="home-tile__in">
-            <span class="home-tile__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path :d="t.icon" /></svg>
-            </span>
+      <!-- A strip that moves by itself, with buttons to step through it or pause it. The second copy only makes the loop
+           seamless, so screen readers skip it. -->
+      <div ref="strip" class="home-marquee" @pointerenter="setHover(true)" @pointerleave="setHover(false)" @touchstart.passive="playing = false">
+        <ul class="home-marquee__track">
+          <li v-for="(t, i) in TILES" :key="t.title" class="home-tile" :class="`home-tile--${TILE_THEMES[i % 4]}`" :data-cy="`home-cost-${i + 1}`">
+            <span class="home-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="t.icon" /></svg></span>
             <h3 class="home-tile__title">{{ t.title }}</h3>
             <p class="home-tile__text">{{ t.text }}</p>
-          </div>
-        </li>
-      </ul>
+          </li>
+          <li v-for="(t, i) in TILES" :key="`copy-${t.title}`" class="home-tile" :class="`home-tile--${TILE_THEMES[i % 4]}`" aria-hidden="true">
+            <span class="home-tile__icon"><svg viewBox="0 0 24 24"><path :d="t.icon" /></svg></span>
+            <p class="home-tile__title">{{ t.title }}</p>
+            <p class="home-tile__text">{{ t.text }}</p>
+          </li>
+        </ul>
+      </div>
+      <div class="home-marquee__controls">
+        <button type="button" class="home-round-btn" aria-label="Previous cost" data-cy="home-costs-prev" @click="step(-1)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+        </button>
+        <button type="button" class="home-round-btn" :aria-label="playing ? 'Pause the moving tiles' : 'Play the moving tiles'" data-cy="home-costs-toggle" @click="togglePlay">
+          <svg v-if="playing" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12" /></svg>
+          <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z" /></svg>
+        </button>
+        <button type="button" class="home-round-btn" aria-label="Next cost" data-cy="home-costs-next" @click="step(1)">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
+      </div>
     </section>
 
     <!-- FAQ -->
@@ -215,6 +334,16 @@ const FAQS = [
           Want the detail? The <router-link to="/sources" data-cy="home-sources-link">Sources page</router-link> lists the
           rules we use, with their HDB and CPF references.
         </p>
+        <span
+          v-if="rulesetDate"
+          class="home-ruleset"
+          :class="rulesetVerified ? 'home-ruleset--ok' : 'home-ruleset--warn'"
+          data-cy="home-ruleset-status"
+        >
+          <span class="home-ruleset__dot" aria-hidden="true"></span>
+          <template v-if="rulesetVerified">Ruleset {{ rulesetDate }} · checked against its sources</template>
+          <template v-else>Ruleset {{ rulesetDate }} · not yet verified against its sources</template>
+        </span>
       </div>
       <div class="home-card home-faq home-reveal">
         <details v-for="(f, i) in FAQS" :key="f.q" :open="i === 0" :data-cy="`home-faq-${i + 1}`">
@@ -249,10 +378,20 @@ const FAQS = [
 </template>
 
 <style scoped>
-.home { display: flex; flex-direction: column; gap: calc(var(--space-10) + var(--space-5)); padding-bottom: var(--space-6); }
+/* --bleed-gutter: the gap left at each screen edge by the full-width parts (the hero and the costs strip). */
+.home { --bleed-gutter: clamp(12px, 2.5vw, 40px); display: flex; flex-direction: column; gap: calc(var(--space-10) + var(--space-5)); padding-bottom: var(--space-6); }
+
+/* ---- full width: the hero box and the costs strip stretch across the whole screen, not just the page column.
+   They start half a screen left of the column's centre and are one screen wide, minus the gutter on each side.
+   The gutter is wider than half a desktop scrollbar, so this never causes sideways scrolling. ---- */
+.home-hero, .home-marquee {
+  width: calc(100vw - 2 * var(--bleed-gutter));
+  max-width: none;
+  margin-left: calc(50% - 50vw + var(--bleed-gutter));
+}
 
 /* ---- shared ---- */
-.home-card { background: var(--bg-surface); border-radius: var(--radius-md); box-shadow: 0 1px 2px rgba(29, 29, 36, 0.05), 0 8px 24px rgba(60, 64, 90, 0.06); }
+.home-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: 0 1px 2px rgba(29, 29, 36, 0.05), 0 8px 24px rgba(60, 64, 90, 0.06); }
 .home-section, .home-head { display: flex; flex-direction: column; }
 .home-section { gap: var(--space-5); }
 .home-head { gap: var(--space-2); }
@@ -260,16 +399,68 @@ const FAQS = [
 .home-h2 { margin: 0; font-size: clamp(24px, 2.6vw, 32px); font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; }
 .home-lead { margin: 0; font-size: 16px; color: var(--text-secondary); line-height: 1.6; max-width: 68ch; }
 .home-lead--lg { font-size: 17px; }
+/* Section titles: large and centred, with a smaller line under them. */
+.home-head--center { align-items: center; text-align: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+.home-title { margin: 0; font-size: clamp(32px, 4.2vw, 52px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.08; }
+.home-sub { margin: 0; max-width: 62ch; font-size: clamp(15px, 1.3vw, 17px); line-height: 1.6; color: var(--text-secondary); }
 .home-muted { color: var(--text-secondary); line-height: 1.5; }
 .home-white { fill: var(--bg-surface); }
 .home-pink { fill: var(--accent-fill-1); }
 .home-berry { fill: var(--color-berry, #b23a78); }
 
 /* ---- hero ---- */
-.home-hero { display: flex; flex-direction: column; gap: calc(var(--space-5) + var(--space-1)); }
-.home-hero__row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-5) var(--space-8); }
+/* The hero is one box: copy, buttons and the crossing scene inside it. On hover it lifts slightly and turns pink. */
+.home-hero {
+  --hero-pad: clamp(20px, 3.5vw, 44px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  position: relative;
+  overflow: hidden;
+  padding: var(--hero-pad);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  background: linear-gradient(120deg, var(--accent-tint), var(--bg-surface) 45%, var(--indigo-tint));
+  box-shadow: 0 20px 50px rgba(60, 64, 90, 0.08);
+  transition: translate 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+/* The pink wash that fades in on hover (a gradient can't transition, so it sits on its own layer). */
+.home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, var(--accent-fill-2), var(--accent-tint) 55%, transparent);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.home-hero > * { position: relative; z-index: 1; }
+.home-hero:hover {
+  translate: 0 -6px;
+  border-color: var(--accent-fill-1);
+  box-shadow: 0 26px 60px rgba(240, 138, 182, 0.3);
+}
+.home-hero:hover::before { opacity: 0.7; }
+/* Wide screens: copy and buttons on the left, the illustration in the space on the right. */
+.home-hero__art { display: block; width: 100%; max-width: 360px; height: auto; align-self: center; }
+@media (min-width: 992px) {
+  /* Desktop: text on the left, picture on the right, centred vertically. */
+  .home-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-8);
+    padding: clamp(40px, 4.5vw, 72px) clamp(32px, 4vw, 64px);
+    /* On very wide screens, keep the text and picture lined up with the page column instead of the screen edges. */
+    padding-inline: max(clamp(32px, 4vw, 64px), calc((100vw - 2 * var(--bleed-gutter) - 1200px) / 2));
+  }
+  .home-hero__art { max-width: 480px; justify-self: end; }
+  .home-hero__title { font-size: clamp(40px, 4.2vw, 62px); }
+  .home-hero .home-lead--lg { font-size: 18px; }
+}
+.home-hero__row { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-5); }
 .home-hero__copy { display: flex; flex-direction: column; gap: var(--space-4); max-width: 720px; }
-.home-hero__title { margin: 0; font-size: clamp(34px, 4.4vw, 56px); font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; }
+.home-hero__title { margin: 0; font-size: clamp(30px, 3.6vw, 46px); font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; }
 .home-hero__actions { display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; }
 .home-confirm { max-width: 26rem; padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--bg-surface); font-size: 0.875rem; }
 .home-btn { min-height: 52px; display: inline-flex; align-items: center; font-weight: 500; }
@@ -284,18 +475,55 @@ const FAQS = [
 .home-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); background: var(--bg-surface); font-size: 14px; font-weight: 500; }
 
 /* ---- how it works ---- */
+/* The four step cards (the original design). On hover a card grows a little and turns pink. */
 .home-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
-.home-step { padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
-.home-step__num { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-fill-2); display: grid; place-items: center; font-weight: 600; }
-.home-step__title { margin: 0; font-weight: 500; font-size: 17px; line-height: 1.3; }
+.home-step {
+  position: relative;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: scale 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+}
+.home-step__num { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-fill-2); display: grid; place-items: center; font-weight: 600; transition: background 0.25s ease, color 0.25s ease; }
+.home-step__title { margin: 0; font-weight: 500; font-size: 17px; line-height: 1.3; transition: color 0.25s ease; }
 .home-step__need { align-self: flex-start; margin-top: auto; padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); background: var(--bg-page); font-size: 13px; color: var(--text-secondary); }
+/* `scale`, not `transform`, so it doesn't clash with the scroll-in animation (which uses transform). */
+.home-step:hover {
+  z-index: 1;
+  scale: 1.06;
+  border-color: var(--accent-fill-1);
+  background: var(--accent-tint);
+  box-shadow: 0 18px 40px rgba(240, 138, 182, 0.28);
+}
+.home-step:hover .home-step__num { background: var(--color-berry); color: var(--on-primary); }
+.home-step:hover .home-step__title { color: var(--color-berry); }
 
-/* ---- what you'll get ---- */
-.home-get { border-radius: var(--radius-lg); padding: clamp(24px, 3vw, 40px); display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: var(--space-6); align-items: center; }
-.home-get__copy { display: flex; flex-direction: column; gap: var(--space-4); }
-.home-get__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-3); }
-.home-get__list li { display: flex; gap: var(--space-3); align-items: baseline; }
-.home-tag { flex: none; display: inline-flex; align-items: center; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; }
+/* ---- what you'll get: the feature list on the left, the illustration on the right (stacked on smaller screens).
+   The list has no boxes: icon + title rows with thin dividers. Hover tints a row pink and nudges it right. ---- */
+.home-get-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); align-items: center; }
+@media (min-width: 992px) { .home-get-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: var(--space-8); } }
+.home-feat-list { margin: 0; padding: 0; list-style: none; }
+.home-feat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-3);
+  border-radius: var(--radius-sm);
+  transition: background 0.25s ease, translate 0.25s ease;
+}
+/* Dividers between rows: a straight hairline above each row after the first (drawn separately so the row's rounded
+   hover background doesn't bend it). */
+.home-feat { position: relative; }
+.home-feat + .home-feat::before { content: ""; position: absolute; top: 0; left: var(--space-3); right: var(--space-3); height: 1px; background: var(--border-subtle); }
+.home-feat:hover::before, .home-feat:hover + .home-feat::before { opacity: 0; }
+.home-feat__icon { flex: none; width: 48px; height: 48px; border-radius: 14px; background: var(--accent-tint); display: grid; place-items: center; transition: background 0.25s ease; }
+.home-feat__icon svg { width: 24px; height: 24px; fill: none; stroke: var(--color-berry); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.home-feat__title { font-size: 18px; font-weight: 500; letter-spacing: -0.01em; transition: color 0.25s ease; }
+.home-feat:hover { background: var(--accent-tint); translate: 4px 0; }
+.home-feat:hover .home-feat__icon { background: var(--accent-fill-2); }
+.home-feat:hover .home-feat__title { color: var(--color-berry); }
+.home-get-panel { display: flex; flex-direction: column; gap: var(--space-3); }
 .home-get__link { align-self: flex-start; font-weight: 500; }
 .home-get__chart { background: var(--accent-fill-3); border-radius: var(--radius-md); padding: var(--space-5) var(--space-5) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
 .home-get__legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; font-size: 14px; font-weight: 500; }
@@ -315,66 +543,65 @@ const FAQS = [
 /* ---- the costs people usually forget: hover tiles ---- */
 .home-costs { gap: calc(var(--space-6) + var(--space-1)); }
 .home-costs__head { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
-.home-costs__title { margin: 0; font-size: clamp(30px, 4vw, 48px); font-weight: 500; letter-spacing: -0.03em; line-height: 1.08; }
+.home-costs__title { margin: 0; font-size: clamp(32px, 4.2vw, 52px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.08; }
 .home-chip--outlined { border: 1px solid var(--border-subtle); box-shadow: 0 1px 2px rgba(29, 29, 36, 0.06); }
-.home-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
-/* A dot in each corner, as on the board. */
-.home-tile {
-  --dot: radial-gradient(circle, var(--border) 2.6px, transparent 3.2px);
-  position: relative;
-  overflow: hidden;
-  height: 248px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 1px 2px rgba(29, 29, 36, 0.04), 0 8px 24px rgba(60, 64, 90, 0.05);
-  background:
-    var(--dot) left 14px top 14px / 8px 8px no-repeat,
-    var(--dot) right 14px top 14px / 8px 8px no-repeat,
-    var(--dot) left 14px bottom 14px / 8px 8px no-repeat,
-    var(--dot) right 14px bottom 14px / 8px 8px no-repeat,
-    var(--bg-surface);
-  outline: none;
+/* The moving strip: the track holds two copies of the tiles; the script scrolls it and loops back by one copy. */
+.home-marquee {
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: var(--space-3) 0 var(--space-5);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent); /* a mask, not a colour: only its opacity counts */
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
 }
-.home-tile:focus-visible { box-shadow: 0 0 0 2px var(--bg-page), 0 0 0 4px var(--focus-ring); }
-.home-tile:hover { border-color: var(--accent-fill-1); }
-.home-tile__in { position: absolute; inset: 0; padding: 0 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transform: translateY(39px); transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
-.home-tile__icon {
-  --d: radial-gradient(circle, var(--border) 2px, transparent 2.5px);
-  width: 72px;
-  height: 72px;
-  margin-bottom: 22px;
-  border-radius: 20px;
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 2px 6px rgba(60, 64, 90, 0.08);
+.home-marquee::-webkit-scrollbar { display: none; }
+.home-marquee__track { display: flex; width: max-content; margin: 0; padding: 0; list-style: none; }
+.home-marquee__controls { display: flex; justify-content: center; gap: var(--space-3); }
+.home-round-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
   display: grid;
   place-items: center;
-  background:
-    var(--d) left 6px top 6px / 6px 6px no-repeat,
-    var(--d) right 6px top 6px / 6px 6px no-repeat,
-    var(--d) left 6px bottom 6px / 6px 6px no-repeat,
-    var(--d) right 6px bottom 6px / 6px 6px no-repeat,
-    var(--bg-page);
-  transition: opacity 0.25s, transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, translate 0.2s ease;
 }
-.home-tile__icon svg { width: 28px; height: 28px; fill: none; stroke: var(--text-primary); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.home-tile__title { margin: 0; font-size: 17px; font-weight: 500; letter-spacing: -0.01em; }
-.home-tile__text { margin: 10px 0 0; height: 4.5em; font-size: 15px; line-height: 1.5; color: var(--text-secondary); opacity: 0; transform: translateY(10px); transition: opacity 0.25s, transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
-.home-tile:hover .home-tile__in, .home-tile:focus .home-tile__in { transform: translateY(-47px); }
-.home-tile:hover .home-tile__icon, .home-tile:focus .home-tile__icon { opacity: 0; transform: scale(0.8); }
-.home-tile:hover .home-tile__text, .home-tile:focus .home-tile__text { opacity: 1; transform: none; transition-delay: 0.05s; }
-/* Touch screens can't hover: every tile shows its text. */
-@media (hover: none) {
-  .home-tile { height: auto; min-height: 220px; }
-  .home-tile__in { position: static; padding: 28px; transform: none; }
-  .home-tile__icon { width: 56px; height: 56px; margin-bottom: 14px; }
-  .home-tile__text { opacity: 1; transform: none; height: auto; }
-  .home-tile:focus .home-tile__in { transform: none; }
-  .home-tile:focus .home-tile__icon { opacity: 1; transform: none; }
+.home-round-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.home-round-btn:hover { background: var(--accent-tint); border-color: var(--accent-fill-1); color: var(--color-berry); translate: 0 -2px; }
+.home-round-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+
+/* Each tile takes one of four colours: a tinted card, a stronger icon well, and the icon and title in the matching ink. */
+.home-tile {
+  flex: none;
+  width: 280px;
+  margin-right: var(--space-4); /* margin, not gap, so the two copies are exactly equal and the loop doesn't jump */
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: var(--tile-bg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition: translate 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
 }
+.home-tile--pink { --tile-bg: var(--accent-tint); --tile-well: var(--accent-fill-2); --tile-ink: var(--color-berry); }
+.home-tile--indigo { --tile-bg: var(--indigo-tint); --tile-well: var(--indigo-tint-strong); --tile-ink: var(--indigo); }
+.home-tile--green { --tile-bg: color-mix(in srgb, var(--success-fill) 45%, var(--bg-surface)); --tile-well: var(--success-fill); --tile-ink: var(--success); }
+.home-tile--amber { --tile-bg: color-mix(in srgb, var(--warning-fill) 45%, var(--bg-surface)); --tile-well: var(--warning-fill); --tile-ink: var(--warning); }
+.home-tile__icon { width: 48px; height: 48px; margin-bottom: var(--space-2); border-radius: 14px; background: var(--tile-well); display: grid; place-items: center; }
+.home-tile__icon svg { width: 24px; height: 24px; fill: none; stroke: var(--tile-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.home-tile__title { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--tile-ink); }
+.home-tile__text { margin: 0; font-size: 15px; line-height: 1.5; color: var(--text-secondary); }
+.home-tile:hover { translate: 0 -6px; border-color: var(--tile-well); box-shadow: 0 14px 30px rgba(60, 64, 90, 0.1); }
 
 /* ---- FAQ ---- */
 .home-faq-wrap { display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start; }
 .home-faq-wrap__intro { flex: 1 1 300px; }
+.home-ruleset { align-self: flex-start; display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: 14px; font-weight: 500; }
+.home-ruleset__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.home-ruleset--ok { background: var(--success-fill); color: var(--success); }
+.home-ruleset--warn { background: var(--warning-fill); color: var(--warning); }
 .home-faq { flex: 2 1 520px; min-width: 0; padding: var(--space-2) var(--space-5); }
 .home-faq details { border-bottom: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-1); }
 .home-faq details:last-child { border-bottom: 0; }
@@ -412,21 +639,45 @@ const FAQS = [
     .home-stagger > :nth-child(3) { animation-range: entry 30% cover 42%; }
     .home-stagger > :nth-child(4) { animation-range: entry 45% cover 48%; }
     .home-eyebrow { animation: home-slide cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-timeline: view(); animation-range: entry 10% cover 30%; }
-    .home-step__num { animation: home-pop linear both; animation-timeline: view(); animation-range: entry 40% cover 40%; }
-    .home-drawline { animation: home-draw linear both; animation-timeline: view(); animation-range: entry 30% cover 55%; }
-    .home-meetpop { transform-box: fill-box; transform-origin: 20px 50%; animation: home-meetpop linear both; animation-timeline: view(); animation-range: cover 50% cover 62%; }
+    .home-drawline { animation: home-draw linear both; animation-timeline: view(); animation-range: entry 0% cover 35%; }
+    .home-meetpop { transform-box: fill-box; transform-origin: 20px 50%; animation: home-meetpop linear both; animation-timeline: view(); animation-range: cover 30% cover 42%; }
   }
 }
 @keyframes home-rise { from { opacity: 0; transform: translateY(64px) scale(0.96); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes home-card { from { opacity: 0; transform: translateY(80px) rotate(-2deg) scale(0.92); } to { opacity: 1; transform: none; } }
 @keyframes home-slide { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: none; } }
-@keyframes home-pop { 0% { transform: scale(0.3); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
 @keyframes home-draw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes home-meetpop { 0% { opacity: 0; transform: scale(0.2); } 70% { opacity: 1; transform: scale(1.35); } 100% { opacity: 1; transform: scale(1); } }
 
+/* ---- pink hover: boxes lift with a springy ease and glow pink (like ParentPal's purple) ---- */
+/* `translate` (not `transform`) so it doesn't fight the scroll-reveal animations, which use transform. */
+.home-faq {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.home-faq:hover {
+  border-color: var(--accent-fill-2);
+  box-shadow: 0 18px 44px rgba(240, 138, 182, 0.2);
+}
+.home-btn--ghost:hover { border-color: var(--accent-fill-1); }
+
 @media (prefers-reduced-motion: reduce) {
   .home-pulse, .home-lit { animation: none; }
-  .home-tile__in, .home-tile__icon, .home-tile__text { transition: none; }
+  .home-hero, .home-hero::before { transition: none; }
+  .home-hero:hover { translate: none; }
+  .home-tile:hover, .home-feat:hover { translate: none; }
+  .home-feat { transition: none; }
+  .home-step { transition: none; }
+  .home-step:hover { scale: none; }
+  .home-tile, .home-round-btn { transition: none; }
   .home-faq summary::after { transition: none; }
+}
+</style>
+
+<style>
+/* Home only: the page behind Home is white (body gets .is-home while Home is mounted, see the script).
+   The sticky navbar reads --nav-surface, so its bar matches the white page here and the mist page elsewhere. */
+body.is-home {
+  background-color: var(--bg-surface);
+  --nav-surface: color-mix(in srgb, var(--bg-surface) 92%, transparent);
 }
 </style>
