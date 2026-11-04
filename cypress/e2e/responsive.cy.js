@@ -29,10 +29,12 @@ function fitsWidth() {
   });
 }
 
-// Bars pinned across the screen (position fixed or sticky, e.g. the navbar) together take at most half the height.
+// Bars pinned across the screen (position fixed or sticky, e.g. the compare bar) together take at most half the height.
 // A pinned side column (the dashboard's What-if panel) sits beside the content, not over it, so it does not count.
+// Measured at the top of the page only, so a bar that appears only after scrolling is not checked. Retries, in case a
+// bar is still animating in.
 function leavesRoomToRead() {
-  cy.window().then((win) => {
+  cy.window().should((win) => {
     const pinned = [...win.document.body.querySelectorAll('*')].filter((el) => {
       const { position } = win.getComputedStyle(el);
       if (position !== 'fixed' && position !== 'sticky') return false;
