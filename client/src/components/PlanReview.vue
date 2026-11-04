@@ -1,6 +1,7 @@
 <script setup>
 // "Check your answers": everything the four plan steps asked, on one screen, before Results. Each section is a card
-// with an Edit button that goes back to its step. Shown on /preview (#110), which every plan passes through after the
+// with an Edit button that goes back to its step; About you has one per screen (emit('edit', 1, part)), so an edit
+// opens the question it is about. Shown on /preview (#110), which every plan passes through after the
 // last question, so a typo (an extra zero on an income) is caught before it is in every figure.
 // Layout: What matters and About you full width; Your BTO and Resale flat side by side (stacked on phones).
 import { computed } from 'vue';
@@ -35,6 +36,14 @@ const buyers = computed(() => store.profile.applicants.map((a, i) => ({
     ['CPF OA balance', money(a.cpfOaBalance)],
   ],
 })));
+
+// About you's Edit buttons, one per screen, in ABOUT_PARTS order.
+const ABOUT_EDITS = [
+  { part: 'ages', label: 'Ages' },
+  { part: 'buyers', label: 'Who is buying' },
+  { part: 'incomes', label: 'Income' },
+  { part: 'savings', label: 'Savings' },
+];
 
 const sum = (key) => {
   const list = store.profile.applicants.map((a) => a[key]).filter((n) => typeof n === 'number');
@@ -104,9 +113,18 @@ const assumptions = computed(() => [
           <div class="review-card__head">
             <span class="review-card__num" aria-hidden="true">2</span>
             <h3 id="review-1" class="review-card__title">About you</h3>
-            <button type="button" class="review-card__edit" data-cy="plan-review-change-2" @click="emit('edit', 1)">
+          </div>
+          <div class="review-edits">
+            <button
+              v-for="(e, i) in ABOUT_EDITS"
+              :key="e.part"
+              type="button"
+              class="review-card__edit"
+              :data-cy="`plan-review-change-2-${e.part}`"
+              @click="emit('edit', 1, i)"
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" /></svg>
-              Edit<span class="visually-hidden"> About you</span>
+              <span class="visually-hidden">Edit </span>{{ e.label }}
             </button>
           </div>
           <div class="row g-3">
@@ -216,6 +234,10 @@ const assumptions = computed(() => [
 .review-card__edit svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .review-card__edit:hover { background: var(--accent-tint); border-color: var(--accent-fill-1); color: var(--color-berry); }
 .review-card__edit:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* About you: one Edit per screen, in a row of their own under the title. */
+.review-edits { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
+.review-edits .review-card__edit { margin-left: 0; }
 
 /* ---- rows ---- */
 .review-list { margin: 0; }
