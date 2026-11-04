@@ -246,7 +246,7 @@ onMounted(load);
           <span v-if="result.mock" data-cy="results-mock-notice">Showing mock data.</span>
         </span>
       </p>
-      <h2 id="path-details-title" class="h5 mb-2">Each path in {{ horizonYear }}, in plain words</h2>
+      <h2 id="path-details-title" class="h5 mb-2">Each path<template v-if="horizonYear"> in {{ horizonYear }}</template>, in plain words</h2>
       <div v-if="result.outcomeA && result.outcomeB" class="row g-3 mb-3">
         <div class="col-12 col-lg-6">
           <PathOutcomeCard

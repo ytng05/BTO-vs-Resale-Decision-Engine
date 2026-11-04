@@ -24,10 +24,13 @@ const props = defineProps({
 
 const dollars = (cents) => (typeof cents === 'number' ? cents / 100 : cents);
 const money = (cents) => formatMoney(dollars(cents));
-// "S$1.73 million" for the big round figures in the three lines; exact figures stay in the full breakdown.
-const plain = (cents) => (typeof cents === 'number' && Math.abs(cents) >= 100_000_000
-  ? `S$${(cents / 100_000_000).toFixed(2)} million`
-  : money(cents));
+// The flat's value is a projection, so it is said as "about": "S$1.73 million", or rounded to S$1,000 under a million.
+// The exact figure stays in the full breakdown.
+const about = (cents) => {
+  if (typeof cents !== 'number') return money(cents);
+  if (Math.abs(cents) >= 100_000_000) return `S$${(cents / 100_000_000).toFixed(2)} million`;
+  return formatMoney(Math.round(cents / 100 / 1000) * 1000);
+};
 
 const pathName = computed(() => (props.tone === 'resale' ? 'Resale' : 'BTO'));
 const o = computed(() => props.outcome);
@@ -51,11 +54,12 @@ const breakdown = computed(() => {
   ];
 });
 
-// Line 2: what you would still pay back = loan + CPF to put back (+ any subsidy clawback).
+// Line 2: what comes off the flat's value = loan still owed + CPF to put back (+ any subsidy clawback). The loan is a
+// real debt; the CPF part is owed to no one: it goes back into the buyers' own CPF accounts (D1), so it is not "pay back".
 const owedCents = computed(() => (o.value.outstandingLoanAtHorizonCents ?? 0) + cpfToPutBackCents.value + clawbackCents.value);
 const owedParts = computed(() => [
   `Loan ${money(o.value.outstandingLoanAtHorizonCents ?? 0)}`,
-  `CPF ${money(cpfToPutBackCents.value)}`,
+  `CPF to put back, with interest ${money(cpfToPutBackCents.value)}`,
   ...(clawbackCents.value > 0 ? [`Subsidy clawback ${money(clawbackCents.value)}`] : []),
 ].join(' · '));
 
@@ -74,7 +78,14 @@ const grantAmounts = computed(() =>
 const GRANT_NAMES = { EHG: 'Enhanced CPF Housing Grant', FAMILY: 'CPF Housing Grant (Family)', PHG: 'Proximity Housing Grant' };
 const grantName = (id) => GRANT_NAMES[id] ?? id;
 const paying = computed(() => (o.value.grants ?? []).filter((g) => (g.amountCents ?? 0) > 0));
-const notPaying = computed(() => (o.value.grants ?? []).filter((g) => !((g.amountCents ?? 0) > 0)));
+// Family and Proximity grants only exist for resale flats: on a BTO path they say nothing about the household, so
+// they are not "not eligible", they are left out of the note (their reasons stay in Full breakdown).
+const RESALE_ONLY = ['FAMILY', 'PHG'];
+const isResaleOnlyHere = (g) => props.tone === 'bto' && RESALE_ONLY.includes(g.id);
+const resaleOnlyNote = computed(() => (props.tone === 'bto' && (o.value.grants ?? []).some((g) => isResaleOnlyHere(g))
+  ? 'The Family Grant and the Proximity Housing Grant are for resale flats only.'
+  : ''));
+const notPaying = computed(() => (o.value.grants ?? []).filter((g) => !((g.amountCents ?? 0) > 0) && !isResaleOnlyHere(g)));
 const joinList = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} or ${xs[xs.length - 1]}`);
 const payingText = computed(() => paying.value.map((g) => `${grantName(g.id)}: ${money(g.amountCents)}`).join('; '));
 const notPayingText = computed(() => (notPaying.value.length ? `Not eligible for the ${joinList(notPaying.value.map((g) => grantName(g.id)))}.` : ''));
@@ -97,6 +108,7 @@ async function showWhy() {
   if (el) {
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    el.focus({ preventScroll: true }); // the heading has tabindex="-1": keyboard and screen-reader users land there too
   }
 }
 </script>
@@ -118,15 +130,15 @@ async function showWhy() {
       <ul v-if="hasParts" class="path-lines list-unstyled">
         <li :data-cy="`${cyPrefix}-summary-value`">
           <span class="path-lines__ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6" /></svg></span>
-          <span>Your flat is worth about <strong>{{ plain(o.marketValueAtHorizonCents) }}</strong></span>
+          <span>Your flat would be worth about <strong>{{ about(o.marketValueAtHorizonCents) }}</strong></span>
         </li>
         <li :data-cy="`${cyPrefix}-summary-owed`">
           <span class="path-lines__ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" /></svg></span>
-          <span>You'd still pay back <strong>{{ plain(owedCents) }}</strong><small class="path-lines__sub">{{ owedParts }}</small></span>
+          <span>Taken off: <strong>{{ money(owedCents) }}</strong> still owed or going back to your CPF<small class="path-lines__sub">{{ owedParts }}</small></span>
         </li>
         <li :data-cy="`${cyPrefix}-summary-cash`">
           <span class="path-lines__ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M7 15h3" /></svg></span>
-          <span>You'd have spent <strong>{{ plain(o.housingCashSpentCents) }}</strong> in cash<small class="path-lines__sub">On the flat and on rent<template v-if="horizonYear">, up to {{ horizonYear }}</template></small></span>
+          <span>You'd have spent <strong>{{ money(o.housingCashSpentCents) }}</strong> in cash<small class="path-lines__sub">Rent, renovation, fees and loan payments<template v-if="horizonYear">, up to {{ horizonYear }}</template></small></span>
         </li>
       </ul>
 
@@ -134,14 +146,14 @@ async function showWhy() {
       <p v-if="paying.length" class="path-note path-note--yes" :data-cy="`${cyPrefix}-grants-total`">
         <span aria-hidden="true">✓</span>
         <span>
-          <strong>{{ payingText }},</strong> already counted above. {{ notPayingText }}
+          <strong>{{ payingText }},</strong> already counted above. {{ notPayingText }} {{ resaleOnlyNote }}
           <button type="button" class="path-note__why" :data-cy="`${cyPrefix}-grants-why`" @click="showWhy">Why</button>
         </span>
       </p>
       <p v-else class="path-note" :data-cy="`${cyPrefix}-grants-total`">
         <span aria-hidden="true">ⓘ</span>
         <span>
-          <strong>No grants.</strong> {{ firstFailedReason }}
+          <strong>No grants.</strong> {{ firstFailedReason }} {{ resaleOnlyNote }}
           <button type="button" class="path-note__why" :data-cy="`${cyPrefix}-grants-why`" @click="showWhy">Why</button>
         </span>
       </p>

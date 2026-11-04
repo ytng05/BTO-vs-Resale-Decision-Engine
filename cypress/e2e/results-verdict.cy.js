@@ -39,8 +39,8 @@ describe('results verdict', () => {
   it('explains each path in three plain lines, with the exact parts in "Full breakdown"', () => {
     completePlan();
     ['results-patha', 'results-pathb'].forEach((p) => {
-      cy.get(`[data-cy=${p}-summary-value]`).should('be.visible').and('contain', 'Your flat is worth about');
-      cy.get(`[data-cy=${p}-summary-owed]`).should('be.visible').and('contain', 'still pay back');
+      cy.get(`[data-cy=${p}-summary-value]`).should('be.visible').and('contain', 'would be worth about');
+      cy.get(`[data-cy=${p}-summary-owed]`).should('be.visible').and('contain', 'Taken off');
       cy.get(`[data-cy=${p}-summary-cash]`).should('be.visible').and('contain', 'in cash');
       cy.get(`[data-cy=${p}-grants-total]`).should('be.visible');
       cy.get(`[data-cy=${p}-breakdown]`).should('not.be.visible');
