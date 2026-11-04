@@ -87,6 +87,31 @@ const rows = computed(() => {
   ];
 });
 
+// Listing-style badges, as on property sites: the path ahead long-term gets "★ Better long-term"; the other path gets
+// what it's better at, if anything (keys sooner, or less cash up front). Nothing when it's too close to call.
+const ym = (d) => { const m = String(d ?? '').match(/^(\d{4})-(\d{2})/); return m ? Number(m[1]) * 12 + Number(m[2]) : null; };
+const monthsText = (n) => {
+  const y = Math.floor(n / 12); const m = n % 12;
+  return [y ? `${y} year${y > 1 ? 's' : ''}` : '', m ? `${m} month${m > 1 ? 's' : ''}` : ''].filter(Boolean).join(' ');
+};
+const badges = computed(() => {
+  const out = { bto: null, resale: null };
+  const c = props.call;
+  if (!c || c.close || !['bto', 'resale'].includes(c.winner)) return out;
+  const win = c.winner;
+  const other = win === 'bto' ? 'resale' : 'bto';
+  out[win] = { text: '★ Better long-term', tone: 'win' };
+  const o = { bto: props.outcomeA, resale: props.outcomeB };
+  const kw = ym(o[win].timeline?.keyCollectionDate);
+  const ko = ym(o[other].timeline?.keyCollectionDate);
+  if (kw && ko && ko < kw) {
+    out[other] = { text: `⚡ Keys ${monthsText(kw - ko)} sooner`, tone: 'plus' };
+  } else if ((o[other].cashRequiredAtPurchaseCents ?? Infinity) < (o[win].cashRequiredAtPurchaseCents ?? -Infinity)) {
+    out[other] = { text: '◆ Less cash up front', tone: 'plus' };
+  }
+  return out;
+});
+
 // When a What-if change makes the other path come out ahead, say so for a few seconds.
 const flipped = ref('');
 let flipTimer = 0;
@@ -121,7 +146,10 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
       <h2 id="walk-heading" class="dash-hero__walk-title">What you'd walk away with<template v-if="horizon"> in {{ horizon }}</template></h2>
       <div v-for="r in rows" :key="r.key" class="dash-hero__row">
         <div class="dash-hero__row-head">
-          <span><span class="dash-hero__key" :class="`dash-hero__key--${r.key}`" aria-hidden="true"></span>{{ r.label }} · {{ r.place }}</span>
+          <span class="dash-hero__name">
+            <span><span class="dash-hero__key" :class="`dash-hero__key--${r.key}`" aria-hidden="true"></span>{{ r.label }} · {{ r.place }}</span>
+            <span v-if="badges[r.key]" class="dash-hero__badge" :class="`dash-hero__badge--${badges[r.key].tone}`" :data-cy="`dashboard-badge-${r.key}`">{{ badges[r.key].text }}</span>
+          </span>
           <strong class="text-numeric" :data-cy="`dashboard-summary-${r.key}-net`">{{ r.value }}</strong>
         </div>
         <span class="dash-hero__track" aria-hidden="true">
@@ -191,6 +219,10 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
 .dash-hero__ghost { position: absolute; inset: 0 auto 0 0; border: 1.5px dashed var(--text-secondary); border-radius: var(--radius-pill); transition: width var(--duration-base) var(--ease-out); }
 .dash-hero__fill { position: relative; }
 .dash-hero__was { font-size: 0.8125rem; color: var(--text-secondary); }
+.dash-hero__name { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+.dash-hero__badge { padding: 2px var(--space-3); border-radius: var(--radius-pill); font-size: 0.75rem; font-weight: 600; animation: hero-pop 0.5s 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.dash-hero__badge--win { background: var(--text-primary); color: var(--on-primary); }
+.dash-hero__badge--plus { background: var(--accent-fill-2); color: var(--color-berry); }
 /* While a What-if recalculates, the numbers dim a little. */
 .dash-hero__headline, .dash-hero__row strong { transition: opacity 0.2s ease; }
 .is-updating .dash-hero__headline, .is-updating .dash-hero__row strong { opacity: 0.55; }

@@ -7,6 +7,7 @@
 import { computed } from 'vue';
 import { formatMoney } from '../../utils/format.js';
 import { cashSentence, purchaseCard } from '../../utils/dashboardSummary.js';
+import { monthYear } from '../../utils/dashboardFormat.js';
 
 const props = defineProps({
   outcomeA: { type: Object, required: true },
@@ -39,6 +40,12 @@ const limitText = (aff) => {
 };
 const limitTag = (aff) => (!aff ? '' : aff.withinLimit ? 'Within limit' : 'Loan capped');
 const LEASE_SHORT = 'LEASE_BELOW_95_PRORATION';
+// Listing-style fact tags under each flat's name: lease, keys date and grants.
+const tagsFor = (key, o, c, leaseShort) => [
+  key === 'bto' ? 'New 99-year lease' : (leaseShort ? 'Short lease' : 'Resale flat'),
+  o.timeline?.keyCollectionDate ? `Keys ${monthYear(o.timeline.keyCollectionDate)}` : '',
+  c.grantsCents > 0 ? `${formatMoney(Math.round(c.grantsCents / 100 / 1000) * 1000)} in grants` : 'No grants',
+].filter(Boolean);
 const cards = computed(() => [
   { key: 'bto', name: 'BTO', sub: props.subtitleA, c: cardA.value, o: props.outcomeA, other: cardB.value, otherName: 'resale', when: 'At signing and at keys' },
   { key: 'resale', name: 'Resale', sub: props.subtitleB, c: cardB.value, o: props.outcomeB, other: cardA.value, otherName: 'BTO', when: 'At completion' },
@@ -72,6 +79,9 @@ const cards = computed(() => [
         <header class="dash-paid__head">
           <strong>{{ p.name }}</strong>
           <span class="small text-secondary">{{ p.sub }}</span>
+          <span class="dash-paid__tags" :data-cy="`dashboard-paid-${p.key}-tags`">
+            <span v-for="t in tagsFor(p.key, p.o, p.c, Boolean(p.leaseNote))" :key="t" class="dash-paid__tag-fact">{{ t }}</span>
+          </span>
         </header>
         <div class="dash-paid__body">
           <div class="dash-paid__bar" aria-hidden="true">
@@ -131,6 +141,9 @@ const cards = computed(() => [
 .dash-paid__card--resale { --dash-tint: var(--dash-resale-tint); --dash-pale: var(--dash-resale-pale); --dash-ink: var(--dash-resale); }
 .dash-paid__head { display: flex; flex-direction: column; padding: var(--space-4) var(--space-5) 0; color: var(--dash-ink); }
 .dash-paid__head strong { font-size: 1.125rem; }
+.dash-paid__tags { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-2); }
+.dash-paid__tag-fact { padding: 2px var(--space-2); border-radius: 6px; background: var(--bg-page); color: var(--text-primary); font-size: 0.75rem; font-weight: 500; }
+.dash-paid__card:hover .dash-paid__tag-fact { background: var(--bg-surface); }
 .dash-paid__body { display: flex; flex-direction: column; padding: var(--space-4) var(--space-5) var(--space-5); }
 .dash-paid__bar { display: flex; height: 16px; border-radius: var(--radius-pill); overflow: hidden; margin-bottom: var(--space-3); background: var(--bg-page); }
 /* Each part of the bar: hover it to see its share; it brightens. */

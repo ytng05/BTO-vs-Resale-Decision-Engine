@@ -118,18 +118,6 @@ const groups = computed(() => ['Timing', 'Market', 'Housing costs'].map((title) 
   items: sliders.value.filter((s) => s.group === title),
 })));
 const mainGroups = computed(() => groups.value.filter((g) => g.title !== 'Housing costs'));
-// One-click scenarios: each sets a few assumptions at once, on top of the current values (Reset goes back to the plan).
-const PRESETS = [
-  { id: 'boom', label: 'Prices boom', hint: 'Flat prices +5% a year', set: { annualPriceGrowth: 0.05 } },
-  { id: 'flat', label: 'Prices stay flat', hint: 'Flat prices 0% a year', set: { annualPriceGrowth: 0 } },
-  { id: 'rent', label: 'I rent while waiting', hint: 'S$2,500 a month until the keys', set: { monthlyHousingCostWhileWaiting: 2500 } },
-  { id: 'reno', label: 'Big renovation', hint: 'S$60,000 on each flat', set: { renovationA: 60000, renovationB: 60000 } },
-];
-const isOn = (p) => Object.entries(p.set).every(([k, v]) => props.modelValue[k] === v);
-function applyPreset(p) {
-  emit('update:modelValue', { ...props.modelValue, ...p.set });
-}
-
 const isYear = (s) => s.key === 'applicationYear' || s.key === 'horizonYear';
 const moreGroup = computed(() => groups.value.find((g) => g.title === 'Housing costs'));
 
@@ -147,22 +135,6 @@ const moreChanged = computed(() => {
       <!-- The Dashboard's "since your inputs" card: what the answer was at the saved plan, and what it is now. -->
       <slot name="live" />
 
-      <div class="whatif-presets" role="group" aria-label="Quick scenarios" data-cy="whatif-presets">
-        <span class="whatif-presets__label">Quick scenarios</span>
-        <div class="whatif-presets__list">
-          <button
-            v-for="p in PRESETS"
-            :key="p.id"
-            type="button"
-            class="whatif-preset"
-            :class="{ 'is-on': isOn(p) }"
-            :aria-pressed="isOn(p)"
-            :title="p.hint"
-            :data-cy="`whatif-preset-${p.id}`"
-            @click="applyPreset(p)"
-          >{{ p.label }}</button>
-        </div>
-      </div>
 
       <fieldset v-for="g in mainGroups" :key="g.title" class="whatif-group">
         <legend class="visually-hidden">{{ g.title }}</legend>
@@ -196,13 +168,6 @@ const moreChanged = computed(() => {
 <style scoped>
 .whatif-title { margin: 0 0 var(--space-4); font-family: var(--font-heading); font-size: 1.375rem; font-weight: 600; }
 .whatif-group { border: 0; padding: 0; margin: 0; min-width: 0; }
-.whatif-presets { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--border-subtle); }
-.whatif-presets__label { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
-.whatif-presets__list { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.whatif-preset { padding: var(--space-1) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--bg-surface); font-size: 0.875rem; font-weight: 500; transition: background 0.2s ease, border-color 0.2s ease, translate 0.2s ease; }
-.whatif-preset:hover { background: var(--accent-tint); border-color: var(--accent-fill-1); translate: 0 -1px; }
-.whatif-preset.is-on { background: var(--accent-fill-2); border-color: var(--color-pink-deep); color: var(--color-berry); }
-.whatif-preset:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .whatif-group + .whatif-group { border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); }
 .whatif-group__title {
   font-family: var(--font-heading);

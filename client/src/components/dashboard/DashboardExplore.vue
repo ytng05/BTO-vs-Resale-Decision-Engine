@@ -1,7 +1,6 @@
 <script setup>
 // "Explore the detail": one card per detail section, like the home page's cards (icon, title, one line). Clicking a
-// card tells the dashboard to open that section below it; the picked card turns pink. `picked` is null when every
-// section is open ("Expand all").
+// card tells the dashboard to open that detail in a pop-up; the card stays pink while its pop-up is open.
 defineProps({
   items: { type: Array, required: true }, // [{ key, title, sub, icon }] (icon: a 24×24 stroke path)
   picked: { type: String, default: null },

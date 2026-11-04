@@ -222,6 +222,17 @@ function jumpToWhatIf() {
   panel?.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   (panel?.querySelector('[data-cy=whatif-year-plus]') ?? panel?.querySelector('button, input'))?.focus({ preventScroll: true });
 }
+// Quick scenarios, as filter chips along the top (like a property site's search filters): each sets a few
+// assumptions at once on top of the current ones; "Reset" in the What-if panel goes back to the plan.
+const PRESETS = [
+  { id: 'boom', label: 'Prices boom', hint: 'Flat prices +5% a year', set: { annualPriceGrowth: 0.05 } },
+  { id: 'flat', label: 'Prices stay flat', hint: 'Flat prices 0% a year', set: { annualPriceGrowth: 0 } },
+  { id: 'rent', label: 'I rent while waiting', hint: 'S$2,500 a month until the keys', set: { monthlyHousingCostWhileWaiting: 2500 } },
+  { id: 'reno', label: 'Big renovation', hint: 'S$60,000 on each flat', set: { renovationA: 60000, renovationB: 60000 } },
+];
+const presetOn = (p) => Object.entries(p.set).every(([k, val]) => whatIf[k] === val);
+const applyPreset = (p) => setWhatIf({ ...whatIf, ...p.set });
+
 // "How it changes over time" (the net position chart) is always open, beside the What-if panel, so dragging a
 // slider shows its effect straight away.
 // "Explore the detail": one card per detail. Clicking a card opens that detail in a pop-up (a dialog over the page),
@@ -332,6 +343,24 @@ const detailLine = computed(() => ({
       <!-- 2. Can today's savings pay the cash up front? -->
       <DashboardCashCard v-if="A && B" :outcome-a="A" :outcome-b="B" :cash-savings="store.profile.cashSavings" @jump-whatif="jumpToWhatIf" />
 
+      <!-- Quick scenarios, as filter chips. "More options" jumps to the full What-if panel. -->
+      <div class="dash-chips" role="group" aria-label="Quick scenarios" data-cy="whatif-presets">
+        <span class="dash-chips__label">Try a scenario</span>
+        <button
+          v-for="p in PRESETS"
+          :key="p.id"
+          type="button"
+          class="dash-chip-btn"
+          :class="{ 'is-on': presetOn(p) }"
+          :aria-pressed="presetOn(p)"
+          :title="p.hint"
+          :data-cy="`whatif-preset-${p.id}`"
+          @click="applyPreset(p)"
+        >{{ p.label }}</button>
+        <button v-if="changes.length" type="button" class="dash-chip-btn dash-chip-btn--reset" data-cy="dashboard-chips-reset" @click="reset">✕ Clear</button>
+        <button type="button" class="dash-chip-btn dash-chip-btn--more" @click="jumpToWhatIf">More options ▾</button>
+      </div>
+
       <!-- Warnings no tile already says -->
       <DashboardNotes
         :blocking="warningGroups.blocking"
@@ -425,6 +454,7 @@ const detailLine = computed(() => ({
         </aside>
       </div>
 
+
       <!-- The detail pop-up. Clicking the dark backdrop (but not the box) closes it. -->
       <div v-if="openItem" class="dash-modal" @click.self="closeDetail">
         <div class="dash-modal__box" role="dialog" aria-modal="true" aria-labelledby="dash-modal-title" :data-cy="`dashboard-section-${openItem.key}`">
@@ -516,7 +546,7 @@ const detailLine = computed(() => ({
 .dash-explore__title { margin: 0; font-family: var(--font-heading); font-size: 1.375rem; font-weight: 600; }
 
 /* The detail pop-up: a dark backdrop over the page, a white box in the middle that scrolls inside if it's long.
-   On phones it fills most of the screen. */
+   On phones it slides up from the bottom. */
 .dash-modal {
   position: fixed; inset: 0; z-index: 1050;
   display: grid; place-items: center;
@@ -543,6 +573,12 @@ const detailLine = computed(() => ({
 .dash-modal__close:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .dash-modal__close svg { width: 18px; height: 18px; fill: none; stroke: var(--text-primary); stroke-width: 2.2; stroke-linecap: round; }
 .dash-modal__body { overflow-y: auto; padding: var(--space-5); }
+@keyframes dash-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dash-pop { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
+@media (max-width: 575.98px) {
+  .dash-modal { padding: var(--space-2); align-items: end; }
+  .dash-modal__box { max-height: 92vh; }
+}
 /* Tables inside the pop-ups (grants, costs, sizes): white rows with thin lines and a pale pink header, instead of
    the grey fill they have elsewhere. Rows turn pale pink on hover. */
 .dash-modal__body :deep(table) { --bs-table-bg: transparent; --bs-table-striped-bg: transparent; --bs-table-hover-bg: var(--accent-tint); background: transparent; }
@@ -551,13 +587,17 @@ const detailLine = computed(() => ({
 .dash-modal__body :deep(tbody tr) { transition: background 0.15s ease; }
 .dash-modal__body :deep(tbody tr:hover) { background: var(--accent-tint); }
 .dash-modal__body :deep(.card) { background: var(--bg-surface); }
-@keyframes dash-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes dash-pop { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: none; } }
-@media (max-width: 575.98px) {
-  .dash-modal { padding: var(--space-2); align-items: end; }
-  .dash-modal__box { max-height: 92vh; }
-}
-@media (prefers-reduced-motion: reduce) { .dash-modal, .dash-modal__box { animation: none; } }
+
+/* Quick scenario chips, like a property site's filter bar. */
+.dash-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-top: calc(clamp(40px, 5vw, 64px) * -0.6); }
+.dash-chips__label { margin-right: var(--space-1); font-size: 0.875rem; font-weight: 600; color: var(--text-secondary); }
+.dash-chip-btn { padding: var(--space-2) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-pill); background: var(--bg-surface); font-size: 0.9375rem; font-weight: 500; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, translate 0.2s ease; }
+.dash-chip-btn:hover { border-color: var(--accent-fill-1); background: var(--accent-tint); translate: 0 -1px; }
+.dash-chip-btn.is-on { background: var(--text-primary); border-color: var(--text-primary); color: var(--on-primary); }
+.dash-chip-btn--reset { border-style: dashed; }
+.dash-chip-btn--more { margin-left: auto; }
+.dash-chip-btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .dash-modal, .dash-modal__box { animation: none; } .dash-chip-btn { transition: none; } }
 
 /* Before you decide */
 .dash-before__title { margin: 0 0 var(--space-3); font-family: var(--font-heading); font-size: 1.125rem; font-weight: 600; }

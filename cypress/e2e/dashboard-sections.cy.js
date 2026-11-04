@@ -86,7 +86,7 @@ describe('dashboard sections', () => {
     cy.get('[data-cy=whatif-price-growth-reset]').should('not.exist');
   });
 
-  it('applies a quick scenario in one click, and Reset goes back to the plan', () => {
+  it('applies a quick scenario chip in one click, and Reset goes back to the plan', () => {
     openDashboard();
     cy.get('[data-cy=whatif-preset-flat]').click({ scrollBehavior: 'center' }).should('have.attr', 'aria-pressed', 'true');
     cy.get('[data-cy=whatif-price-growth-value]').should('contain', '0% / yr');

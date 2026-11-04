@@ -1,4 +1,4 @@
-// Dashboard overview: the walk-away bars, the savings strip and the "At a glance" tiles, plus the grants pop-up.
+// Dashboard overview: the walk-away bars and badges, the savings strip, the "At a glance" tiles, and the grants pop-up.
 // Mock data; same setup as dashboard.cy.js (`VITE_USE_MOCK=true npm run build`, `npm start`, `npm run test:e2e`).
 import { completePlan } from './helpers/plan.js';
 
@@ -14,6 +14,11 @@ describe('dashboard overview', () => {
     openDashboard();
     ['bto', 'resale'].forEach((p) => {
       cy.get(`[data-cy=dashboard-summary-${p}-net]`).invoke('text').should('match', /S\$[\d,]+/);
+      cy.get(`[data-cy=dashboard-paid-${p}-tags]`).should('contain', 'Keys');
+    });
+    // The path ahead long-term is badged (unless it's too close to call).
+    cy.get('[data-cy=dashboard-headline]').invoke('text').then((h) => {
+      if (/ends S\$/.test(h)) cy.get('[data-cy^=dashboard-badge-]').should('contain', 'Better long-term');
     });
     cy.get('[data-cy=dashboard-cash-card]').invoke('text')
       .should('match', /don't cover|cover the cash|Add your cash savings/);
