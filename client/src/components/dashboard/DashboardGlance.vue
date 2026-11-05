@@ -101,8 +101,11 @@ const tiles = computed(() => {
 .glance-tile__icon svg { width: 20px; height: 20px; fill: none; stroke: var(--tile-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .glance-tile__label { font-weight: 600; }
 .glance-tile__winner { font-size: 1.0625rem; line-height: 1.3; color: var(--text-secondary); }
-.glance-tile__vals { display: flex; justify-content: space-between; gap: var(--space-2); margin-top: auto; padding-top: var(--space-2); border-top: 1px solid rgba(29, 29, 36, 0.06); font-size: 0.875rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.glance-tile__vals { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-2); margin-top: auto; padding-top: var(--space-2); border-top: 1px solid rgba(29, 29, 36, 0.06); font-size: 0.875rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .glance-tile__vals small { font-size: 0.75rem; }
+.glance-tile__vals > span { white-space: nowrap; }
+.glance-tile { min-width: 0; }
+.glance-tile__winner { overflow-wrap: anywhere; text-wrap: balance; }
 .is-bto { color: var(--dash-bto) !important; font-weight: 600; }
 .is-resale { color: var(--dash-resale) !important; font-weight: 600; }
 
