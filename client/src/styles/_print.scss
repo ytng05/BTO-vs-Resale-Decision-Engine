@@ -3,15 +3,22 @@
 @media print {
   @page { margin: 14mm; }
 
-  body { background: #fff !important; }
+  // The fixed navbar is hidden in print, so the space kept for it at the top goes too.
+  body { background: #fff !important; padding-top: 0 !important; }
   .pill-nav, .skip-link { display: none !important; }
   .app-shell { padding: 0 !important; gap: 12px !important; max-width: none !important; }
 
-  .card { box-shadow: none !important; border: 1px solid #DFE2EA !important; break-inside: avoid; }
+  .card, .quiet-panel { box-shadow: none !important; border: 1px solid $border !important; break-inside: avoid; }
   h1, h2, h3 { break-after: avoid; }
   a { color: inherit !important; }
   canvas { max-width: 100% !important; height: auto !important; }
 
   // Disclosures print open, so nothing is hidden on paper.
   details > :not(summary) { display: block !important; }
+
+  // Dashboard: the verdict prints once at the top, in place; sliders, scenario chips and pop-ups don't print.
+  // The grant checks and every cost print from a paper-only copy instead (DashboardView, `printing`).
+  .dash-verdict-bar { position: static !important; box-shadow: none !important; }
+  .dash-main__side, .dash-modal, .dash-chips { display: none !important; }
+  .dash-main { display: block !important; }
 }

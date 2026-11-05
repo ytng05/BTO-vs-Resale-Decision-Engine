@@ -437,7 +437,7 @@ const assumptions = computed(() => [
   { title: 'CPF partial months', description: 'Months when CPF is withdrawn and when the flat is sold are excluded (pending CPF Board confirmation).' },
   { title: 'Employment', description: '12-month employment condition is assumed for applicants.' },
   { title: 'Income averaging', description: 'Monthly income is treated as the 12-month average at assessment.' },
-  { title: 'EHG lease pro-rating', description: 'Pro-rating is not applied; actual EHG may be lower when the lease does not cover the youngest buyer to age 95.' },
+  { title: 'Grant lease pro-rating', description: "HDB pro-rates the Enhanced CPF Housing Grant, the Family Grant and the Proximity Housing Grant when the remaining lease doesn't cover the youngest buyer to age 95. The app keeps the full amount for now, so actual grants may be lower." },
   { title: 'HDB loan LTV lease pro-rating', description: 'HDB does not publish a formula. We assume LTV falls 2% for each year the lease is short of 95, using the 2019 MOM/CPF examples for CPF usage limits (two data points).' },
   { title: 'PHG near distance', description: 'Whether your home is near your parents or child is declared by you. The Dashboard map shows the distance as a guide only and never decides eligibility (D15).' },
   { title: 'BTO value from nearby towns', description: 'A new BTO flat is valued from near-new resale sales (90+ years left) in its town. When the town has fewer than 5 in the last 12 months, sales from a fixed, hand-picked list of nearby towns are pooled in (e.g. Bishan uses Toa Payoh and Ang Mo Kio; Tengah uses Bukit Batok, Jurong West and Choa Chu Kang). Decision D41.' },
@@ -1176,15 +1176,8 @@ onMounted(async () => {
   }
 }
 
-:global(html) {
-  scroll-behavior: smooth;
-}
 
 @media (prefers-reduced-motion: reduce) {
-  :global(html) {
-    scroll-behavior: auto;
-  }
-
   .sources-assumption-card,
   .sources-assumption-card:hover,
   .sources-assumption-card:focus-within,

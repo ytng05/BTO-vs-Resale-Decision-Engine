@@ -2,6 +2,12 @@
 // `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 import { completePlan } from './helpers/plan.js';
 
+// Opens one "Explore the detail" card; its detail shows in a pop-up (role="dialog").
+function openDetail(key) {
+  cy.get(`[data-cy=dashboard-explore-${key}]`).click({ scrollBehavior: 'center' });
+  cy.get(`[data-cy=dashboard-section-${key}]`).should('be.visible');
+}
+
 function openDashboard() {
   completePlan();
   cy.get('[data-cy=results-dashboard-button]').click();
@@ -19,8 +25,9 @@ describe('financial dashboard', () => {
 
   it('leads with who ends ahead in which year, and shows the ruleset version', () => {
     openDashboard();
+    // The same sentence as the top of Results (verdict(), D42).
     cy.get('[data-cy=dashboard-headline]').invoke('text')
-      .should('match', /(BTO|Resale) ends S\$[\d,]+ ahead by \d{4}|Both paths end level by \d{4}/);
+      .should('match', /(BTO|Resale) leaves you about S\$[\d,]+ better off by \d{4}|Too close to call: .+ by \d{4}|about the same by \d{4}/);
     cy.get('[data-cy=dashboard-ruleset-version]').should('contain', 'Ruleset');
     ['bto', 'resale'].forEach((p) => {
       cy.get(`[data-cy=dashboard-summary-${p}-net]`).invoke('text').should('match', /S\$[\d,]+/);
@@ -31,6 +38,7 @@ describe('financial dashboard', () => {
 
   it('gives every grant check its own reason', () => {
     openDashboard();
+    openDetail('grants');
     cy.get('[data-cy=dashboard-grants] tbody tr[data-cy^=dashboard-grant-]').should('have.length.greaterThan', 0);
     cy.get('[data-cy=dashboard-grant-reason]').each(($li) => {
       cy.wrap($li).invoke('text').should('not.be.empty');
@@ -45,16 +53,16 @@ describe('financial dashboard', () => {
 
   it('draws how the net position adds up, and lists the costs', () => {
     openDashboard();
-    cy.get('[data-cy=dashboard-more-detail] > summary').click(); // the sections sit under "More detail", closed at first
-    cy.get('[data-cy=dashboard-section-cashflow] summary').click();
+    // The chart is always open (How each net position adds up); the costs open from their Explore card.
+    cy.get('[data-cy=dashboard-section-cashflow]').scrollIntoView();
     cy.get('[data-cy=dashboard-cashflow] canvas').should('be.visible');
+    openDetail('costs');
     cy.get('[data-cy=dashboard-costs], [data-cy=dashboard-costs-empty]').should('exist');
   });
 
   it('puts the two flats side by side: size, price and price per m²', () => {
     openDashboard();
-    cy.get('[data-cy=dashboard-more-detail] > summary').click();
-    cy.get('[data-cy=dashboard-section-size] summary').click();
+    openDetail('size');
     cy.get('[data-cy=dashboard-size-price]').should('be.visible');
     ['bto', 'resale'].forEach((p) => {
       cy.get(`[data-cy=dashboard-size-price-area-${p}]`).invoke('text').should('match', /\d+(\.\d)?(–\d+)? m²/);
@@ -95,6 +103,7 @@ describe('financial dashboard', () => {
     // Mock: the flip is 80% of the way up MOCK Tampines Bliss's S$481,000 to S$600,000 range, at S$576,200.
     cy.get('[data-cy=whatif-bto-price-hint]')
       .should('contain', 'Estimated from MOCK Tampines Bliss')
+      .and('contain', 'Starts at the middle')
       .and('contain', 'Above about S$576,000 (the mark), resale comes out ahead.');
     cy.get('[data-cy=whatif-bto-price-mark]').should('have.attr', 'aria-hidden', 'true')
       .invoke('attr', 'style').should('contain', '--at: 0.8');

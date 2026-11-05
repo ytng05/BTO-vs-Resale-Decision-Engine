@@ -88,3 +88,13 @@ export function costsTakeaway(outcomeA, outcomeB) {
   const line = useA ? a : b;
   return `Biggest: ${line.label}, ${formatMoney(line.amountCents / 100)} for ${useA ? 'BTO' : 'resale'}`;
 }
+
+// The chip beside each cost line in "Every cost". The engine marks two lines 'NONE' (not paid at purchase):
+// CPF accrued interest goes back into your own CPF, but the Plus/Prime subsidy clawback goes to HDB when you sell,
+// so 'NONE' is labelled by line id.
+const PAID_FROM = { CASH: 'Paid from cash', CPF: 'Paid from CPF' };
+const NOT_PAID_NOW = { CPF_ACCRUED_INTEREST: 'Goes back to your CPF', CLAWBACK: 'Paid to HDB when you sell' };
+export function paidFromLabel(line) {
+  if (line?.paidFrom === 'NONE') return NOT_PAID_NOW[line.id] ?? 'Owed back later';
+  return PAID_FROM[line?.paidFrom] ?? '';
+}

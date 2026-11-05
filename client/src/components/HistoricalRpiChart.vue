@@ -140,7 +140,7 @@ onBeforeUnmount(() => chart?.destroy());
 
       <template v-else-if="data">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
-          <div class="btn-group" role="group" aria-label="Time period" data-cy="results-rpi-era-filter">
+          <div class="rpi-era-filter" role="group" aria-label="Time period" data-cy="results-rpi-era-filter">
             <button
               v-for="opt in ERA_OPTIONS"
               :key="opt.value"
@@ -180,3 +180,17 @@ onBeforeUnmount(() => chart?.destroy());
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Explicit spacing for the era filter pills. Uses a dedicated class (instead of relying on Bootstrap's
+   gap-* utilities) and resets margins so no global .btn / [role="group"] rule can collapse the gap. */
+.rpi-era-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.rpi-era-filter .btn {
+  margin: 0 !important;
+}
+</style>
