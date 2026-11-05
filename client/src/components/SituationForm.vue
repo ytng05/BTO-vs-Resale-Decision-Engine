@@ -273,7 +273,12 @@ onBeforeUnmount(() => clearTimeout(timer));
     <template v-else-if="part === 1">
       <div class="who">
         <fieldset v-for="(a, i) in applicants" :key="a.id ?? i" class="who__person" :data-cy="`situation-buyer-${i + 1}`">
-          <legend class="who__legend">{{ WHO[i] }}</legend>
+          <legend class="who__legend">
+            <span class="who__badge" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" /></svg>
+            </span>
+            {{ WHO[i] }}
+          </legend>
           <div class="who__group">
             <span :id="`buyer-${i}-citizenship-label`" class="who__label">Citizenship</span>
             <div class="cit" role="radiogroup" :aria-labelledby="`buyer-${i}-citizenship-label`">
@@ -520,11 +525,13 @@ legend.big-field__group { margin-bottom: 12px; }
 /* Who is buying? (Cadence's spec, 3 Nov 2026): two people side by side, stacked below 768px. */
 .who { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
 @media (max-width: 767.98px) { .who { grid-template-columns: minmax(0, 1fr); } }
-.who__person { margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-/* A legend is not a flex item, so the fieldset's gap does not reach it: its own 12px below. */
-.who__legend { float: none; width: auto; margin: 0 0 12px; padding: 0; font-size: 15px; font-weight: 600; } /* = big-field__label */
+.who__person { margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+/* Three levels: the person (heading font, icon, rule under it), then each question (smaller), then its hint (grey).
+   A legend is not a flex item, so the fieldset's gap does not reach it: its own margin below. */
+.who__legend { float: none; display: flex; align-items: center; gap: 10px; width: 100%; margin: 0 0 4px; padding: 0 0 12px; border-bottom: 1px solid var(--border-subtle); font-family: var(--font-heading); font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.who__badge { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-tint); color: var(--color-berry); }
 .who__group { display: flex; flex-direction: column; gap: 8px; }
-.who__label { font-size: 15px; font-weight: 600; }
+.who__label { font-size: 14px; font-weight: 500; }
 .who__hint { font-weight: 400; color: var(--text-secondary); }
 .cit { display: flex; gap: 8px; }
 .cit__opt { flex: 1 1 0; min-width: 0; margin: 0; }

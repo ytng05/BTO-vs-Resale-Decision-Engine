@@ -2,12 +2,11 @@
 // the costs people forget (a moving strip with back / pause / next), the FAQ and the closing call to action.
 
 describe('home', () => {
-  it('offers Start planning and See an example, and says it takes four short steps', () => {
+  it('offers Start planning and See an example', () => {
     cy.visit('/');
     cy.get('[data-cy=home-title]').should('contain', 'BTO or resale');
     cy.get('[data-cy=home-start-button]').should('have.attr', 'href').and('include', '/login');
     cy.get('[data-cy=home-example-button]').should('be.visible');
-    cy.contains('4 short steps').should('be.visible');
   });
 
   it('See an example opens a full Results page with no form to fill in', () => {
@@ -31,11 +30,6 @@ describe('home', () => {
     cy.location('pathname').should('eq', '/');
     cy.get('[data-cy=nav-plan-link]').click({ force: true });
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '31');
-
-    cy.get('[data-cy=nav-brand-home]').click();
-    cy.get('[data-cy=home-example-link]').scrollIntoView().click();
-    cy.get('[data-cy=home-example-confirm-yes]').click();
-    cy.location('pathname').should('eq', '/results');
   });
 
   it('lists the four plan steps, each with what to have to hand', () => {

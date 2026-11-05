@@ -49,7 +49,7 @@ const lastSavedOn = computed(() => {
   const d = lastScenario.value?.updatedAt ?? lastScenario.value?.createdAt;
   return d ? formatDate(d) : '';
 });
-const showWelcome = computed(() => auth.isLoggedIn || hasOwnPlan.value); // 'hero' | 'get': which "See an example" asked, so the question shows beside it
+const showWelcome = computed(() => auth.isLoggedIn || hasOwnPlan.value);
 
 // Fill the plan with a ready-made couple and open their Results; "Change inputs" there makes it their own.
 // If the user has started a plan, ask before replacing it (the confirm button passes force).
@@ -65,7 +65,7 @@ async function seeExample(from, force = false) {
   router.push('/results');
 }
 
-// Ruleset freshness, shown under Good to know: green when checked against its sources, amber when not.
+// Ruleset date, shown in the "where the numbers come from" strip.
 // Left out if the ruleset can't be loaded, rather than shown wrong.
 const ruleset = ref(null);
 const rulesetDate = computed(() => {
@@ -74,7 +74,6 @@ const rulesetDate = computed(() => {
     ? d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
     : null;
 });
-const rulesetVerified = computed(() => ruleset.value?.status === 'VERIFIED');
 onMounted(async () => {
   try {
     ruleset.value = await getRuleset();
@@ -202,9 +201,9 @@ const FAQS = [
           <template v-else>Start a plan, or open one you saved.</template>
         </p>
       </div>
-      <div class="home-welcome__actions">
-        <router-link v-if="hasOwnPlan" to="/plan" class="btn btn-primary home-welcome__btn" data-cy="home-welcome-continue">Continue your plan</router-link>
-        <router-link v-if="auth.isLoggedIn" to="/scenarios" class="btn btn-outline-secondary home-welcome__btn" data-cy="home-welcome-scenarios">My scenarios</router-link>
+      <!-- No "My scenarios" button here: the navbar's "My scenarios · N" sits right above it -->
+      <div v-if="hasOwnPlan" class="home-welcome__actions">
+        <router-link to="/plan" class="btn btn-primary home-welcome__btn" data-cy="home-welcome-continue">Continue your plan</router-link>
       </div>
     </section>
 
@@ -235,10 +234,6 @@ const FAQS = [
               <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
             </div>
           </div>
-          <span class="home-chip">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
-            4 short steps
-          </span>
         </div>
       </div>
         <svg viewBox="0 0 440 330" class="home-hero__art" data-cy="hero-scene" role="img" aria-label="Illustration: a new BTO block and a resale block, with trees">
@@ -336,14 +331,6 @@ const FAQS = [
             </svg>
             <p class="home-get__note">Example figures. Illustrative projection, not financial advice.</p>
           </div>
-          <button type="button" class="btn btn-link p-0 home-get__link" data-cy="home-example-link" @click="seeExample('get')">See an example result</button>
-          <div v-if="confirming === 'get'" class="home-confirm" role="group" aria-labelledby="home-confirm-get" data-cy="home-example-confirm">
-            <p id="home-confirm-get" class="mb-2">The example replaces what you've entered in your plan so far.</p>
-            <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample('get', true)">Show the example</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -397,16 +384,6 @@ const FAQS = [
           Want the detail? The <router-link to="/sources" data-cy="home-sources-link">Sources page</router-link> lists the
           rules we use, with their HDB and CPF references.
         </p>
-        <span
-          v-if="rulesetDate"
-          class="home-ruleset"
-          :class="rulesetVerified ? 'home-ruleset--ok' : 'home-ruleset--warn'"
-          data-cy="home-ruleset-status"
-        >
-          <span class="home-ruleset__dot" aria-hidden="true"></span>
-          <template v-if="rulesetVerified">Ruleset {{ rulesetDate }} · checked against its sources</template>
-          <template v-else>Ruleset {{ rulesetDate }} · not yet verified against its sources</template>
-        </span>
       </div>
       <div class="home-card home-faq home-reveal">
         <details v-for="(f, i) in FAQS" :key="f.q" :open="i === 0" :data-cy="`home-faq-${i + 1}`">
@@ -587,7 +564,6 @@ const FAQS = [
 .home-feat:hover .home-feat__icon { background: var(--accent-fill-2); }
 .home-feat:hover .home-feat__title { color: var(--color-berry); }
 .home-get-panel { display: flex; flex-direction: column; gap: var(--space-3); }
-.home-get__link { align-self: flex-start; font-weight: 500; }
 .home-get__chart { background: var(--accent-fill-3); border-radius: var(--radius-md); padding: var(--space-5) var(--space-5) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
 .home-get__legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; font-size: 14px; font-weight: 500; }
 .home-get__key { display: inline-flex; align-items: center; gap: var(--space-2); }
@@ -661,10 +637,6 @@ const FAQS = [
 /* ---- FAQ ---- */
 .home-faq-wrap { display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start; }
 .home-faq-wrap__intro { flex: 1 1 300px; }
-.home-ruleset { align-self: flex-start; display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: 14px; font-weight: 500; }
-.home-ruleset__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-.home-ruleset--ok { background: var(--success-fill); color: var(--success); }
-.home-ruleset--warn { background: var(--warning-fill); color: var(--warning); }
 .home-faq { flex: 2 1 520px; min-width: 0; padding: var(--space-2) var(--space-5); }
 .home-faq details { border-bottom: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-1); }
 .home-faq details:last-child { border-bottom: 0; }
@@ -692,8 +664,6 @@ const FAQS = [
 .home-welcome__line strong { color: var(--text-primary); }
 .home-welcome__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .home-welcome__btn { min-height: 44px; display: inline-flex; align-items: center; }
-.home-welcome .btn-outline-secondary { background: var(--bg-surface); }
-.home-welcome .btn-outline-secondary:hover { background: var(--accent-tint); border-color: var(--accent-fill-1); color: var(--color-berry); }
 @keyframes home-welcome-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 
 /* ---- where the numbers come from ---- */
