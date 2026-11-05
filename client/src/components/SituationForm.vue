@@ -554,6 +554,8 @@ legend.big-field__group { margin-bottom: 12px; }
 @media (max-width: 575.98px) {
   .big-box { height: 56px; padding: 0 14px; }
   .big-box__input { font-size: 19px; }
+  /* "Singapore Citizen" doesn't fit on one line beside PR on small phones: let it wrap inside its button. */
+  .cit__face { height: 100%; min-height: 54px; padding: 6px 10px; white-space: normal; line-height: 1.25; }
 }
 @media (prefers-reduced-motion: reduce) {
   .big-box, .cit__face, .switch__track, .switch__knob { transition: none; }

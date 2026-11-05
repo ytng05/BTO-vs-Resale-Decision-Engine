@@ -402,11 +402,13 @@ a:focus-visible,
   box-shadow: 0 0 0 1px $primary, $shadow-sm;
 }
 
+// Title on the left and the figure on the right, then each note (loan / cash short) on its own full line below.
 .compare-path {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: $space-3;
+  column-gap: $space-3;
+  row-gap: $space-1;
   padding: $space-3;
   border-radius: $radius-sm;
 
@@ -420,6 +422,8 @@ a:focus-visible,
     font-weight: 500;
     white-space: nowrap;
   }
+
+  &__note { grid-column: 1 / -1; }
 }
 
 // Status badge, success (UI.md §8 Badges: semantic fill + matching text)
