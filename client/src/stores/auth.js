@@ -29,7 +29,9 @@ function writeStored(token, user) {
 }
 
 export const useAuthStore = defineStore('auth', {
-  state: () => ({ ...readStored(), pending: false, error: null }),
+  // justRegistered: true after creating an account, until the next log in or log out (this visit only), so Home
+  // can say "Welcome, <name>" to a new account and "Welcome back, <name>" to everyone who logs in.
+  state: () => ({ ...readStored(), pending: false, error: null, justRegistered: false }),
   getters: {
     isLoggedIn: (state) => Boolean(state.token),
   },
@@ -41,6 +43,7 @@ export const useAuthStore = defineStore('auth', {
         const { token, user } = await apiRegister({ name, email, password });
         this.token = token;
         this.user = user;
+        this.justRegistered = true;
         writeStored(token, user);
         return true;
       } catch (err) {
@@ -57,6 +60,7 @@ export const useAuthStore = defineStore('auth', {
         const { token, user } = await apiLogin({ email, password });
         this.token = token;
         this.user = user;
+        this.justRegistered = false;
         writeStored(token, user);
         return true;
       } catch (err) {
@@ -69,6 +73,7 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       this.token = null;
       this.user = null;
+      this.justRegistered = false;
       this.error = null;
       writeStored(null, null);
       // The next person on this device must not see this user's saved scenario or saved answers.

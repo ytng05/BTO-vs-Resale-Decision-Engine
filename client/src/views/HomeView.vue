@@ -9,9 +9,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useScenarioStore } from '../stores/scenario.js';
 import { EXAMPLE_PLAN } from '../constants/examplePlan.js';
-import { getRuleset, listScenarios } from '../api/client.js';
+import { getRuleset } from '../api/client.js';
 import { useAuthStore } from '../stores/auth.js';
-import { formatDate } from '../utils/format.js';
 
 const store = useScenarioStore();
 const router = useRouter();
@@ -33,23 +32,14 @@ const firstName = computed(() => {
   const n = auth.user?.name?.trim();
   return n ? n.split(/\s+/)[0] : '';
 });
-const lastScenario = ref(null);
-onMounted(async () => {
-  if (!auth.isLoggedIn) return;
-  try {
-    const res = await listScenarios();
-    const list = Array.isArray(res) ? res : (res?.scenarios ?? []);
-    const when = (x) => new Date(x?.updatedAt ?? x?.createdAt ?? 0).getTime() || 0;
-    lastScenario.value = [...list].sort((x, y) => when(y) - when(x))[0] ?? null;
-  } catch {
-    lastScenario.value = null;
-  }
+// The banner's greeting, and nothing else: "Welcome back, <name>" for someone logged in, "Welcome, <name>" right
+// after creating an account (auth.justRegistered), "Welcome" for a visitor without an account. A plan in the tab
+// doesn't count: it can be the example, so only the account says who this is.
+const greeting = computed(() => {
+  if (!auth.isLoggedIn) return 'Welcome';
+  const hello = auth.justRegistered ? 'Welcome' : 'Welcome back';
+  return firstName.value ? `${hello}, ${firstName.value}` : hello;
 });
-const lastSavedOn = computed(() => {
-  const d = lastScenario.value?.updatedAt ?? lastScenario.value?.createdAt;
-  return d ? formatDate(d) : '';
-});
-const showWelcome = computed(() => auth.isLoggedIn || hasOwnPlan.value); // 'hero' | 'get': which "See an example" asked, so the question shows beside it
 
 // Fill the plan with a ready-made couple and open their Results; "Change inputs" there makes it their own.
 // If the user has started a plan, ask before replacing it (the confirm button passes force).
@@ -191,21 +181,9 @@ const FAQS = [
 
 <template>
   <div class="home">
-    <!-- Welcome back: logged in, or a plan in progress -->
-    <section v-if="showWelcome" class="home-welcome" aria-label="Welcome back" data-cy="home-welcome">
-      <span class="home-welcome__avatar" aria-hidden="true">{{ (firstName || 'Y').charAt(0).toUpperCase() }}</span>
-      <div class="home-welcome__text">
-        <p class="home-welcome__hi">Welcome back<template v-if="firstName">, {{ firstName }}</template></p>
-        <p class="home-welcome__line">
-          <template v-if="lastScenario">Your last saved scenario is <strong>{{ lastScenario.name || 'unnamed' }}</strong><template v-if="lastSavedOn">, saved {{ lastSavedOn }}</template>.</template>
-          <template v-else-if="hasOwnPlan">Your plan is where you left it.</template>
-          <template v-else>Start a plan, or open one you saved.</template>
-        </p>
-      </div>
-      <div class="home-welcome__actions">
-        <router-link v-if="hasOwnPlan" to="/plan" class="btn btn-primary home-welcome__btn" data-cy="home-welcome-continue">Continue your plan</router-link>
-        <router-link v-if="auth.isLoggedIn" to="/scenarios" class="btn btn-outline-secondary home-welcome__btn" data-cy="home-welcome-scenarios">My scenarios</router-link>
-      </div>
+    <!-- Welcome: the greeting only. -->
+    <section class="home-welcome" :aria-label="greeting" data-cy="home-welcome">
+      <p class="home-welcome__hi mb-0" data-cy="home-welcome-greeting">{{ greeting }}</p>
     </section>
 
     <!-- Hero -->
