@@ -284,12 +284,10 @@ onMounted(load);
               <strong>BTO <span class="text-numeric" data-cy="results-price-bto">{{ formatMoney(result.resolvedA.purchasePriceCents / 100) }}</span></strong>
               · {{ btoShort }}
             </span>
-            <span v-if="btoShort && resaleShort" class="basis__sep" aria-hidden="true">|</span>
             <span v-if="resaleShort">
               <strong>Resale <span class="text-numeric" data-cy="results-price-resale">{{ formatMoney(result.resolvedB.purchasePriceCents / 100) }}</span></strong>
               · {{ resaleShort }}
             </span>
-            <span class="basis__sep" aria-hidden="true">|</span>
             <span class="badge-version" data-cy="results-ruleset-version">Ruleset {{ result.rulesetVersion }}</span>
             <span v-if="result.mock" class="basis__mock" data-cy="results-mock-notice">Showing mock data</span>
           </div>

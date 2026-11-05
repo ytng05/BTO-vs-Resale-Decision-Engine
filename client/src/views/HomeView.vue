@@ -281,7 +281,7 @@ const FAQS = [
       </li>
       <li>
         <span class="home-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h6" /></svg></span>
-        <span><strong>HDB and CPF rules</strong>, <router-link to="/sources" class="home-trust__link">dated<template v-if="rulesetDate"> {{ rulesetDate }}</template> and sourced</router-link></span>
+        <span><strong>HDB and CPF rules</strong>, <router-link to="/sources" class="home-trust__link">dated{{ rulesetDate ? ` ${rulesetDate}` : '' }} and sourced</router-link></span>
       </li>
     </ul>
 

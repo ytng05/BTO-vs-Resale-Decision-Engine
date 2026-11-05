@@ -42,12 +42,12 @@ describe('compareHeadline', () => {
     // A's best: BTO 412,000. B's best: Resale 399,000. Gap 13,000.
     const h = compareHeadline(make(412000, 398000), make(371000, 399000))
     expect(h.winner).toBe('A')
-    expect(h.text).toBe('Scenario A (Path A: BTO) ends S$13,000 ahead of Scenario B.')
+    expect(h.text).toBe('Scenario A (BTO) ends S$13,000 ahead of Scenario B.')
   })
   it('names Scenario B when B wins', () => {
     const h = compareHeadline(make(300000, 310000), make(330000, 320000))
     expect(h.winner).toBe('B')
-    expect(h.text).toBe('Scenario B (Path A: BTO) ends S$20,000 ahead of Scenario A.')
+    expect(h.text).toBe('Scenario B (BTO) ends S$20,000 ahead of Scenario A.')
   })
   it('handles a level result', () => {
     expect(compareHeadline(make(400000, 1), make(2, 400000)).winner).toBe('tie')

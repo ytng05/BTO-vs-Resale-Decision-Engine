@@ -163,10 +163,10 @@ const cards = computed(() => [
 .dash-paid__tag--warn { background: var(--danger-fill); color: var(--danger); }
 .dash-paid__tag--ok { background: var(--success-fill); color: var(--success); }
 /* The loan limit, on its own line under the loan row (a second <dd> for the same <dt>). */
-.dash-paid__lines .dash-paid__limit { display: block; flex-basis: 100%; margin-top: 2px; text-align: left; font-size: 0.8125rem; line-height: 1.4; color: var(--text-secondary); }
+.dash-paid__lines .dash-paid__limit { display: block; flex-basis: 100%; margin-top: 2px; margin-left: 0; text-align: left; font-size: 0.8125rem; line-height: 1.4; color: var(--text-secondary); }
 .dash-paid__lines .dash-paid__limit.is-warn { color: var(--danger); }
 .dash-paid__lines dt small, .dash-paid__total small { color: var(--text-secondary); font-weight: 400; font-size: 0.8125rem; }
-.dash-paid__lines dd { margin: 0; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.dash-paid__lines dd { margin: 0 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
 .is-vs { color: var(--text-secondary); font-size: 0.8125rem; }
 /* The total: a line above it and the figure in the path's colour, not another coloured box. */
 .dash-paid__total { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) 0 0; border-top: 2px solid var(--text-primary); font-weight: 700; font-size: 1.0625rem; }
