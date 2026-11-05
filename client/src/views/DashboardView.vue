@@ -495,9 +495,11 @@ const mapLine = computed(() => (store.choiceB.livingArrangement === 'NEAR'
 
 <style scoped>
 /* On large screens the What-if panel stays in view as you scroll, as in the mock-up. The right column stretches to
-   the full height of the page's content so the panel has room to stick in; the panel itself never scrolls inside. */
+   the full height of the page's content so the panel has room to stick in; the panel itself never scrolls inside.
+   From 1280px only: below that, the panel beside the content left it about 430px at 1024px, and the money figures
+   in the More detail tiles were cut off (measured at 992–1264px), so the panel goes below the content as on tablets. */
 .dash-main__side { align-self: stretch; }
-@media (min-width: 992px) {
+@media (min-width: 1280px) {
   .dash-sticky { position: sticky; top: var(--space-5); }
   .dash-sticky :deep(.dash-whatif) { position: static; }
 }
@@ -533,7 +535,10 @@ const mapLine = computed(() => (store.choiceB.livingArrangement === 'NEAR'
 .dash-since__figures { font-family: var(--font-heading); font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; }
 .dash-since__figures s { font-size: 1.125rem; font-weight: 500; color: var(--text-secondary); margin-right: var(--space-2); }
 @media (max-width: 991.98px) {
-  .dash-top, .dash-main { grid-template-columns: minmax(0, 1fr); }
+  .dash-top { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1279.98px) {
+  .dash-main { grid-template-columns: minmax(0, 1fr); }
 }
 .dash-note {
   background: var(--accent-fill-3);

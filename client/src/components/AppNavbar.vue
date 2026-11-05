@@ -61,7 +61,7 @@ function logout() {
 </script>
 
 <template>
-  <header ref="bar" class="pill-nav" data-cy="nav-bar">
+  <header ref="bar" class="pill-nav" :class="{ 'pill-nav--account': auth.isLoggedIn }" data-cy="nav-bar">
     <!-- Logo + app name: one link back home. -->
     <router-link to="/" class="pill-nav__home" aria-label="PropertyEngine home" data-cy="nav-brand-home">
       <span class="pill-nav__logo">
@@ -207,6 +207,11 @@ function logout() {
 /* Tablet width, and very small phones: not enough room, so show just the logo. */
 @media (min-width: 768px) and (max-width: 1000px), (max-width: 380px) {
   .pill-nav__brand { display: none; }
+}
+/* Logged in, the bookmark and avatar pill is wider than Log in: the name pushed the avatar off the screen at
+   384–404px (iPhone 12 to 16 Pro), so hide it up to 419px. */
+@media (max-width: 419.98px) {
+  .pill-nav--account .pill-nav__brand { display: none; }
 }
 
 /* Phone landscape (short screens): the bar scrolls away with the page so it doesn't cover a fifth of the screen. */

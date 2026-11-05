@@ -1,15 +1,19 @@
 // Every page fits a phone, a tablet and a laptop screen, upright and on its side, without sideways scrolling; on a
 // short landscape screen, bars pinned to the top or bottom leave at least half the height for the page (mock data).
+// Also logged in (the navbar is wider then), and on the plan and dashboard, that step labels and money figures are
+// not cut off or spilling out of their cards.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 
-import { completePlan } from './helpers/plan.js';
+import { completePlan, fillAges, next } from './helpers/plan.js';
 
 const SCREENS = [
   { name: 'phone (iPhone SE)', width: 375, height: 667 },
+  { name: 'phone (iPhone 15)', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
   { name: 'laptop', width: 1280, height: 800 },
   { name: 'phone landscape', width: 667, height: 375 },
   { name: 'tablet landscape', width: 1024, height: 768 },
+  { name: 'tablet landscape (iPad Air)', width: 1180, height: 820 },
 ];
 
 // Pages that open straight from a URL, each with one element that shows it has finished loading.
@@ -26,6 +30,29 @@ const PAGES = [
 function fitsWidth() {
   cy.document().then((doc) => {
     expect(doc.documentElement.scrollWidth, 'page width').to.be.at.most(doc.documentElement.clientWidth);
+  });
+}
+
+// No visible label is cut short with an ellipsis (its text is wider than its box).
+function notCutOff(selector) {
+  cy.get(selector).each(($el) => {
+    const el = $el[0];
+    if (!el.getClientRects().length) return; // hidden at this width
+    expect(el.scrollWidth, `${selector} "${el.textContent.trim()}" fits`).to.be.at.most(el.clientWidth + 1);
+  });
+}
+
+// The text of each `selector` stays inside its `box` (the card it is drawn on).
+function staysInside(selector, box) {
+  cy.get(selector).each(($el) => {
+    const el = $el[0];
+    const edge = el.closest(box).getBoundingClientRect();
+    const range = el.ownerDocument.createRange();
+    range.selectNodeContents(el);
+    [...range.getClientRects()].forEach((r) => {
+      expect(r.right, `"${el.textContent.trim()}" inside ${box}`).to.be.at.most(edge.right + 1);
+      expect(r.left, `"${el.textContent.trim()}" inside ${box}`).to.be.at.least(edge.left - 1);
+    });
   });
 }
 
@@ -62,6 +89,28 @@ describe('responsive layout', () => {
         });
       });
 
+      it('fits the screen when logged in', () => {
+        // A stored token and a stubbed list: the navbar shows My scenarios and the avatar instead of Log in.
+        const scenarios = [1, 2, 3].map((n) => ({ id: `s${n}`, name: `Plan ${n}`, rulesetVersion: '2026-08-24', createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', summary: {} }));
+        cy.intercept('GET', '/api/scenarios', { body: { scenarios } });
+        cy.visit('/scenarios', {
+          onBeforeLoad(win) {
+            win.localStorage.setItem('hdb-app:auth', JSON.stringify({ token: 'stub-token', user: { name: 'Test Buyer', email: 'buyer@example.com' } }));
+          },
+        });
+        cy.get('[data-cy=nav-account-toggle]').should('be.visible');
+        fitsWidth();
+      });
+
+      it('shows the plan steps without cutting off their names', () => {
+        cy.visit('/plan');
+        next();
+        fillAges();
+        next();
+        next(); // About you's incomes screen: its card sits beside a picture, so the labels have the least room
+        notCutOff('[data-cy=stepper] .seg-track__label');
+      });
+
       it('/results and the dashboard fit the screen after a full plan', () => {
         completePlan();
         cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
@@ -71,6 +120,11 @@ describe('responsive layout', () => {
         cy.get('[data-cy=dashboard-headline]').should('be.visible');
         fitsWidth();
         leavesRoomToRead();
+        // More detail, every section open: the money figures stay inside their tiles.
+        cy.get('[data-cy=dashboard-more-detail] > summary').click();
+        cy.get('[data-cy=dashboard-sections-toggle]').click();
+        staysInside('.dash-tile__list dd', '.dash-tile');
+        fitsWidth();
       });
     });
   });
