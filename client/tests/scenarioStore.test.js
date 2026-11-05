@@ -150,3 +150,17 @@ describe('saved answers belong to one account', () => {
     expect(s.savedProfilesOf('user-a')).toHaveLength(1);
   });
 });
+
+describe('the navbar count signal', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('goes up on every save or delete, and survives Start planning', () => {
+    const s = useScenarioStore();
+    expect(s.savedListVersion).toBe(0);
+    s.savedListChanged();
+    s.savedListChanged();
+    expect(s.savedListVersion).toBe(2);
+    s.reset();
+    expect(s.savedListVersion).toBe(2);
+  });
+});

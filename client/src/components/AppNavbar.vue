@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/auth.js';
 import { useScenarioStore } from '../stores/scenario.js';
 
 const auth = useAuthStore();
+const scenario = useScenarioStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -33,7 +34,8 @@ async function loadCount() {
     scenarioCount.value = null;
   }
 }
-watch(() => [auth.isLoggedIn, route.fullPath], loadCount, { immediate: true });
+// Also after a save or delete on the same page (scenario.savedListVersion), not only on a page change.
+watch(() => [auth.isLoggedIn, route.fullPath, scenario.savedListVersion], loadCount, { immediate: true });
 
 const userName = computed(() => auth.user?.name || auth.user?.email || 'Account');
 
@@ -50,8 +52,6 @@ onMounted(() => {
   }
 });
 onBeforeUnmount(() => resize?.disconnect());
-
-const scenario = useScenarioStore();
 
 function logout() {
   auth.logout();
