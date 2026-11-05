@@ -136,5 +136,5 @@ export async function loadComparePair(idA, idB) {
 
 export async function openScenarioInResults(scenario) {
   // Same refill as My scenarios' Open (#58): saved parts laid over the blank scenario.
-  useScenarioStore().loadSaved(scenario.inputs)
+  useScenarioStore().loadSaved({ ...scenario.inputs, id: scenario.id, name: scenario.name })
 }

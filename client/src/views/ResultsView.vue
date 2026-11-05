@@ -10,6 +10,7 @@ import PathOutcomeCard from '../components/PathOutcomeCard.vue';
 import ResultsWhy from '../components/ResultsWhy.vue';
 import ResultsConfidence from '../components/ResultsConfidence.vue';
 import DashboardCashCard from '../components/dashboard/DashboardCashCard.vue';
+import DashboardNotes from '../components/dashboard/DashboardNotes.vue';
 import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
 import ResultsNextSteps from '../components/ResultsNextSteps.vue';
@@ -17,6 +18,7 @@ import ResultsVerdict from '../components/ResultsVerdict.vue';
 import BackToTop from '../components/BackToTop.vue';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, LEASE_BANDS, TOWNS } from '../constants/planOptions.js';
+import { groupWarnings } from '../utils/dashboardSummary.js';
 import { formatMoney } from '../utils/format.js';
 import { keyRows, verdict as buildVerdict } from '../utils/resultsVerdict.js';
 import { isPlanComplete } from '../validation/planValidation.js';
@@ -118,6 +120,7 @@ const heatmapTakeaway = computed(() => {
 
 // Who ends ahead, in a plain sentence, and the few numbers side by side (utils/resultsVerdict.js, unit-tested).
 const verdict = computed(() => buildVerdict(result.value?.outcomeA, result.value?.outcomeB, horizonYear.value));
+const blockingWarnings = computed(() => groupWarnings(result.value?.outcomeA, result.value?.outcomeB, result.value?.warningMessages ?? {}).blocking);
 const keyComparison = computed(() => keyRows(result.value?.outcomeA, result.value?.outcomeB, horizonYear.value));
 
 
@@ -241,6 +244,14 @@ onMounted(load);
         BTO vs Resale · printed {{ printedOn }} · {{ planLine }}
       </p>
       <div class="results-page">
+        <!-- A BTO the household couldn't buy that year overturns the answer below, so it comes first (D36). The Dashboard's banner. -->
+        <DashboardNotes
+          v-if="blockingWarnings.length"
+          :blocking="blockingWarnings"
+          :application-year="store.choiceA.applicationYear"
+          @jump-whatif="router.push('/dashboard')"
+        />
+
         <!-- 1. Who ends ahead, by how much, and both net positions (D1, D42). -->
         <ResultsVerdict
           v-if="verdict.winner"
