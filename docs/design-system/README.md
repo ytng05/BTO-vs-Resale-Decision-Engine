@@ -50,7 +50,7 @@ Two colour families on a neutral ground: ink and pink, plus a periwinkle mist fo
 
 - 4px base: `space-1` 4 · `space-2` 8 · `space-3` 12 · `space-4` 16 · `space-5` 24 · `space-6` 32 · `space-8` 48 · `space-10` 64. Bootstrap's `m-*`/`p-*`/`gap-*` utilities 1–7 map to `space-1`, `space-2`, `space-4`, `space-5`, `space-6`, `space-8`, `space-10`.
 - Page content max 1240px; Bootstrap 5 breakpoints (sm 576, md 768, lg 992, xl 1200). Two-pane screens sit side by side from lg and stack below it.
-- Header: three floating white pills on the page – a status pill, the logo and links, an account pill – each with `shadow-ledge`. No bar background. See `Navbar`.
+- Header: a sticky bar with three floating slots – the logo and name, the links, an account pill. The links and account pills are white with `shadow-ledge`. See `Navbar`.
 - Radii: `radius-pill` for every button, chip, nav pill and badge; `radius-sm` for inputs and icon buttons; `radius-md` for cards; `radius-lg` for feature cards, the results chart card and modals.
 - Shadows: `shadow-sm` on every white card at rest, `shadow-md` on the main form card and on hover, `shadow-lg` for modals.
 - Respect safe areas: `env(safe-area-inset-top/bottom)` on the root layout and anything fixed to the viewport.
