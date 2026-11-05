@@ -30,7 +30,7 @@ The live app is on a free plan: if it has been idle, the first visit can take ab
 ## Tech stack
 Vue 3 (Composition API), Pinia, Vue Router, Bootstrap 5 (SCSS), Chart.js | Node.js, Express, MongoDB/Mongoose, JWT + bcryptjs | Vitest, Cypress.
 External data: data.gov.sg (resale transactions, Resale Price Index, price range of flats offered) and OneMap (geocoding and
-distance for the dashboard's PHG map). Whether the household lives with or near its parents is declared by the user; the map
+distance for the PHG map, on the Dashboard and in the plan's Resale flat step). Whether the household lives with or near its parents is declared by the user; the map
 lets them check that answer but never changes it (D15).
 
 ## Repository layout
@@ -75,11 +75,11 @@ cp .env.example .env     # then fill in the values; the comments in the file exp
 | Without this value | What happens |
 |---|---|
 | `MONGODB_URI` | Log in, register and saved scenarios return "database not connected". Plan, Results, Dashboard and Sources still work. Any MongoDB works: a free Atlas cluster or a local `mongod`. |
-| `ONEMAP_EMAIL`, `ONEMAP_PASSWORD` | The Dashboard's map says it is unavailable. Everything else still works. |
+| `ONEMAP_EMAIL`, `ONEMAP_PASSWORD` | The parents map (on the Dashboard and in the plan's Resale flat step) says it is unavailable. Everything else still works. |
 | `DATAGOV_API_KEY` | Resale data still loads, at data.gov.sg's lower rate limit without a key. |
 | `JWT_SECRET` | Fine locally (a development value is used, with a warning). Required when `NODE_ENV=production`. |
 
-**To turn on the Dashboard map (OneMap).** The map needs a free OneMap account, because the server logs in to OneMap to look up locations.
+**To turn on the parents map (OneMap).** The map needs a free OneMap account, because the server logs in to OneMap to look up locations.
 1. Register for a free account on OneMap (onemap.gov.sg, under its API pages) and confirm your email.
 2. Open the `.env` file you created in step 3. It sits in the project's top folder, next to `package.json`.
 3. Fill in the two lines with the email and password you registered with. No quotes, no spaces around `=`:
@@ -88,7 +88,7 @@ cp .env.example .env     # then fill in the values; the comments in the file exp
    ONEMAP_PASSWORD=your-onemap-password
    ```
 4. Stop the server (Ctrl+C) and start it again. The `.env` file is only read when the server starts.
-5. Open the Dashboard's map, enter the parents' and the flat's postal codes, and it shows both homes, the distance and the 4 km circle for the Proximity Housing Grant. It is a guide only: whether you live near your parents is something you declare, not something the map decides.
+5. Open the map: on the Dashboard, enter the parents' and the flat's postal codes; in the plan's Resale flat step, use "Check on a map" beside Your parents, which measures to the resale town you picked. It shows both homes, the distance and the 4 km circle for the Proximity Housing Grant. It is a guide only: whether you live near your parents is something you declare, not something the map decides.
 
 `.env` is ignored by Git, so your password stays on your computer. Never paste it into a commit, an issue or a pull request.
 
@@ -135,7 +135,7 @@ Test cases, by spec file in `cypress/e2e/`:
 | Spec | Covers |
 |---|---|
 | `smoke.cy.js` | home page, hero scene, step validation, full journey, register → save → reload (needs a database) |
-| `home.cy.js` | the two ways in, See an example, the four steps, costs people forget, FAQ, reduced motion, phone width |
+| `home.cy.js` | the two ways in, See an example, the four steps, costs people forget, FAQ, reduced motion, phone width, and the greeting banner ("Welcome" without an account, "Welcome, name" right after signing up, "Welcome back, name" when logged in) |
 | `login.cy.js` | Start planning → login page: the three choices, the create-account and log-in forms, Back, planning without an account, and going on to the plan |
 | `scenarios-filter.cy.js` | My scenarios filter bar: search, town / flat type / path-ahead dropdowns, price range, count, Clear filters, no matches (stubbed list) |
 | `buyers.cy.js` | the About you step: one question per screen, two buyers, PR + PR blocked, per-buyer validation, money and age input, answers kept when going back |
