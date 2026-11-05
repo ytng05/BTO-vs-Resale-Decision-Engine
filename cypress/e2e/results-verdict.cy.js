@@ -66,7 +66,7 @@ describe('results verdict', () => {
     completePlan();
     cy.get('[data-cy=results-confidence-open]').click(); // the detail and the exact sentences open in a pop-up
     cy.get('[data-cy=results-confidence-dialog] [data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
-    cy.get('[data-cy=results-breakeven] [data-cy=term-break-even-button]').should('be.visible');
+    cy.get('[data-cy=results-confidence-dialog] [data-cy=term-break-even-button]').should('be.visible');
     cy.get('[data-cy=results-section-heatmap]').should('not.have.attr', 'open');
     cy.get('[data-cy=results-heatmap-open]').click();
     cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open');

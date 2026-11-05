@@ -271,7 +271,7 @@ const priceLine = computed(() => (priceBar.value ? `BTO stays ahead up to a BTO 
 
 /* The pop-up */
 .conf-modal { position: fixed; inset: 0; z-index: 1060; display: grid; place-items: center; padding: var(--space-4); background: rgba(29, 29, 36, 0.4); animation: conf-fade 0.2s ease both; }
-.conf-modal__box { width: min(960px, 100%); max-height: calc(100vh - 2 * var(--space-4)); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-5); padding: clamp(20px, 3vw, 32px); border-radius: var(--radius-lg); background: var(--bg-surface); box-shadow: var(--shadow-lg); animation: conf-rise 0.28s var(--ease-out) both; }
+.conf-modal__box { width: min(960px, 100%); max-height: calc(100vh - 2 * var(--space-4)); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-5); padding: clamp(20px, 3vw, 32px); border-radius: var(--radius-lg); background: var(--bg-surface); box-shadow: var(--shadow-lg); animation: conf-rise 0.28s var(--ease-out) backwards; }
 .conf-modal__head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); }
 .conf-modal__title { margin: 0 0 var(--space-1); font-family: var(--font-heading); font-size: clamp(1.25rem, 2vw, 1.5rem); font-weight: 700; letter-spacing: -0.02em; }
 .conf-modal__sub { color: var(--text-secondary); line-height: 1.5; }

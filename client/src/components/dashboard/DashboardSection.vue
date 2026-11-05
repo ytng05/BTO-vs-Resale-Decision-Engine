@@ -96,7 +96,7 @@ function onToggle(event) {
 .dash-section__summary:hover .dash-section__chev-wrap { background: var(--accent-fill-2); color: var(--color-berry); }
 .dash-section[open] { border-color: var(--accent-fill-1); box-shadow: inset 4px 0 0 var(--accent-fill-1), var(--shadow-sm); }
 .dash-section[open] > .dash-section__summary .dash-section__chev-wrap { background: var(--color-berry); color: var(--on-primary); }
-.dash-section[open] > .dash-section__body { animation: dash-section-open 0.3s var(--ease-out) both; }
+.dash-section[open] > .dash-section__body { animation: dash-section-open 0.3s var(--ease-out) backwards; }
 @keyframes dash-section-open { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .dash-section, .dash-section__summary, .dash-section__title, .dash-section__chev-wrap { transition: none; }

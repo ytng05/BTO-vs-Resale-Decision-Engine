@@ -18,8 +18,8 @@ describe('glossary and terms', () => {
     cy.focused().should('have.attr', 'data-cy', 'term-ehg-button');
 
     cy.get('[data-cy=results-confidence-open]').click(); // the break-even term sits in the "How sure" pop-up
-    cy.get('[data-cy=term-break-even-button]').first().scrollIntoView().click();
-    cy.get('[data-cy=term-break-even-definition]').first().contains('More in the glossary').click();
+    cy.get('[data-cy=results-confidence-dialog] [data-cy=term-break-even-button]').scrollIntoView().click();
+    cy.get('[data-cy=results-confidence-dialog] [data-cy=term-break-even-definition]').contains('More in the glossary').click();
     cy.location('pathname').should('eq', '/sources');
     cy.location('hash').should('eq', '#glossary-break-even');
     cy.get('[data-cy=sources-glossary-break-even]').should('have.class', 'sources-glossary__item--current');

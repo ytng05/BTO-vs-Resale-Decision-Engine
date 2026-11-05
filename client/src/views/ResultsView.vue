@@ -434,7 +434,7 @@ onMounted(load);
 .heatmap-guide li + li { margin-top: var(--space-1); }
 
 /* The page arrives section by section: each block rises in, a beat after the one above. */
-.results-page > * { animation: results-rise 0.55s var(--ease-out) both; }
+.results-page > * { animation: results-rise 0.55s var(--ease-out) backwards; }
 .results-page > *:nth-child(2) { animation-delay: 0.06s; }
 .results-page > *:nth-child(3) { animation-delay: 0.12s; }
 .results-page > *:nth-child(4) { animation-delay: 0.18s; }
