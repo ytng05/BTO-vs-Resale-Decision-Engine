@@ -90,12 +90,15 @@ describe('buyers on the About you step', () => {
     cy.get('[data-cy=situation-buyer-1] .switch').click();
     cy.get('[data-cy=situation-buyer-1-first-timer-switch]').should('not.be.checked');
     cy.get('[data-cy=situation-buyer-1] .switch__state').should('have.text', 'No');
-    // Why we ask opens on keyboard focus too.
+    // Why we ask: a click opens it in the page (Next moves down, never covered), a second click closes it, Esc too.
     cy.get('[data-cy=about-why-tip]').should('not.be.visible');
-    cy.get('[data-cy=about-why]').focus();
+    cy.get('[data-cy=about-why]').should('have.attr', 'aria-expanded', 'false').click();
+    cy.get('[data-cy=about-why]').should('have.attr', 'aria-expanded', 'true');
     cy.get('[data-cy=about-why-tip]').should('be.visible').and('contain', 'which grants you can get');
-    cy.get('[data-cy=about-why]').type('{esc}');
-    cy.get('[data-cy=about-why-tip]').should('not.be.visible'); // Esc closes it
+    cy.get('[data-cy=about-why]').click();
+    cy.get('[data-cy=about-why-tip]').should('not.be.visible');
+    cy.get('[data-cy=about-why]').click().type('{esc}');
+    cy.get('[data-cy=about-why-tip]').should('not.be.visible'); // Esc closes it too
   });
 
   it('"Who is buying?" stacks on a 390px phone with no sideways scrolling, "Singapore Citizen" on one line', () => {

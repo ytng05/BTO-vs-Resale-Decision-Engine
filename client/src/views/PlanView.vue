@@ -260,7 +260,7 @@ function back() {
 
           <WishesForm v-if="store.step === 0" />
           <SituationForm v-else-if="store.step === 1" :part="aboutPart" :errors="shownErrors" :live-errors="errors" />
-          <WhyWeAsk v-if="onAbout" :id="`why-${ABOUT_PARTS[aboutPart]}`" :text="aboutHead.why" />
+          <WhyWeAsk v-if="onAbout" :id="`why-${ABOUT_PARTS[aboutPart]}`" :key="`why-${ABOUT_PARTS[aboutPart]}`" :text="aboutHead.why" />
           <PathForm v-else-if="store.step === 2" key="choiceA" choice-key="choiceA" :errors="shownErrors" @project="btoProject = $event" />
           <PathForm v-else-if="store.step === 3" key="choiceB" choice-key="choiceB" :errors="shownErrors" />
 

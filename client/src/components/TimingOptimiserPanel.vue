@@ -85,7 +85,7 @@ onMounted(load);
             >
               Highest
             </span>
-            <div class="text-end">
+            <div class="timing-price">
               <div>{{ formatMoney(row.netPositionCents / 100) }}</div>
               <div v-if="row.behindBestCents > 0" class="text-caption">
                 {{ formatMoney(row.behindBestCents / 100) }} behind the highest
@@ -115,3 +115,17 @@ onMounted(load);
     </div>
   </div>
 </template>
+
+
+<style scoped>
+/* The figure for each year: on the right of the row on wider screens. On phones the row wraps, so the figure gets
+   its own full line and starts at the left, so every year's figure lines up. */
+.timing-price { text-align: right; }
+
+@media (max-width: 575.98px) {
+  .timing-price {
+    flex-basis: 100%;
+    text-align: left;
+  }
+}
+</style>

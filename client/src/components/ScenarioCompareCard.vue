@@ -97,10 +97,10 @@ const rows = computed(() =>
             </span>
           </span>
           <span class="compare-path__value" :class="{ 'text-secondary': !row.hasValue }">{{ row.value }}</span>
-          <span v-if="row.loanNote" class="text-caption text-secondary d-block" data-cy="compare-loan-shortfall">
+          <span v-if="row.loanNote" class="compare-path__note text-caption text-secondary" data-cy="compare-loan-shortfall">
             {{ row.loanNote }}
           </span>
-          <span v-if="row.cashNote" class="text-caption text-secondary d-block" data-cy="compare-cash-shortfall">
+          <span v-if="row.cashNote" class="compare-path__note text-caption text-secondary" data-cy="compare-cash-shortfall">
             {{ row.cashNote }}
           </span>
         </li>
