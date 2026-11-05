@@ -404,13 +404,14 @@ onMounted(load);
 </template>
 
 <style scoped>
-/* Redesign (4 Nov 2026): one column of boxes, two side by side where they pair up, stacking on phones. */
+/* Redesign (4 Nov 2026): one column of boxes, two side by side where they pair up, stacking on phones.
+   The page is white (_tokens.scss $bg-app), so each white box carries a thin border to stand apart from it. */
 .results-page { display: flex; flex-direction: column; gap: var(--space-5); }
 .results-sections { display: flex; flex-direction: column; gap: var(--space-3); }
 .results-more__title { margin: 0 0 var(--space-3); font-size: 1.125rem; font-weight: 600; }
 
 /* "Based on" line */
-.basis { padding: var(--space-3) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); font-size: 0.875rem; color: var(--text-secondary); }
+.basis { padding: var(--space-3) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border-subtle); font-size: 0.875rem; color: var(--text-secondary); }
 .basis__strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
 .basis__strip strong { color: var(--text-primary); }
 .basis__lead { font-weight: 500; }
@@ -426,7 +427,7 @@ onMounted(load);
 .paths__row:has(details[open]) { align-items: flex-start; }
 
 /* Next bar */
-.next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); }
+.next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border-subtle); }
 .next__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .next__save { margin-bottom: 0 !important; }
 

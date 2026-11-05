@@ -14,6 +14,7 @@ const route = useRoute();
 const router = useRouter();
 
 const LINKS = [
+  { to: '/', label: 'Home', cy: 'nav-home-link' },
   { to: '/plan?new=1', label: 'Plan', cy: 'nav-plan-link' }, // ?new=1: a fresh plan once this one is saved (PlanView)
   { to: '/results', label: 'Results', cy: 'nav-results-link' },
   { to: '/dashboard', label: 'Dashboard', cy: 'nav-dashboard-link' },
@@ -53,6 +54,20 @@ onMounted(() => {
 });
 onBeforeUnmount(() => resize?.disconnect());
 
+// The logo: on another page it goes home; on Home it brings you back to the top, like a refresh. (A real page reload
+// would wipe the plan, which only lives in memory, so it isn't used.) Cmd/Ctrl/Shift-click and middle-click are left
+// to the browser, so "open Home in a new tab" still works.
+function goHome(event) {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+  event.preventDefault();
+  if (route.path === '/') {
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' });
+  } else {
+    router.push('/');
+  }
+}
+
 function logout() {
   auth.logout();
   scenario.reset(); // the next person on this device starts with an empty plan
@@ -63,7 +78,7 @@ function logout() {
 <template>
   <header ref="bar" class="pill-nav" data-cy="nav-bar">
     <!-- Logo + app name: one link back home. -->
-    <router-link to="/" class="pill-nav__home" aria-label="PropertyEngine home" data-cy="nav-brand-home">
+    <a href="/" class="pill-nav__home" aria-label="PropertyEngine home" data-cy="nav-brand-home" @click="goHome">
       <span class="pill-nav__logo">
         <!-- An HDB block -->
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -72,7 +87,7 @@ function logout() {
         </svg>
       </span>
       <span class="pill-nav__brand" aria-hidden="true">Property<span>Engine</span></span>
-    </router-link>
+    </a>
 
     <nav class="pill-nav__pill" aria-label="Main">
       <span class="pill-nav__links">
@@ -134,33 +149,27 @@ function logout() {
 
 <style scoped>
 /* Three slots: brand (left), links (centre, always in the middle), account (right).
-   The bar runs the full screen width (logo and Log in at the ends, lined up with the home page's hero box) and stays
-   at the top while you scroll, with no lines above or below it. */
+   The bar is fixed to the top of the screen on every page and stays there as you scroll, full width, with no lines
+   above or below. The page is pushed down by the bar's height (--nav-height, measured in the script) so nothing hides
+   under it. */
 .pill-nav {
   --nav-gutter: clamp(12px, 2.5vw, 40px);
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1030;
-  width: calc(100vw - 2 * var(--nav-gutter));
+  width: auto;
   max-width: none;
-  margin-left: calc(50% - 50vw + var(--nav-gutter));
-  margin-right: 0;
-  border: 0;
-}
-/* The bar's background sits on its own layer behind the pills, stretched to the screen edges with a big box-shadow
-   and trimmed to the bar's height. Only this layer is trimmed, so the pills' own shadows aren't cut off in a hard
-   line along the bottom of the bar. It matches the page: mist by default, white on Home (which sets --nav-surface). */
-.pill-nav::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
+  margin: 0;
+  padding-left: var(--nav-gutter);
+  padding-right: var(--nav-gutter);
+  /* the bar matches the page behind it: mist by default, white on Home and the Dashboard (they set --nav-surface) */
   background: var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent));
-  box-shadow: 0 0 0 100vmax var(--nav-surface, color-mix(in srgb, var(--bg-page) 92%, transparent));
-  clip-path: inset(0 -100vmax);
+  border: 0; /* no lines above or below the bar */
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
@@ -174,7 +183,7 @@ function logout() {
   height: 44px;
   border: 0;
   border-radius: 50%;
-  background: var(--accent-fill-2, #fbd5e5);
+  background: var(--accent-fill-2);
   color: inherit;
   font-weight: 600;
   display: grid;
@@ -193,6 +202,7 @@ function logout() {
 }
 .pill-nav__home .pill-nav__logo {
   flex: none;
+  margin-right: 0; /* the shared .pill-nav__logo adds 8px for the old layout; the 10px gap above is the only space here */
   color: var(--on-primary);
   transition: background 0.3s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -209,9 +219,9 @@ function logout() {
   .pill-nav__brand { display: none; }
 }
 
-/* Phone landscape (short screens): the bar scrolls away with the page so it doesn't cover a fifth of the screen. */
+/* Phone landscape (short screens): let the bar scroll away so it doesn't cover a fifth of the page. */
 @media (max-height: 500px) {
-  .pill-nav { position: relative; }
+  .pill-nav { position: absolute; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -221,7 +231,8 @@ function logout() {
 </style>
 
 <style>
-/* The navbar is sticky, so in-page jumps (#links, scrollIntoView) stop below it instead of under it.
-   --nav-height is set from the bar's real height in the script above. */
-html { scroll-padding-top: calc(var(--nav-height, 80px) + var(--space-3, 12px)); }
+/* The navbar is fixed, so: the page starts below it, and in-page jumps (#links, scrollIntoView) stop below it
+   instead of under it. --nav-height is set from the bar's real height in the script above. */
+body { padding-top: var(--nav-height, 88px); }
+html { scroll-padding-top: calc(var(--nav-height, 88px) + var(--space-3, 12px)); }
 </style>

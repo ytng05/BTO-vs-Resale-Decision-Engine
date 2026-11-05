@@ -62,6 +62,7 @@ const sliders = computed(() => {
     ...(props.btoRange
       ? [{
         group: 'Housing costs', key: 'btoPrice', id: 'whatif-bto-price', label: 'BTO price',
+        // D26/D40: the price is an estimate from a launch's range, so say so, and say where the slider starts.
         hint: `Estimated from ${props.btoRange.name}${monthYear(props.btoRange.launch)}: HDB's range ${formatMoney(props.btoRange.min)} to ${formatMoney(props.btoRange.max)}. Starts at the middle.${btoFlip.value.text}`,
         min: props.btoRange.min, max: props.btoRange.max, step: 1000, scale: 1, markAt: btoFlip.value.at,
         // D40: name the mark, so it isn't confused with the heatmap's break-even line.
@@ -81,7 +82,7 @@ const sliders = computed(() => {
       : []),
     { group: 'Timing', key: 'applicationYear', id: 'whatif-year', label: 'Apply / buy in', hint: 'Both paths move together', min: thisYear, max: thisYear + 6, step: 1, scale: 1, value: v.applicationYear, text: String(v.applicationYear) },
     priceGrowthSlider.value,
-    { group: 'Housing costs', key: 'annualIncomeGrowth', id: 'whatif-income-growth', label: 'Income growth', hint: 'Changes the answer only if it moves your grants or how much you can borrow, so it often does nothing.', min: 0, max: 10, step: 0.5, scale: 100, value: pct(v.annualIncomeGrowth), text: `${pct(v.annualIncomeGrowth)}% / yr` },
+    { group: 'Housing costs', key: 'annualIncomeGrowth', id: 'whatif-income-growth', label: 'Income growth', hint: "Only matters if it changes your grants, your loan, or whether you're under the BTO income ceiling.", min: 0, max: 10, step: 0.5, scale: 100, value: pct(v.annualIncomeGrowth), text: `${pct(v.annualIncomeGrowth)}% / yr` },
     { group: 'Timing', key: 'horizonYear', id: 'whatif-horizon', label: 'Compare in', hint: `Earliest ${props.horizonMin} (both keys in)`, min: props.horizonMin, max: props.horizonMax, step: 1, scale: 1, value: horizon, text: String(horizon) },
     { group: 'Housing costs', key: 'monthlyHousingCostWhileWaiting', id: 'whatif-rent', label: 'Rent while waiting for keys', hint: '0 = living with parents.', link: { href: RENT_GUIDE_URL, text: 'Median rents by town' }, min: 0, max: 5000, step: 100, scale: 1, value: v.monthlyHousingCostWhileWaiting, text: `${formatMoney(v.monthlyHousingCostWhileWaiting)}/mo` },
     { group: 'Housing costs', key: 'renovationA', id: 'whatif-reno-bto', label: 'Renovation, BTO', min: 0, max: 150000, step: 5000, scale: 1, value: v.renovationA, text: formatMoney(v.renovationA) },
@@ -134,6 +135,7 @@ const moreChanged = computed(() => {
       <h2 id="whatif-heading" class="whatif-title">What if…</h2>
       <!-- The Dashboard's "since your inputs" card: what the answer was at the saved plan, and what it is now. -->
       <slot name="live" />
+
 
       <fieldset v-for="g in mainGroups" :key="g.title" class="whatif-group">
         <legend class="visually-hidden">{{ g.title }}</legend>

@@ -18,13 +18,10 @@ const props = defineProps({
 const canvas = ref(null);
 let chart = null;
 
-// Colours come from the Bootstrap theme (set from the design tokens), so no hex lives in this file.
-function themeColour(name) {
-  return getComputedStyle(document.documentElement).getPropertyValue(`--bs-${name}`).trim();
-}
-// Resale's colour is the pink accent from the design tokens, as on the heatmap and the path cards.
-function resaleColour() {
-  return getComputedStyle(document.documentElement).getPropertyValue('--accent-fill-1').trim();
+// Path colours from the design tokens (_tokens.scss: --path-bto, --path-resale-bar), as on Results, the heatmap and
+// every other chart, so no hex lives in this file.
+function pathColour(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
 const neg = (c) => (typeof c === 'number' ? -c : null);
@@ -66,8 +63,8 @@ function data() {
   return {
     labels: rows.value.map((r) => r.label),
     datasets: [
-      { label: 'BTO', data: rows.value.map((r) => r.bto), backgroundColor: themeColour('primary'), borderRadius: 4 },
-      { label: 'Resale', data: rows.value.map((r) => r.resale), backgroundColor: resaleColour(), borderRadius: 4 },
+      { label: 'BTO', data: rows.value.map((r) => r.bto), backgroundColor: pathColour('--path-bto'), borderRadius: 4 },
+      { label: 'Resale', data: rows.value.map((r) => r.resale), backgroundColor: pathColour('--path-resale-bar'), borderRadius: 4 },
     ],
   };
 }

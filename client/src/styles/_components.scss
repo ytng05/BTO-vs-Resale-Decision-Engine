@@ -109,7 +109,7 @@
   position: sticky;
   top: 0;
   z-index: 1020; // Bootstrap's sticky z-index layer
-  background-color: $bg-page;
+  background-color: $bg-app;
   border-bottom: 1px solid transparent;
   transition: border-color $duration-base $ease-out;
 
@@ -155,9 +155,8 @@
 
 // ---- Results page heatmap (UI.md §3, §8, §14) -------------------------------------
 // Seat 5. Cards and lists on the results page use plain Bootstrap.
-// Colours follow docs/UI.md §3: diverging Planetary (BTO / path A) vs warning amber
-// (resale / path B), $border as the "level" midpoint. Blue/amber stays distinguishable
-// under common colour-blindness. Colour is never the only signal (labels + legend + text).
+// Colours are the path tokens (_tokens.scss): BTO indigo, resale pink, $border as the "level"
+// midpoint, the same as every other chart. Colour is never the only signal (labels + legend + text).
 
 .heatmap__table {
   width: 100%;
@@ -190,8 +189,8 @@
   background-color: $border;
 }
 
-.heatmap__cell--a { background-color: $primary; }
-.heatmap__cell--b { background-color: $accent-fill-1; }
+.heatmap__cell--a { background-color: $path-bto; }
+.heatmap__cell--b { background-color: $path-resale-bar; }
 .heatmap__cell--tie { background-color: $border; }
 
 // The whole square is the tap target: 48px tall everywhere; width shrinks on phones so all
@@ -223,7 +222,7 @@
   box-shadow: inset 0 0 0 3px $bg-surface-raised;
 }
 
-// "You" marker: white label with Galaxy text, readable on every cell colour.
+// "You" marker: white label with ink text, readable on every cell colour.
 .heatmap__you {
   display: inline-block;
   padding: 0 $space-1;
@@ -314,10 +313,11 @@ a:focus-visible,
 }
 
 // ---- Financial dashboard (feature 2) ----------------------------------------------
-// Summary card accents, chart and map boxes. BTO = $primary, resale = $warning, matching the heatmap (UI.md §3).
+// Summary card accents, chart and map boxes. BTO and resale use the path tokens (_tokens.scss),
+// so they match the heatmap, the Results page and the charts.
 
-.dash-card--bto { border-top: 4px solid $primary; }
-.dash-card--resale { border-top: 4px solid $accent-fill-1; }
+.dash-card--bto { border-top: 4px solid $path-bto; }
+.dash-card--resale { border-top: 4px solid $path-resale-bar; }
 
 .dash-chart {
   position: relative;
@@ -341,8 +341,8 @@ a:focus-visible,
   margin-right: $space-2;
   vertical-align: middle;
 
-  &--bto { background: $primary; }
-  &--resale { background: $accent-fill-1; }
+  &--bto { background: $path-bto; }
+  &--resale { background: $path-resale-bar; }
 }
 
 // Grants table: on phones each grant stacks, with "BTO" / "Resale" written above its cell
@@ -443,7 +443,7 @@ a:focus-visible,
   bottom: 0;
   z-index: 10;
   padding: $space-3 0 calc(#{$space-3} + env(safe-area-inset-bottom, 0px));
-  background: $bg-page;
+  background: $bg-app;
   border-top: 1px solid $border-subtle;
 }
 
@@ -503,7 +503,7 @@ a:focus-visible,
     color: $text-primary;
   }
 
-  &__input:focus-visible + &__face { box-shadow: 0 0 0 2px $bg-page, 0 0 0 4px $focus-ring; }
+  &__input:focus-visible + &__face { box-shadow: 0 0 0 2px $bg-app, 0 0 0 4px $focus-ring; }
   &__input:disabled + &__face { background: $surface-disabled; color: $text-tertiary; cursor: not-allowed; }
 }
 
@@ -577,6 +577,7 @@ a:focus-visible,
 // ---- Pill navigation (design system, 29 Oct 2026) ----------------------------------
 // Three floating slots: logo + name (left), links (centre), an account pill (right). AppNavbar.vue's scoped styles
 // make the bar a grid and hold the logo + name.
+// On the white page the pills keep a thin border as well as the shadow, so their edge doesn't vanish.
 .pill-nav {
   display: flex;
   align-items: center;
@@ -592,8 +593,9 @@ a:focus-visible,
     padding: 6px;
     white-space: nowrap;
     background: $color-white;
+    border: 1px solid $border-subtle;
     border-radius: $radius-pill;
-    box-shadow: 0 3px 0 rgba($color-ink, 0.08), 0 8px 20px rgba(60, 64, 90, 0.06);
+    box-shadow: 0 3px 0 rgba($color-ink, 0.06), 0 8px 20px rgba(60, 64, 90, 0.06);
   }
 
   &__end {
@@ -776,4 +778,37 @@ a:focus-visible,
 @media (prefers-reduced-motion: reduce) {
   .btn:active:not(:disabled),
   .chip:active .chip__face { transform: none; }
+}
+
+// ---- Section headings (4 Nov 2026) ---------------------------------------------------
+// One heading style for every section on Results and the Dashboard: left-aligned, h2 size,
+// with an optional one-line subtitle. Replaces the page-by-page sizes ("At a glance" was centred
+// and display-size; "Each path" and "Explore the detail" each had their own).
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  margin-bottom: $space-4;
+
+  &__title {
+    @include type('h2');
+    margin: 0;
+    color: $text-primary;
+    font-weight: 600;
+  }
+
+  &__sub {
+    margin: 0;
+    color: $text-secondary;
+    font-size: 0.9375rem;
+  }
+}
+
+// ---- Quiet panel (4 Nov 2026) -------------------------------------------------------
+// A box that sits on the white page without a card's shadow: thin border, white fill.
+// For strips such as Results' "Based on" line and "Next" bar.
+.quiet-panel {
+  border: 1px solid $border-subtle;
+  border-radius: $radius-md;
+  background: $bg-surface;
 }
