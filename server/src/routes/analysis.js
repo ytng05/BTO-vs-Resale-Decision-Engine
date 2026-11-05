@@ -111,7 +111,7 @@ function sendError(res, next, err) {
 
 const pct = (g) => `${Math.round(g * 1000) / 10}%`;
 const dollars = (cents) => `$${Math.round(Math.abs(cents) / 100).toLocaleString('en-SG')}`;
-const pathName = (label, choice) => `Path ${label} (${choice.path === 'BTO' ? 'BTO' : 'resale'})`;
+const pathName = (choice) => (choice.path === 'BTO' ? 'BTO' : 'resale');
 
 /**
  * One plain sentence for the heatmap (wording rules in API_CONTRACT.md: net financial position, never a
@@ -191,8 +191,8 @@ router.post('/compare', async (req, res, next) => {
       breakEvenSentence: breakEvenSentence(surface, userRow, {
         horizonYear: engineAssumptions.horizonYear,
         annualIncomeGrowth: engineAssumptions.annualIncomeGrowth,
-        nameA: pathName('A', a.choice),
-        nameB: pathName('B', b.choice),
+        nameA: pathName(a.choice),
+        nameB: pathName(b.choice),
       }),
       grid: surface.grid,
       frontier: surface.frontier,

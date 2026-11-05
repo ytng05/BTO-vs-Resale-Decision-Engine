@@ -47,6 +47,19 @@ const short = (v) => {
 };
 const dollars = (cents) => (typeof cents === 'number' ? cents / 100 : null);
 
+// On a narrow chart Chart.js cuts off a long label on the left: split it over lines instead.
+const NARROW_CHART_PX = 420;
+const LABEL_LINE_CHARS = 16;
+function wrapLabel(label) {
+  const lines = [];
+  label.split(' ').forEach((word) => {
+    const last = lines.at(-1);
+    if (last && `${last} ${word}`.length <= LABEL_LINE_CHARS) lines[lines.length - 1] = `${last} ${word}`;
+    else lines.push(word);
+  });
+  return lines;
+}
+
 const rows = computed(() => ITEMS.map((item) => ({
   label: item.label,
   hideWhenZero: item.hideWhenZero,
@@ -84,6 +97,14 @@ onMounted(() => {
       },
       scales: {
         x: { ticks: { callback: (v) => short(v), maxTicksLimit: 5 } },
+        y: {
+          ticks: {
+            callback(v) {
+              const label = this.getLabelForValue(v);
+              return this.chart.width < NARROW_CHART_PX ? wrapLabel(label) : label;
+            },
+          },
+        },
       },
     },
   });

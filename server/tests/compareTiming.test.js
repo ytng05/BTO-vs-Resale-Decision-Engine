@@ -94,14 +94,14 @@ describe('POST /api/compare', () => {
 
   it.each([
     ['a break-even line at the user\'s exact income growth', true, true, /With income growing 2\.5% a year, they are level at about 1\.5% price growth/],
-    ['a line elsewhere on the heatmap, but not at the user\'s income growth', true, false, /With income growing 2\.5% a year, Path A .* every price growth .* lies at other income growth rates/],
+    ['a line elsewhere on the heatmap, but not at the user\'s income growth', true, false, /With income growing 2\.5% a year, BTO .* every price growth .* lies at other income growth rates/],
     ['no line anywhere tested', false, false, /Under every combination tested/],
   ])('the sentence (unit): %s', (_name, gridHasLine, userRowHasLine, expected) => {
     const cell = (p, i, winner) => ({ annualPriceGrowth: p, annualIncomeGrowth: i, winner, marginCents: winner === 'A' ? 1 : -1 });
     const row = (i, crossing) => [cell(0.01, i, crossing ? 'B' : 'A'), cell(0.02, i, 'A')];
     const surface = { grid: [row(0.02, gridHasLine), row(0.03, false)], frontier: gridHasLine ? [{ annualPriceGrowth: 0.012, annualIncomeGrowth: 0.02 }] : [] };
     const userRow = { grid: [row(0.025, userRowHasLine)], frontier: userRowHasLine ? [{ annualPriceGrowth: 0.015, annualIncomeGrowth: 0.025 }] : [] };
-    const sentence = breakEvenSentence(surface, userRow, { horizonYear: 2040, annualIncomeGrowth: 0.025, nameA: 'Path A (BTO)', nameB: 'Path B (resale)' });
+    const sentence = breakEvenSentence(surface, userRow, { horizonYear: 2040, annualIncomeGrowth: 0.025, nameA: 'BTO', nameB: 'resale' });
     expect(sentence).toMatch(expected);
     expect(sentence).toMatch(/not a price forecast/);
   });
