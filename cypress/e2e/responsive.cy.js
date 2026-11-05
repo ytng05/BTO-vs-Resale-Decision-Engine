@@ -23,7 +23,7 @@ const PAGES = [
   { path: '/login', ready: '[data-cy=login-choice-register]' },
   { path: '/scenarios', ready: '[data-cy=scenarios-view]' },
   { path: '/dashboard', ready: '[data-cy=dashboard-empty]' },
-  { path: '/scenarios/compare?a=mock-a&b=mock-b', ready: '[data-cy=compare-card-b]' },
+  { path: '/scenarios/compare?a=mock-a&b=mock-b', ready: '[data-cy=compare-card-b]', loggedIn: true }, // mock ids: no API
 ];
 
 function fitsWidth() {
@@ -67,7 +67,12 @@ describe('responsive layout', () => {
 
       PAGES.forEach((page) => {
         it(`${page.path} fits the screen`, () => {
-          cy.visit(page.path);
+          if (page.loggedIn) {
+            cy.intercept('GET', '/api/scenarios', { body: { scenarios: [] } });
+            cy.visit(page.path, { onBeforeLoad: (win) => win.localStorage.setItem('hdb-app:auth', JSON.stringify({ token: 'stub-token', user: { name: 'Test Buyer' } })) });
+          } else {
+            cy.visit(page.path);
+          }
           cy.get(page.ready).should('be.visible');
           fitsWidth();
           leavesRoomToRead();
