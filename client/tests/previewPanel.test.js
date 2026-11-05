@@ -57,7 +57,7 @@ describe('previewPanel', () => {
       outcome: 'none',
       title: "We can't compare these here",
       sub: null,
-      summary: "BTO isn't open to you on these answers: your income would be above the ceiling for a new flat. The full comparison explains this.",
+      summary: "BTO isn't open to you on these answers: your household income, projected to the year you apply, would be above the ceiling for a new flat. The full comparison explains this.",
     });
     expect(previewPanel([noComparison('cash', 'resale-ineligible')]).summary).toContain("Resale isn't open to you");
     expect(previewPanel([noComparison('cash', 'both-ineligible')]).summary).toContain('Neither path is open to you');

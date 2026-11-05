@@ -14,7 +14,7 @@ const NAME = { bto: 'BTO', resale: 'Resale' };
 // Why there's no comparison. The only "can't buy" signal is the new-flat income ceiling (D36, utils/previewFit.js);
 // Results and the Dashboard open with a banner that explains it.
 const NO_COMPARISON = {
-  'bto-ineligible': "BTO isn't open to you on these answers: your income would be above the ceiling for a new flat. The full comparison explains this.",
+  'bto-ineligible': "BTO isn't open to you on these answers: your household income, projected to the year you apply, would be above the ceiling for a new flat. The full comparison explains this.",
   'resale-ineligible': "Resale isn't open to you on these answers. The full comparison explains this.",
   'both-ineligible': 'Neither path is open to you on these answers. The full comparison explains this.',
 };
