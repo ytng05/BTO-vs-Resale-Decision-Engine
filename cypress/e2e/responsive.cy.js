@@ -3,13 +3,15 @@
 // Also logged in (the navbar is wider then), and that the plan's step labels and the dashboard's flat names are not cut off.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 
-import { completePlan, fillAges, next } from './helpers/plan.js';
+import { completePlan, fillAges, fillSituation, fillPath, next, seeResults } from './helpers/plan.js';
 
 const SCREENS = [
   { name: 'phone (iPhone SE)', width: 375, height: 667 },
   { name: 'phone (iPhone 15)', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
   { name: 'laptop', width: 1280, height: 800 },
+  { name: 'Bootstrap XL (1200)', width: 1200, height: 800 },
+  { name: 'desktop landscape', width: 1440, height: 900 },
   { name: 'phone landscape', width: 667, height: 375 },
   { name: 'tablet landscape', width: 1024, height: 768 },
   { name: 'tablet landscape (iPad Air)', width: 1180, height: 820 },
@@ -19,6 +21,7 @@ const SCREENS = [
 const PAGES = [
   { path: '/', ready: '[data-cy=home-title]' },
   { path: '/plan', ready: '[data-cy=wishes-form]' },
+  { path: '/preview', ready: '[data-cy=preview-empty]' },
   { path: '/sources', ready: '[data-cy=sources-title]' },
   { path: '/login', ready: '[data-cy=login-choice-register]' },
   { path: '/scenarios', ready: '[data-cy=scenarios-view]' },
@@ -101,8 +104,20 @@ describe('responsive layout', () => {
         notCutOff('[data-cy^=stepper-go-], [data-cy^=stepper-label-]'); // a step's name is a link (go) or plain text (label)
       });
 
-      it('/results and the dashboard fit the screen after a full plan', () => {
-        completePlan();
+      it('/preview, /results and the dashboard fit the screen after a full plan', () => {
+        cy.visit('/plan');
+        next();
+        fillSituation();
+        next();
+        fillPath('patha');
+        next();
+        fillPath('pathb', { town: 'BEDOK' });
+        next();
+        cy.get('[data-cy=preview-see-results]', { timeout: 10000 }).should('be.visible');
+        fitsWidth();
+        leavesRoomToRead();
+        seeResults();
+        cy.location('pathname').should('eq', '/results');
         cy.get('[data-cy=results-confidence-headline]').should('be.visible');
         fitsWidth();
         leavesRoomToRead();

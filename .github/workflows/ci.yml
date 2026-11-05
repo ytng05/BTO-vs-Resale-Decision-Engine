@@ -28,6 +28,10 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # The submission brief asks for README.txt; it must stay a copy of README.md.
+      - name: README.txt matches README.md
+        run: |
+          cmp README.md README.txt || (echo "README.txt is out of date. Run: cp README.md README.txt" && exit 1)
       - run: npm ci
       - run: npm run lint
       - run: npm test
