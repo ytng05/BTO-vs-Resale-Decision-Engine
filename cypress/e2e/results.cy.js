@@ -53,6 +53,23 @@ describe('results page', () => {
       .and('contain', 'S$');
   });
 
+  it('previews a hovered heatmap square and lights up its legend entry', () => {
+    completePlan();
+    cy.get('[data-cy=results-section-heatmap] > summary').click();
+    cy.get('[data-cy=heatmap-cell-r0-c5]').then(($td) => {
+      const winner = ['a', 'b', 'tie'].find((w) => $td.hasClass(`heatmap__cell--${w}`));
+      cy.wrap($td).trigger('mouseenter');
+      cy.get('[data-cy=heatmap-selected-detail]').should('contain', 'Price growth 5%').and('contain', 'income growth 0%');
+      cy.get(`[data-cy=heatmap-legend-${winner}]`).should('have.class', 'heatmap__legend-item--active');
+      cy.get('.heatmap__legend-item--active').should('have.length', 1);
+
+      // Leaving the square goes back to describing the user's own square.
+      cy.wrap($td).trigger('mouseleave');
+      cy.get('[data-cy=heatmap-selected-detail]').should('contain', 'Your assumptions');
+      cy.get('.heatmap__legend-item--active').should('not.exist');
+    });
+  });
+
   it('never relies on colour alone: every heatmap square is labelled in words', () => {
     completePlan();
     cy.get('[data-cy^=heatmap-button-]').each(($btn) => {
