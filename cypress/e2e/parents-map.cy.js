@@ -46,7 +46,7 @@ describe('parents map on the Resale flat step', () => {
   });
 
     // A mock build places postal codes and towns with MOCK points (api/mock/mockOneMap.js), so no OneMap calls.
-function showParents() {
+    function showParents() {
     cy.get('[data-cy=phg-parents-postal-input]').clear().type('739018');
     cy.get('[data-cy=phg-show-button]').click();
   }
@@ -57,7 +57,14 @@ function showParents() {
     cy.get('[data-cy=pathb-living-map-button]').click();
     showParents();
     cy.get('[data-cy=phg-distance]').should('contain', 'Bedok town centre').and('contain', 'km');
+    cy.get('[data-cy=phg-distance-approximate]').should('contain', "Add the resale flat's postal code");
     cy.get('[data-cy=phg-check-note]').should('be.visible');
+
+    // With the flat's postal code the distance is exact, and the town-centre line goes.
+    cy.get('[data-cy=phg-flat-postal-input]').type('529510');
+    cy.get('[data-cy=phg-show-button]').click();
+    cy.get('[data-cy=phg-distance]').should('contain', 'Resale flat');
+    cy.get('[data-cy=phg-distance-approximate]').should('not.exist');
   });
 
   it('measures again when the resale town is picked or changed after the map was first opened', () => {

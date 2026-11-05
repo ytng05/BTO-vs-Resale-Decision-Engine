@@ -231,6 +231,10 @@ onBeforeUnmount(() => {
         <strong class="text-numeric">{{ formatKm(km) }}</strong> from your parents' home
         <template v-if="approximate"> (approximate)</template>
       </p>
+      <!-- Measured to the town centre: a flat in that town can be further (or nearer) than this, so say how to check. -->
+      <p v-if="km !== null && approximate" class="small mb-2" data-cy="phg-distance-approximate">
+        That is to the town centre, not your flat. Add the resale flat's postal code above for its exact distance.
+      </p>
       <p v-if="parents && km === null && !error" class="small text-secondary mb-3" data-cy="phg-distance-missing">
         <template v-if="resaleTown">
           {{ townLabel(resaleTown) }} couldn't be placed on the map just now. Press Show to try again, or enter the resale
