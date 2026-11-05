@@ -1,5 +1,5 @@
-// Journey 2 (docs/JOURNEYS.md): a couple who want to live near their parents. Living with them until keys, BTO
-// ends ahead; renting at S$2,800 while a long BTO wait runs, resale does (grants incl. PHG, no rent). Live build only.
+// Journey 2 (docs/JOURNEYS.md): a couple who want to live near their parents. Even renting at S$2,800 during Teban
+// Heights' 4-year wait, BTO stays ahead; resale only wins at a much higher rent (S$5,000). Live build only.
 import { J2, beat, fillPlan, openDashboard, setSlider } from './personas.js';
 
 describe('Journey 2: living near parents', () => {
@@ -21,9 +21,12 @@ describe('Journey 2: living near parents', () => {
     beat();
     cy.get('[data-cy=dashboard-modal-close]').click(); // close the pop-up before using the sliders
 
-    // What if they rent while waiting for the BTO keys instead of living with their parents?
+    // What if they rent while waiting for the BTO keys instead of living with their parents? Even renting at S$2,800
+    // during Teban Heights' 4-year wait, BTO stays ahead; resale only wins at a much higher rent.
     cy.get('[data-cy=dashboard-whatif]').scrollIntoView();
     setSlider('whatif-rent', 2800);
+    cy.get('[data-cy=dashboard-headline]').should('contain', 'BTO');
+    setSlider('whatif-rent', 5000);
     cy.get('[data-cy=dashboard-headline]').should('contain', 'Resale leaves you');
 
     // Every rule links to its official source: the link sits in the Grants pop-up.
