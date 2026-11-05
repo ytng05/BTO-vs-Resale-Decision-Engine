@@ -38,17 +38,16 @@ export function phgCheck(declared, km, approximate = false) {
   const inside = km <= PHG_RADIUS_KM;
   const where = approximate ? 'The resale town centre' : 'The resale flat';
   const dist = formatKm(km);
-  const roughNote = approximate ? ' This is measured to the town centre; enter the flat\'s postal code for its exact distance.' : '';
 
   if (declared === 'WITH') {
-    return { tone: 'info', text: `You said you will live with your parents, so the distance does not affect the PHG.${roughNote}` };
+    return { tone: 'info', text: `You said you will live with your parents, so the distance does not affect the PHG.` };
   }
   if (declared === 'NEAR') {
     return inside
-      ? { tone: 'success', text: `${where} is ${dist} from your parents, within ${PHG_RADIUS_KM} km. This matches your answer.${roughNote}` }
-      : { tone: 'warning', text: `${where} is ${dist} from your parents, more than ${PHG_RADIUS_KM} km. You said you will live near them: check your answer in the plan.${roughNote}` };
+      ? { tone: 'success', text: `${where} is ${dist} from your parents, within ${PHG_RADIUS_KM} km. This matches your answer.` }
+      : { tone: 'warning', text: `${where} is ${dist} from your parents, more than ${PHG_RADIUS_KM} km. You said you will live near them: check your answer in the plan.` };
   }
   return inside
-    ? { tone: 'info', text: `${where} is ${dist} from your parents, within ${PHG_RADIUS_KM} km. If you will live near them, you may qualify for the PHG: update your answer in the plan.${roughNote}` }
-    : { tone: 'info', text: `${where} is ${dist} from your parents, more than ${PHG_RADIUS_KM} km.${roughNote}` };
+    ? { tone: 'info', text: `${where} is ${dist} from your parents, within ${PHG_RADIUS_KM} km. If you will live near them, you may qualify for the PHG: update your answer in the plan.` }
+    : { tone: 'info', text: `${where} is ${dist} from your parents, more than ${PHG_RADIUS_KM} km.`};
 }

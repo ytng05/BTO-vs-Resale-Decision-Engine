@@ -157,6 +157,7 @@ Test cases, by spec file in `cypress/e2e/`:
 | `responsive.cy.js` | every page at 375 / 390 / 768 / 1180 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, pinned bars leave at least half the height, a logged-in navbar fits, and stepper labels, dashboard tile figures and flat names are not cut off |
 | `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |
 | `plan-refresh.cy.js` | refreshing Results, the Dashboard or a plan step keeps the plan (sessionStorage only), an older stored copy is dropped, and logout and Start planning after a save clear it (the last two need a database) |
+| `parents-map.cy.js` | the Resale flat step's "Check on a map" beside Your parents: opens the Near parents map in a pop-up, Esc and the close button return to the button, the answer is unchanged, a typed postal code is kept, the distance is to the resale town picked (also after changing it), fits 320px to laptop |
 | `plan-navigation.cy.js` | moving between plan steps: Change opens the right About you screen and returns to the results, the screen is checked first, the stepper links to the steps reached so far, and it cannot jump forward from a screen with a problem |
 
 
