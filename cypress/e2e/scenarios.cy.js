@@ -217,4 +217,20 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=results-save-success]').should('not.exist');
     cy.get('[data-cy=results-save-button]').should('be.visible');
   });
+
+    it('updates the navbar count right after a save and a delete, without changing page', () => {
+    registerFreshUser();
+    completePlan();
+    cy.get('[data-cy=nav-scenarios-link]').should('contain', 'My scenarios · 0');
+    cy.get('[data-cy=results-save-button]').click();
+    cy.get('[data-cy=results-save-submit]').click();
+    cy.get('[data-cy=results-save-success]').should('be.visible');
+    cy.get('[data-cy=nav-scenarios-link]').should('contain', 'My scenarios · 1');
+
+    cy.get('[data-cy=results-save-scenarios-link]').click();
+    cy.get('[data-cy=scenarios-delete-button]').click();
+    cy.get('[data-cy=scenarios-delete-confirm]').click();
+    cy.get('[data-cy=scenarios-empty]').should('be.visible');
+    cy.get('[data-cy=nav-scenarios-link]').should('contain', 'My scenarios · 0');
+  });
 });
