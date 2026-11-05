@@ -16,7 +16,7 @@ describe('home', () => {
     cy.get('[data-cy=results-confidence-headline]', { timeout: 10000 }).should('be.visible');
   });
 
-  it('asks before the example replaces a plan the user has started, and keeps it on "Keep my plan"', () => {
+  it('asks before the example replaces a plan the user has started, keeps it on "Keep my plan", replaces it on "Show the example"', () => {
     cy.visit('/plan');
     cy.get('[data-cy=wish-parents]').click();
     cy.get('[data-cy=plan-step-next]').click();
@@ -30,6 +30,12 @@ describe('home', () => {
     cy.location('pathname').should('eq', '/');
     cy.get('[data-cy=nav-plan-link]').click({ force: true });
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.value', '31');
+
+    // "Show the example" goes ahead and opens it.
+    cy.get('[data-cy=nav-brand-home]').click();
+    cy.get('[data-cy=home-example-button]').click();
+    cy.get('[data-cy=home-example-confirm-yes]').click();
+    cy.location('pathname').should('eq', '/results');
   });
 
   it('lists the four plan steps, each with what to have to hand', () => {

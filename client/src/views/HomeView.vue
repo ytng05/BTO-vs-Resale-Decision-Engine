@@ -25,7 +25,7 @@ const hasOwnPlan = computed(() => {
     || p.cashSavings != null
     || Boolean(store.choiceA.town || store.choiceB.town);
 });
-const confirming = ref(null);
+const confirming = ref(false);
 
 // "Welcome back": shown to someone logged in, or with a plan in progress this session. Logged in, it names their
 // most recently saved scenario (newest first by date); anything that can't be loaded is simply left out.
@@ -53,14 +53,14 @@ const showWelcome = computed(() => auth.isLoggedIn || hasOwnPlan.value);
 
 // Fill the plan with a ready-made couple and open their Results; "Change inputs" there makes it their own.
 // If the user has started a plan, ask before replacing it (the confirm button passes force).
-async function seeExample(from, force = false) {
+async function seeExample(force = false) {
   if (hasOwnPlan.value && !force) {
-    confirming.value = from;
+    confirming.value = true;
     await nextTick();
     document.querySelector('[data-cy=home-example-confirm-yes]')?.focus();
     return;
   }
-  confirming.value = null;
+  confirming.value = false;
   store.loadSaved(EXAMPLE_PLAN);
   router.push('/results');
 }
@@ -198,7 +198,7 @@ const FAQS = [
         <p class="home-welcome__line">
           <template v-if="lastScenario">Your last saved scenario is <strong>{{ lastScenario.name || 'unnamed' }}</strong><template v-if="lastSavedOn">, saved {{ lastSavedOn }}</template>.</template>
           <template v-else-if="hasOwnPlan">Your plan is where you left it.</template>
-          <template v-else>Start a plan, or open one you saved.</template>
+          <template v-else>Start a plan to see your numbers here.</template>
         </p>
       </div>
       <!-- No "My scenarios" button here: the navbar's "My scenarios · N" sits right above it -->
@@ -225,13 +225,13 @@ const FAQS = [
               </span>
               Start planning
             </router-link>
-            <button type="button" class="btn home-btn home-btn--ghost" data-cy="home-example-button" @click="seeExample('hero')">See an example</button>
+            <button type="button" class="btn home-btn home-btn--ghost" data-cy="home-example-button" @click="seeExample()">See an example</button>
           </div>
-          <div v-if="confirming === 'hero'" class="home-confirm" role="group" aria-labelledby="home-confirm-hero" data-cy="home-example-confirm">
+          <div v-if="confirming" class="home-confirm" role="group" aria-labelledby="home-confirm-hero" data-cy="home-example-confirm">
             <p id="home-confirm-hero" class="mb-2">The example replaces what you've entered in your plan so far.</p>
             <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample('hero', true)">Show the example</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
+              <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample(true)">Show the example</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = false">Keep my plan</button>
             </div>
           </div>
         </div>
