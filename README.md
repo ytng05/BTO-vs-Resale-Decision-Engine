@@ -140,6 +140,7 @@ Test cases, by spec file in `cypress/e2e/`:
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, topic chips, search, safe https source links, assumptions and datasets |
 | `responsive.cy.js` | every page at 375 / 768 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
 | `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |
+| `plan-refresh.cy.js` | refreshing Results, the Dashboard or a plan step keeps the plan (sessionStorage only), an older stored copy is dropped, and logout and Start planning after a save clear it (the last two need a database) |
 | `plan-navigation.cy.js` | moving between plan steps: Change opens the right About you screen and returns to the results, the screen is checked first, the stepper links to the steps reached so far, and it cannot jump forward from a screen with a problem |
 
 
@@ -193,8 +194,13 @@ wait, and prints a `[warm] ... data as of ...` line per town (the visible daily 
 
 
 ## Known limitations
-- **Refreshing loses an unsaved plan.** The plan is kept in memory until it is saved, so refreshing Results or the Dashboard
-  shows "No plan to show yet". Log in and save a scenario to keep it; My scenarios opens it again.
+- **A plan in progress lasts as long as the tab.** It is kept in the browser's `sessionStorage`, so refreshing keeps it,
+  and logging out or starting a new plan clears it (it holds incomes and CPF balances). Closing the tab usually clears it
+  too, but a browser that restores the session, or reopens a closed tab, can bring it back. Log in and save a scenario to
+  keep it longer; My scenarios opens it again. If the browser blocks storage, a refresh loses it.
+- **An expired login keeps the plan in that tab.** When a save finds the login has expired, the app signs out but keeps the
+  plan, so it can still be saved after logging in again. On a shared computer, whoever logs in next in that tab would see it:
+  use Log out, which clears it.
 - **Short leases and grants.** HDB pro-rates the Enhanced CPF Housing Grant, the Family Grant and the Proximity Housing Grant
   when the remaining lease does not cover the youngest buyer to age 95. The app does not apply that formula yet: it keeps the
   full amount, and Sources notes that the real grants may be lower.
