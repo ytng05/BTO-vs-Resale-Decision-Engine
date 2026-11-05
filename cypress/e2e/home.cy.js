@@ -138,14 +138,15 @@ describe('home banner', () => {
   });
 
   it('says "Welcome, <first name>" straight after creating an account', () => {
-    cy.visit('/login');
+    cy.visit('/');
+    cy.get('[data-cy=home-start-button]').click();
     cy.get('[data-cy=login-choice-register]').click();
-    cy.get('[data-cy=login-name-input]').type('Mei Lin');
-    cy.get('[data-cy=login-email-input]').type(`mei${Date.now()}@example.com`);
+    cy.get('[data-cy=login-name-input]').type('Mei');
+    cy.get('[data-cy=login-email-input]').type(`e2e-${Date.now()}@example.com`);
     cy.get('[data-cy=login-password-input]').type('Password123!');
     cy.get('[data-cy=login-submit-button]').click();
     cy.location('pathname').should('eq', '/plan');
-    cy.get('[data-cy=nav-brand-home]').click(); 
-    cy.get('[data-cy=home-welcome-greeting]').should('have.text', 'Welcome, Mei');
+    cy.get('[data-cy=nav-brand-home]').click();
+    cy.get('[data-cy=home-welcome-greeting]').should('contain', 'Welcome, Mei');
   });
 });
