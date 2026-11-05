@@ -51,7 +51,7 @@ describe('home', () => {
     cy.get('[data-cy=home-costs]').scrollIntoView();
     cy.get('[data-cy^=home-cost-]').should('have.length', 8); // the looping copy has no data-cy, so it isn't counted
     cy.get('[data-cy=home-cost-2]').should('contain', 'Rent while you wait')
-      .find('.home-tile__text').should('contain', 'keys').and('have.css', 'opacity', '1');
+      .find('[data-cy=home-tile-text]').should('contain', 'keys').and('have.css', 'opacity', '1');
   });
 
   it('lets the user pause the moving costs and step through them one by one', () => {
@@ -59,10 +59,10 @@ describe('home', () => {
     cy.get('[data-cy=home-costs]').scrollIntoView();
     cy.get('[data-cy=home-costs-toggle]').should('have.attr', 'aria-label', 'Pause the moving tiles').click();
     cy.get('[data-cy=home-costs-toggle]').should('have.attr', 'aria-label', 'Play the moving tiles');
-    cy.get('.home-marquee').then(($s) => {
+    cy.get('[data-cy=home-costs-strip]').then(($s) => {
       const start = $s[0].scrollLeft;
       cy.get('[data-cy=home-costs-next]').click();
-      cy.get('.home-marquee').should(($m) => expect($m[0].scrollLeft).to.be.greaterThan(start));
+      cy.get('[data-cy=home-costs-strip]').should(($m) => expect($m[0].scrollLeft).to.be.greaterThan(start));
     });
     cy.get('[data-cy=home-costs-prev]').click();
     cy.get('[data-cy=home-costs-toggle]').click().should('have.attr', 'aria-label', 'Pause the moving tiles');

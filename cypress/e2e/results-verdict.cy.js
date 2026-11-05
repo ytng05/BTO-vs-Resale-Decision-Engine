@@ -75,7 +75,7 @@ describe('results verdict', () => {
 
   it('shows both path cards straight after the verdict, with no extra boxes or links in between', () => {
     completePlan();
-    cy.get('#path-details-title').should('be.visible').and('not.contain', 'in plain words');
+    cy.get('[data-cy=results-paths-title]').should('be.visible').and('not.contain', 'in plain words');
     cy.get('[data-cy=results-robustness]').should('not.exist');
     cy.get('[data-cy=results-tradeoff]').should('not.exist');
     cy.get('[data-cy=results-why-dashboard]').should('not.exist');

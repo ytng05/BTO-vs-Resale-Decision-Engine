@@ -31,7 +31,7 @@ watch(() => route.path, (to, from) => {
     <main id="main" ref="main" tabindex="-1">
       <router-view />
     </main>
-    <footer>
+    <footer data-cy="site-footer">
       <DisclaimerBanner />
     </footer>
   </div>

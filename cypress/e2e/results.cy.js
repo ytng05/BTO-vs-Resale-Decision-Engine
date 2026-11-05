@@ -1,6 +1,7 @@
 // Results page (mock data). Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 // Selector convention: data-cy="<area>-<element>-<action>" (see docs/CONVENTIONS.md).
 import { backTimes, completePlan, fillPath, fillSituation, next, seeResults } from './helpers/plan.js';
+import { registerFreshUser, saveScenario } from './helpers/scenarios.js';
 
 describe('results page', () => {
   it('shows an empty state when opened without a plan', () => {
@@ -59,10 +60,15 @@ describe('results page', () => {
     });
   });
 
-  // Onboarding no longer asks for growth (D38: defaults, changed on the Dashboard), so a plan built through
-  // /plan can't put the user's point outside the grid. Bring this back if Results gets its own assumptions.
-  it.skip('notes when the user’s assumptions are outside the heatmap range', () => {
-    completePlan();
+  // Onboarding no longer asks for growth (D38), so only a saved scenario can bring an outside rate to Results.
+  // The mock grid is fixed at 0%..5%; the live grid widens to cover the user's rates. Needs a database.
+  it('notes when the user’s assumptions are outside the heatmap range', () => {
+    registerFreshUser();
+    saveScenario('Fast price growth', { annualPriceGrowth: 0.08 });
+    cy.visit('/scenarios');
+    cy.get('[data-cy=scenarios-open-button]').click();
+    cy.location('pathname').should('eq', '/results');
+    cy.get('[data-cy=results-section-heatmap] > summary').click();
     cy.get('[data-cy=heatmap-outside-note]').should('be.visible');
   });
 
@@ -143,7 +149,7 @@ describe('results page', () => {
     cy.get('[data-cy=patha-flat-type-hint]').should('have.text', 'Only 4-room in this launch.');
     // Plus explained in a popover from the card.
     cy.get('[data-cy=patha-project-help] button').should('have.text', 'Plus').click();
-    cy.get('#patha-cls-tip').should('be.visible').and('contain', 'minimum occupation period');
+    cy.get('[data-cy=patha-cls-tip]').should('be.visible').and('contain', 'minimum occupation period');
   });
 
   it('takes an optional asking price and says the part above the median is paid in cash (D39)', () => {

@@ -301,7 +301,7 @@ onMounted(load);
 
         <!-- 3. Each path in plain words (D1). Why one path ends ahead, line by line (D34), is on the Dashboard. -->
         <section v-if="result.outcomeA && result.outcomeB" class="paths" aria-labelledby="path-details-title">
-          <h2 id="path-details-title" class="paths__title" tabindex="-1">Each path<template v-if="horizonYear"> in {{ horizonYear }}</template></h2>
+          <h2 id="path-details-title" class="paths__title" tabindex="-1" data-cy="results-paths-title">Each path<template v-if="horizonYear"> in {{ horizonYear }}</template></h2>
           <!-- Same height while both are closed; once a Full breakdown opens, each card is its own height (CSS below). -->
           <div class="row g-3 paths__row">
             <div class="col-12 col-lg-6">

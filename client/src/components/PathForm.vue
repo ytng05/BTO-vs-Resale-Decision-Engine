@@ -265,7 +265,7 @@ const LIVING = [
               </span>
             </template>
           </p>
-          <div :id="`${prefix}-cls-tip`" popover class="est__tip">
+          <div :id="`${prefix}-cls-tip`" :data-cy="`${prefix}-cls-tip`" popover class="est__tip">
             {{ labelOf(CLASSIFICATIONS, activeProject.classification) }} flats have a longer minimum occupation period than
             Standard ones, and some of the subsidy is paid back when you sell.
           </div>
@@ -383,7 +383,7 @@ const LIVING = [
       <!-- The listing's asking price, optional (D39) -->
       <div class="pf__field">
         <label :for="`${prefix}-asking-price`" class="pf__label">Asking price <span class="pf__optional">(optional)</span></label>
-        <div class="pf__box" :class="{ 'pf__box--invalid': err('resalePrice') }">
+        <div class="pf__box" :class="{ 'pf__box--invalid': err('resalePrice') }" :data-cy="`${prefix}-asking-price-box`">
           <span class="pf__unit" aria-hidden="true">S$</span>
           <NumberField
             :id="`${prefix}-asking-price`"

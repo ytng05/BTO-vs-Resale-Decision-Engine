@@ -36,7 +36,7 @@ describe('dashboard overview', () => {
     cy.get('[data-cy=dashboard-explore-grants]').click({ scrollBehavior: 'center' });
     cy.location('pathname').should('eq', '/dashboard');
     cy.get('[data-cy=dashboard-section-grants]').should('be.visible');
-    cy.get('#dash-modal-title').should('contain', 'Grants');
+    cy.get('[data-cy=dashboard-modal-title]').should('contain', 'Grants');
     cy.get('[data-cy=dashboard-grants]').should('exist');
   });
 });

@@ -352,7 +352,7 @@ const detailLine = computed(() => ({
 
     <template v-else>
     <!-- While a pop-up is open the page behind is inert: Tab can't reach the sliders under the backdrop. -->
-    <div class="dash-e" :inert="openKey ? '' : null">
+    <div class="dash-e" :inert="openKey ? '' : null" data-cy="dashboard-page">
       <!-- 1. The answer -->
       <DashboardVerdictBar
         v-if="A && B"
@@ -425,7 +425,7 @@ const detailLine = computed(() => ({
       <DashboardGlance v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon="horizon" :call="call" />
 
       <!-- 4. How you'd pay, and the detail, with the What-if panel beside them -->
-      <div class="dash-main" :aria-busy="updating ? 'true' : 'false'">
+      <div class="dash-main" data-cy="dashboard-main" :aria-busy="updating ? 'true' : 'false'">
         <div class="dash-main__content">
           <DashboardPaid
             v-if="A && B"
@@ -520,7 +520,7 @@ const detailLine = computed(() => ({
 
       <!-- The detail pop-up. Clicking the dark backdrop (but not the box) closes it. It is created on the first open
            and then only hidden, so each detail keeps what was typed (PHG postal codes) and doesn't load again. -->
-      <div v-if="everOpened" v-show="openItem" class="dash-modal" @mousedown.self="backdropDown = true" @click.self="onBackdropClick">
+      <div v-if="everOpened" v-show="openItem" class="dash-modal" data-cy="dashboard-modal" @mousedown.self="backdropDown = true" @click.self="onBackdropClick">
         <div
           class="dash-modal__box"
           :role="openItem ? 'dialog' : null"
@@ -531,7 +531,7 @@ const detailLine = computed(() => ({
           <header class="dash-modal__head">
             <span class="dash-modal__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="openItem?.icon" /></svg></span>
             <div class="dash-modal__titles">
-              <h2 id="dash-modal-title" class="dash-modal__title">{{ openItem?.title }}</h2>
+              <h2 id="dash-modal-title" class="dash-modal__title" data-cy="dashboard-modal-title">{{ openItem?.title }}</h2>
               <p v-if="detailLine" class="dash-modal__sub mb-0">{{ detailLine }}</p>
             </div>
             <button ref="closeBtn" type="button" class="dash-modal__close" aria-label="Close" data-cy="dashboard-modal-close" @click="closeDetail">
