@@ -442,7 +442,7 @@ const detailLine = computed(() => ({
           <section class="dash-panel" aria-labelledby="cashflow-heading" data-cy="dashboard-section-cashflow">
             <div>
               <h2 id="cashflow-heading" class="section-head__title">How each net position adds up</h2>
-              <p class="section-head__sub">What each path leaves you with in {{ horizon }}, without selling the flat (D1), line by line. Move a What-if slider to see it change.</p>
+              <p class="section-head__sub">What each path leaves you with in {{ horizon }}, without selling the flat, line by line. Move a What-if slider to see it change.</p>
             </div>
             <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
           </section>

@@ -51,6 +51,11 @@ onBeforeUnmount(() => window.removeEventListener('scroll', onScroll));
   box-shadow: 0 4px 16px rgba(29, 29, 36, 0.22);
   cursor: pointer;
 }
+/* On a phone, just the arrow in a circle, so it covers less of the page. The label stays for screen readers. */
+@media (max-width: 767.98px) {
+  .back-to-top { justify-content: center; width: 44px; height: 44px; padding: 0; }
+  .back-to-top span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
 .back-to-top:hover { filter: brightness(1.15); }
 .back-to-top:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .back-to-top-enter-active, .back-to-top-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
