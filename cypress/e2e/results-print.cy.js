@@ -25,7 +25,8 @@ describe('results: next steps and print', () => {
     cy.window().then((win) => cy.stub(win, 'print').as('print'));
     cy.get('[data-cy=results-print-button]').click();
     cy.get('@print').should('have.been.calledOnce');
-    // The heatmap only draws once opened: printing opens it first.
+    // The chart and heatmap only draw once opened: printing opens them first.
+    cy.get('[data-cy=results-section-chart]').should('have.attr', 'open');
     cy.get('[data-cy=results-section-heatmap]').should('have.attr', 'open');
 
     cy.get('[data-cy=results-print-header]').should('not.be.visible');

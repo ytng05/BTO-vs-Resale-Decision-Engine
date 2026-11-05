@@ -314,19 +314,6 @@ function mockOutcome({
   const renovationCents = choice.renovationCents ?? 3_000_000;
   const totalGrantsCents = grants.reduce((sum, g) => sum + g.amountCents, 0);
 
-  const yearlyCashFlow = [];
-  for (let year = evaluationStartYear; year <= horizonYear; year += 1) {
-    const hasKeys = year >= keysYear;
-    yearlyCashFlow.push({
-      year,
-      housingCashOutCents: hasKeys ? 600_000 : 1_200_000,
-      cpfUsedCents: hasKeys ? 1_440_000 : 0,
-      loanBalanceEndCents: hasKeys ? Math.max(0, 45_000_000 - (year - keysYear) * 1_500_000) : 0,
-      marketValueEndCents: hasKeys ? 60_000_000 + (year - keysYear) * 1_500_000 : 0,
-      cpfObligationEndCents: hasKeys ? 8_000_000 + (year - keysYear) * 1_700_000 : 0,
-    });
-  }
-
   const costBreakdown = [
     { id: 'BSD', label: "Buyer's stamp duty", amountCents: 1_110_000, paidFrom: 'CPF' },
     { id: 'LEGAL', label: 'Legal fees', amountCents: 300_000, paidFrom: 'CASH' },
@@ -351,6 +338,31 @@ function mockOutcome({
   const cpfSavingsAccruedInterestCents = cpfAccruedInterestCents;
   const cpfSavingsRefundPrincipalCents = marketValueAtHorizonCents - outstandingLoanAtHorizonCents - (clawbackCents ?? 0)
     - housingCashSpentCents - netPositionCents - cpfSavingsAccruedInterestCents;
+
+  // MOCK yearly rows, built back from the horizon figures so that the chart's measure (flat value − loan − CPF savings
+  // − clawback − cash so far, utils/netPositionTrend.js) lands on netPositionCents in horizonYear, as the engine's do.
+  // Cash is spread evenly over the years; value, loan and CPF are 0 before the keys, then move in straight lines to
+  // their horizon figures.
+  const cpfSavingsAtHorizonCents = cpfSavingsRefundPrincipalCents + cpfSavingsAccruedInterestCents;
+  const years = horizonYear - evaluationStartYear + 1;
+  const cashPerYear = Math.floor(housingCashSpentCents / years);
+  const ownedYears = Math.max(1, horizonYear - keysYear + 1);
+  const yearlyCashFlow = [];
+  for (let year = evaluationStartYear; year <= horizonYear; year += 1) {
+    const hasKeys = year >= keysYear;
+    const share = hasKeys ? (year - keysYear + 1) / ownedYears : 0; // 1 in horizonYear
+    const along = (startCents, endCents) => (hasKeys ? Math.round(startCents + (endCents - startCents) * share) : 0);
+    const cpfSavingsEnd = along(cpfSavingsAtHorizonCents / 2, cpfSavingsAtHorizonCents);
+    yearlyCashFlow.push({
+      year,
+      housingCashOutCents: year === horizonYear ? housingCashSpentCents - cashPerYear * (years - 1) : cashPerYear,
+      cpfUsedCents: hasKeys ? 1_440_000 : 0,
+      loanBalanceEndCents: along(45_000_000, outstandingLoanAtHorizonCents),
+      marketValueEndCents: along(60_000_000, marketValueAtHorizonCents),
+      cpfSavingsObligationEndCents: cpfSavingsEnd,
+      cpfObligationEndCents: hasKeys ? cpfSavingsEnd + totalGrantsCents : 0, // deprecated: savings + grants
+    });
+  }
 
   return {
     horizonYear,
