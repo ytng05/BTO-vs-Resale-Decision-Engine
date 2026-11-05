@@ -78,8 +78,9 @@ describe('Compare saved scenarios', () => {
 
 describe('Compare saved scenarios, logged out', () => {
   it('shows the same log-in prompt as My scenarios, without asking the API', () => {
+    // Real ids (mock- ids never reach the API), so a request here means the login check is gone.
     cy.intercept('GET', '/api/scenarios/*').as('scenario')
-    cy.visit('/scenarios/compare?a=mock-a&b=mock-b')
+    cy.visit('/scenarios/compare?a=real-a&b=real-b')
     cy.get('[data-cy=compare-logged-out]').should('be.visible').and('contain', 'Log in to compare')
     cy.get('[data-cy=compare-error]').should('not.exist')
     cy.get('[data-cy=compare-login-link]').should('have.attr', 'href').and('include', 'redirect=')
@@ -97,8 +98,11 @@ describe('Compare saved scenarios, logged out', () => {
 
   it('shows the prompt, not an error, when the login has expired, and logs out', () => {
     // A token the server no longer accepts.
-    window.localStorage.setItem('hdb-app:auth', JSON.stringify({ token: 'expired', user: { id: 'x', name: 'Old tab' } }))
-    cy.visit('/scenarios/compare?a=real-a&b=real-b')
+    cy.visit('/scenarios/compare?a=real-a&b=real-b', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('hdb-app:auth', JSON.stringify({ token: 'expired', user: { id: 'x', name: 'Old tab' } }))
+      },
+    })
     cy.get('[data-cy=compare-logged-out]').should('be.visible')
     cy.get('[data-cy=compare-error]').should('not.exist')
     cy.get('[data-cy=nav-login-link]').should('be.visible')
