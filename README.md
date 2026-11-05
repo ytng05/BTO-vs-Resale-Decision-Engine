@@ -253,7 +253,7 @@ We used Claude and Claude Code (Anthropic) and GitHub Copilot. Every use is logg
 - **Documents:** drafts of decision records, contract notes, this README and the project proposal, from the team's decisions.
 
 The team made the product and modelling decisions and reviewed the AI's work. Expected values in engine tests are hand-worked,
-not AI-generated.
+not AI-generated, except the grant tests: with TA approval, Copilot took their expected values from the checked ruleset.
 
 ## Libraries and credits
 **Client:** Vue, Pinia, Vue Router, Bootstrap, Chart.js, Axios (all MIT), Leaflet (BSD-2-Clause).
