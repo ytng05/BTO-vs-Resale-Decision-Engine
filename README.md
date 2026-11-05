@@ -138,7 +138,7 @@ Test cases, by spec file in `cypress/e2e/`:
 | `scenarios.cy.js` | save, list, open and delete a scenario (needs a database) |
 | `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width; picking two saved scenarios on My scenarios (needs a database) |
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, topic chips, search, safe https source links, assumptions and datasets |
-| `responsive.cy.js` | every page at 375 / 768 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
+| `responsive.cy.js` | every page (including the check-your-answers page) at 375 / 768 / 1200 (Bootstrap XL) / 1280 / 1440 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
 | `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |
 | `plan-navigation.cy.js` | moving between plan steps: Change opens the right About you screen and returns to the results, the screen is checked first, the stepper links to the steps reached so far, and it cannot jump forward from a screen with a problem |
 
