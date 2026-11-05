@@ -357,7 +357,7 @@ onMounted(load);
             >
               <p class="text-secondary">
                 Each year is worked out the same way as the net position above, without selling: the flat's value, minus
-                the loan, the CPF to put back and the cash paid in so far. So the line can dip below S$0 while you pay
+                the loan, the CPF to put back, any subsidy clawback (Plus and Prime flats) and the cash paid in so far. So the line can dip below S$0 while you pay
                 rent or a deposit before the keys, and {{ horizonYear }} here is the same figure as the answer above. For
                 what that figure is made of, see the
                 <RouterLink to="/dashboard" data-cy="results-cashflow-dashboard-link">financial dashboard</RouterLink>.
