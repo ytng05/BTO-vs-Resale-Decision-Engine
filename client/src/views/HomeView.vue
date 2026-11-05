@@ -65,14 +65,20 @@ async function seeExample(force = false) {
   router.push('/results');
 }
 
-// Ruleset date, shown in the "where the numbers come from" strip.
-// Left out if the ruleset can't be loaded, rather than shown wrong.
+// Ruleset date and whether it has been checked, shown in the "where the numbers come from" strip. Says "checked" only
+// when it is (the disclaimer banner warns when it isn't); the date is left out if the ruleset can't be loaded.
 const ruleset = ref(null);
 const rulesetDate = computed(() => {
   const d = ruleset.value?.version ? new Date(`${ruleset.value.version}T00:00:00`) : null;
   return d && !Number.isNaN(d.getTime())
     ? d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
     : null;
+});
+const rulesetLine = computed(() => {
+  if (!rulesetDate.value) return 'with their sources';
+  return ruleset.value?.status === 'VERIFIED'
+    ? `dated ${rulesetDate.value}, checked against official sources`
+    : `dated ${rulesetDate.value} and sourced`;
 });
 onMounted(async () => {
   try {
@@ -276,7 +282,7 @@ const FAQS = [
       </li>
       <li>
         <span class="home-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h6" /></svg></span>
-        <span><strong>HDB and CPF rules</strong>, <router-link to="/sources" class="home-trust__link">dated{{ rulesetDate ? ` ${rulesetDate}` : '' }} and sourced</router-link></span>
+        <span><strong>HDB and CPF rules</strong>, <router-link to="/sources" class="home-trust__link" data-cy="home-ruleset-line">{{ rulesetLine }}</router-link></span>
       </li>
     </ul>
 

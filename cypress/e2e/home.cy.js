@@ -38,6 +38,13 @@ describe('home', () => {
     cy.location('pathname').should('eq', '/results');
   });
 
+  it('says the rules are dated and checked, when the ruleset is verified, and links to Sources', () => {
+    cy.visit('/'); // the mock ruleset is VERIFIED
+    cy.get('[data-cy=home-ruleset-line]')
+      .should('contain', 'checked against official sources')
+      .and('have.attr', 'href', '/sources');
+  });
+
   it('lists the four plan steps, each with what to have to hand', () => {
     cy.visit('/');
     cy.get('[data-cy^=home-step-]').should('have.length', 4);

@@ -1,6 +1,6 @@
 <script setup>
 // The disclaimer on every page. If the ruleset has NOT been checked against its sources, an amber warning shows here
-// on every page. (When it is verified, the "checked" status shows on Home, under Good to know.)
+// on every page. (When it is verified, Home's "where the numbers come from" strip says so.)
 // If the ruleset can't be loaded, nothing extra is shown rather than something wrong.
 import { computed, onMounted, ref } from 'vue';
 import { getRuleset } from '../api/client.js';
