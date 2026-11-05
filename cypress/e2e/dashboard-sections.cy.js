@@ -34,12 +34,12 @@ describe('dashboard sections', () => {
     cy.focused().should('have.attr', 'data-cy', 'dashboard-modal-close');
     // The page behind can't be reached with Tab while the pop-up is open.
     // Nor can the skip link, navbar or footer, which sit outside the page.
-    cy.get('.dash-e, [data-cy=skip-link], [data-cy=nav-bar], #main ~ footer').should('have.length', 4).each(($el) => {
+    cy.get('[data-cy=dashboard-page], [data-cy=skip-link], [data-cy=nav-bar], [data-cy=site-footer]').should('have.length', 4).each(($el) => {
       cy.wrap($el).should('have.attr', 'inert');
     });
     cy.get('[data-cy=dashboard-modal-close]').click();
     cy.get('[role=dialog]').should('not.exist');
-    cy.get('.dash-e, [data-cy=skip-link], [data-cy=nav-bar], #main ~ footer').each(($el) => {
+    cy.get('[data-cy=dashboard-page], [data-cy=skip-link], [data-cy=nav-bar], [data-cy=site-footer]').each(($el) => {
       cy.wrap($el).should('not.have.attr', 'inert');
     });
     cy.focused().should('have.attr', 'data-cy', 'dashboard-explore-costs');
@@ -51,14 +51,14 @@ describe('dashboard sections', () => {
     // Click on the dark backdrop, outside the box
     cy.get('[data-cy=dashboard-explore-size]').click({ scrollBehavior: 'center' });
     cy.get('[data-cy=dashboard-section-size]').should('be.visible');
-    cy.get('.dash-modal').click('topLeft');
+    cy.get('[data-cy=dashboard-modal]').click('topLeft');
     cy.get('[role=dialog]').should('not.exist');
   });
 
   it('says in each tile which path it favours, never on grants (D1)', () => {
     openDashboard();
     cy.get('[data-cy^=dashboard-sbs-]').should('have.length', 4);
-    cy.get('[data-cy=dashboard-sbs-grants] .is-bto, [data-cy=dashboard-sbs-grants] .is-resale').should('not.exist');
+    cy.get('[data-cy=dashboard-glance-winner-grants]').should('not.have.class', 'is-bto').and('not.have.class', 'is-resale');
   });
 
   it('shows how each purchase is paid, down to the cash needed', () => {
@@ -131,8 +131,8 @@ describe('dashboard sections', () => {
     openDashboard();
     cy.get('[data-cy=dashboard-costs]').should('not.exist');
     cy.window().trigger('beforeprint');
-    cy.get('.dash-main [data-cy=dashboard-costs]').should('exist');
-    cy.get('.dash-main [data-cy=dashboard-grants]').should('exist');
+    cy.get('[data-cy=dashboard-main] [data-cy=dashboard-costs]').should('exist');
+    cy.get('[data-cy=dashboard-main] [data-cy=dashboard-grants]').should('exist');
     cy.window().trigger('afterprint');
     cy.get('[data-cy=dashboard-costs]').should('not.exist');
   });

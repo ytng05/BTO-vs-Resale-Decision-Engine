@@ -237,7 +237,7 @@ onBeforeUnmount(() => clearTimeout(timer));
     <div v-if="part === 0" class="pair">
       <div v-for="(a, i) in applicants" :key="a.id ?? i" class="big-field" :data-cy="`situation-buyer-${i + 1}`" @focusout="onFieldFocusOut">
         <label :for="`buyer-${i}-age`" class="big-field__label">{{ WHO[i] }}</label>
-        <div class="big-box">
+        <div class="big-box" :data-cy="`situation-buyer-${i + 1}-age-box`">
           <NumberField
             :id="`buyer-${i}-age`"
             v-model="a.age"
@@ -286,14 +286,14 @@ onBeforeUnmount(() => clearTimeout(timer));
                   :value="c.value"
                   :data-cy="`situation-buyer-${i + 1}-citizenship-${c.value}`"
                 />
-                <span class="cit__face">{{ c.value === 'PR' ? 'PR' : c.label }}</span>
+                <span class="cit__face" :data-cy="`situation-buyer-${i + 1}-citizenship-${c.value}-face`">{{ c.value === 'PR' ? 'PR' : c.label }}</span>
               </label>
             </div>
             <div v-if="err(`applicants.${i}.citizenship`)" class="invalid-feedback d-block" :data-cy="`situation-buyer-${i + 1}-citizenship-error`">{{ err(`applicants.${i}.citizenship`) }}</div>
           </div>
           <div class="who__group">
             <span class="who__label"><span :id="`buyer-${i}-first-timer-label`">First-timer</span> <span :id="`buyer-${i}-first-timer-hint`" class="who__hint">Never had an HDB subsidy</span></span>
-            <label class="switch">
+            <label class="switch" :data-cy="`situation-buyer-${i + 1}-first-timer-control`">
               <input
                 v-model="a.firstTimer"
                 class="visually-hidden"
@@ -304,7 +304,7 @@ onBeforeUnmount(() => clearTimeout(timer));
                 :data-cy="`situation-buyer-${i + 1}-first-timer-switch`"
               />
               <span class="switch__track" aria-hidden="true"><span class="switch__knob"></span></span>
-              <span class="switch__state" aria-hidden="true">{{ a.firstTimer ? 'Yes' : 'No' }}</span>
+              <span class="switch__state" aria-hidden="true" :data-cy="`situation-buyer-${i + 1}-first-timer-state`">{{ a.firstTimer ? 'Yes' : 'No' }}</span>
             </label>
           </div>
         </fieldset>

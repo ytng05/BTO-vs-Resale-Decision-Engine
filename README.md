@@ -8,6 +8,11 @@ says which ends ahead, by how much and why. It solves for the assumptions at whi
 as a decision surface (heatmap), searches for the best year to apply, and checks every grant with its reason and its
 official source. Policy rules are versioned and dated, and every result names the ruleset that produced it.
 
+- **Live app (first page):** https://bto-vs-resale-decision-engine.onrender.com
+- **Git repository:** https://github.com/ytng05/BTO-vs-Resale-Decision-Engine
+
+The live app is on a free plan: if it has been idle, the first visit can take about a minute to wake it.
+
 > Illustrative projection, not financial advice. Policy figures come from the versioned ruleset and are only as good as
 > the sources recorded in `docs/SOURCES.md`.
 
@@ -46,36 +51,72 @@ docs/                  API contract, open decisions, conventions, edge cases, so
 | 4 Frontend core + styling | `client/src` shell, stepper, forms, theme (`client/src/styles`) |
 | 5 Results, visualisation, testing | results components, heatmap, `cypress/`, CI, test docs |
 
-## Getting started
-Requires Node 20+ (developed on 22).
+## Set up and run
+Requires Node 20+ (developed on 22) and npm.
 
+**1. Get the files.** Unzip the submitted folder and open a terminal in it, or clone the repository:
 ```bash
-git clone https://github.com/ytng05/BTO-vs-Resale-Decision-Engine.git bto-resale-breakeven && cd bto-resale-breakeven
+git clone https://github.com/ytng05/BTO-vs-Resale-Decision-Engine.git
+cd BTO-vs-Resale-Decision-Engine
+```
+
+**2. Install.**
+```bash
 npm install
-cp .env.example .env        # optional: add MONGODB_URI, API keys
-npm run dev                 # API on :3000, Vue dev server on :5173, live data (VITE_USE_MOCK=true npm run dev for mock data)
 ```
 
-Run as a single app on one port (this is how it is submitted and graded):
+**3. Configure (optional).** The app runs without a `.env`, with the limits in the table below. To add a database or map:
 ```bash
-npm run build               # builds the Vue app to client/dist
-npm start                   # http://localhost:3000 serves the UI and the API
+cp .env.example .env     # then fill in the values; the comments in the file explain each one
 ```
-With no `MONGODB_URI` the server still starts (health, ruleset and stubs work). Database-backed features need it.
+
+| Without this value | What happens |
+|---|---|
+| `MONGODB_URI` | Log in, register and saved scenarios return "database not connected". Plan, Results, Dashboard and Sources still work. Any MongoDB works: a free Atlas cluster or a local `mongod`. |
+| `ONEMAP_EMAIL`, `ONEMAP_PASSWORD` | The Dashboard's map says it is unavailable. Everything else still works. |
+| `DATAGOV_API_KEY` | Resale data still loads, at data.gov.sg's lower rate limit without a key. |
+| `JWT_SECRET` | Fine locally (a development value is used, with a warning). Required when `NODE_ENV=production`. |
+
+To see login, saved scenarios and the map without configuring anything, use the live app.
+
+**4. Run it as one app on one port** (this is how it is submitted and graded):
+```bash
+npm run build     # builds the Vue app to client/dist
+npm start         # http://localhost:3000 serves the home page and the API
+```
+Set `PORT` to use another port. For development with hot reload, use `npm run dev` instead: the API on :3000 and the Vue
+dev server on http://localhost:5173, with live data (`VITE_USE_MOCK=true npm run dev` for mock data).
 
 ## Testing
+**Unit tests and lint** (no database needed):
 ```bash
-npm test          # Vitest, server + client (no database needed)
+npm test          # Vitest, server + client
 npm run lint      # ESLint: unused variables, undefined names, Vue template errors
 ```
-Real-database tests (`server/tests/db.test.js`) run only when `MONGODB_URI_TEST` points at a throwaway database whose
-name contains `test`. CI starts one automatically. Never point it at the app database.
-
-End-to-end (Cypress), two terminals:
+**Database tests** (`server/tests/db.test.js`) are skipped unless `MONGODB_URI_TEST` points at a throwaway database whose
+name contains `test`. They delete everything in it, so never point them at the app database:
 ```bash
-VITE_USE_MOCK=true npm run build && npm start     # terminal 1  (PowerShell: $env:VITE_USE_MOCK='true'; npm run build; npm start)
-npm run test:e2e                                  # terminal 2  (or npm run cy:open to watch it run)
+MONGODB_URI_TEST=mongodb://127.0.0.1:27017/bto_test npm test
 ```
+
+**End-to-end tests (Cypress).** You need a throwaway MongoDB, because some specs register users and save scenarios. Start one
+with `mongod`, or `docker run --rm -p 27017:27017 mongo:7`, or use a separate free Atlas database. Then, in two terminals:
+```bash
+# Terminal 1: build with mock data and start the app on the test database
+VITE_USE_MOCK=true npm run build
+MONGODB_URI=mongodb://127.0.0.1:27017/bto_e2e npm start
+
+# Terminal 2: run every spec (or npm run cy:open to watch them run)
+npm run test:e2e
+```
+In PowerShell, set each variable first: `$env:VITE_USE_MOCK='true'` and `$env:MONGODB_URI='...'`. Expected result: every spec
+passes, with no failures. Run `npm run build` again afterwards, or `npm start` keeps serving mock data.
+
+If Cypress fails to start with `bad option` or `Cannot find module`, the terminal has inherited an Electron setting (common in
+VS Code). Clear it in that terminal: `unset ELECTRON_RUN_AS_NODE` (PowerShell: `Remove-Item Env:ELECTRON_RUN_AS_NODE`).
+
+Test cases, by spec file in `cypress/e2e/`:
+
 | Spec | Covers |
 |---|---|
 | `smoke.cy.js` | home page, hero scene, step validation, full journey, register → save → reload (needs a database) |
@@ -85,7 +126,7 @@ npm run test:e2e                                  # terminal 2  (or npm run cy:o
 | `buyers.cy.js` | the About you step: one question per screen, two buyers, PR + PR blocked, per-buyer validation, money and age input, answers kept when going back |
 | `error-summary.cy.js` | the error summary on Your BTO and Resale flat: every problem listed, each linking to its field |
 | `preview.cy.js` | the check-your-answers page between the plan and Results; Change and Edit go back with answers kept |
-| `results.cy.js` | results content, heatmap (labelled in words, not colour alone), BTO launch and price, phone width, Back keeps inputs |
+| `results.cy.js` | results content, heatmap (labelled in words, not colour alone), the note when a saved plan's rates are outside the grid (needs a database), BTO launch and price, phone width, Back keeps inputs |
 | `results-verdict.cy.js` | who comes out ahead in plain words, the side-by-side table, net position bars, the hover chart, "too close to call" |
 | `results-grants.cy.js` | each grant once with one status and every check's reason and official source; the best application year |
 | `results-print.cy.js` | what to do next (official links) and print or save as PDF |
@@ -95,7 +136,7 @@ npm run test:e2e                                  # terminal 2  (or npm run cy:o
 | `dashboard-overview.cy.js` | the cash rings, the four tiles and the jump to the grants table |
 | `dashboard-sections.cy.js` | dashboard sections open and close, one at a time or all at once |
 | `scenarios.cy.js` | save, list, open and delete a scenario (needs a database) |
-| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width |
+| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width; picking two saved scenarios on My scenarios (needs a database) |
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, topic chips, search, safe https source links, assumptions and datasets |
 | `responsive.cy.js` | every page at 375 / 768 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
 | `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |
@@ -106,11 +147,9 @@ Demo user journeys (five households, one per presenter) live in `cypress/journey
 build: `VITE_USE_MOCK=false npm run build && npm start`, then `npm run journeys` (each recorded to `cypress/videos/`).
 Inputs, steps and what each shows: `docs/JOURNEYS.md`.
 
-Specs marked "needs a database" register real users: run them locally only with the server's `MONGODB_URI` pointing at
-a **test** database. If Cypress fails to start with `bad option: --smoke-test`, run `Remove-Item Env:ELECTRON_RUN_AS_NODE`
-(PowerShell) in that terminal first. Selectors use `data-cy` attributes (see `docs/CONVENTIONS.md`). Engine test
-expectations must come from hand-worked examples in official material, recorded in `docs/SOURCES.md`.
-
+Specs marked "needs a database" register real users, so run them only against a **test** database. Selectors use `data-cy`
+attributes (see `docs/CONVENTIONS.md`). Engine test expectations must come from hand-worked examples in official material,
+recorded in `docs/SOURCES.md`.
 
 ## Test accounts
 Use the demo account on the live site, or register your own (any email; no verification):
@@ -141,7 +180,8 @@ and the built Vue app, so there is one URL.
 | `JWT_SECRET` | 32+ random characters, different from any local `.env` |
 | `DATAGOV_API_KEY` | data.gov.sg API key |
 | `ONEMAP_EMAIL`, `ONEMAP_PASSWORD` | OneMap account (for the PHG distance endpoints) |
-| `FEATURE_TIMING_OPTIMISER`, `FEATURE_STRATEGY_SEARCH`, `FEATURE_BACKTEST` | feature flags |
+| `FEATURE_TIMING_OPTIMISER` | `true` |
+| `FEATURE_STRATEGY_SEARCH`, `FEATURE_BACKTEST` | `false` (future work; the routes are not built) |
 | `CYPRESS_INSTALL_BINARY` | `0` (skips the Cypress download during the build) |
 
 Atlas **Network Access** allows `0.0.0.0/0`, because Render's free plan has no fixed outbound IP; access is
@@ -152,23 +192,50 @@ Atlas database. It fetches the resale prices and RPI from data.gov.sg into the c
 wait, and prints a `[warm] ... data as of ...` line per town (the visible daily refresh).
 
 
+## Known limitations
+- **Refreshing loses an unsaved plan.** The plan is kept in memory until it is saved, so refreshing Results or the Dashboard
+  shows "No plan to show yet". Log in and save a scenario to keep it; My scenarios opens it again.
+- **Short leases and grants.** HDB pro-rates the Enhanced CPF Housing Grant, the Family Grant and the Proximity Housing Grant
+  when the remaining lease does not cover the youngest buyer to age 95. The app does not apply that formula yet: it keeps the
+  full amount, and Sources notes that the real grants may be lower.
+
 ## Rulesets and rule volatility
 All policy rules live in `server/src/config/rulesets/`, versioned and date-stamped. Rules moved in Aug 2024, Oct 2024,
 Aug 2025 and Aug 2026. Every saved scenario records the ruleset version that produced it, and the UI shows it.
 The active ruleset is the dated `2026-08-24` snapshot. `ruleset.template.json` remains an empty template for future research.
 
 ## AI / LLM declaration
-- The initial repository scaffold (folder structure, Express and Vue boilerplate, configuration, function stubs with contracts, mock data, test skeletons, documentation templates) was generated with Claude (Anthropic).
-- With TA approval, GitHub Copilot generated the grants eligibility logic and grant tests. The team reviewed the
-  generated logic; policy values are read from the checked-in ruleset; use is recorded in `docs/AI_USAGE_LOG.md`.
-- TODO (whole team, before submission): summarise each seat's AI use from docs/AI_USAGE_LOG.md.
+We used Claude and Claude Code (Anthropic) and GitHub Copilot. Every use is logged, with its files and reviewer, in
+`docs/AI_USAGE_LOG.md`. We relied on them for these parts:
+
+- **Scaffold:** the initial repository (folder structure, Express and Vue boilerplate, configuration, stubs with contracts, mock
+  data, test skeletons, documentation templates) was generated with Claude.
+- **Calculation engine:** seat 1 wrote `evaluate()`, the CPF, loan and stamp duty modules, the solvers and the gap breakdown, and
+  hand-worked the expected figures. Claude Code wrote step outlines for that code, the contracts and stubs, and blank worksheets.
+  It also rechecked the hand-worked figures with independent scripts, transcribed them into fixtures, wrote property tests,
+  reviewed the code and pasted seat 1's code in. It made a few small engine edits at seat 1's request, each logged.
+- **Grants and policy rules:** with TA approval, GitHub Copilot generated the grants eligibility logic and grant tests, which the
+  team reviewed. Policy values are read from the checked-in ruleset. Claude helped check research against official sources, and
+  Copilot transcribed the checked values into the ruleset.
+- **Server:** Claude Code wrote `POST /api/compare` and `POST /api/timing` (route code, not engine logic), other route code such
+  as the scenario update route and the BTO market-value lookup, and the plain-English warning messages. Claude also helped test
+  and debug authentication and saved scenarios.
+- **Plan form logic:** Claude Code wrote the plan flow's form logic (`WishesForm`, `SituationForm`, `PathForm`, store defaults and
+  step validation, #84). A reviewer flagged it and the TA confirmed that work was acceptable. Later changes to the form and its
+  navigation were also written by Claude Code, with seat 1's approval.
+- **User interface:** most of the Vue pages, components and styling were written by Claude Code or GitHub Copilot from the team's
+  designs, including Results, the Dashboard, Sources, My scenarios, Login, the charts and the glossary. `HeroScene.vue` is
+  AI-generated. The side-by-side compare page was written by a team member and reviewed by Claude.
+- **Tests and tooling:** most Cypress specs and non-engine unit tests, the ESLint configuration, CI and the responsive checks.
+- **Documents:** drafts of decision records, contract notes, this README and the project proposal, from the team's decisions.
+
+The team made the product and modelling decisions and reviewed the AI's work. Expected values in engine tests are hand-worked,
+not AI-generated.
 
 ## Libraries and credits
-Vue, Pinia, Vue Router (MIT), Bootstrap (MIT), Chart.js (MIT), Axios (MIT), Express (MIT), Mongoose (MIT),
-jsonwebtoken (MIT), bcryptjs (MIT/BSD), dotenv (BSD-2), Vitest (MIT), Supertest (MIT), Cypress (MIT), concurrently (MIT), Vite (MIT), Sass (MIT), Leaflet (BSD-2-Clause). Map tiles: OneMap (Singapore Land Authority).
-Font: Plus Jakarta Sans (SIL OFL 1.1, Google Fonts).
-Credit each library again in code comments where it is used, and in the presentation.
-Data: data.gov.sg (Singapore Open Data Licence). Confirm licence wording before submission.
-Login page icons (`client/public/icons/`):
-[login.png](https://www.flaticon.com/free-icon/login_5087579) and [createaccount.png](https://www.flaticon.com/free-icon/create-account_6799093): icons by Graphix Dxinerz from [Flaticon](https://www.flaticon.com) (free licence with attribution);
-[arrow.png](https://www.iconpacks.net/free-icon/arrow-next-2825.html): IconPacks (iconpacks.net), free licence.
+**Client:** Vue, Pinia, Vue Router, Bootstrap, Chart.js, Axios (all MIT), Leaflet (BSD-2-Clause).
+**Server:** Express, Mongoose, jsonwebtoken, bcryptjs (all MIT), dotenv (BSD-2-Clause).
+**Build and test:** Vite, @vitejs/plugin-vue, Sass, Vitest, Supertest, Cypress, ESLint, @eslint/js, eslint-plugin-vue, globals,
+concurrently (all MIT).
+**Font:** Plus Jakarta Sans (SIL OFL 1.1, Google Fonts). **Icons:** Lucide (ISC), inlined as SVG paths.
+**External data:** data.gov.sg (Singapore Open Data Licence), and OneMap for geocoding and map tiles (Singapore Land Authority).

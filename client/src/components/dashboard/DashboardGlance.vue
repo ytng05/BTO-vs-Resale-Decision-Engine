@@ -58,7 +58,7 @@ const tiles = computed(() => {
       >
         <span class="glance-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="t.icon" /></svg></span>
         <span class="glance-tile__label">{{ t.label }}</span>
-        <strong class="glance-tile__winner" :class="t.favours === 'a' ? 'is-bto' : t.favours === 'b' ? 'is-resale' : ''">{{ t.diff }}</strong>
+        <strong class="glance-tile__winner" :data-cy="`dashboard-glance-winner-${t.id}`" :class="t.favours === 'a' ? 'is-bto' : t.favours === 'b' ? 'is-resale' : ''">{{ t.diff }}</strong>
         <span class="glance-tile__vals">
           <span :class="{ 'is-bto': t.favours === 'a' }"><small>BTO</small> {{ t.a }}</span>
           <span :class="{ 'is-resale': t.favours === 'b' }"><small>Resale</small> {{ t.b }}</span>

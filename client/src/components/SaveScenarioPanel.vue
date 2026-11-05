@@ -184,7 +184,7 @@ async function update() {
               :maxlength="NAME_MAX"
               data-cy="results-save-name-input"
             />
-            <div class="invalid-feedback">{{ shownError }}</div>
+            <div class="invalid-feedback" data-cy="results-save-name-error">{{ shownError }}</div>
           </div>
           <button type="submit" class="btn btn-primary" :disabled="saving" data-cy="results-save-submit">
             <span v-if="saving" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
