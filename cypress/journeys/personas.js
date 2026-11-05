@@ -9,7 +9,7 @@ const sc = (age, monthlyIncome, cpfOa) => ({ age, citizenship: 'SC', monthlyInco
 const pr = (age, monthlyIncome, cpfOa) => ({ age, citizenship: 'PR', monthlyIncome, cpfOa });
 const resale = (town, leaseBand, livingArrangement, flatType = '4 ROOM') => ({ town, flatType, leaseBand, livingArrangement });
 // The launch defaults to the town's newest (a tie goes to Standard, then by name); project picks another.
-const bto = (town, project, flatType = '4 ROOM') => ({ town, flatType, project });
+const bto = (town, project, flatType = '4 ROOM', projectName) => ({ town, flatType, project, projectName });
 
 // 1. First-time couple: "BTO or resale?" BTO ends well ahead; both within the loan limit.
 export const J1 = {
@@ -24,7 +24,7 @@ export const J2 = {
   buyers: [sc(31, 3300, 75000), sc(32, 3000, 65000)], cash: 80000,
   // Pinned: the live data can list a newer Jurong East launch with a shorter wait; the journey needs
   // Teban Heights' 4-year wait (docs/JOURNEYS.md).
-  pathA: bto('JURONG EAST', 'teban-heights'), pathB: resale('JURONG EAST', '80-89', 'NEAR'),
+  pathA: bto('JURONG EAST', 'teban-heights', '4 ROOM', 'Teban Heights'), pathB: resale('JURONG EAST', '80-89', 'NEAR'),
 };
 
 // 3. Must move in by 2032: the timing panel ranks application years and skips any whose keys come too late.
@@ -91,7 +91,8 @@ export function fillPaths(p) {
     cy.get('[data-cy=patha-project-help]', { timeout: 15000 }).should('exist');
     cy.get('body').then(($body) => {
       const chip = `[data-cy=patha-project-${a.project}]`;
-      if (!$body.find(chip).length && $body.find('[data-cy=patha-project-more]').length) {
+      // The chips sit in a closed <details>: they are in the DOM but hidden, so check visibility, not presence.
+      if (!$body.find(chip).filter(':visible').length && $body.find('[data-cy=patha-project-more]').length) {
         cy.get('[data-cy=patha-project-more]').click();
       }
     });
@@ -102,6 +103,9 @@ export function fillPaths(p) {
         throw new Error(`Launch "${a.project}" is not offered for ${a.town}; check the live BTO data`);
       }
     });
+    // Fails clearly if the active launch isn't the pinned one, including in a single-launch town, where there is no
+    // chip to click.
+    if (a.projectName) cy.get('[data-cy=patha-project-help]', { timeout: 15000 }).should('contain', a.projectName);
   }
   // The chips load from the server once the town is chosen: only what that town's launches offer.
   cy.get(`[data-cy=patha-flat-type-${slug(a.flatType)}]`, { timeout: 15000 }).click();
