@@ -129,6 +129,7 @@ Test cases, by spec file in `cypress/e2e/`:
 | `results.cy.js` | results content, heatmap (labelled in words, not colour alone), the note when a saved plan's rates are outside the grid (needs a database), BTO launch and price, phone width, Back keeps inputs |
 | `results-verdict.cy.js` | who comes out ahead in plain words, a path named as ahead only when the headline does, no side-by-side table (it lives on the Dashboard), three plain lines per path with the full breakdown, why the leader is ahead and the cash check, net position bars, back to top, and "too close to call" |
 | `results-grants.cy.js` | each grant once with one status and every check's reason and official source; the best application year |
+| `income-ceiling.cy.js` | a household above HDB's new-flat ceiling: no verdict on the preview, and the warning first on Results and on the Dashboard; none below the ceiling |
 | `results-print.cy.js` | what to do next (official links) and print or save as PDF |
 | `feedback-clarity.cy.js` | fixes from user testing: prices shown as figures, how to read the heatmap, the BTO price on the plan |
 | `glossary.cy.js` | plain-English terms open by tap or keyboard, stay on screen at 375px, and link to the glossary on Sources |
