@@ -18,10 +18,12 @@ The live app is on a free plan: if it has been idle, the first visit can take ab
 
 ## Scope
 - HDB BTO (Standard / Plus / Prime) versus HDB resale. Executive Condominiums are out of scope.
-- Built: a break-even comparison of the two paths with the heatmap and the financial dashboard; the timing optimiser
-  (best year to apply); a four-step plan and a check-your-answers page; plain-English results with each grant's reason
-  and official source; saved scenarios that update in place, with a side-by-side comparison of two of them; optional
-  accounts (planning works without one); and the Sources page with its glossary.
+- Built: a break-even comparison of the two paths with the heatmap and the financial dashboard (headline, quick
+  scenarios, an at-a-glance comparison and pop-up details); the timing optimiser (best year to apply); a four-step plan
+  that survives a refresh, and a check-your-answers page; plain-English results with each grant's reason and official
+  source, a "Why" list, a "How sure is this answer?" pop-up and a net position over time chart; saved scenarios that
+  update in place, with a side-by-side comparison of two of them; optional accounts (planning works without one); and
+  the Sources page with its glossary.
 - Future work, behind feature flags that are off: a ranked strategy recommendation over the full space (dropped after the
   prof's feedback; `FEATURE_STRATEGY_SEARCH`) and a historical backtest, or "risk-based verdict" (`FEATURE_BACKTEST`).
 
@@ -140,10 +142,10 @@ Test cases, by spec file in `cypress/e2e/`:
 | `error-summary.cy.js` | the error summary on Your BTO and Resale flat: every problem listed, each linking to its field |
 | `preview.cy.js` | the check-your-answers page between the plan and Results; Change and Edit go back with answers kept |
 | `results.cy.js` | results content, heatmap (labelled in words, not colour alone), the note when a saved plan's rates are outside the grid (needs a database), BTO launch and price, phone width, Back keeps inputs |
-| `results-verdict.cy.js` | who comes out ahead in plain words, a path named as ahead only when the headline does, no side-by-side table (it lives on the Dashboard), three plain lines per path with the full breakdown, why the leader is ahead and the cash check, net position bars, back to top, and "too close to call" |
+| `results-verdict.cy.js` | who comes out ahead in plain words, a path named as ahead only when the headline does, no side-by-side table (it lives on the Dashboard), three plain lines per path with the full breakdown, why the leader is ahead and the cash check, net position bars, the net position over time chart (both paths for the year under the pointer or the arrow keys, its last year equal to each path card), back to top, and "too close to call" |
 | `results-grants.cy.js` | each grant once with one status and every check's reason and official source; the best application year |
 | `income-ceiling.cy.js` | a household above HDB's new-flat ceiling: no verdict on the preview, and the warning first on Results and on the Dashboard; none below the ceiling |
-| `results-print.cy.js` | what to do next (official links) and print or save as PDF |
+| `results-print.cy.js` | what to do next (official links) and print or save as PDF, which opens the chart and the heatmap first |
 | `feedback-clarity.cy.js` | fixes from user testing: prices shown as figures, how to read the heatmap, the BTO price on the plan |
 | `glossary.cy.js` | plain-English terms open by tap or keyboard, stay on screen at 375px, and link to the glossary on Sources |
 | `dashboard.cy.js` | financial dashboard: who ends ahead and the ruleset version, a reason for every grant check, warnings in plain sentences, how each net position adds up and the costs, the two flats side by side (size, price, price per m²), the comparison year, the BTO and resale price sliders, and the flip price (D40) |
@@ -152,7 +154,7 @@ Test cases, by spec file in `cypress/e2e/`:
 | `scenarios.cy.js` | save, list, open and delete a scenario (needs a database) |
 | `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width; logged out or with an expired login it shows the log-in prompt without calling the API; picking two saved scenarios on My scenarios (needs a database) |
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, topic chips, search, safe https source links, assumptions and datasets |
-| `responsive.cy.js` | every page at 375 / 768 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
+| `responsive.cy.js` | every page at 375 / 390 / 768 / 1180 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, pinned bars leave at least half the height, a logged-in navbar fits, and stepper labels, dashboard tile figures and flat names are not cut off |
 | `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |
 | `plan-refresh.cy.js` | refreshing Results, the Dashboard or a plan step keeps the plan (sessionStorage only), an older stored copy is dropped, and logout and Start planning after a save clear it (the last two need a database) |
 | `plan-navigation.cy.js` | moving between plan steps: Change opens the right About you screen and returns to the results, the screen is checked first, the stepper links to the steps reached so far, and it cannot jump forward from a screen with a problem |
