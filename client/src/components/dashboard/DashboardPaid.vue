@@ -5,7 +5,7 @@
 // short-lease note) show as a short tag, with the full sentence on hover and for screen readers.
 // Keeps the tested hooks dashboard-summary-{bto|resale}-price and -affordability.
 import { computed } from 'vue';
-import { formatMoney } from '../../utils/format.js';
+import { formatMoney, formatMoneyRounded } from '../../utils/format.js';
 import { cashSentence, purchaseCard } from '../../utils/dashboardSummary.js';
 import { monthYear } from '../../utils/dashboardFormat.js';
 
@@ -40,15 +40,23 @@ const limitText = (aff) => {
 };
 const limitTag = (aff) => (!aff ? '' : aff.withinLimit ? 'Within limit' : 'Loan capped');
 const LEASE_SHORT = 'LEASE_BELOW_95_PRORATION';
+// The grants tag counts the same total as the "At a glance" tile, and says when only part of it can be used on this
+// flat (the CPF usage cap, D37): "S$30,000 of S$50,000 in grants used". Rounded to S$1,000 (the one rounding rule).
+function grantsTag(c) {
+  const total = (c.grantsCents ?? 0) + (c.unusedGrantsCents ?? 0);
+  if (total <= 0) return 'No grants';
+  if (c.unusedGrantsCents > 0) return `${formatMoneyRounded(c.grantsCents)} of ${formatMoneyRounded(total)} in grants used`;
+  return `${formatMoneyRounded(total)} in grants`;
+}
 // Listing-style fact tags under each flat's name: lease, keys date and grants.
 const tagsFor = (key, o, c, leaseShort) => [
   key === 'bto' ? 'New 99-year lease' : (leaseShort ? 'Short lease' : 'Resale flat'),
   o.timeline?.keyCollectionDate ? `Keys ${monthYear(o.timeline.keyCollectionDate)}` : '',
-  c.grantsCents > 0 ? `${formatMoney(Math.round(c.grantsCents / 100 / 1000) * 1000)} in grants` : 'No grants',
+  grantsTag(c),
 ].filter(Boolean);
 const cards = computed(() => [
-  { key: 'bto', name: 'BTO', sub: props.subtitleA, c: cardA.value, o: props.outcomeA, other: cardB.value, otherName: 'resale', when: 'At signing and at keys' },
-  { key: 'resale', name: 'Resale', sub: props.subtitleB, c: cardB.value, o: props.outcomeB, other: cardA.value, otherName: 'BTO', when: 'At completion' },
+  { key: 'bto', name: 'BTO', sub: props.subtitleA, c: cardA.value, o: props.outcomeA, when: 'At signing and at keys' },
+  { key: 'resale', name: 'Resale', sub: props.subtitleB, c: cardB.value, o: props.outcomeB, when: 'At completion' },
 ].map((p) => ({
   ...p,
   limit: limitText(p.o.affordability),
@@ -85,11 +93,16 @@ const cards = computed(() => [
         </header>
         <div class="dash-paid__body">
           <div class="dash-paid__bar" aria-hidden="true">
-            <span class="dash-paid__seg dash-paid__seg--loan" :style="{ width: `${p.c.shares.loan}%` }" :title="`Loan ${p.c.shares.loan}%`"></span>
-            <span class="dash-paid__seg dash-paid__seg--aid" :style="{ width: `${p.c.shares.aid}%` }" :title="`Grants and CPF ${p.c.shares.aid}%`"></span>
-            <span class="dash-paid__seg dash-paid__seg--cash" :style="{ width: `${p.c.shares.cash}%` }" :title="`Your cash ${p.c.shares.cash}%`"></span>
+            <span class="dash-paid__seg dash-paid__seg--loan" :style="{ width: `${p.c.shares.loan}%` }"></span>
+            <span class="dash-paid__seg dash-paid__seg--aid" :style="{ width: `${p.c.shares.aid}%` }"></span>
+            <span class="dash-paid__seg dash-paid__seg--cash" :style="{ width: `${p.c.shares.cash}%` }"></span>
           </div>
-          <p class="visually-hidden">Loan {{ p.c.shares.loan }}%, grants and CPF {{ p.c.shares.aid }}%, your cash {{ p.c.shares.cash }}%</p>
+          <!-- The shares, written out under the bar (not hover tooltips), with the same colour keys as the legend. -->
+          <p class="dash-paid__shares" :data-cy="`dashboard-paid-${p.key}-shares`">
+            <span><i class="dash-paid__key dash-paid__key--loan" aria-hidden="true"></i>Loan {{ p.c.shares.loan }}%</span>
+            <span><i class="dash-paid__key dash-paid__key--aid" aria-hidden="true"></i>Grants and CPF {{ p.c.shares.aid }}%</span>
+            <span><i class="dash-paid__key dash-paid__key--cash" aria-hidden="true"></i>Your cash {{ p.c.shares.cash }}%</span>
+          </p>
           <dl class="dash-paid__lines mb-0">
             <div v-if="p.c.hasPrice" class="is-price"><dt>Price</dt><dd><span class="text-numeric" :data-cy="`dashboard-summary-${p.key}-price`">{{ p.c.lines.price }}</span></dd></div>
             <div><dt>Grants</dt><dd><span class="text-numeric">{{ p.c.lines.grants }}</span><small v-if="p.c.lines.unusedGrants" class="is-vs" :data-cy="`dashboard-paid-${p.key}-unused-grants`">{{ p.c.lines.unusedGrants }}</small></dd></div>
@@ -163,4 +176,11 @@ const cards = computed(() => [
 .dash-paid__note { align-self: flex-start; margin-top: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--warning-fill); color: var(--warning); font-size: 0.8125rem; line-height: 1.45; }
 /* The one-line takeaway: plain text with a thin accent line, not another coloured box. */
 .dash-paid__sentence { padding-left: var(--space-4); border-left: 3px solid var(--dash-resale); font-weight: 500; }
+/* The shares under the bar: small, in the legend's colours. */
+.dash-paid__shares { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: calc(var(--space-2) * -1) 0 var(--space-3); font-size: 0.8125rem; color: var(--text-secondary); }
+.dash-paid__shares span { display: inline-flex; align-items: center; gap: 6px; }
+.dash-paid__key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.dash-paid__key--loan { background: var(--bar-indigo); }
+.dash-paid__key--aid { background: var(--accent-fill-1); }
+.dash-paid__key--cash { background: var(--bar-amber); }
 </style>

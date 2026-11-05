@@ -109,6 +109,7 @@ async function save() {
     const trimmed = name.value.trim();
     const data = await saveScenario(store.savePayload(trimmed, props.result));
     store.markSaved(data.scenario.id, trimmed);
+    store.savedListChanged(); // one more scenario: the navbar count goes up
     open.value = false;
   } catch (e) {
     handleSaveError(e);

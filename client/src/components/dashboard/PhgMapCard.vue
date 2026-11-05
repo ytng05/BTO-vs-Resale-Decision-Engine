@@ -142,11 +142,19 @@ onMounted(async () => {
       center: SG_CENTRE, zoom: 11, minZoom: 11, maxZoom: 18, maxBounds: SG_BOUNDS, scrollWheelZoom: false,
     });
     const tiles = L.value.tileLayer(ONEMAP_TILES, { detectRetina: true, minZoom: 11, maxZoom: 18, attribution: ONEMAP_ATTRIBUTION }).addTo(map.value);
-    // Say so on the page if the basemap can't be fetched, instead of leaving an empty box.
-    tiles.on('tileerror', () => {
-      mapProblem.value = 'The map background could not be loaded from OneMap. Check your connection, or try again in a moment.';
+    // Say so on the page if the basemap can't be fetched, instead of leaving an empty box. Judged per batch of tiles
+    // (Leaflet's "loading" ... "load"): the warning shows only when none of the batch loaded, so one failed tile among
+    // working ones doesn't leave it stuck over a working map (review, #125).
+    let ok = 0;
+    let bad = 0;
+    tiles.on('loading', () => { ok = 0; bad = 0; });
+    tiles.on('tileload', () => { ok += 1; mapProblem.value = ''; });
+    tiles.on('tileerror', () => { bad += 1; });
+    tiles.on('load', () => {
+      mapProblem.value = ok === 0 && bad > 0
+        ? 'The map background could not be loaded from OneMap. Check your connection, or try again in a moment.'
+        : '';
     });
-    tiles.on('tileload', () => { mapProblem.value = ''; });
     layer.value = L.value.layerGroup().addTo(map.value);
 
     // This card sits in a pop-up that fades in and is hidden and shown again: Leaflet only knows its size from the

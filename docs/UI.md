@@ -398,10 +398,10 @@ inline — never a single generic message covering several failed items at once.
 
 ### Navigation / top bar
 
-- Sticky top bar, `$bg-page` or translucent blur variant, `$border-subtle` bottom border on scroll only.
-- Active nav item in `$primary`; inactive items in `$text-secondary`.
-- *Moving to three floating white pills (status, logo and links, account) on `$bg-page`; see
-  `docs/design-system/components/Navbar/`. Until that PR, the current bar stays as described above.*
+- Sticky top bar in the page's colour with a translucent blur, and no lines above or below it.
+- Three floating slots: the logo and name, the links in white pills, the account pill; see
+  `docs/design-system/components/Navbar/`.
+- The current page's link has an `$accent-fill-2` pill; the others are `$text-primary`.
 
 ---
 

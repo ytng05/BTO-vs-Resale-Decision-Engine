@@ -224,7 +224,18 @@ const PRESETS = [
   { id: 'rent', label: 'I rent while waiting', hint: 'S$2,500 a month until the keys', set: { monthlyHousingCostWhileWaiting: 2500 } },
   { id: 'reno', label: 'Big renovation', hint: 'S$60,000 on each flat', set: { renovationA: 60000, renovationB: 60000 } },
 ];
-const presetOn = (p) => Object.entries(p.set).every(([k, val]) => whatIf[k] === val);
+// A chip is "on" only when the What-if holds its values AND they differ from the plan, so it can always be turned off.
+// When the plan already has those values (say 0% growth and "Prices stay flat"), the chip is shown as "your plan" and
+// disabled, since there is nothing to try (review, #125).
+// The pop-up closes on a click on the backdrop only if the press also started there, so dragging the map or selecting
+// text and letting go outside the box doesn't close it (review, #125).
+const backdropDown = ref(false);
+function onBackdropClick() {
+  if (backdropDown.value) closeDetail();
+  backdropDown.value = false;
+}
+const presetIsPlan = (p) => Object.entries(p.set).every(([k, val]) => planValues.value[k] === val);
+const presetOn = (p) => !presetIsPlan(p) && Object.entries(p.set).every(([k, val]) => whatIf[k] === val);
 function togglePreset(p) {
   if (presetOn(p)) {
     const back = Object.fromEntries(Object.keys(p.set).map((key) => [key, planValues.value[key]]));
@@ -367,11 +378,12 @@ const detailLine = computed(() => ({
           :key="p.id"
           type="button"
           class="dash-chip-btn"
-          :class="{ 'is-on': presetOn(p) }"
+          :class="{ 'is-on': presetOn(p), 'is-plan': presetIsPlan(p) }"
           :aria-pressed="presetOn(p)"
+          :disabled="presetIsPlan(p)"
           :data-cy="`whatif-preset-${p.id}`"
           @click="togglePreset(p)"
-        ><span v-if="presetOn(p)" class="dash-chip-btn__tick" aria-hidden="true">✓</span>{{ p.label }}</button>
+        ><span v-if="presetOn(p)" class="dash-chip-btn__tick" aria-hidden="true">✓</span>{{ p.label }}<span v-if="presetIsPlan(p)" class="dash-chip-btn__plan"> · your plan</span></button>
         <button v-if="changes.length" type="button" class="dash-chip-btn dash-chip-btn--reset" data-cy="dashboard-chips-reset" @click="reset">✕ Clear</button>
         <button type="button" class="dash-chip-btn dash-chip-btn--more" @click="jumpToWhatIf">More options ▾</button>
         <!-- What is being tried and what it did, written out under the chips (no hover tooltips). -->
@@ -415,7 +427,7 @@ const detailLine = computed(() => ({
           <section class="dash-panel" aria-labelledby="cashflow-heading" data-cy="dashboard-section-cashflow">
             <div>
               <h2 id="cashflow-heading" class="section-head__title">How each net position adds up</h2>
-              <p class="section-head__sub">What each path leaves you with in {{ horizon }}, line by line. Move a What-if slider to see it change.</p>
+              <p class="section-head__sub">What each path leaves you with in {{ horizon }}, without selling the flat (D1), line by line. Move a What-if slider to see it change.</p>
             </div>
             <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
           </section>
@@ -485,7 +497,7 @@ const detailLine = computed(() => ({
 
       <!-- The detail pop-up. Clicking the dark backdrop (but not the box) closes it. It is created on the first open
            and then only hidden, so each detail keeps what was typed (PHG postal codes) and doesn't load again. -->
-      <div v-if="everOpened" v-show="openItem" class="dash-modal" @click.self="closeDetail">
+      <div v-if="everOpened" v-show="openItem" class="dash-modal" @mousedown.self="backdropDown = true" @click.self="onBackdropClick">
         <div
           class="dash-modal__box"
           :role="openItem ? 'dialog' : null"
@@ -636,6 +648,8 @@ const detailLine = computed(() => ({
 .dash-chip-btn:hover { border-color: var(--accent-fill-1); background: var(--accent-tint); translate: 0 -1px; }
 .dash-chip-btn.is-on { background: var(--text-primary); border-color: var(--text-primary); color: var(--on-primary); }
 .dash-chip-btn--reset { border-style: dashed; }
+.dash-chip-btn.is-plan { cursor: default; opacity: 0.7; }
+.dash-chip-btn__plan { font-weight: 400; color: var(--text-secondary); }
 .dash-chip-btn__tick { margin-right: var(--space-1); font-weight: 700; }
 /* The status line takes its own row under the chips. */
 .dash-chips__status { flex-basis: 100%; margin-top: var(--space-1); font-size: 0.875rem; color: var(--text-secondary); }

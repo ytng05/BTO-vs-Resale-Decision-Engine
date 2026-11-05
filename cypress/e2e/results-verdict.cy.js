@@ -65,7 +65,7 @@ describe('results verdict', () => {
   it('keeps the break-even sentence in view under the verdict, with the full grid folded one click away (D35, D40, D43)', () => {
     completePlan();
     cy.get('[data-cy=results-confidence-open]').click(); // the detail and the exact sentences open in a pop-up
-    cy.get('[data-cy=results-breakeven] [data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
+    cy.get('[data-cy=results-confidence-dialog] [data-cy=results-breakeven-sentence]').should('be.visible').and('not.be.empty');
     cy.get('[data-cy=results-breakeven] [data-cy=term-break-even-button]').should('be.visible');
     cy.get('[data-cy=results-section-heatmap]').should('not.have.attr', 'open');
     cy.get('[data-cy=results-heatmap-open]').click();

@@ -149,6 +149,7 @@ async function open(id) {
       // Deleted elsewhere (another tab or device) since the list loaded.
       setScenarios(scenarios.value.filter((s) => s.id !== id));
       forgetIfCurrent(id);
+      store.savedListChanged(); // one fewer scenario: the navbar count goes down
       error.value = 'That scenario no longer exists. It may have been deleted in another tab.';
     } else {
       error.value = messageOf(e, 'The scenario could not be opened. Check your connection and try again.');
@@ -165,6 +166,7 @@ async function remove(id) {
     await deleteScenario(id);
     setScenarios(scenarios.value.filter((s) => s.id !== id));
     forgetIfCurrent(id);
+    store.savedListChanged(); // one fewer scenario: the navbar count goes down
     confirmingId.value = null;
   } catch (e) {
     if (handledAuthError(e)) return;
@@ -173,6 +175,7 @@ async function remove(id) {
       // Already gone: the outcome the user wanted.
       setScenarios(scenarios.value.filter((s) => s.id !== id));
       forgetIfCurrent(id);
+      store.savedListChanged(); // one fewer scenario: the navbar count goes down
       confirmingId.value = null;
     } else {
       error.value = messageOf(e, 'The scenario could not be deleted. Check your connection and try again.');

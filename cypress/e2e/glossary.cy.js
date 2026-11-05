@@ -17,6 +17,7 @@ describe('glossary and terms', () => {
     cy.get('[data-cy=term-ehg-definition]').first().should('not.be.visible');
     cy.focused().should('have.attr', 'data-cy', 'term-ehg-button');
 
+    cy.get('[data-cy=results-confidence-open]').click(); // the break-even term sits in the "How sure" pop-up
     cy.get('[data-cy=term-break-even-button]').first().scrollIntoView().click();
     cy.get('[data-cy=term-break-even-definition]').first().contains('More in the glossary').click();
     cy.location('pathname').should('eq', '/sources');
@@ -29,7 +30,7 @@ describe('glossary and terms', () => {
     completePlan();
     // Some terms (grant names, "CPF to put back") are inside each path card's "Full breakdown": open it first.
     cy.get('[data-cy$=-full-breakdown] > summary').click({ multiple: true });
-    cy.get('[data-cy$=-button][data-cy^=term-]').each(($btn) => {
+    cy.get('[data-cy$=-button][data-cy^=term-]:visible').each(($btn) => {
       cy.wrap($btn).scrollIntoView().click();
       cy.get(`#${$btn.attr('aria-controls')}`).should('be.visible').then(($pop) => {
         const r = $pop[0].getBoundingClientRect();
