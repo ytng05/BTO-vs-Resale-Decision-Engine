@@ -1,6 +1,6 @@
 // Every page fits a phone, a tablet and a laptop screen, upright and on its side, without sideways scrolling; on a
 // short landscape screen, bars pinned to the top or bottom leave at least half the height for the page (mock data).
-// Also logged in (the navbar is wider then), and that the plan's step labels are not cut off.
+// Also logged in (the navbar is wider then), and that the plan's step labels and the dashboard's flat names are not cut off.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 
 import { completePlan, fillAges, next } from './helpers/plan.js';
@@ -103,6 +103,7 @@ describe('responsive layout', () => {
         leavesRoomToRead();
         cy.get('[data-cy=results-dashboard-button]').click();
         cy.get('[data-cy=dashboard-headline]').should('be.visible');
+        notCutOff('[data-cy=dashboard-summary-bto-place], [data-cy=dashboard-summary-resale-place]'); // the flat type shows too
         fitsWidth();
         leavesRoomToRead();
       });

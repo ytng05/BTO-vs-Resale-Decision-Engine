@@ -190,7 +190,7 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
           <span class="vbar__name">
             <span class="vbar__key" :class="`vbar__key--${r.key}`" aria-hidden="true"></span>
             <span class="vbar__label">{{ r.label }}</span>
-            <span class="vbar__place">{{ r.place }}</span>
+            <span class="vbar__place" :data-cy="`dashboard-summary-${r.key}-place`">{{ r.place }}</span>
           </span>
           <strong class="vbar__value text-numeric" :data-cy="`dashboard-summary-${r.key}-net`"><span class="visually-hidden">{{ r.final }}</span><span aria-hidden="true">{{ r.value }}</span></strong>
         </div>
@@ -268,10 +268,11 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
 .vbar__paths-title { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
 .vbar__row { display: flex; flex-direction: column; gap: 6px; }
 .vbar__row-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); min-width: 0; }
-.vbar__name { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; font-size: 0.875rem; }
+.vbar__name { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); min-width: 0; font-size: 0.875rem; }
 .vbar__label { font-weight: 600; }
-/* The flat, shortened with … when space is tight; the full names are in the visually hidden subtitle. */
-.vbar__place { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text-secondary); }
+/* The flat. When it doesn't fit beside BTO or Resale it moves to its own line below, and wraps there if it must:
+   cut short with …, phones at 320–412px showed only the town ("Tampines ·…"), not the flat type. */
+.vbar__place { min-width: 0; overflow-wrap: anywhere; color: var(--text-secondary); }
 .vbar__key { flex: none; align-self: center; width: 8px; height: 8px; border-radius: 50%; }
 .vbar__key--bto, .vbar__fill--bto { background: var(--path-bto); }
 .vbar__key--resale, .vbar__fill--resale { background: var(--path-resale-bar); }
