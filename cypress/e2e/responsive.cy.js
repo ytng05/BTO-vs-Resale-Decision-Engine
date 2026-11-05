@@ -108,4 +108,24 @@ describe('responsive layout', () => {
       });
     });
   });
+
+  // A chart drawn at desktop width must not hold a dashboard pop-up open when the screen gets narrower (rotating a
+  // tablet, resizing a window): Price history's chart kept the pop-up 880px wide, its close button off the screen.
+  it('the Price history pop-up shrinks with the screen', () => {
+    cy.viewport(1280, 800);
+    completePlan();
+    cy.get('[data-cy=results-dashboard-button]').click();
+    cy.get('[data-cy=dashboard-headline]').should('be.visible');
+    cy.get('[data-cy=dashboard-explore-rpi]').click();
+    cy.get('[data-cy=results-rpi-card] canvas').should('be.visible');
+    [[820, 1180], [375, 667]].forEach(([width, height]) => {
+      cy.viewport(width, height);
+      cy.window().should((win) => {
+        const box = win.document.querySelector('.dash-modal__box').getBoundingClientRect();
+        expect(box.right, `pop-up right edge at ${width}px`).to.be.at.most(win.innerWidth);
+        expect(box.left, `pop-up left edge at ${width}px`).to.be.at.least(0);
+      });
+    });
+    cy.get('[data-cy=dashboard-modal-close]').click();
+  });
 });
