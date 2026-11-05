@@ -86,11 +86,11 @@ cp .env.example .env     # then fill in the values; the comments in the file exp
    ONEMAP_PASSWORD=your-onemap-password
    ```
 4. Stop the server (Ctrl+C) and start it again. The `.env` file is only read when the server starts.
-5. Open the Dashboard. The map now shows the places near the flat instead of saying it is unavailable.
+5. Open the Dashboard's map, enter the parents' and the flat's postal codes, and it shows both homes, the distance and the 4 km circle for the Proximity Housing Grant. It is a guide only: whether you live near your parents is something you declare, not something the map decides.
 
 `.env` is ignored by Git, so your password stays on your computer. Never paste it into a commit, an issue or a pull request.
 
-To see login, saved scenarios and the map without configuring anything, use the live app.
+To see login and saved scenarios without configuring anything, use the live app.
 
 **4. Run it as one app on one port** (this is how it is submitted and graded):
 ```bash
