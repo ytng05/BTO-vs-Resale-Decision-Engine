@@ -98,6 +98,6 @@ describe('dashboard sections', () => {
     cy.get('[data-cy=dashboard-section-overview] summary').click();
     cy.get('[data-cy=dashboard-grants-jump]').click();
     cy.get('[data-cy=dashboard-section-grants]').should('have.attr', 'open');
-    cy.get('#grants-heading').should('be.visible');
+    cy.get('[data-cy=dashboard-section-grants-heading]').should('be.visible');
   });
 });

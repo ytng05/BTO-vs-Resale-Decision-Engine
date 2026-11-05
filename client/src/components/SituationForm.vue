@@ -286,7 +286,7 @@ onBeforeUnmount(() => clearTimeout(timer));
                   :value="c.value"
                   :data-cy="`situation-buyer-${i + 1}-citizenship-${c.value}`"
                 />
-                <span class="cit__face">{{ c.value === 'PR' ? 'PR' : c.label }}</span>
+                <span class="cit__face" :data-cy="`situation-buyer-${i + 1}-citizenship-${c.value}-face`">{{ c.value === 'PR' ? 'PR' : c.label }}</span>
               </label>
             </div>
             <div v-if="err(`applicants.${i}.citizenship`)" class="invalid-feedback d-block" :data-cy="`situation-buyer-${i + 1}-citizenship-error`">{{ err(`applicants.${i}.citizenship`) }}</div>

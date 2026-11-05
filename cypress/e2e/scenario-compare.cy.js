@@ -2,6 +2,8 @@
 // Runs against the mock build (VITE_USE_MOCK=true). Ids starting with "mock-" come from
 // MOCK_SCENARIOS in client/src/api/scenarioCompare.js; an unknown mock- id is "not found".
 
+import { registerFreshUser, saveScenario } from './helpers/scenarios.js'
+
 describe('Compare saved scenarios', () => {
   it('shows both scenarios, the Ahead badges and the headline', () => {
     cy.visit('/scenarios/compare?a=mock-a&b=mock-b')
@@ -46,9 +48,10 @@ describe('Compare saved scenarios', () => {
     })
   })
 
-  // TODO: enable once the mock build has a logged-in user and 2+ saved scenarios on My scenarios.
-  // Compare mode and CompareBar are wired in; this test checks the bar's Compare button.
-  it.skip('picks two scenarios on My scenarios and opens the compare page', () => {
+  // Real saved scenarios, so this one needs a database (the rest of the file does not).
+  it('picks two scenarios on My scenarios and opens the compare page', () => {
+    registerFreshUser()
+    ;['First plan', 'Second plan', 'Third plan'].forEach((name) => saveScenario(name))
     cy.visit('/scenarios')
     cy.get('[data-cy=scenarios-compare-mode-button]').click()
     cy.get('[data-cy=scenarios-open-button]').should('not.exist')
@@ -57,5 +60,7 @@ describe('Compare saved scenarios', () => {
     cy.get('[data-cy=scenarios-compare-checkbox]').eq(2).should('be.disabled')
     cy.get('[data-cy=compare-bar-compare-button]').click()
     cy.location('pathname').should('eq', '/scenarios/compare')
+    cy.get('[data-cy=compare-card-a] [data-cy=compare-card-name]').should('be.visible')
+    cy.get('[data-cy=compare-card-b] [data-cy=compare-card-name]').should('be.visible')
   })
 })

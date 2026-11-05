@@ -111,7 +111,7 @@ describe('buyers on the About you step', () => {
         expect($partner[0].getBoundingClientRect().top).to.be.greaterThan($you[0].getBoundingClientRect().bottom - 1);
       });
     });
-    cy.get('[data-cy=situation-buyer-1-citizenship-SC]').parent().find('.cit__face').should(($face) => {
+    cy.get('[data-cy=situation-buyer-1-citizenship-SC-face]').should(($face) => {
       expect($face[0].scrollWidth).to.be.at.most($face[0].clientWidth + 1);
       expect($face.height()).to.be.lessThan(60); // one line
     });

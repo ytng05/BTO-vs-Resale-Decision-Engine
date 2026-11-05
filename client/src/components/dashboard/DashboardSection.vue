@@ -35,7 +35,7 @@ function onToggle(event) {
   <details class="card dash-section" :class="{ 'dash-section--flat': flat }" :open="open" :data-cy="cy || undefined" @toggle="onToggle">
     <summary class="dash-section__summary">
       <span class="dash-section__text">
-        <h2 :id="headingId || undefined" tabindex="-1" class="dash-section__title">{{ title }}</h2>
+        <h2 :id="headingId || undefined" tabindex="-1" class="dash-section__title" :data-cy="cy ? `${cy}-heading` : undefined">{{ title }}</h2>
         <span v-if="takeaway" class="dash-section__takeaway">{{ takeaway }}</span>
       </span>
       <svg class="dash-section__chevron" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">

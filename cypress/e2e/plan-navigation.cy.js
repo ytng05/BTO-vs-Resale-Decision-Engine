@@ -23,7 +23,7 @@ describe('moving between plan phases', () => {
     cy.get('[data-cy=plan-review-change-2-incomes]').click();
     cy.location('pathname').should('eq', '/plan');
     cy.get('[data-cy=about-part-incomes]').should('exist');
-    cy.get('#buyer-0-income').clear().type('6000');
+    cy.get('[data-cy=situation-buyer-1-income-input]').clear().type('6000');
     cy.get('[data-cy=plan-step-done]').should('contain', 'Back to your results').click();
     cy.location('pathname').should('eq', '/preview');
     cy.get('[data-cy=preview-review] summary').click();
@@ -34,10 +34,10 @@ describe('moving between plan phases', () => {
     toPreview();
     cy.get('[data-cy=preview-review] summary').click();
     cy.get('[data-cy=plan-review-change-2-ages]').click();
-    cy.get('#buyer-1-age').clear();
+    cy.get('[data-cy=situation-buyer-2-age-input]').clear();
     cy.get('[data-cy=plan-step-done]').click();
     cy.location('pathname').should('eq', '/plan');
-    cy.get('#buyer-1-age').should('have.class', 'is-invalid').and('be.focused');
+    cy.get('[data-cy=situation-buyer-2-age-input]').should('have.class', 'is-invalid').and('be.focused');
   });
 
   it('links the stepper to the steps reached so far, and to every step once the plan has reached the results', () => {
@@ -63,10 +63,10 @@ describe('moving between plan phases', () => {
     toPreview();
     cy.get('[data-cy=preview-review] summary').click();
     cy.get('[data-cy=plan-review-change-2-ages]').click();
-    cy.get('#buyer-0-age').clear();
+    cy.get('[data-cy=situation-buyer-1-age-input]').clear();
     cy.get('[data-cy=stepper-go-4]').click();
     cy.get('[data-cy=about-part-ages]').should('exist');
-    cy.get('#buyer-0-age').should('have.class', 'is-invalid');
+    cy.get('[data-cy=situation-buyer-1-age-input]').should('have.class', 'is-invalid');
     cy.get('[data-cy=stepper-go-1]').click(); // back is always allowed
     cy.get('[data-cy=plan-step-1-panel]').should('exist');
   });

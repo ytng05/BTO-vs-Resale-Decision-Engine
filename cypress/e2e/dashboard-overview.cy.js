@@ -33,7 +33,7 @@ describe('dashboard overview', () => {
     cy.get('[data-cy=dashboard-grants-jump]').click();
     cy.location('pathname').should('eq', '/dashboard');
     cy.location('hash').should('eq', '#grants-heading');
-    cy.get('#grants-heading').should('be.visible');
+    cy.get('[data-cy=dashboard-section-grants-heading]').should('be.visible');
     cy.get('[data-cy=dashboard-grants]').should('exist');
   });
 });

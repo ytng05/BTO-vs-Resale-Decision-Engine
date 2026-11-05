@@ -265,7 +265,7 @@ const LIVING = [
               </span>
             </template>
           </p>
-          <div :id="`${prefix}-cls-tip`" popover class="est__tip">
+          <div :id="`${prefix}-cls-tip`" :data-cy="`${prefix}-cls-tip`" popover class="est__tip">
             {{ labelOf(CLASSIFICATIONS, activeProject.classification) }} flats have a longer minimum occupation period than
             Standard ones, and some of the subsidy is paid back when you sell.
           </div>

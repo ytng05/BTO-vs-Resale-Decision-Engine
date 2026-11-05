@@ -297,12 +297,12 @@ const FAQS = [
       </div>
       <!-- A strip that moves by itself, with buttons to step through it or pause it. The second copy only makes the loop
            seamless, so screen readers skip it. -->
-      <div ref="strip" class="home-marquee" @pointerenter="setHover(true)" @pointerleave="setHover(false)" @touchstart.passive="playing = false">
+      <div ref="strip" class="home-marquee" data-cy="home-costs-strip" @pointerenter="setHover(true)" @pointerleave="setHover(false)" @touchstart.passive="playing = false">
         <ul class="home-marquee__track">
           <li v-for="(t, i) in TILES" :key="t.title" class="home-tile" :class="`home-tile--${TILE_THEMES[i % 4]}`" :data-cy="`home-cost-${i + 1}`">
             <span class="home-tile__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path :d="t.icon" /></svg></span>
             <h3 class="home-tile__title">{{ t.title }}</h3>
-            <p class="home-tile__text">{{ t.text }}</p>
+            <p class="home-tile__text" data-cy="home-tile-text">{{ t.text }}</p>
           </li>
           <li v-for="(t, i) in TILES" :key="`copy-${t.title}`" class="home-tile" :class="`home-tile--${TILE_THEMES[i % 4]}`" aria-hidden="true">
             <span class="home-tile__icon"><svg viewBox="0 0 24 24"><path :d="t.icon" /></svg></span>

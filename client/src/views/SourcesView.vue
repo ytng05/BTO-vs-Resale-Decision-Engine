@@ -614,6 +614,7 @@ onMounted(async () => {
           class="btn btn-sm rounded-pill sources-chip"
           :class="isChipActive(chip) ? 'btn-primary' : 'btn-outline-primary'"
           :aria-pressed="isChipActive(chip)"
+          :data-cy="`sources-chip-${chip.ids[0]}`"
           @click="toggleChip(chip)"
         >
           {{ chip.label }}
@@ -623,6 +624,7 @@ onMounted(async () => {
           :key="chip.id"
           type="button"
           class="btn btn-outline-primary btn-sm rounded-pill sources-chip"
+          :data-cy="`sources-chip-${chip.id}`"
           @click="scrollToSection(chip.id)"
         >
           {{ chip.label }}
@@ -636,7 +638,7 @@ onMounted(async () => {
         <span v-if="response.status === 'TEMPLATE'" class="badge text-bg-warning" data-cy="sources-template-badge">
           Template / not fully verified
         </span>
-        <span v-else class="sources-verified-badge"><span aria-hidden="true">✓</span> Verified</span>
+        <span v-else class="sources-verified-badge" data-cy="sources-verified-badge"><span aria-hidden="true">✓</span> Verified</span>
         {{ metadataValue(response.verifiedOn) }} by {{ metadataValue(response.verifiedBy) }}
       </p>
 
@@ -686,6 +688,7 @@ onMounted(async () => {
           <details
             v-for="section in shownRuleGroups"
             :id="`sources-section-${section.id}`"
+            :data-cy="`sources-section-${section.id}`"
             :key="section.id"
             class="sources-rule-card"
             :open="isSectionOpen(section.id)"
@@ -708,7 +711,7 @@ onMounted(async () => {
                   <tbody>
                     <tr v-for="row in section.rows" :key="row.rule">
                       <th scope="row" class="sources-table__rule">{{ row.rule }}</th>
-                      <td class="sources-table__value" :class="{ 'sources-table__numeric': isNumericColumn(section.rows) }">
+                      <td class="sources-table__value" data-cy="sources-table-value" :class="{ 'sources-table__numeric': isNumericColumn(section.rows) }">
                         {{ row.value }}
                         <small v-if="row.note" class="d-block text-secondary">{{ row.note }}</small>
                       </td>
@@ -717,7 +720,7 @@ onMounted(async () => {
                 </table>
                 <template v-for="tierTable in section.tierTables" :key="tierTable.key">
                   <table :ref="(el) => setTierTableEl(tierTable.key, el)" class="table table-hover align-middle sources-table sources-table--tiers w-100">
-                    <caption class="sources-table__caption">{{ tierTable.title }}</caption>
+                    <caption class="sources-table__caption" data-cy="sources-table-caption">{{ tierTable.title }}</caption>
                     <colgroup><col class="sources-table__rule-column"><col class="sources-table__value-column"></colgroup>
                     <thead><tr><th v-for="header in tierTable.headers" :key="header" scope="col">{{ header }}</th></tr></thead>
                     <tbody>
@@ -729,6 +732,7 @@ onMounted(async () => {
                   <button
                     v-if="tierTable.rows.length > 5"
                     class="btn btn-link btn-sm sources-tier-toggle"
+                    data-cy="sources-tier-toggle"
                     type="button"
                     :aria-expanded="isTierExpanded(tierTable)"
                     @click="toggleTierRows(tierTable)"
