@@ -49,9 +49,11 @@ const stepNumber = computed(() => props.current + 1);
 .seg-track__item { display: flex; flex-direction: column; gap: 8px; flex: 1 1 0; min-width: 0; }
 .seg-track__bar { display: block; height: 6px; border-radius: 3px; background: var(--accent-fill-3); overflow: hidden; }
 .seg-track__bar > span { display: block; height: 100%; border-radius: 3px; background: var(--text-primary); transition: width 0.4s ease-out; }
+/* A label too long for its segment wraps onto a second line instead of being cut to "What mat…": at 992–1144px the
+   plan card sits beside its picture and the segments are about 55–70px wide. */
 .seg-track__label {
-  font-size: 13px; font-weight: 500; color: var(--text-secondary);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: 13px; font-weight: 500; line-height: 1.3; color: var(--text-secondary);
+  overflow-wrap: break-word;
 }
 .seg-track__item--current .seg-track__label { color: var(--text-primary); font-weight: 600; }
 .seg-track__link {

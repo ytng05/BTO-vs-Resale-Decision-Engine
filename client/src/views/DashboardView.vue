@@ -623,16 +623,19 @@ const detailLine = computed(() => ({
 
 /* The detail pop-up: a dark backdrop over the page, a white box in the middle that scrolls inside if it's long.
    On phones it slides up from the bottom. */
+/* One column as wide as the screen (less the padding), not as wide as the content: with an auto column, a chart
+   drawn at desktop width (Price history's canvas, 798px) kept the pop-up 880px wide after the screen got narrower,
+   and its close button and body went off the screen (rotating a tablet, or resizing a window). */
 .dash-modal {
   position: fixed; inset: 0; z-index: 1050;
-  display: grid; place-items: center;
+  display: grid; grid-template-columns: minmax(0, 1fr); place-items: center;
   padding: var(--space-4);
   background: rgba(29, 29, 36, 0.45);
   animation: dash-fade 0.2s ease both;
 }
 .dash-modal__box {
   display: flex; flex-direction: column;
-  width: min(880px, 100%); max-height: min(86vh, 900px);
+  width: min(880px, 100%); min-width: 0; max-height: min(86vh, 900px);
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
   box-shadow: 0 30px 80px rgba(29, 29, 36, 0.3);
