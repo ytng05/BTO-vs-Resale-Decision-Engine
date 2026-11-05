@@ -123,9 +123,10 @@ export function fillPaths(p) {
   seeResults();
 }
 
-// The whole plan, from a fresh /plan to the Results page.
+// The whole plan, from a fresh /plan to the Results page. ?new=1 is the navbar's Plan link: once a plan is saved it
+// starts a fresh one (a plain reload keeps the plan in progress).
 export function fillPlan(p) {
-  cy.visit('/plan');
+  cy.visit('/plan?new=1');
   pickWishes(p.wishes);
   beat();
   next();

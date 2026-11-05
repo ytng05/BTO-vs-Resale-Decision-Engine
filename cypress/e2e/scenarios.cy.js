@@ -139,7 +139,7 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=results-save-success]').should('be.visible');
 
     cy.intercept('GET', '/api/scenarios/*').as('loadSaved');
-    cy.visit('/plan');
+    cy.visit('/plan?new=1'); // a refresh keeps the plan; Start planning begins a fresh one once it is saved
     next();
     cy.wait('@loadSaved', { timeout: 30000 });
     cy.get('[data-cy=situation-buyer-1-age-input]').focus();
