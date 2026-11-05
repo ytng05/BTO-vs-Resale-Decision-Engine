@@ -270,7 +270,13 @@ export const useScenarioStore = defineStore('scenario', {
         ],
       });
       // Saving again updates this scenario instead of making a copy.
-      this.markSaved(saved.id, saved.name);
+            // Saving again updates this scenario instead of making a copy. A plan with no id (the Home example) was
+      // never saved, so it has no "Saved as" and offers Save scenario instead.
+      if (saved.id) {
+        this.markSaved(saved.id, saved.name);
+      } else {
+        this.forgetSavedScenario();
+      }
     },
   },
 });

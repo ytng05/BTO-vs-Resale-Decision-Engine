@@ -115,6 +115,19 @@ describe('responsive layout', () => {
     });
   });
 
+    // The Home example on small phones: its cash card says "Covered, S$15,000 to spare", longer than completePlan()'s
+  // text, and pushed the page sideways before that text could wrap under its bar.
+  [[320, 568], [375, 667]].forEach(([width, height]) => {
+    it(`the Home example's Results fit a ${width}px phone`, () => {
+      cy.viewport(width, height);
+      cy.visit('/');
+      cy.get('[data-cy=home-example-button]').click();
+      cy.get('[data-cy=results-confidence-headline]').should('be.visible');
+      cy.get('[data-cy=dashboard-cash-card]').should('be.visible');
+      fitsWidth();
+    });
+  });
+
   // A chart drawn at desktop width must not hold a dashboard pop-up open when the screen gets narrower (rotating a
   // tablet, resizing a window): Price history's chart kept the pop-up 880px wide, its close button off the screen.
   it('the Price history pop-up shrinks with the screen', () => {
