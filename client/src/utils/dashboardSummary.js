@@ -104,13 +104,14 @@ export function purchaseCard(outcome, { covCents = 0 } = {}) {
   const other = hasPrice ? cash - (price - grants - cpf - loan) : 0;
   const funded = Math.max(1, loan + grants + cpf + cash);
   const pct = (v) => Math.round((Math.max(0, v) / funded) * 100);
+  const minus = (v) => (v ? `−${exact(v)}` : exact(0));
   return {
     hasPrice, priceCents: price, grantsCents: grants, unusedGrantsCents: Math.max(0, totalGrants - grants), cpfCents: cpf, loanCents: loan, otherCents: other, cashCents: cash,
     covCents: covCents > 0 ? covCents : 0,
     shares: { loan: pct(loan), aid: pct(grants + cpf), cash: Math.max(0, 100 - pct(loan) - pct(grants + cpf)) },
     lines: {
       unusedGrants: totalGrants - grants > 0 ? `${exact(totalGrants - grants)} of your grants isn't used on this flat` : '',
-      price: exact(price), grants: `−${exact(grants)}`, cpf: `−${exact(cpf)}`, loan: `−${exact(loan)}`,
+      price: exact(price), grants: minus(grants), cpf: minus(cpf), loan: minus(loan),
       other: `${other < 0 ? '−' : '+'}${exact(Math.abs(other))}`, cash: exact(cash),
     },
   };
