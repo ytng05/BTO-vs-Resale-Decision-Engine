@@ -113,7 +113,7 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
     </button>
 
     <div v-if="showWhy" id="glance-why-body" class="glance-why__body" data-cy="dashboard-why">
-      <div class="glance-why__axis" aria-hidden="true"><span>Favours resale</span><span>Favours BTO</span></div>
+      <div class="glance-why__axis" aria-hidden="true"><span></span><span class="glance-why__axis-mid"><span>Favours resale</span><span>Favours BTO</span></span><span></span></div>
       <div v-for="d in shownDrivers" :key="d.id" class="glance-why__row" :data-cy="`dashboard-driver-${d.id}`">
         <span class="glance-why__label">{{ d.label }}</span>
         <span class="glance-why__chart" aria-hidden="true">
@@ -171,8 +171,13 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
 .glance-tile__icon svg { width: 20px; height: 20px; fill: none; stroke: var(--tile-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .glance-tile__label { font-weight: 600; }
 .glance-tile__winner { font-size: 1.0625rem; line-height: 1.3; color: var(--text-secondary); }
-.glance-tile__vals { display: flex; justify-content: space-between; gap: var(--space-2); margin-top: auto; padding-top: var(--space-2); border-top: 1px solid rgba(29, 29, 36, 0.06); font-size: 0.875rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+/* The two figures wrap onto two lines rather than run past the tile's edge (big figures at 1024px and on phones). */
+.glance-tile__vals { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1) var(--space-2); margin-top: auto; padding-top: var(--space-2); border-top: 1px solid rgba(29, 29, 36, 0.06); font-size: 0.875rem; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .glance-tile__vals small { font-size: 0.75rem; }
+.glance-tile__vals > span { white-space: nowrap; }
+/* The "which is better" line wraps inside its tile, balanced, and its colour follows the text. */
+.glance-tile { min-width: 0; }
+.glance-tile__winner { overflow-wrap: anywhere; text-wrap: balance; }
 .is-bto { color: var(--dash-bto) !important; font-weight: 600; }
 .is-resale { color: var(--dash-resale) !important; font-weight: 600; }
 
@@ -200,11 +205,15 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
 .glance-why__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-3); }
 .glance-why__lead { color: var(--text-secondary); }
 /* Diverging bars: resale's lines grow left from the middle, BTO's grow right (as on the Results page). */
-.glance-why__row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr) minmax(0, 0.9fr); gap: var(--space-3); align-items: center; }
-/* The axis labels sit over the two halves of the chart column. */
-.glance-why__axis { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.9fr); gap: 0 var(--space-3); font-size: 0.75rem; color: var(--text-secondary); }
-.glance-why__axis span:first-child { grid-column: 2; text-align: right; display: block; padding-right: var(--space-2); }
-.glance-why__axis span:last-child { grid-column: 3; padding-left: var(--space-2); }
+/* Columns sized to their content, not fixed fractions (#134's lesson: a figure can't wrap, so a fractional column it
+   doesn't fit makes it spill into the next one). The label gets at least 7rem and wraps; the amount column is wide
+   enough for S$1,234,567 and never wraps; the bars take what is left. The axis uses the same three columns. */
+.glance-why__row { display: grid; grid-template-columns: minmax(7rem, 1.2fr) minmax(5rem, 2fr) 8.5rem; gap: var(--space-3); align-items: center; }
+.glance-why__axis { display: grid; grid-template-columns: minmax(7rem, 1.2fr) minmax(5rem, 2fr) 8.5rem; gap: 0 var(--space-3); font-size: 0.75rem; color: var(--text-secondary); }
+.glance-why__axis-mid { display: grid; grid-template-columns: 1fr 1fr; }
+.glance-why__axis-mid span:first-child { text-align: right; padding-right: var(--space-2); }
+.glance-why__axis-mid span:last-child { padding-left: var(--space-2); }
+.glance-why__label { min-width: 0; overflow-wrap: anywhere; }
 .glance-why__row { padding: var(--space-2) 0; border-top: 1px solid var(--border-subtle); font-size: 0.9375rem; }
 .glance-why__chart { display: grid; grid-template-columns: 1fr 1fr; height: 14px; }
 .glance-why__half { display: flex; }
@@ -212,12 +221,13 @@ const shownDrivers = computed(() => (showAllLines.value ? drivers.value : driver
 .glance-why__half i { display: block; height: 100%; }
 .glance-why__half--resale i { background: var(--path-resale-bar); border-radius: 4px 0 0 4px; }
 .glance-why__half--bto i { background: var(--path-bto); border-radius: 0 4px 4px 0; }
-.glance-why__amount { text-align: right; }
+.glance-why__amount { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .glance-why__row--total { font-weight: 700; border-top: 2px solid var(--text-primary); }
-.glance-why__row--total strong { grid-column: 2 / 4; text-align: right; }
+.glance-why__row--total strong { grid-column: 2 / -1; text-align: right; overflow-wrap: anywhere; }
 .glance-why__row--total { padding-top: var(--space-3); }
 @media (max-width: 575.98px) {
   .glance-why__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .glance-why__row--total strong { grid-column: 1 / -1; }
   .glance-why__chart { grid-column: 1 / -1; grid-row: 2; }
   .glance-why__axis { display: none; }
 }
