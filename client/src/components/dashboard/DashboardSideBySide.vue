@@ -100,7 +100,7 @@ const topDrivers = computed(() => drivers.value.slice(0, 3));
 .dash-sbs__ahead { justify-content: center; text-align: center; padding-inline: var(--space-2); }
 .dash-sbs__ahead .dash-chip {
   max-width: 100%; padding: 0.25rem 0.5rem; font-size: 0.8125rem;
-  border-radius: var(--radius-sm); overflow-wrap: anywhere;
+  border-radius: var(--radius-sm); overflow-wrap: break-word;
 }
 .dash-chip { display: inline-block; padding: 0.25rem 0.75rem; border-radius: var(--radius-pill); font-size: 0.875rem; font-weight: 600; }
 .dash-chip--bto { background: var(--dash-bto-tint); color: var(--dash-bto); }
