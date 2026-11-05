@@ -3,8 +3,8 @@
 // "Working out your numbers…" while the comparison runs, then the "simple" teaser: one panel that says which path fits
 // better, with a row per priority picked in step 1 that the engine has a figure for. Each row's verdict is seat 1's
 // rule (utils/previewFit.js, D43). The panel names a path only when that path wins every pick that has a winner (ties
-// don't count against it); on a split it says each fits some, and when every pick ties, that they come out about the
-// same. Picks without a figure are named in the banner instead, as far as Results covers them (near my parents is in
+// don't count against it); on a split it says each fits some; when every pick ties, that they come out about the same
+// on those picks; and with no fair comparison, that it can't compare them here. Picks without a figure are named in the banner instead, as far as Results covers them (near my parents is in
 // "grants": the Proximity Housing Grant; resale value is the flat's value in the net position; space is only on the
 // Dashboard, so the banner says so). "Edit your answers" opens every answer with Change links (D43).
 import { computed, onMounted, ref } from 'vue';
@@ -67,7 +67,7 @@ const rows = computed(() => {
   });
 });
 
-// The panel's wording (utils/previewPanel.js): one path fits better, a split, or about the same.
+// The panel's wording (utils/previewPanel.js): one path fits better, a split, about the same, or no comparison.
 const panel = computed(() => previewPanel(rows.value, { moveInBy: moveInBy.value }));
 const outcome = computed(() => panel.value.outcome);
 // A split shows a column per path, BTO first, and any ties under them.
@@ -203,14 +203,16 @@ onMounted(() => {
         <section v-else class="verdict" :class="`verdict--${outcome}`" aria-labelledby="preview-verdict-title" data-cy="preview-verdict">
           <div class="verdict__hd">
             <span class="verdict__icon" aria-hidden="true">
-              <!-- Lucide "key-round" (resale) / "building-2" (BTO) / "scale" (about the same) -->
+              <!-- Lucide "key-round" (resale) / "building-2" (BTO) / "circle-help" (no comparison) / "scale" (about the same) -->
               <svg v-if="outcome === 'resale'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z" /><circle cx="16.5" cy="7.5" r=".5" fill="currentColor" /></svg>
               <svg v-else-if="outcome === 'bto'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" /><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" /><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" /><path d="M10 6h4M10 10h4M10 14h4M10 18h4" /></svg>
+              <svg v-else-if="outcome === 'none'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" /></svg>
               <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" /><path d="M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" /></svg>
             </span>
             <div>
               <p v-if="panel.sub" class="verdict__sub" data-cy="preview-verdict-sub">{{ panel.sub }}</p>
               <h1 id="preview-verdict-title" class="verdict__title" data-cy="preview-verdict-title">{{ panel.title }}</h1>
+              <p v-if="panel.summary" class="verdict__summary" data-cy="preview-verdict-summary">{{ panel.summary }}</p>
             </div>
           </div>
           <ul class="verdict__rows">
@@ -312,6 +314,7 @@ onMounted(() => {
 .verdict--bto .verdict__icon { color: var(--indigo); }
 .verdict__sub { margin: 0; font-size: 13px; font-weight: 500; color: var(--text-secondary); }
 .verdict__title { margin: 0; font-size: clamp(26px, 3.2vw, 38px); font-weight: 600; letter-spacing: -0.025em; line-height: 1.1; }
+.verdict__summary { margin: 8px 0 0; font-size: 15px; color: var(--text-secondary); }
 .verdict__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .verdict__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px 12px 16px; border-radius: 14px; background: var(--bg-surface); }
 .verdict__row p { margin: 0; }

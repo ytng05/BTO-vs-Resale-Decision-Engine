@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useScenarioStore, STEPS } from '../src/stores/scenario.js';
+import { EXAMPLE_PLAN } from '../src/constants/examplePlan.js';
 import { useAuthStore } from '../src/stores/auth.js';
 
 describe('scenario store', () => {
@@ -97,6 +98,17 @@ describe('scenario store: saved scenarios', () => {
     expect(s.assumptions.monthlyHousingCostWhileWaiting).toBe(0);
     expect(s.profile.constraints).toEqual({ moveInByYear: null });
     expect(s.profile.applicants[0]).toMatchObject({ age: 31, citizenship: 'SC', firstTimer: true });
+  });
+
+    it('loadSaved without an id (the Home example) is not marked as saved', () => {
+    const s = useScenarioStore();
+    s.loadSaved({ id: 'abc', name: 'Mine', profile: {}, choiceA: {}, choiceB: {}, assumptions: {} });
+    expect(s.savedId).toBe('abc');
+
+    s.loadSaved(EXAMPLE_PLAN);
+    expect(s.savedId).toBe(null);
+    expect(s.savedName).toBe(null);
+    expect(s.savedKey).toBe(null);
   });
 
   it('loadSaved gives buyers new ids, so one added afterwards cannot clash', () => {

@@ -174,6 +174,9 @@ export function mockCompare(payload = {}) {
     medianPriceCents: 66_500_000,
     priceData: { source: 'MOCK resale prices', window: { from: '2025-10', to: '2026-09', months: 12 }, transactions: 120, leaseFilter: { minLeaseYears: 80, maxLeaseYears: 89 }, fellBackToAllLeases: false, lowSample: false },
   };
+  // D36: above the new-flat ceiling, the BTO can't be bought. Today's incomes here, not projected as on the server.
+  const householdIncome = (payload.profile?.applicants ?? []).reduce((sum, a) => sum + (a.monthlyIncomeCents ?? 0), 0);
+  if (householdIncome > MOCK_NEW_FLAT_CEILING_CENTS) result.outcomeA.warnings.push('INCOME_CEILING_BREACHED_AT_PURCHASE');
   // ...and warningMessages, a sentence for each warning code that occurs.
   result.warningMessages = mockWarningMessages([...result.outcomeA.warnings, ...result.outcomeB.warnings]);
   return result;
@@ -193,7 +196,10 @@ function mockPickProject(choice) {
 const MOCK_WARNING_MESSAGES = {
   BTO_WAIT_ASSUMED:
     "We don't have this project's waiting time, so the usual BTO wait from the ruleset is assumed. Your key date may differ.",
+  INCOME_CEILING_BREACHED_AT_PURCHASE:
+    'Your household income, projected to the year you apply, is above the income ceiling for a new HDB flat, so you could not buy this BTO flat that year.',
 };
+const MOCK_NEW_FLAT_CEILING_CENTS = 1_600_000; // S$16,000 a month: eligibility.newFlatIncomeCeiling.family in the ruleset
 
 function mockWarningMessages(codes) {
   return Object.fromEntries(codes.filter((c) => MOCK_WARNING_MESSAGES[c]).map((c) => [c, MOCK_WARNING_MESSAGES[c]]));

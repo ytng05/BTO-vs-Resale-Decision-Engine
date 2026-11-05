@@ -110,4 +110,10 @@ const assumption = computed(() => {
 }
 .dash-cash__btn:hover { background: var(--accent-tint); border-color: var(--accent-fill-1); color: var(--color-berry); }
 .dash-cash__btn:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+/* Phones: the "Covered, S$15,000 to spare" text goes under the bar and may wrap, so the row fits the screen. */
+@media (max-width: 575.98px) {
+  .dash-cash__row { min-width: 0; grid-template-columns: 3.75rem minmax(0, 1fr); }
+  .dash-cash__short { grid-column: 2 / -1; white-space: normal; }
+}
 </style>
