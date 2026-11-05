@@ -5,7 +5,7 @@ import { J2, beat, fillPlan, openDashboard, setSlider } from './personas.js';
 describe('Journey 2: living near parents', () => {
   it('shows the grants with the PHG, the rent what-if that turns it to resale, and the sources', () => {
     fillPlan(J2);
-    cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
+    cy.get('[data-cy=results-confidence-headline]').should('be.visible');
     // They answered the parents question (picked in step 1), so Results doesn't say the PHG was left out.
     cy.get('[data-cy=results-phg-note]').should('not.exist');
     cy.get('[data-cy=results-pathb-grants-total]').scrollIntoView().should('be.visible');
