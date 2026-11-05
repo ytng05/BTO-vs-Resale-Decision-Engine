@@ -2,8 +2,8 @@
 // Home, after the Calm home board (CalmHome.dc.html): the question and the two ways in (start, or see an example),
 // a small static city illustration, how it works in four steps, what the results tell you, the costs people forget, a short FAQ
 // and a closing call to action. The navbar and the disclaimer footer come from App.vue, as on every page.
-// 5 Nov 2026: a "welcome back" strip for someone who is logged in or has a plan in progress (their last saved
-// scenario, or a way back into the plan), a strip naming where the data and rules come from, and the page's colours
+// 5 Nov 2026: a greeting banner ("Welcome" without an account, "Welcome, <name>" right after signing up,
+// "Welcome back, <name>" when logged in), a strip naming where the data and rules come from, and the page's colours
 // kept to the app's pink and indigo family (no grey, green or amber), with pink hovers.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
@@ -663,15 +663,7 @@ const FAQS = [
 
 /* ---- welcome back ---- */
 .home-welcome { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); padding: var(--space-4) var(--space-5); border: 1px solid var(--accent-fill-2); border-radius: var(--radius-lg); background: linear-gradient(100deg, var(--accent-tint), var(--indigo-tint)); animation: home-welcome-in 0.5s var(--ease-out) both; }
-.home-welcome__avatar { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--bg-surface); color: var(--color-berry); font-family: var(--font-heading); font-size: 1.375rem; font-weight: 700; box-shadow: 0 4px 14px rgba(240, 138, 182, 0.25); }
-.home-welcome__text { flex: 1 1 280px; min-width: 0; }
 .home-welcome__hi { margin: 0; font-family: var(--font-heading); font-size: clamp(1.25rem, 2vw, 1.5rem); font-weight: 600; letter-spacing: -0.02em; }
-.home-welcome__line { margin: 2px 0 0; color: var(--text-secondary); }
-.home-welcome__line strong { color: var(--text-primary); }
-.home-welcome__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.home-welcome__btn { min-height: 44px; display: inline-flex; align-items: center; }
-.home-welcome .btn-outline-secondary { background: var(--bg-surface); }
-.home-welcome .btn-outline-secondary:hover { background: var(--accent-tint); border-color: var(--accent-fill-1); color: var(--color-berry); }
 @keyframes home-welcome-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 
 /* ---- where the numbers come from ---- */
