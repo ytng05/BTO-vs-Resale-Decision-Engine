@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/auth.js';
 import { useScenarioStore } from '../stores/scenario.js';
 
 const auth = useAuthStore();
+const scenario = useScenarioStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -34,7 +35,8 @@ async function loadCount() {
     scenarioCount.value = null;
   }
 }
-watch(() => [auth.isLoggedIn, route.fullPath], loadCount, { immediate: true });
+// Also after a save or delete on the same page (scenario.savedListVersion), not only on a page change.
+watch(() => [auth.isLoggedIn, route.fullPath, scenario.savedListVersion], loadCount, { immediate: true });
 
 const userName = computed(() => auth.user?.name || auth.user?.email || 'Account');
 
@@ -53,8 +55,11 @@ onMounted(() => {
 onBeforeUnmount(() => resize?.disconnect());
 
 // The logo: on another page it goes home; on Home it brings you back to the top, like a refresh. (A real page reload
-// would wipe the plan, which only lives in memory, so it isn't used.)
-function goHome() {
+// would wipe the plan, which only lives in memory, so it isn't used.) Cmd/Ctrl/Shift-click and middle-click are left
+// to the browser, so "open Home in a new tab" still works.
+function goHome(event) {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+  event.preventDefault();
   if (route.path === '/') {
     const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' });
@@ -62,8 +67,6 @@ function goHome() {
     router.push('/');
   }
 }
-
-const scenario = useScenarioStore();
 
 function logout() {
   auth.logout();
@@ -75,7 +78,7 @@ function logout() {
 <template>
   <header ref="bar" class="pill-nav" data-cy="nav-bar">
     <!-- Logo + app name: one link back home. -->
-    <a href="/" class="pill-nav__home" aria-label="PropertyEngine home" data-cy="nav-brand-home" @click.prevent="goHome">
+    <a href="/" class="pill-nav__home" aria-label="PropertyEngine home" data-cy="nav-brand-home" @click="goHome">
       <span class="pill-nav__logo">
         <!-- An HDB block -->
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

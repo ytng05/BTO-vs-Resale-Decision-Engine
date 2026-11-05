@@ -402,11 +402,13 @@ a:focus-visible,
   box-shadow: 0 0 0 1px $primary, $shadow-sm;
 }
 
+// Title on the left and the figure on the right, then each note (loan / cash short) on its own full line below.
 .compare-path {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: $space-3;
+  column-gap: $space-3;
+  row-gap: $space-1;
   padding: $space-3;
   border-radius: $radius-sm;
 
@@ -420,6 +422,8 @@ a:focus-visible,
     font-weight: 500;
     white-space: nowrap;
   }
+
+  &__note { grid-column: 1 / -1; }
 }
 
 // Status badge, success (UI.md §8 Badges: semantic fill + matching text)
@@ -571,7 +575,8 @@ a:focus-visible,
 }
 
 // ---- Pill navigation (design system, 29 Oct 2026) ----------------------------------
-// Three floating pills: a status pill (left), logo + links (centre), an account pill (right).
+// Three floating slots: logo + name (left), links (centre), an account pill (right). AppNavbar.vue's scoped styles
+// make the bar a grid and hold the logo + name.
 // On the white page the pills keep a thin border as well as the shadow, so their edge doesn't vanish.
 .pill-nav {
   display: flex;
@@ -593,7 +598,6 @@ a:focus-visible,
     box-shadow: 0 3px 0 rgba($color-ink, 0.06), 0 8px 20px rgba(60, 64, 90, 0.06);
   }
 
-  &__status,
   &__end {
     padding: 0 $space-5;
     gap: 10px;
@@ -604,16 +608,6 @@ a:focus-visible,
   }
 
   &__end:hover { background: $surface-disabled; color: $text-primary; }
-
-  &__dot {
-    width: 12px;
-    height: 12px;
-    flex: none;
-    border-radius: 50%;
-    background: $success;
-    box-shadow: 0 0 0 0 rgba($success, 0.35);
-    animation: pill-nav-pulse 2.4s ease-out infinite;
-  }
 
   &__logo {
     width: 44px;
@@ -659,25 +653,12 @@ a:focus-visible,
     outline-offset: 2px;
   }
 
-  @include media-breakpoint-down(lg) {
-    &__status { display: none; }
-  }
-
   @include media-breakpoint-down(md) {
     &__links { display: none; }
     &__menu { display: grid; }
     &__end-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     &__end { padding: 0; width: 56px; justify-content: center; }
   }
-}
-
-@keyframes pill-nav-pulse {
-  0% { box-shadow: 0 0 0 0 rgba($success, 0.35); }
-  70%, 100% { box-shadow: 0 0 0 8px rgba($success, 0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pill-nav__dot { animation: none; }
 }
 
 // ---- Numbered step track (design system, 29 Oct 2026) -------------------------------

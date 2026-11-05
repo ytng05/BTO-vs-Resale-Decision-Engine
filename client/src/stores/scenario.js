@@ -101,7 +101,8 @@ export const useScenarioStore = defineStore('scenario', {
   state: function () {
     // savedProfilesOwner: the id of the account the saved answers were loaded for (auth.user.id). They are only
     // ever offered to that account.
-    return { ...blank(), savedProfiles: null, savedProfilesOwner: null };
+    // savedListVersion: goes up whenever a scenario is saved or deleted, so the navbar's count reloads.
+    return { ...blank(), savedProfiles: null, savedProfilesOwner: null, savedListVersion: 0 };
   },
   getters: {
     // The inputs as one string, so the inputs now can be compared with the inputs at the last save.
@@ -148,6 +149,10 @@ export const useScenarioStore = defineStore('scenario', {
       this.savedName = name;
       this.savedKey = this.inputsKey;
       this.savedProfiles = null; // a new save: load the answers again next time
+    },
+        // A scenario was saved or deleted: the navbar's "My scenarios · N" counts again.
+    savedListChanged() {
+      this.savedListVersion += 1;
     },
     // The saved scenario was deleted elsewhere: these inputs no longer belong to one.
     forgetSavedScenario() {
