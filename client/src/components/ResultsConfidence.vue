@@ -1,16 +1,17 @@
 <script setup>
-// Results, "Would the answer change?" (D33, D35, D40, D43). On the page it is one compact strip: how sure the answer
-// is in one line ("BTO stays ahead in all 54 futures we tested"), the BTO price it holds up to, and a button that opens
-// the detail in a pop-up (feedback, 5 Nov 2026: the full card took too much room):
+// Results, "Would the answer change?" (D33, D35, D40, D43). On the page: a strip with how sure the answer is in one
+// line ("BTO stays ahead in all 54 futures we tested"), then the server's exact break-even sentence and BTO price
+// sentence, always visible (D35, D40, D43), with the "break-even" term and the note that it is not a prediction of
+// prices. "See how sure" opens a pop-up with the pictures only, so nothing is said twice:
 //  - flat prices and incomes: the flip point as a line with "You" on it when the answer flips inside -2% to 8% a year
-//    at the plan's income growth (priceFlip, the same helper as the Dashboard's slider); otherwise a small map of
-//    every combination tested, "You" outlined, each square read out on hover; "See every combination" opens the full,
+//    at the plan's income growth (priceFlip, as on the Dashboard's slider); otherwise a small map of every
+//    combination tested, "You" outlined, each square read out on hover; "See every combination" opens the full,
 //    keyboard-accessible heatmap on the page;
-//  - the BTO price: HDB's range for the launch, the price used, and the price BTO stays ahead up to (D40);
-//  - the server's exact sentences (break-even line, BTO price) and the "not a forecast" note.
+//  - the BTO price: HDB's range for the launch, the price used, and the price BTO stays ahead up to (D40).
 // The pop-up is a dialog: focus moves into it, Esc or the backdrop closes it, focus returns to the button. It prints
-// as part of the page. Hooks: results-breakeven, results-confidence-headline, results-confidence-open, -dialog,
-// -close, results-breakeven-sentence, results-bto-price-breakeven, results-heatmap-open, results-flip-line.
+// with the page. Hooks: results-breakeven, results-confidence-headline, results-breakeven-sentence,
+// results-bto-price-breakeven, results-heatmap-open (on the page), results-confidence-open, -dialog, -close,
+// -grid-open (the same jump, from inside the pop-up), results-flip-line.
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import Term from './Term.vue';
 import { formatMoney, formatPercent } from '../utils/format.js';
@@ -134,8 +135,7 @@ function seeAll() {
   emit('update:moreOpen', false);
   emit('open-grid');
 }
-// The strip's second line: the BTO price it holds up to, if the server sent one (D40).
-const priceLine = computed(() => (priceBar.value ? `BTO stays ahead up to a BTO price of about ${priceBar.value.flipText}.` : ''));
+
 </script>
 
 <template>
@@ -147,12 +147,20 @@ const priceLine = computed(() => (priceBar.value ? `BTO stays ahead up to a BTO 
         <h2 id="conf-title" class="conf__title">Would the answer change?</h2>
         <p v-if="headline" class="conf__headline" :class="`is-${headline.tone}`" data-cy="results-confidence-headline">
           <strong>{{ headline.strong }}.</strong>
-          <template v-if="priceLine"> {{ priceLine }}</template>
         </p>
       </div>
       <button ref="opener" type="button" class="conf__open d-print-none" aria-haspopup="dialog" data-cy="results-confidence-open" @click="open">
         See how sure <span aria-hidden="true">→</span>
       </button>
+      <!-- The exact sentences, always on the page (D35, D40, D43). -->
+      <div class="conf__facts">
+        <p v-if="result.breakEvenSentence" class="conf__sentence" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</p>
+        <p v-if="result.btoPriceSentence" class="conf__sentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
+        <p class="conf__note mb-0">
+          The <Term id="break-even">break-even</Term> line is not a prediction of prices.
+          <button type="button" class="conf__link conf__link--inline d-print-none" data-cy="results-heatmap-open" @click="seeAll">See every combination</button>
+        </p>
+      </div>
     </div>
 
     <!-- The pop-up. Teleported to <body> so it sits above everything; printed as part of the page. -->
@@ -213,7 +221,7 @@ const priceLine = computed(() => (priceBar.value ? `BTO stays ahead up to a BTO 
           <p v-if="incomeAxis" class="visually-hidden">Income growth from {{ formatPercent(incomeAxis[0]) }} to {{ formatPercent(incomeAxis[1]) }} a year.</p>
         </div>
 
-        <button type="button" class="conf__link d-print-none" data-cy="results-heatmap-open" @click="seeAll">
+        <button type="button" class="conf__link d-print-none" data-cy="results-confidence-grid-open" @click="seeAll">
           See every combination <span aria-hidden="true">→</span>
         </button>
       </div>
@@ -238,12 +246,6 @@ const priceLine = computed(() => (priceBar.value ? `BTO stays ahead up to a BTO 
     </div>
 
 
-          <div class="conf__exact">
-            <h3 class="conf__panel-title">The exact figures</h3>
-            <p v-if="result.breakEvenSentence" class="conf__sentence" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</p>
-            <p v-if="result.btoPriceSentence" class="conf__sentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
-            <p class="conf__note mb-0">The <Term id="break-even">break-even</Term> line is not a prediction of prices.</p>
-          </div>
         </div>
       </div>
     </Teleport>
@@ -278,7 +280,7 @@ const priceLine = computed(() => (priceBar.value ? `BTO stays ahead up to a BTO 
 .conf-modal__close { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 50%; background: var(--bg-surface); color: var(--text-primary); transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
 .conf-modal__close:hover { background: var(--accent-tint); border-color: var(--accent-fill-1); color: var(--color-berry); }
 .conf-modal__close:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.conf__exact { padding-top: var(--space-4); border-top: 1px solid var(--border-subtle); }
+.conf__facts { flex-basis: 100%; padding-top: var(--space-3); border-top: 1px solid var(--border-subtle); }
 @keyframes conf-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes conf-rise { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
 /* Printed with the page, as a normal section (no backdrop). */
@@ -297,6 +299,7 @@ const priceLine = computed(() => (priceBar.value ? `BTO stays ahead up to a BTO 
 .conf__scale { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); }
 .conf__link { align-self: flex-start; margin-top: auto; padding: 0; border: 0; background: none; font-weight: 600; color: var(--text-primary); text-decoration: underline; text-underline-offset: 3px; transition: color 0.15s ease; }
 .conf__link:hover { color: var(--color-berry); }
+.conf__link--inline { margin-left: var(--space-2); font-size: inherit; }
 .conf__link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
 
 /* Flip line */

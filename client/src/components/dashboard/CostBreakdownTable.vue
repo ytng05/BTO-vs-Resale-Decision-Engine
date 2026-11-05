@@ -1,19 +1,17 @@
 <script setup>
 // Cost lines for both paths side by side, from outcome.costBreakdown in the contract:
 // [{ id, label, amountCents, paidFrom: 'CASH' | 'CPF' | 'NONE' }]. Ids include BSD, LEGAL, AGENT,
-// RENOVATION, RENT_WHILE_WAITING, LOAN_INTEREST and CPF_ACCRUED_INTEREST.
+// RENOVATION, RENT_WHILE_WAITING, LOAN_INTEREST, CPF_ACCRUED_INTEREST and CLAWBACK.
 // A line one path doesn't have shows "—". The biggest cost (in the first result) is listed first. Stacks on phones like the grants table (.dash-grants).
 import { computed, ref, watch } from 'vue';
 import { formatMoney } from '../../utils/format.js';
-import { largestFirst } from '../../utils/dashboardFormat.js';
+import { largestFirst, paidFromLabel } from '../../utils/dashboardFormat.js';
 
 const props = defineProps({
   outcomeA: { type: Object, required: true },
   outcomeB: { type: Object, required: true },
 });
 
-// Sentence case, like the rest of the app. 'NONE' is the CPF accrued interest you pay back into your own CPF later.
-const PAID_FROM = { CASH: 'Paid from cash', CPF: 'Paid from CPF', NONE: 'Goes back to your CPF' };
 const dollars = (cents) => (typeof cents === 'number' ? cents / 100 : null);
 
 const unsorted = computed(() => {
@@ -22,7 +20,7 @@ const unsorted = computed(() => {
   const ids = [...new Set([...linesA, ...linesB].map((l) => l.id))];
   const cell = (lines, id) => {
     const l = lines.find((x) => x.id === id);
-    return l ? { amount: dollars(l.amountCents), paidFrom: PAID_FROM[l.paidFrom] ?? '' } : null;
+    return l ? { amount: dollars(l.amountCents), paidFrom: paidFromLabel(l) } : null;
   };
   return ids.map((id) => ({
     id,

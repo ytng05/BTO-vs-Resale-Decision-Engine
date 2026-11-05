@@ -33,12 +33,15 @@ describe('dashboard sections', () => {
     cy.get('[data-cy=dashboard-costs], [data-cy=dashboard-costs-empty]').should('exist');
     cy.focused().should('have.attr', 'data-cy', 'dashboard-modal-close');
     // The page behind can't be reached with Tab while the pop-up is open.
-    cy.get('.dash-e').should('have.attr', 'inert');
-    cy.get('[data-cy=nav-bar]').should('have.attr', 'inert');
+    // Nor can the skip link, navbar or footer, which sit outside the page.
+    cy.get('.dash-e, [data-cy=skip-link], [data-cy=nav-bar], #main ~ footer').should('have.length', 4).each(($el) => {
+      cy.wrap($el).should('have.attr', 'inert');
+    });
     cy.get('[data-cy=dashboard-modal-close]').click();
     cy.get('[role=dialog]').should('not.exist');
-    cy.get('.dash-e').should('not.have.attr', 'inert');
-    cy.get('[data-cy=nav-bar]').should('not.have.attr', 'inert');
+    cy.get('.dash-e, [data-cy=skip-link], [data-cy=nav-bar], #main ~ footer').each(($el) => {
+      cy.wrap($el).should('not.have.attr', 'inert');
+    });
     cy.focused().should('have.attr', 'data-cy', 'dashboard-explore-costs');
     // Escape
     cy.get('[data-cy=dashboard-explore-rpi]').click({ scrollBehavior: 'center' });
@@ -122,5 +125,15 @@ describe('dashboard sections', () => {
     cy.get('[data-cy=whatif-preset-boom]').click({ scrollBehavior: 'center' }).should('have.attr', 'aria-pressed', 'false');
     cy.get('[data-cy=whatif-price-growth-value]').should('contain', '3% / yr');
     cy.get('[data-cy=whatif-presets-status]').should('contain', 'Click it again to undo');
+  });
+
+  it('adds the grant checks and every cost to the page only while it prints (the pop-ups do not print)', () => {
+    openDashboard();
+    cy.get('[data-cy=dashboard-costs]').should('not.exist');
+    cy.window().trigger('beforeprint');
+    cy.get('.dash-main [data-cy=dashboard-costs]').should('exist');
+    cy.get('.dash-main [data-cy=dashboard-grants]').should('exist');
+    cy.window().trigger('afterprint');
+    cy.get('[data-cy=dashboard-costs]').should('not.exist');
   });
 });

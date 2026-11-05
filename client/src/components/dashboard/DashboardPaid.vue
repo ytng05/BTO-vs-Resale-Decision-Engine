@@ -2,7 +2,7 @@
 // Version E: "How each purchase is paid", exact to the dollar (so the lines add up to the cash), from the price down
 // to the cash, one card per path in its colour. A bar shows the split (loan, grants and CPF, cash). The comparisons
 // between the paths live in "Side by side", so the cards don't repeat them. Long explanations (the loan limit, the
-// short-lease note) show as a short tag, with the full sentence on hover and for screen readers.
+// short-lease note) show as a short tag, with the full sentence written out under it (no hover tooltips).
 // Keeps the tested hooks dashboard-summary-{bto|resale}-price and -affordability.
 import { computed } from 'vue';
 import { formatMoney, formatMoneyRounded } from '../../utils/format.js';
@@ -154,9 +154,8 @@ const cards = computed(() => [
 .dash-paid__card:hover .dash-paid__tag-fact { background: var(--bg-surface); }
 .dash-paid__body { display: flex; flex-direction: column; padding: var(--space-4) var(--space-5) var(--space-5); }
 .dash-paid__bar { display: flex; height: 16px; border-radius: var(--radius-pill); overflow: hidden; margin-bottom: var(--space-3); background: var(--bg-page); }
-/* Each part of the bar: hover it to see its share; it brightens. */
-.dash-paid__seg { display: block; height: 100%; cursor: help; transition: filter 0.2s ease, width var(--duration-base) var(--ease-out); }
-.dash-paid__seg:hover { filter: brightness(1.12) saturate(1.2); }
+/* Each part of the bar. Its share is written out under the bar, so the bar itself has no hover. */
+.dash-paid__seg { display: block; height: 100%; transition: width var(--duration-base) var(--ease-out); }
 .dash-paid__lines > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--border-subtle); font-size: 0.9375rem; }
 .dash-paid__lines > div.is-price { font-weight: 600; }
 .dash-paid__lines dt { font-weight: inherit; display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); }

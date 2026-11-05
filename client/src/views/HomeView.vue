@@ -2,14 +2,20 @@
 // Home, after the Calm home board (CalmHome.dc.html): the question and the two ways in (start, or see an example),
 // a small static city illustration, how it works in four steps, what the results tell you, the costs people forget, a short FAQ
 // and a closing call to action. The navbar and the disclaimer footer come from App.vue, as on every page.
+// 5 Nov 2026: a "welcome back" strip for someone who is logged in or has a plan in progress (their last saved
+// scenario, or a way back into the plan), a strip naming where the data and rules come from, and the page's colours
+// kept to the app's pink and indigo family (no grey, green or amber), with pink hovers.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useScenarioStore } from '../stores/scenario.js';
 import { EXAMPLE_PLAN } from '../constants/examplePlan.js';
-import { getRuleset } from '../api/client.js';
+import { getRuleset, listScenarios } from '../api/client.js';
+import { useAuthStore } from '../stores/auth.js';
+import { formatDate } from '../utils/format.js';
 
 const store = useScenarioStore();
 const router = useRouter();
+const auth = useAuthStore();
 
 // Anything entered in the plan this session: loading the example would replace it, so ask first.
 const hasOwnPlan = computed(() => {
@@ -19,7 +25,31 @@ const hasOwnPlan = computed(() => {
     || p.cashSavings != null
     || Boolean(store.choiceA.town || store.choiceB.town);
 });
-const confirming = ref(null); // 'hero' | 'get': which "See an example" asked, so the question shows beside it
+const confirming = ref(null);
+
+// "Welcome back": shown to someone logged in, or with a plan in progress this session. Logged in, it names their
+// most recently saved scenario (newest first by date); anything that can't be loaded is simply left out.
+const firstName = computed(() => {
+  const n = auth.user?.name?.trim();
+  return n ? n.split(/\s+/)[0] : '';
+});
+const lastScenario = ref(null);
+onMounted(async () => {
+  if (!auth.isLoggedIn) return;
+  try {
+    const res = await listScenarios();
+    const list = Array.isArray(res) ? res : (res?.scenarios ?? []);
+    const when = (x) => new Date(x?.updatedAt ?? x?.createdAt ?? 0).getTime() || 0;
+    lastScenario.value = [...list].sort((x, y) => when(y) - when(x))[0] ?? null;
+  } catch {
+    lastScenario.value = null;
+  }
+});
+const lastSavedOn = computed(() => {
+  const d = lastScenario.value?.updatedAt ?? lastScenario.value?.createdAt;
+  return d ? formatDate(d) : '';
+});
+const showWelcome = computed(() => auth.isLoggedIn || hasOwnPlan.value); // 'hero' | 'get': which "See an example" asked, so the question shows beside it
 
 // Fill the plan with a ready-made couple and open their Results; "Change inputs" there makes it their own.
 // If the user has started a plan, ask before replacing it (the confirm button passes force).
@@ -83,7 +113,8 @@ const TILES = [
   { title: 'Subsidy clawback', text: 'Plus and Prime flats return part of their subsidy when you sell.', icon: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5' },
 ];
 
-const TILE_THEMES = ['pink', 'indigo', 'green', 'amber'];
+// Four shades of the app's own two colours (pink and indigo), so the strip stays in the same family as every page.
+const TILE_THEMES = ['pink', 'indigo', 'lilac', 'blush'];
 
 // The moving strip. It scrolls itself a little each frame and loops (the tiles are listed twice, so jumping back by
 // one copy looks seamless). Pointing at it pauses it; the arrows step one tile at a time and pause it; the middle
@@ -134,8 +165,7 @@ function setHover(on) {
 onMounted(() => { frame = requestAnimationFrame(tick); });
 onBeforeUnmount(() => cancelAnimationFrame(frame));
 
-// Home is the one page on a white background (the others keep the mist page so their white cards stand out).
-// The class is added while Home is shown and removed when you leave it; the rule is in the unscoped style below.
+// Every page is white now (_tokens.scss $bg-app); this class is kept only for anything that still targets Home.
 onMounted(() => document.body.classList.add('is-home'));
 onBeforeUnmount(() => document.body.classList.remove('is-home'));
 
@@ -161,6 +191,23 @@ const FAQS = [
 
 <template>
   <div class="home">
+    <!-- Welcome back: logged in, or a plan in progress -->
+    <section v-if="showWelcome" class="home-welcome" aria-label="Welcome back" data-cy="home-welcome">
+      <span class="home-welcome__avatar" aria-hidden="true">{{ (firstName || 'Y').charAt(0).toUpperCase() }}</span>
+      <div class="home-welcome__text">
+        <p class="home-welcome__hi">Welcome back<template v-if="firstName">, {{ firstName }}</template></p>
+        <p class="home-welcome__line">
+          <template v-if="lastScenario">Your last saved scenario is <strong>{{ lastScenario.name || 'unnamed' }}</strong><template v-if="lastSavedOn">, saved {{ lastSavedOn }}</template>.</template>
+          <template v-else-if="hasOwnPlan">Your plan is where you left it.</template>
+          <template v-else>Start a plan, or open one you saved.</template>
+        </p>
+      </div>
+      <div class="home-welcome__actions">
+        <router-link v-if="hasOwnPlan" to="/plan" class="btn btn-primary home-welcome__btn" data-cy="home-welcome-continue">Continue your plan</router-link>
+        <router-link v-if="auth.isLoggedIn" to="/scenarios" class="btn btn-outline-secondary home-welcome__btn" data-cy="home-welcome-scenarios">My scenarios</router-link>
+      </div>
+    </section>
+
     <!-- Hero -->
     <section class="home-hero" aria-labelledby="home-title">
       <div class="home-hero__row">
@@ -196,7 +243,7 @@ const FAQS = [
       </div>
         <svg viewBox="0 0 440 330" class="home-hero__art" data-cy="hero-scene" role="img" aria-label="Illustration: a new BTO block and a resale block, with trees">
           <circle cx="240" cy="160" r="150" style="fill: var(--accent-fill-3)" />
-          <rect x="44" y="110" width="40" height="180" rx="4" style="fill: var(--border)" /><rect x="352" y="80" width="46" height="210" rx="4" style="fill: var(--border)" />
+          <rect x="44" y="110" width="40" height="180" rx="4" style="fill: var(--indigo-tint-strong)" /><rect x="352" y="80" width="46" height="210" rx="4" style="fill: var(--indigo-tint-strong)" />
           <!-- BTO block (left) -->
           <rect x="66" y="152" width="124" height="138" rx="6" style="fill: var(--bg-surface)" /><rect x="58" y="144" width="140" height="11" rx="5.5" style="fill: var(--color-pink-deep)" />
           <rect x="80" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="108" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="136" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="164" y="170" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="80" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="108" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="136" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="164" y="200" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="80" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="108" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="136" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="164" y="230" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="80" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="108" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" /><rect x="136" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-1)" /><rect x="164" y="260" width="20" height="14" rx="3" style="fill: var(--accent-fill-3)" />
@@ -209,7 +256,7 @@ const FAQS = [
           <!-- Ground and road -->
           <path d="M0 282 Q 220 258 440 280 V330 H0 Z" style="fill: var(--accent-fill-2)" />
           <rect x="0" y="300" width="440" height="30" style="fill: var(--bg-surface)" />
-          <path d="M12 316 H412" style="stroke: var(--border)" stroke-width="3" stroke-dasharray="18 14" />
+          <path d="M12 316 H412" style="stroke: var(--accent-fill-3)" stroke-width="3" stroke-dasharray="18 14" />
           <!-- Trees -->
           <path d="M34 296 V240" style="stroke: var(--text-secondary)" stroke-width="3" stroke-linecap="round" /><ellipse cx="34" cy="232" rx="30" ry="24" style="fill: var(--color-pink-deep)" /><ellipse cx="26" cy="224" rx="12" ry="7" style="fill: var(--accent-fill-2)" />
           <path d="M200 296 V258" style="stroke: var(--text-secondary)" stroke-width="3" stroke-linecap="round" /><ellipse cx="200" cy="252" rx="20" ry="16" style="fill: var(--accent-fill-1)" /><ellipse cx="195" cy="247" rx="8" ry="5" style="fill: var(--accent-fill-2)" />
@@ -221,6 +268,22 @@ const FAQS = [
           </g>
         </svg>
     </section>
+
+    <!-- Where the numbers come from: real sources, not testimonials. -->
+    <ul class="home-trust" aria-label="Where the numbers come from" data-cy="home-trust">
+      <li>
+        <span class="home-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" /></svg></span>
+        <span><strong>Resale prices</strong> from HDB's sales on data.gov.sg</span>
+      </li>
+      <li>
+        <span class="home-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" /></svg></span>
+        <span><strong>Maps and distances</strong> from OneMap (SLA)</span>
+      </li>
+      <li>
+        <span class="home-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h6" /></svg></span>
+        <span><strong>HDB and CPF rules</strong>, <router-link to="/sources" class="home-trust__link">dated<template v-if="rulesetDate"> {{ rulesetDate }}</template> and sourced</router-link></span>
+      </li>
+    </ul>
 
     <!-- How it works -->
     <section class="home-section" aria-labelledby="how-title" data-cy="home-steps">
@@ -587,8 +650,8 @@ const FAQS = [
 }
 .home-tile--pink { --tile-bg: var(--accent-tint); --tile-well: var(--accent-fill-2); --tile-ink: var(--color-berry); }
 .home-tile--indigo { --tile-bg: var(--indigo-tint); --tile-well: var(--indigo-tint-strong); --tile-ink: var(--indigo); }
-.home-tile--green { --tile-bg: color-mix(in srgb, var(--success-fill) 45%, var(--bg-surface)); --tile-well: var(--success-fill); --tile-ink: var(--success); }
-.home-tile--amber { --tile-bg: color-mix(in srgb, var(--warning-fill) 45%, var(--bg-surface)); --tile-well: var(--warning-fill); --tile-ink: var(--warning); }
+.home-tile--lilac { --tile-bg: color-mix(in srgb, var(--accent-fill-3) 55%, var(--bg-surface)); --tile-well: var(--accent-fill-3); --tile-ink: var(--indigo); }
+.home-tile--blush { --tile-bg: color-mix(in srgb, var(--accent-fill-2) 40%, var(--bg-surface)); --tile-well: var(--accent-fill-2); --tile-ink: var(--color-berry); }
 .home-tile__icon { width: 48px; height: 48px; margin-bottom: var(--space-2); border-radius: 14px; background: var(--tile-well); display: grid; place-items: center; }
 .home-tile__icon svg { width: 24px; height: 24px; fill: none; stroke: var(--tile-ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .home-tile__title { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; color: var(--tile-ink); }
@@ -620,11 +683,33 @@ const FAQS = [
 .home-faq p { margin: var(--space-3) 0 0; color: var(--text-secondary); line-height: 1.6; max-width: 72ch; }
 .home-faq summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; border-radius: 8px; }
 
+/* ---- welcome back ---- */
+.home-welcome { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); padding: var(--space-4) var(--space-5); border: 1px solid var(--accent-fill-2); border-radius: var(--radius-lg); background: linear-gradient(100deg, var(--accent-tint), var(--indigo-tint)); animation: home-welcome-in 0.5s var(--ease-out) both; }
+.home-welcome__avatar { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--bg-surface); color: var(--color-berry); font-family: var(--font-heading); font-size: 1.375rem; font-weight: 700; box-shadow: 0 4px 14px rgba(240, 138, 182, 0.25); }
+.home-welcome__text { flex: 1 1 280px; min-width: 0; }
+.home-welcome__hi { margin: 0; font-family: var(--font-heading); font-size: clamp(1.25rem, 2vw, 1.5rem); font-weight: 600; letter-spacing: -0.02em; }
+.home-welcome__line { margin: 2px 0 0; color: var(--text-secondary); }
+.home-welcome__line strong { color: var(--text-primary); }
+.home-welcome__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.home-welcome__btn { min-height: 44px; display: inline-flex; align-items: center; }
+.home-welcome .btn-outline-secondary { background: var(--bg-surface); }
+.home-welcome .btn-outline-secondary:hover { background: var(--accent-tint); border-color: var(--accent-fill-1); color: var(--color-berry); }
+@keyframes home-welcome-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+/* ---- where the numbers come from ---- */
+.home-trust { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3) var(--space-6); margin: calc(var(--space-8) * -1) 0 0; padding: 0; list-style: none; font-size: 0.9375rem; color: var(--text-secondary); }
+.home-trust li { display: flex; align-items: center; gap: var(--space-2); }
+.home-trust strong { color: var(--text-primary); font-weight: 600; }
+.home-trust__icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--accent-tint); color: var(--color-berry); }
+.home-trust__icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.home-trust__link { color: inherit; text-underline-offset: 3px; transition: color 0.15s ease; }
+.home-trust__link:hover { color: var(--color-berry); }
+
 /* ---- closing call to action ---- */
 .home-cta { position: relative; overflow: hidden; background: var(--text-primary); color: var(--bg-surface); border-radius: var(--radius-lg); padding: clamp(28px, 4vw, 48px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-5); }
 .home-cta__art { position: absolute; right: -10px; bottom: 0; width: min(440px, 50%); height: auto; opacity: 0.9; }
 .home-cta__copy { position: relative; display: flex; flex-direction: column; gap: var(--space-2); max-width: 560px; }
-.home-cta__sub { color: var(--border); line-height: 1.6; }
+.home-cta__sub { color: rgba(255, 255, 255, 0.78); line-height: 1.6; }
 .home-btn--light { position: relative; background: var(--bg-surface); color: var(--text-primary); }
 .home-btn--light:hover { background: var(--accent-fill-3); color: var(--text-primary); }
 .home-lit { animation: home-lit 12s ease-in-out infinite alternate; }
@@ -661,7 +746,7 @@ const FAQS = [
 .home-btn--ghost:hover { border-color: var(--accent-fill-1); }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-pulse, .home-lit { animation: none; }
+  .home-pulse, .home-lit, .home-welcome { animation: none; }
   .home-hero, .home-hero::before { transition: none; }
   .home-hero:hover { translate: none; }
   .home-tile:hover, .home-feat:hover { translate: none; }
@@ -674,8 +759,7 @@ const FAQS = [
 </style>
 
 <style>
-/* Home only: the page behind Home is white (body gets .is-home while Home is mounted, see the script).
-   The sticky navbar reads --nav-surface, so its bar matches the white page here and the mist page elsewhere. */
+/* Home: white like every page now (_tokens.scss); kept so nothing that targets body.is-home changes. */
 body.is-home {
   background-color: var(--bg-surface);
   --nav-surface: color-mix(in srgb, var(--bg-surface) 92%, transparent);
