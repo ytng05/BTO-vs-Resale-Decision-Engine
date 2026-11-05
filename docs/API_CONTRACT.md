@@ -225,7 +225,7 @@ Errors: `400 VALIDATION_ERROR`; `503 RULESET_UNAVAILABLE` (no BSD tiers in the r
 
 Passwords are hashed with bcryptjs; the plain password is never stored. Tokens are JWTs (HS256, signed with `JWT_SECRET`), valid for 7 days.
 Routes marked "auth required" need the header `Authorization: Bearer <token>`. Without a valid token they return `401 UNAUTHORIZED`.
-Client: `client/src/stores/auth.js` (seat 4) persists `{ token, user }` to `localStorage` under `hdb-app:auth`; `client/src/api/client.js` attaches the token to every request.
+Client: `client/src/stores/auth.js` (seat 4) persists `{ token, user }` to `localStorage` under `hdb-app:auth`; `client/src/api/client.js` attaches the token to every request. The plan in progress is kept apart from it, in `sessionStorage` under `hdb-app:plan` (`client/src/stores/planStorage.js`: the inputs only, with a version), and is cleared on logout and when a new plan starts.
 
 ### POST /api/auth/register
 Request: `{ name, email, password }`. `name` 1 to 100 characters (trimmed). Email is trimmed and lowercased. Password: 8 to 72 characters (bcrypt ignores anything past 72 bytes).
