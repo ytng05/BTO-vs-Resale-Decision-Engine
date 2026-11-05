@@ -1,4 +1,6 @@
-// Dashboard (version E): the summary at the top, and the detail sections under "More detail", all closed at first.
+// Dashboard layout: the answer as a compact card tinted in the leading path's colour, the scenario chips,
+// "At a glance" tiles, how each purchase is paid, how each net position adds up, and "Explore the detail" pop-ups.
+// (Why one path is ahead, the cash check and the heatmap are on Results: results-verdict.cy.js, results.cy.js.)
 // Mock data; same setup as dashboard.cy.js (`VITE_USE_MOCK=true npm run build`, `npm start`, `npm run test:e2e`).
 import { completePlan } from './helpers/plan.js';
 
@@ -10,51 +12,53 @@ function openDashboard() {
 }
 
 describe('dashboard sections', () => {
-  it('leads with the verdict, the cash card, side by side and how each purchase is paid; every section closed', () => {
+  it('leads with the answer, the tiles, how each purchase is paid and the What-if panel; no pop-up open', () => {
     openDashboard();
-    ['dashboard-verdict', 'dashboard-cash-card', 'dashboard-side-by-side', 'dashboard-paid', 'dashboard-whatif'].forEach((hook) => {
+    // Why one path is ahead and whether savings cover the cash are on Results now, not repeated here.
+    cy.get('[data-cy=dashboard-why-toggle]').should('not.exist');
+    cy.get('[data-cy=dashboard-cash-card]').should('not.exist');
+    ['dashboard-verdict', 'dashboard-side-by-side', 'dashboard-paid', 'dashboard-section-cashflow', 'dashboard-whatif'].forEach((hook) => {
       // Scroll first: the What-if panel is sticky, which Cypress treats like position: fixed and calls "not visible"
       // while it starts below the fold of the 1280x720 test window.
       cy.get(`[data-cy=${hook}]`).scrollIntoView().should('be.visible');
     });
-    cy.get('[data-cy=dashboard-more-detail]').should('not.have.attr', 'open');
-    ['overview', 'cashflow', 'grants', 'costs', 'rpi', 'map', 'size'].forEach((key) => {
-      cy.get(`[data-cy=dashboard-section-${key}]`).should('not.have.attr', 'open');
+    cy.get('[role=dialog]').should('not.exist');
+  });
+
+  it('opens a detail in a pop-up and closes it with the close button, Escape or a click outside', () => {
+    openDashboard();
+    // Close button: focus starts on it, and goes back to the card that opened the pop-up.
+    cy.get('[data-cy=dashboard-explore-costs]').click({ scrollBehavior: 'center' });
+    cy.get('[data-cy=dashboard-section-costs]').should('be.visible').and('have.attr', 'aria-modal', 'true');
+    cy.get('[data-cy=dashboard-costs], [data-cy=dashboard-costs-empty]').should('exist');
+    cy.focused().should('have.attr', 'data-cy', 'dashboard-modal-close');
+    // The page behind can't be reached with Tab while the pop-up is open.
+    // Nor can the skip link, navbar or footer, which sit outside the page.
+    cy.get('[data-cy=dashboard-page], [data-cy=skip-link], [data-cy=nav-bar], [data-cy=site-footer]').should('have.length', 4).each(($el) => {
+      cy.wrap($el).should('have.attr', 'inert');
     });
-  });
-
-  it('opens and closes a section from its header', () => {
-    openDashboard();
-    cy.get('[data-cy=dashboard-more-detail] > summary').click();
-    cy.get('[data-cy=dashboard-section-costs] summary').click();
-    cy.get('[data-cy=dashboard-section-costs]').should('have.attr', 'open');
-    cy.get('[data-cy=dashboard-costs]').should('be.visible');
-    cy.get('[data-cy=dashboard-section-costs] summary').click();
-    cy.get('[data-cy=dashboard-section-costs]').should('not.have.attr', 'open');
-  });
-
-  it('expands and collapses every section at once', () => {
-    openDashboard();
-    cy.get('[data-cy=dashboard-more-detail] > summary').click();
-    cy.get('[data-cy=dashboard-sections-toggle]').should('contain', 'Expand all').click();
-    ['overview', 'cashflow', 'grants', 'costs', 'rpi', 'map', 'size'].forEach((key) => {
-      cy.get(`[data-cy=dashboard-section-${key}]`).should('have.attr', 'open');
+    cy.get('[data-cy=dashboard-modal-close]').click();
+    cy.get('[role=dialog]').should('not.exist');
+    cy.get('[data-cy=dashboard-page], [data-cy=skip-link], [data-cy=nav-bar], [data-cy=site-footer]').each(($el) => {
+      cy.wrap($el).should('not.have.attr', 'inert');
     });
-    cy.get('[data-cy=dashboard-sections-toggle]').should('contain', 'Collapse all').click();
-    cy.get('[data-cy=dashboard-section-cashflow]').should('not.have.attr', 'open');
+    cy.focused().should('have.attr', 'data-cy', 'dashboard-explore-costs');
+    // Escape
+    cy.get('[data-cy=dashboard-explore-rpi]').click({ scrollBehavior: 'center' });
+    cy.get('[data-cy=dashboard-section-rpi]').should('be.visible');
+    cy.get('body').type('{esc}');
+    cy.get('[role=dialog]').should('not.exist');
+    // Click on the dark backdrop, outside the box
+    cy.get('[data-cy=dashboard-explore-size]').click({ scrollBehavior: 'center' });
+    cy.get('[data-cy=dashboard-section-size]').should('be.visible');
+    cy.get('[data-cy=dashboard-modal]').click('topLeft');
+    cy.get('[role=dialog]').should('not.exist');
   });
 
-  it('says in each side-by-side row which path it favours, never on grants (D1)', () => {
+  it('says in each tile which path it favours, never on grants (D1)', () => {
     openDashboard();
-    cy.get('[data-cy=dashboard-sbs-net]').invoke('text').should('match', /(BTO|Resale) ahead by S\$[\d,]+|About the same/);
-    cy.get('[data-cy=dashboard-sbs-grants] .dash-chip--bto, [data-cy=dashboard-sbs-grants] .dash-chip--resale').should('not.exist');
-  });
-
-  it('opens why the leading path is ahead, from the gap breakdown', () => {
-    openDashboard();
-    cy.get('[data-cy=dashboard-why-toggle]').should('have.attr', 'aria-expanded', 'false').click();
-    cy.get('[data-cy=dashboard-why]').should('be.visible').and('contain', 'Total gap');
-    cy.get('[data-cy=dashboard-why] [data-cy^=dashboard-driver-]').should('have.length', 3);
+    cy.get('[data-cy^=dashboard-sbs-]').should('have.length', 4);
+    cy.get('[data-cy=dashboard-glance-winner-grants]').should('not.have.class', 'is-bto').and('not.have.class', 'is-resale');
   });
 
   it('shows how each purchase is paid, down to the cash needed', () => {
@@ -77,27 +81,59 @@ describe('dashboard sections', () => {
 
   it('moves flat price growth with the quick picks and resets it to your input', () => {
     openDashboard();
-    cy.get('[data-cy=whatif-price-growth-preset-5]').click().should('have.attr', 'aria-pressed', 'true');
+    cy.get('[data-cy=whatif-price-growth-preset-5]').click({ scrollBehavior: 'center' }).should('have.attr', 'aria-pressed', 'true');
     cy.get('[data-cy=whatif-price-growth-value]').should('contain', '5% / yr');
-    cy.get('[data-cy=whatif-price-growth-reset]').click();
+    cy.get('[data-cy=whatif-price-growth-reset]').click({ scrollBehavior: 'center' });
     cy.get('[data-cy=whatif-price-growth-value]').should('contain', '3% / yr');
     cy.get('[data-cy=whatif-price-growth-reset]').should('not.exist');
+  });
+
+  it('applies a quick scenario chip in one click, and Reset goes back to the plan', () => {
+    openDashboard();
+    cy.get('[data-cy=whatif-preset-flat]').click({ scrollBehavior: 'center' }).should('have.attr', 'aria-pressed', 'true');
+    cy.get('[data-cy=whatif-price-growth-value]').should('contain', '0% / yr');
+    cy.get('[data-cy=dashboard-updating]', { timeout: 10000 }).should('not.exist');
+    cy.get('[data-cy=dashboard-since-inputs]').should('contain', 'Since your inputs');
+    cy.get('[data-cy=dashboard-whatif-reset]').click({ scrollBehavior: 'center' });
+    cy.get('[data-cy=whatif-preset-flat]').should('have.attr', 'aria-pressed', 'false');
+    cy.get('[data-cy=whatif-price-growth-value]').should('contain', '3% / yr');
   });
 
   it('steps the application and comparison years one at a time', () => {
     openDashboard();
     cy.get('[data-cy=whatif-year-value]').invoke('text').then((year) => {
-      cy.get('[data-cy=whatif-year-plus]').click();
+      cy.get('[data-cy=whatif-year-plus]').click({ scrollBehavior: 'center' });
       cy.get('[data-cy=whatif-year-value]').should('have.text', String(Number(year) + 1));
     });
   });
 
-  it('the overview grants link opens the grants section', () => {
+  it('tints the answer card in the leading path\'s colour, and scrolls with the page', () => {
     openDashboard();
-    cy.get('[data-cy=dashboard-more-detail] > summary').click();
-    cy.get('[data-cy=dashboard-section-overview] summary').click();
-    cy.get('[data-cy=dashboard-grants-jump]').click();
-    cy.get('[data-cy=dashboard-section-grants]').should('have.attr', 'open');
-    cy.get('[data-cy=dashboard-section-grants-heading]').should('be.visible');
+    cy.get('[data-cy=dashboard-verdict]').should('not.have.css', 'position', 'sticky');
+    cy.get('[data-cy=dashboard-headline]').invoke('text').then((h) => {
+      const tone = /^BTO leaves/.test(h) ? 'bto' : /^Resale leaves/.test(h) ? 'resale' : 'none';
+      cy.get('[data-cy=dashboard-verdict]').should('have.class', `dash-verdict-bar--${tone}`);
+    });
+  });
+
+  it('undoes a quick scenario when its chip is clicked again, and says what it is trying', () => {
+    openDashboard();
+    cy.get('[data-cy=whatif-presets-status]').should('contain', 'Click it again to undo');
+    cy.get('[data-cy=whatif-preset-boom]').click({ scrollBehavior: 'center' }).should('have.attr', 'aria-pressed', 'true');
+    cy.get('[data-cy=whatif-presets-status]').should('contain', 'Trying flat prices +5% a year');
+    cy.get('[data-cy=whatif-price-growth-value]').should('contain', '5% / yr');
+    cy.get('[data-cy=whatif-preset-boom]').click({ scrollBehavior: 'center' }).should('have.attr', 'aria-pressed', 'false');
+    cy.get('[data-cy=whatif-price-growth-value]').should('contain', '3% / yr');
+    cy.get('[data-cy=whatif-presets-status]').should('contain', 'Click it again to undo');
+  });
+
+  it('adds the grant checks and every cost to the page only while it prints (the pop-ups do not print)', () => {
+    openDashboard();
+    cy.get('[data-cy=dashboard-costs]').should('not.exist');
+    cy.window().trigger('beforeprint');
+    cy.get('[data-cy=dashboard-main] [data-cy=dashboard-costs]').should('exist');
+    cy.get('[data-cy=dashboard-main] [data-cy=dashboard-grants]').should('exist');
+    cy.window().trigger('afterprint');
+    cy.get('[data-cy=dashboard-costs]').should('not.exist');
   });
 });

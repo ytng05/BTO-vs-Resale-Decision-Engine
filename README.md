@@ -18,8 +18,10 @@ The live app is on a free plan: if it has been idle, the first visit can take ab
 
 ## Scope
 - HDB BTO (Standard / Plus / Prime) versus HDB resale. Executive Condominiums are out of scope.
-- Built: (1) break-even comparison of the two paths, with the heatmap and the financial dashboard, (2) optimal timing search,
-  plus saved scenarios, side-by-side comparison of two saved scenarios, and the Sources page.
+- Built: a break-even comparison of the two paths with the heatmap and the financial dashboard; the timing optimiser
+  (best year to apply); a four-step plan and a check-your-answers page; plain-English results with each grant's reason
+  and official source; saved scenarios that update in place, with a side-by-side comparison of two of them; optional
+  accounts (planning works without one); and the Sources page with its glossary.
 - Future work, behind feature flags that are off: a ranked strategy recommendation over the full space (dropped after the
   prof's feedback; `FEATURE_STRATEGY_SEARCH`) and a historical backtest, or "risk-based verdict" (`FEATURE_BACKTEST`).
 
@@ -138,7 +140,7 @@ Test cases, by spec file in `cypress/e2e/`:
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, topic chips, search, safe https source links, assumptions and datasets |
 | `responsive.cy.js` | every page at 375 / 768 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
 | `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |
-| `plan-navigation.cy.js` | Change and Edit from the check-your-answers page open the right screen, go back to the results, and check the screen first; the stepper moves back freely and forward only from a valid screen |
+| `plan-navigation.cy.js` | moving between plan steps: Change opens the right About you screen and returns to the results, the screen is checked first, the stepper links to the steps reached so far, and it cannot jump forward from a screen with a problem |
 
 
 Demo user journeys (five households, one per presenter) live in `cypress/journeys/` and run against a **live**
@@ -157,7 +159,7 @@ Use the demo account on the live site, or register your own (any email; no verif
 It already has one saved scenario under **My scenarios**. Demo data only; it holds nothing personal.
 
 ## Deployment
-**Live app: https://bto-vs-resale-decision-engine.onrender.com** (first page: `/`, the home page)
+**Live app: https://bto-vs-resale-decision-engine.onrender.com/** (first page: `/`, the home page)
 
 Hosted on Render (free web service) with MongoDB Atlas. One Express server serves both the API (`/api/*`)
 and the built Vue app, so there is one URL.
@@ -193,8 +195,9 @@ wait, and prints a `[warm] ... data as of ...` line per town (the visible daily 
 ## Known limitations
 - **Refreshing loses an unsaved plan.** The plan is kept in memory until it is saved, so refreshing Results or the Dashboard
   shows "No plan to show yet". Log in and save a scenario to keep it; My scenarios opens it again.
-- **Short leases and the Enhanced Housing Grant.** HDB pro-rates this grant when the lease does not cover the youngest buyer to
-  age 95. The app does not apply that formula yet: it keeps the full amount and warns that the real grant may be lower.
+- **Short leases and grants.** HDB pro-rates the Enhanced CPF Housing Grant, the Family Grant and the Proximity Housing Grant
+  when the remaining lease does not cover the youngest buyer to age 95. The app does not apply that formula yet: it keeps the
+  full amount, and Sources notes that the real grants may be lower.
 
 ## Rulesets and rule volatility
 All policy rules live in `server/src/config/rulesets/`, versioned and date-stamped. Rules moved in Aug 2024, Oct 2024,

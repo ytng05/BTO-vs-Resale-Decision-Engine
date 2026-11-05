@@ -383,7 +383,7 @@ const LIVING = [
       <!-- The listing's asking price, optional (D39) -->
       <div class="pf__field">
         <label :for="`${prefix}-asking-price`" class="pf__label">Asking price <span class="pf__optional">(optional)</span></label>
-        <div class="pf__box" :class="{ 'pf__box--invalid': err('resalePrice') }">
+        <div class="pf__box" :class="{ 'pf__box--invalid': err('resalePrice') }" :data-cy="`${prefix}-asking-price-box`">
           <span class="pf__unit" aria-hidden="true">S$</span>
           <NumberField
             :id="`${prefix}-asking-price`"

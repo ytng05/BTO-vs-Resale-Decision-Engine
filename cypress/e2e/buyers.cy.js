@@ -63,7 +63,7 @@ describe('buyers on the About you step', () => {
     onScreen('incomes'); // moved on
   });
 
-  it('"Who is buying?": radio buttons, a Yes / No switch, a "Why we ask" tooltip and no illustration', () => {
+  it('"Who is buying?": radio buttons, a Yes / No switch, a "Why we ask" show/hide button and no illustration', () => {
     fillAges();
     next();
     onScreen('buyers');
@@ -86,10 +86,10 @@ describe('buyers on the About you step', () => {
     cy.get('[data-cy=situation-buyer-1-first-timer-switch]')
       .should('be.checked').and('have.attr', 'role', 'switch')
       .invoke('attr', 'aria-labelledby').then((id) => cy.get(`#${id}`).should('have.text', 'First-timer'));
-    cy.get('[data-cy=situation-buyer-1] .switch__state').should('have.text', 'Yes');
-    cy.get('[data-cy=situation-buyer-1] .switch').click();
+    cy.get('[data-cy=situation-buyer-1-first-timer-state]').should('have.text', 'Yes');
+    cy.get('[data-cy=situation-buyer-1-first-timer-control]').click();
     cy.get('[data-cy=situation-buyer-1-first-timer-switch]').should('not.be.checked');
-    cy.get('[data-cy=situation-buyer-1] .switch__state').should('have.text', 'No');
+    cy.get('[data-cy=situation-buyer-1-first-timer-state]').should('have.text', 'No');
     // Why we ask: a click opens it in the page (Next moves down, never covered), a second click closes it, Esc too.
     cy.get('[data-cy=about-why-tip]').should('not.be.visible');
     cy.get('[data-cy=about-why]').should('have.attr', 'aria-expanded', 'false').click();
@@ -101,19 +101,23 @@ describe('buyers on the About you step', () => {
     cy.get('[data-cy=about-why-tip]').should('not.be.visible'); // Esc closes it too
   });
 
-  it('"Who is buying?" stacks on a 390px phone with no sideways scrolling, "Singapore Citizen" on one line', () => {
-    cy.viewport(390, 844);
-    fillAges();
-    next();
-    cy.document().then((doc) => expect(doc.documentElement.scrollWidth).to.be.at.most(doc.documentElement.clientWidth));
-    cy.get('[data-cy=situation-buyer-1]').then(($you) => {
-      cy.get('[data-cy=situation-buyer-2]').should(($partner) => {
-        expect($partner[0].getBoundingClientRect().top).to.be.greaterThan($you[0].getBoundingClientRect().bottom - 1);
+  [320, 390].forEach((width) => {
+    it(`"Who is buying?" at ${width}px: stacks, no sideways scrolling, "Singapore Citizen" stays inside its button`, () => {
+      cy.viewport(width, 844);
+      fillAges();
+      next();
+      cy.document().then((doc) => expect(doc.documentElement.scrollWidth).to.be.at.most(doc.documentElement.clientWidth));
+      cy.get('[data-cy=situation-buyer-1]').then(($you) => {
+        cy.get('[data-cy=situation-buyer-2]').should(($partner) => {
+          expect($partner[0].getBoundingClientRect().top).to.be.greaterThan($you[0].getBoundingClientRect().bottom - 1);
+        });
       });
-    });
-    cy.get('[data-cy=situation-buyer-1-citizenship-SC-face]').should(($face) => {
-      expect($face[0].scrollWidth).to.be.at.most($face[0].clientWidth + 1);
-      expect($face.height()).to.be.lessThan(60); // one line
+      // On small phones the label may wrap onto two lines, but the text never spills out of the button, either side
+      // or below.
+      cy.get('[data-cy=situation-buyer-1-citizenship-SC-face]').should(($face) => {
+        expect($face[0].scrollWidth).to.be.at.most($face[0].clientWidth + 1);
+        expect($face[0].scrollHeight).to.be.at.most($face[0].clientHeight + 1);
+      });
     });
   });
 
@@ -134,7 +138,7 @@ describe('buyers on the About you step', () => {
   it('uses one box size across the plan on a phone: About you, Your BTO and the resale flat', () => {
     cy.viewport(375, 667);
     const is56 = ($el) => expect($el[0].getBoundingClientRect().height).to.equal(56);
-    cy.get('[data-cy=situation-buyer-1-age-input]').closest('.big-box').should(is56);
+    cy.get('[data-cy=situation-buyer-1-age-box]').should(is56);
     cy.get('[data-cy=situation-buyer-1-age-input]').should('have.css', 'font-size', '19px');
     fillSituation();
     next();
@@ -142,7 +146,7 @@ describe('buyers on the About you step', () => {
     fillPath('patha');
     next();
     cy.get('[data-cy=pathb-town-select]').should(is56);
-    cy.get('[data-cy=pathb-asking-price-input]').closest('.pf__box').should(is56);
+    cy.get('[data-cy=pathb-asking-price-box]').should(is56);
     cy.get('[data-cy=pathb-asking-price-input]').should('have.css', 'font-size', '19px');
   });
 

@@ -186,8 +186,8 @@ async function showWhy() {
 /* Each card is outlined in its path's colour, BTO indigo and resale pink (as the verdict, bars and Dashboard); the
    path ahead is said in words by its "Ahead" tag. On hover the outline thickens and the shadow deepens, in place, so
    the two cards' tops always line up (the shared .card hover swapped the shadow, which made the outline flash). */
-.path { --path-ring: var(--accent-deep); border-color: var(--path-ring); border-top: 6px solid var(--path-ring); box-shadow: 0 0 0 1px var(--path-ring), var(--shadow-sm); transition: box-shadow var(--duration-base) var(--ease-out); }
-.path--resale { --path-ring: var(--accent-fill-1); }
+.path { --path-ring: var(--path-bto); border-color: var(--path-ring); border-top: 6px solid var(--path-ring); box-shadow: 0 0 0 1px var(--path-ring), var(--shadow-sm); transition: box-shadow var(--duration-base) var(--ease-out); }
+.path--resale { --path-ring: var(--path-resale-bar); }
 .path:hover, .path:focus-within { box-shadow: 0 0 0 2px var(--path-ring), var(--shadow-lg); }
 .path.compare-card--winner { border-color: var(--path-ring); box-shadow: 0 0 0 1px var(--path-ring), var(--shadow-sm); }
 .path.compare-card--winner:hover, .path.compare-card--winner:focus-within { box-shadow: 0 0 0 2px var(--path-ring), var(--shadow-lg); }
@@ -199,7 +199,7 @@ async function showWhy() {
   font-family: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
-  background: var(--accent-deep);
+  background: var(--path-bto);
   color: var(--on-primary);
 }
 .path--resale .path__pill { background: var(--accent-fill-2); color: var(--text-primary); }

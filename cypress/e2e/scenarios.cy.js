@@ -42,7 +42,7 @@ describe('saved scenarios', () => {
     cy.get('[data-cy=results-save-name-input]').should('have.value', 'Tampines BTO vs Bedok resale');
     cy.get('[data-cy=results-save-name-input]').clear();
     cy.get('[data-cy=results-save-submit]').click();
-    cy.get('[data-cy=results-save-form] .invalid-feedback').should('contain', 'Enter a name');
+    cy.get('[data-cy=results-save-name-error]').should('contain', 'Enter a name');
     cy.get('[data-cy=results-save-name-input]').type('E2E scenario');
     cy.get('[data-cy=results-save-submit]').click();
     cy.get('[data-cy=results-save-success]').should('contain', 'E2E scenario');
@@ -58,7 +58,7 @@ describe('saved scenarios', () => {
     // Open refills the plan and recalculates.
     cy.get('[data-cy=scenarios-open-button]').click();
     cy.location('pathname').should('eq', '/results');
-    cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
+    cy.get('[data-cy=results-confidence-headline]').should('be.visible');
     cy.get('[data-cy=results-edit-button]').click();
     cy.get('[data-cy=plan-step-4-panel]').should('be.visible');
     cy.get('[data-cy=pathb-town-select]').should('have.value', 'BEDOK');
