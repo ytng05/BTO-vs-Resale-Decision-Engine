@@ -1,18 +1,17 @@
 <script setup>
 // Cost lines for both paths side by side, from outcome.costBreakdown in the contract:
 // [{ id, label, amountCents, paidFrom: 'CASH' | 'CPF' | 'NONE' }]. Ids include BSD, LEGAL, AGENT,
-// RENOVATION, RENT_WHILE_WAITING, LOAN_INTEREST and CPF_ACCRUED_INTEREST.
+// RENOVATION, RENT_WHILE_WAITING, LOAN_INTEREST, CPF_ACCRUED_INTEREST and CLAWBACK.
 // A line one path doesn't have shows "—". The biggest cost (in the first result) is listed first. Stacks on phones like the grants table (.dash-grants).
 import { computed, ref, watch } from 'vue';
 import { formatMoney } from '../../utils/format.js';
-import { largestFirst } from '../../utils/dashboardFormat.js';
+import { largestFirst, paidFromLabel } from '../../utils/dashboardFormat.js';
 
 const props = defineProps({
   outcomeA: { type: Object, required: true },
   outcomeB: { type: Object, required: true },
 });
 
-const PAID_FROM = { CASH: 'paid from cash', CPF: 'paid from CPF', NONE: 'owed back later' };
 const dollars = (cents) => (typeof cents === 'number' ? cents / 100 : null);
 
 const unsorted = computed(() => {
@@ -21,7 +20,7 @@ const unsorted = computed(() => {
   const ids = [...new Set([...linesA, ...linesB].map((l) => l.id))];
   const cell = (lines, id) => {
     const l = lines.find((x) => x.id === id);
-    return l ? { amount: dollars(l.amountCents), paidFrom: PAID_FROM[l.paidFrom] ?? '' } : null;
+    return l ? { amount: dollars(l.amountCents), paidFrom: paidFromLabel(l) } : null;
   };
   return ids.map((id) => ({
     id,
@@ -56,10 +55,10 @@ const rows = computed(() => {
       <tr v-for="row in rows" :key="row.id" :data-cy="`dashboard-cost-${row.id.toLowerCase()}`">
         <th scope="row" class="fw-semibold">{{ row.label }}</th>
         <td v-for="(c, i) in [row.a, row.b]" :key="i" :data-label="i === 0 ? 'BTO' : 'Resale'">
-          <template v-if="c">
+          <div v-if="c" class="cost-cell">
             <span class="text-numeric">{{ formatMoney(c.amount) }}</span>
             <span v-if="c.paidFrom" class="cost-chip">{{ c.paidFrom }}</span>
-          </template>
+          </div>
           <span v-else class="text-secondary">—</span>
         </td>
       </tr>
@@ -68,13 +67,23 @@ const rows = computed(() => {
 </template>
 
 <style scoped>
+/* Flex + gap spaces the amount and chip evenly, horizontally and when the chip wraps onto its own line. */
+.cost-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.25rem;
+}
+
 .cost-chip {
   display: inline-block;
-  margin-top: 0.25rem;
+  margin: 0;
   padding: 0.0625rem 0.5rem;
   border-radius: var(--radius-pill);
   background: var(--accent-fill-3);
   color: var(--text-primary);
   font-size: 0.75rem;
+  white-space: nowrap;
 }
 </style>

@@ -1176,15 +1176,8 @@ onMounted(async () => {
   }
 }
 
-:global(html) {
-  scroll-behavior: smooth;
-}
 
 @media (prefers-reduced-motion: reduce) {
-  :global(html) {
-    scroll-behavior: auto;
-  }
-
   .sources-assumption-card,
   .sources-assumption-card:hover,
   .sources-assumption-card:focus-within,

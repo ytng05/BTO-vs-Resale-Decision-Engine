@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cashCover, costsTakeaway, grantsTakeaway, largestFirst, monthYear, totalCpfOa } from '../src/utils/dashboardFormat.js';
+import { cashCover, costsTakeaway, grantsTakeaway, largestFirst, monthYear, paidFromLabel, totalCpfOa } from '../src/utils/dashboardFormat.js';
 
 describe('monthYear', () => {
   it('turns an ISO date into "May 2035"', () => {
@@ -74,5 +74,21 @@ describe('costsTakeaway', () => {
   });
   it('copes with no breakdown', () => {
     expect(costsTakeaway({}, {})).toBe('No cost breakdown in this result');
+  });
+});
+
+describe('paidFromLabel', () => {
+  it('says where cash and CPF lines are paid from', () => {
+    expect(paidFromLabel({ id: 'BSD', paidFrom: 'CASH' })).toBe('Paid from cash');
+    expect(paidFromLabel({ id: 'LOAN_INTEREST', paidFrom: 'CPF' })).toBe('Paid from CPF');
+  });
+  it('tells the two not-paid-now lines apart: the clawback goes to HDB, not back to your CPF', () => {
+    expect(paidFromLabel({ id: 'CPF_ACCRUED_INTEREST', paidFrom: 'NONE' })).toBe('Goes back to your CPF');
+    expect(paidFromLabel({ id: 'CLAWBACK', paidFrom: 'NONE' })).toBe('Paid to HDB when you sell');
+    expect(paidFromLabel({ id: 'SOMETHING_NEW', paidFrom: 'NONE' })).toBe('Owed back later');
+  });
+  it('shows nothing for an unknown source', () => {
+    expect(paidFromLabel({ id: 'BSD' })).toBe('');
+    expect(paidFromLabel(undefined)).toBe('');
   });
 });

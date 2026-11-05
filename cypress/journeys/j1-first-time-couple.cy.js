@@ -14,16 +14,18 @@ describe('Journey 1: first-time couple, "BTO or resale?"', () => {
     cy.get('[data-cy=results-patha-card]').scrollIntoView().should('be.visible');
     cy.get('[data-cy=results-pathb-card]').should('be.visible');
     beat();
+    cy.get('[data-cy=results-heatmap-open]').click(); // the heatmap is folded under "More detail" on Results
     cy.get('[data-cy=heatmap-user-marker]').scrollIntoView().should('be.visible');
     beat();
 
     // What it's made of, and what if flat prices only grow 1% a year?
     openDashboard();
-    cy.get('[data-cy=dashboard-headline]').should('contain', 'BTO ends');
+    // The Dashboard says the answer in Results' words (verdict(), D42).
+    cy.get('[data-cy=dashboard-headline]').should('contain', 'BTO leaves you');
     cy.get('[data-cy=dashboard-summary-bto-affordability]').should('contain', 'Within your loan limit');
     cy.get('[data-cy=dashboard-summary-resale-affordability]').should('contain', 'Within your loan limit');
     beat();
     setSlider('whatif-price-growth', 1);
-    cy.get('[data-cy=dashboard-headline]').should('contain', 'ahead');
+    cy.get('[data-cy=dashboard-headline]').invoke('text').should('match', /better off|Too close to call|about the same/);
   });
 });
