@@ -59,6 +59,8 @@ Jurong East, 4-room, 80 to 89 years, **live near my parents**.
 | What-if | Rent while waiting to S$0 (living with parents until keys): BTO ends about S$37,000 ahead instead. |
 | Sources | Every rule with its official source and the ruleset date. |
 
+Figures to re-check against the live site after pinning Teban Heights (Nov 2026).
+
 ## 3. Move-in deadline: "When should we apply?"
 
 **Plan:** two Singapore Citizens, ages 28 and 29; S$3,600 and S$3,400 a month; CPF OA S$70,000 and S$60,000; cash

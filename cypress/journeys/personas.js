@@ -22,7 +22,9 @@ export const J1 = {
 export const J2 = {
   wishes: ['parents'],
   buyers: [sc(31, 3300, 75000), sc(32, 3000, 65000)], cash: 80000,
-  pathA: bto('JURONG EAST'), pathB: resale('JURONG EAST', '80-89', 'NEAR'),
+  // Pinned: the live data can list a newer Jurong East launch with a shorter wait; the journey needs
+  // Teban Heights' 4-year wait (docs/JOURNEYS.md).
+  pathA: bto('JURONG EAST', 'teban-heights'), pathB: resale('JURONG EAST', '80-89', 'NEAR'),
 };
 
 // 3. Must move in by 2032: the timing panel ranks application years and skips any whose keys come too late.
@@ -84,8 +86,22 @@ export function fillPaths(p) {
   const a = p.pathA;
   cy.get('[data-cy=patha-town-select]').select(a.town);
   if (a.project) {
-    cy.get('[data-cy=patha-project-more]', { timeout: 15000 }).click(); // Use a different launch
-    cy.get(`[data-cy=patha-project-${a.project}]`).click();
+    // The launch list loads after the town is chosen, and the "Use a different launch" list exists only when the
+    // town has more than one launch: wait for the active launch, then open the list only if it is there and needed.
+    cy.get('[data-cy=patha-project-help]', { timeout: 15000 }).should('exist');
+    cy.get('body').then(($body) => {
+      const chip = `[data-cy=patha-project-${a.project}]`;
+      if (!$body.find(chip).length && $body.find('[data-cy=patha-project-more]').length) {
+        cy.get('[data-cy=patha-project-more]').click();
+      }
+    });
+    cy.get('body').then(($body) => {
+      const chip = `[data-cy=patha-project-${a.project}]`;
+      if ($body.find(chip).length) cy.get(chip).click();
+      else if ($body.find('[data-cy=patha-project-more]').length) {
+        throw new Error(`Launch "${a.project}" is not offered for ${a.town}; check the live BTO data`);
+      }
+    });
   }
   // The chips load from the server once the town is chosen: only what that town's launches offer.
   cy.get(`[data-cy=patha-flat-type-${slug(a.flatType)}]`, { timeout: 15000 }).click();
