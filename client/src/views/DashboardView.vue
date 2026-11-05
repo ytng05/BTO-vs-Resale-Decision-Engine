@@ -285,8 +285,10 @@ const openKey = ref(null);
 const closeBtn = ref(null);
 const everOpened = ref(false);
 const seen = reactive({}); // the details opened so far: they stay mounted, only hidden
-// The navbar sits outside this page, so it is made inert by hand while a pop-up is open.
-const setNavInert = (on) => document.querySelector('[data-cy=nav-bar]')?.toggleAttribute('inert', on);
+// The skip link, navbar and footer sit outside this page (App.vue), so they are made inert by hand while a pop-up
+// is open: otherwise Tab leaves the dialog for them.
+const setOutsideInert = (on) => document.querySelectorAll('[data-cy=skip-link], [data-cy=nav-bar], #main ~ footer')
+  .forEach((el) => el.toggleAttribute('inert', on));
 let openedFrom = null;
 const openItem = computed(() => EXPLORE.find((e) => e.key === openKey.value) ?? null);
 function onKey(e) {
@@ -297,7 +299,7 @@ async function openDetail(key) {
   everOpened.value = true;
   seen[key] = true;
   openKey.value = key;
-  setNavInert(true);
+  setOutsideInert(true);
   document.body.classList.add('dash-modal-open'); // stops the page behind from scrolling
   document.addEventListener('keydown', onKey);
   await nextTick();
@@ -306,13 +308,26 @@ async function openDetail(key) {
 async function closeDetail() {
   if (!openKey.value) return;
   openKey.value = null;
-  setNavInert(false);
+  setOutsideInert(false);
   document.body.classList.remove('dash-modal-open');
   document.removeEventListener('keydown', onKey);
   await nextTick(); // the page stops being inert on the next update; only then can the card take focus back
   openedFrom?.focus?.();
 }
 onBeforeUnmount(closeDetail);
+// The pop-ups don't print, so while printing the grant checks and every cost are added to the page (only then,
+// so the page itself has one copy of each table).
+const printing = ref(false);
+const onBeforePrint = () => { printing.value = true; };
+const onAfterPrint = () => { printing.value = false; };
+onMounted(() => {
+  window.addEventListener('beforeprint', onBeforePrint);
+  window.addEventListener('afterprint', onAfterPrint);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeprint', onBeforePrint);
+  window.removeEventListener('afterprint', onAfterPrint);
+});
 const grantsLine = computed(() => grantsTakeaway(A.value, B.value));
 const costsLine = computed(() => costsTakeaway(A.value, B.value));
 const mapLine = computed(() => (store.choiceB.livingArrangement === 'NEAR'
@@ -492,6 +507,14 @@ const detailLine = computed(() => ({
                 </p>
               </div>
             </div>
+          </section>
+
+          <!-- Paper only: the two tables that otherwise live in pop-ups (see `printing`). -->
+          <section v-if="printing && A && B" class="d-none d-print-block" aria-label="Grant checks and every cost">
+            <h2 class="section-head__title mb-3">Every grant check</h2>
+            <GrantsTable :outcome-a="A" :outcome-b="B" />
+            <h2 class="section-head__title mt-4 mb-3">Every cost</h2>
+            <CostBreakdownTable :outcome-a="A" :outcome-b="B" />
           </section>
         </div>
 

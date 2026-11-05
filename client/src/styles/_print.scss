@@ -17,6 +17,7 @@
   details > :not(summary) { display: block !important; }
 
   // Dashboard: the verdict prints once at the top, in place; sliders, scenario chips and pop-ups don't print.
+  // The grant checks and every cost print from a paper-only copy instead (DashboardView, `printing`).
   .dash-verdict-bar { position: static !important; box-shadow: none !important; }
   .dash-main__side, .dash-modal, .dash-chips { display: none !important; }
   .dash-main { display: block !important; }

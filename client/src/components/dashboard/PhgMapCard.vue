@@ -44,6 +44,7 @@ const L = shallowRef(null);
 const map = shallowRef(null);
 const layer = shallowRef(null);
 let resizeWatcher = null;
+let settleTimer = null; // cleared on unmount: invalidateSize on a removed map throws
 
 const parentsInvalid = computed(() => touched.value && !isValidPostal(parentsPostal.value));
 const flatInvalid = computed(() => touched.value && flatPostal.value.trim() !== '' && !isValidPostal(flatPostal.value));
@@ -163,7 +164,7 @@ onMounted(async () => {
       resizeWatcher = new ResizeObserver(() => map.value?.invalidateSize());
       resizeWatcher.observe(mapEl.value);
     }
-    setTimeout(() => map.value?.invalidateSize(), 350);
+    settleTimer = setTimeout(() => map.value?.invalidateSize(), 350);
 
     loadTowns();
   } catch (e) {
@@ -173,6 +174,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  clearTimeout(settleTimer);
   resizeWatcher?.disconnect();
   map.value?.remove();
 });
