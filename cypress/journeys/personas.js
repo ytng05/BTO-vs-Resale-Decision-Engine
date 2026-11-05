@@ -9,7 +9,7 @@ const sc = (age, monthlyIncome, cpfOa) => ({ age, citizenship: 'SC', monthlyInco
 const pr = (age, monthlyIncome, cpfOa) => ({ age, citizenship: 'PR', monthlyIncome, cpfOa });
 const resale = (town, leaseBand, livingArrangement, flatType = '4 ROOM') => ({ town, flatType, leaseBand, livingArrangement });
 // The launch defaults to the town's newest (a tie goes to Standard, then by name); project picks another.
-const bto = (town, project, flatType = '4 ROOM') => ({ town, flatType, project });
+const bto = (town, project, flatType = '4 ROOM', projectName) => ({ town, flatType, project, projectName });
 
 // 1. First-time couple: "BTO or resale?" BTO ends well ahead; both within the loan limit.
 export const J1 = {
@@ -17,12 +17,14 @@ export const J1 = {
   pathA: bto('SENGKANG'), pathB: resale('SENGKANG', '80-89'),
 };
 
-// 2. Near parents: with no rent while waiting BTO ends ahead; renting at S$2,800 while a long BTO wait runs
-// (a Dashboard what-if) turns it to resale (grants incl. PHG, no rent).
+// 2. Near parents: with no rent while waiting BTO ends ahead. Even renting at S$2,800 during Teban Heights' 4-year
+// wait, BTO stays ahead; resale only wins at a much higher rent (S$5,000, a Dashboard what-if).
 export const J2 = {
   wishes: ['parents'],
   buyers: [sc(31, 3300, 75000), sc(32, 3000, 65000)], cash: 80000,
-  pathA: bto('JURONG EAST'), pathB: resale('JURONG EAST', '80-89', 'NEAR'),
+  // Pinned: the live data can list a newer Jurong East launch with a shorter wait; the journey needs
+  // Teban Heights' 4-year wait (docs/JOURNEYS.md).
+  pathA: bto('JURONG EAST', 'teban-heights', '4 ROOM', 'Teban Heights'), pathB: resale('JURONG EAST', '80-89', 'NEAR'),
 };
 
 // 3. Must move in by 2032: the timing panel ranks application years and skips any whose keys come too late.
@@ -84,8 +86,26 @@ export function fillPaths(p) {
   const a = p.pathA;
   cy.get('[data-cy=patha-town-select]').select(a.town);
   if (a.project) {
-    cy.get('[data-cy=patha-project-more]', { timeout: 15000 }).click(); // Use a different launch
-    cy.get(`[data-cy=patha-project-${a.project}]`).click();
+    // The launch list loads after the town is chosen, and the "Use a different launch" list exists only when the
+    // town has more than one launch: wait for the active launch, then open the list only if it is there and needed.
+    cy.get('[data-cy=patha-project-help]', { timeout: 15000 }).should('exist');
+    cy.get('body').then(($body) => {
+      const chip = `[data-cy=patha-project-${a.project}]`;
+      // The chips sit in a closed <details>: they are in the DOM but hidden, so check visibility, not presence.
+      if (!$body.find(chip).filter(':visible').length && $body.find('[data-cy=patha-project-more]').length) {
+        cy.get('[data-cy=patha-project-more]').click();
+      }
+    });
+    cy.get('body').then(($body) => {
+      const chip = `[data-cy=patha-project-${a.project}]`;
+      if ($body.find(chip).length) cy.get(chip).click();
+      else if ($body.find('[data-cy=patha-project-more]').length) {
+        throw new Error(`Launch "${a.project}" is not offered for ${a.town}; check the live BTO data`);
+      }
+    });
+    // Fails clearly if the active launch isn't the pinned one, including in a single-launch town, where there is no
+    // chip to click.
+    if (a.projectName) cy.get('[data-cy=patha-project-help]', { timeout: 15000 }).should('contain', a.projectName);
   }
   // The chips load from the server once the town is chosen: only what that town's launches offer.
   cy.get(`[data-cy=patha-flat-type-${slug(a.flatType)}]`, { timeout: 15000 }).click();

@@ -3,9 +3,13 @@
 // Rendered as an HTML table (not canvas) so screen readers get real row/column headers and Cypress
 // can assert on every cell via data-cy (docs/UI.md §3, §14).
 // Colour is never the only signal: every cell has an aria-label and title in words, and a legend.
-import { computed, ref } from 'vue';
+// Picking a square also emits `pick` with that cell, so the Dashboard can try its rates in the What-if panel;
+// the Results page ignores it.
+import { computed, ref, watch } from 'vue';
 import { axes, nearestCell } from '../utils/heatmap.js';
 import { formatMoney, formatPercent } from '../utils/format.js';
+
+const emit = defineEmits(['pick']);
 
 const props = defineProps({
   grid: { type: Array, required: true }, // rows of { annualPriceGrowth, annualIncomeGrowth, winner, marginCents } — money in cents
@@ -35,6 +39,13 @@ const isYou = (r, c) => you.value && you.value.row === r && you.value.col === c;
 // Tap/click/keyboard equivalent of hovering (UI.md §12: no hover-only interactions).
 // Until the user picks a square, the detail line describes their own assumptions' square.
 const picked = ref(null);
+// A new grid (the What-if moved the rates, D33 widens the axes) can reorder the squares: drop the old pick, so the
+// detail line goes back to describing your own square.
+watch(() => props.grid, () => { picked.value = null; });
+function pick(r, c) {
+  picked.value = { row: r, col: c };
+  emit('pick', props.grid[r]?.[c] ?? null);
+}
 const selected = computed(() => picked.value ?? (you.value ? { row: you.value.row, col: you.value.col } : null));
 const isSelected = (r, c) => selected.value && selected.value.row === r && selected.value.col === c;
 const selectedText = computed(() => {
@@ -94,7 +105,7 @@ const selectedText = computed(() => {
                 :aria-label="isYou(r, c) ? `Your assumptions. ${cellLabel(cell)}` : cellLabel(cell)"
                 :aria-pressed="isSelected(r, c) ? 'true' : 'false'"
                 :data-cy="`heatmap-button-r${r}-c${c}`"
-                @click="picked = { row: r, col: c }"
+                @click="pick(r, c)"
               >
                 <span v-if="isYou(r, c)" class="heatmap__you small" data-cy="heatmap-user-marker" aria-hidden="true">You</span>
               </button>

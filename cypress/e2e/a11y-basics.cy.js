@@ -29,7 +29,11 @@ describe('accessibility basics', () => {
   it('starts a new page at the top', () => {
     cy.visit('/sources');
     cy.scrollTo('bottom');
-    cy.window().its('scrollY').should('be.greaterThan', 0);
+    // Wait until the scroll has finished at the bottom (not mid-way), then leave the page.
+    cy.window().should((win) => {
+      expect(win.scrollY).to.be.greaterThan(0);
+      expect(win.scrollY + win.innerHeight).to.be.closeTo(win.document.documentElement.scrollHeight, 2);
+    });
     cy.get('[data-cy=nav-brand-home]').click();
     cy.window().its('scrollY').should('eq', 0);
   });

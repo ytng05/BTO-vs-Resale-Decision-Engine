@@ -32,7 +32,7 @@ const summary = computed(() => props.notes.map((n) => n.label).join(' · '));
     <details v-if="notes.length" class="dash-trust" open>
       <summary class="dash-trust__summary">
         <span>
-          <strong>Before you trust these numbers · {{ notes.length }} {{ notes.length === 1 ? 'note' : 'notes' }}</strong>
+          <strong>Before you trust these numbers, please note:</strong>
           <small>{{ summary }}</small>
         </span>
         <svg class="dash-trust__chevron" width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>

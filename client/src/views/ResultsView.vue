@@ -6,14 +6,15 @@ import { useScenarioStore } from '../stores/scenario.js';
 import ResultsPhgCard from '../components/ResultsPhgCard.vue';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
-import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
+import ResultsWhy from '../components/ResultsWhy.vue';
+import ResultsConfidence from '../components/ResultsConfidence.vue';
+import DashboardCashCard from '../components/dashboard/DashboardCashCard.vue';
 import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
 import ResultsNextSteps from '../components/ResultsNextSteps.vue';
 import ResultsVerdict from '../components/ResultsVerdict.vue';
 import BackToTop from '../components/BackToTop.vue';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
-import Term from '../components/Term.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, LEASE_BANDS, TOWNS } from '../constants/planOptions.js';
 import { formatMoney } from '../utils/format.js';
 import { keyRows, verdict as buildVerdict } from '../utils/resultsVerdict.js';
@@ -49,7 +50,7 @@ const horizonYear = computed(() => result.value?.horizonYear ?? store.assumption
 // Print or save as PDF: the browser's own dialog; styles/_print.scss lays the page out for paper. The chart and
 // heatmap sections only draw once opened, so open them first and give the chart a moment to draw.
 async function printPage() {
-  sections.value = { ...sections.value, chart: true, heatmap: true, steps: true };
+  sections.value = { ...sections.value, heatmap: true, steps: true };
   await nextTick();
   await new Promise((resolve) => { setTimeout(resolve, 400); });
   window.print();
@@ -68,10 +69,15 @@ const userPoint = computed(() => ({
   incomeGrowth: store.assumptions.annualIncomeGrowth,
 }));
 
-// Progressive disclosure (redesign, 4 Nov 2026): the answer, the break-even and BTO price sentences (D35, D40, D43)
-// and the two path cards are open; the chart over time, the full heatmap, when to apply and the official steps open
-// on request (DashboardSection), each with a one-line takeaway.
-const sections = ref({ chart: false, heatmap: false, timing: false, steps: false });
+// Progressive disclosure (redesign, 4 Nov 2026): the answer, why, whether savings cover the cash, the break-even line
+// (D35, D40, D43) and the two path cards are open; the full heatmap, when to apply and the official steps open on
+// request (DashboardSection), each with a one-line takeaway. The "net position over time" chart moved off this page
+// (5 Nov 2026): it measured without the cash paid in, so it could say "Resale ahead" under a "BTO ahead" verdict; the
+// Dashboard's "How each net position adds up" shows the same figure as the verdict.
+const sections = ref({ heatmap: false, timing: false, steps: false });
+
+// "Would the answer change?": a strip on the page, the detail in a pop-up (ResultsConfidence); it prints either way.
+const confidenceMore = ref(false);
 
 // Open a folded part, then move to its heading with focus, so keyboard and screen-reader users land there too.
 async function openAndGo(id) {
@@ -245,21 +251,29 @@ onMounted(load);
         />
         <h1 v-else class="hero-statement">Your result</h1>
 
-        <!-- Would the answer change: the break-even sentence (D35, D43) and the BTO price where the verdict flips (D40),
-             always in view under the verdict. The full grid is folded under More detail. -->
-        <section
-          v-if="result.breakEvenSentence || result.btoPriceSentence"
-          class="breakeven"
-          aria-label="Would the answer change?"
-          data-cy="results-breakeven"
-        >
-          <p v-if="result.breakEvenSentence" class="breakeven__sentence" data-cy="results-breakeven-sentence">{{ result.breakEvenSentence }}</p>
-          <p v-if="result.btoPriceSentence" class="breakeven__sentence" data-cy="results-bto-price-breakeven">{{ result.btoPriceSentence }}</p>
-          <p class="breakeven__note">
-            The <Term id="break-even">break-even</Term> line is not a prediction of prices.
-            <button type="button" class="breakeven__link d-print-none" data-cy="results-heatmap-open" @click="openGrid">See every combination</button>
-          </p>
-        </section>
+        <!-- 2. Why the leading path is ahead, biggest reasons first (D34). Hidden when it's too close to call (D42). -->
+        <ResultsWhy :gap="result.gapBreakdown" :verdict="verdict" />
+
+        <!-- 3. Can today's savings pay the cash each path needs up front (D19)? The same strip as the Dashboard's. -->
+        <DashboardCashCard
+          v-if="result.outcomeA && result.outcomeB"
+          :outcome-a="result.outcomeA"
+          :outcome-b="result.outcomeB"
+          :cash-savings="store.profile.cashSavings"
+          @jump-whatif="router.push('/dashboard')"
+        />
+
+        <!-- 4. Would the answer change: how sure, as pictures (every future tested, the flip point, the BTO price, D33,
+             D40), with the exact sentences in a dropdown. -->
+        <ResultsConfidence
+          v-if="result.breakEvenSentence || result.btoPriceSentence || result.grid?.length"
+          v-model:more-open="confidenceMore"
+          :result="result"
+          :price-growth="store.assumptions.annualPriceGrowth"
+          :income-growth="store.assumptions.annualIncomeGrowth"
+          :horizon-year="horizonYear"
+          @open-grid="openGrid"
+        />
 
         <!-- 2. The two prices everything rests on, in one line; where each came from one click away (D26, D33, D39). -->
         <section class="basis" aria-label="The prices we used" data-cy="results-price-basis">
@@ -318,9 +332,9 @@ onMounted(load);
 
         <!-- 6. Next: the Dashboard, the official steps, saving and printing. -->
         <section class="next d-print-none" aria-label="Next" data-cy="results-verdict-next">
-          <p class="next__text mb-0"><strong>Next:</strong> see how the numbers change over time, then check the official steps.</p>
+          <p class="next__text mb-0"><strong>Next:</strong> test what would change this answer on the Dashboard, then check the official steps.</p>
           <div class="next__actions">
-            <RouterLink to="/dashboard" class="btn btn-primary" data-cy="results-dashboard-button">Open the dashboard</RouterLink>
+            <RouterLink to="/dashboard" class="btn btn-primary btn-disc next__primary" data-cy="results-dashboard-button"><span class="btn-disc__disc" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg></span>Open the dashboard</RouterLink>
             <button type="button" class="btn btn-outline-secondary" data-cy="results-steps-jump" @click="jumpToSteps">Official steps</button>
             <SaveScenarioPanel class="next__save" :result="result" />
             <button type="button" class="btn btn-link" data-cy="results-print-button" @click="printPage">Print or save as PDF</button>
@@ -328,27 +342,10 @@ onMounted(load);
           </div>
         </section>
 
-        <!-- 7. More detail, folded: the chart over time, the full heatmap, when to apply, the official steps. -->
+        <!-- 7. More detail, folded: the full heatmap, when to apply, the official steps. -->
         <section aria-labelledby="more-title" class="results-more">
           <h2 id="more-title" class="results-more__title">More detail</h2>
           <div class="results-sections">
-            <DashboardSection
-              v-if="result.outcomeA && result.outcomeB"
-              v-model:open="sections.chart"
-              title="Net position over time"
-              takeaway="How each path's net position builds up year by year. Hover or tap the chart to compare."
-              lazy
-              cy="results-section-chart"
-            >
-              <p class="text-secondary">
-                A running estimate, without selling: the flat's value minus the loan and the CPF to put back. It does not take off
-                the cash you pay in, so {{ horizonYear }} here differs a little from the net position above. For the exact figure
-                and what it is made of, see the
-                <RouterLink to="/dashboard" data-cy="results-cashflow-dashboard-link">financial dashboard</RouterLink>.
-              </p>
-              <CashFlowOverTimeChart :outcome-a="result.outcomeA" :outcome-b="result.outcomeB" :horizon-year="horizonYear" />
-            </DashboardSection>
-
             <DashboardSection
               v-model:open="sections.heatmap"
               title="Where each path ends ahead"
@@ -404,13 +401,14 @@ onMounted(load);
 </template>
 
 <style scoped>
-/* Redesign (4 Nov 2026): one column of boxes, two side by side where they pair up, stacking on phones. */
+/* Redesign (4 Nov 2026): one column of boxes, two side by side where they pair up, stacking on phones.
+   The page is white (_tokens.scss $bg-app), so each white box carries a thin border to stand apart from it. */
 .results-page { display: flex; flex-direction: column; gap: var(--space-5); }
 .results-sections { display: flex; flex-direction: column; gap: var(--space-3); }
 .results-more__title { margin: 0 0 var(--space-3); font-size: 1.125rem; font-weight: 600; }
 
 /* "Based on" line */
-.basis { padding: var(--space-3) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); font-size: 0.875rem; color: var(--text-secondary); }
+.basis { padding: var(--space-3) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border-subtle); font-size: 0.875rem; color: var(--text-secondary); }
 .basis__strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
 .basis__strip strong { color: var(--text-primary); }
 .basis__lead { font-weight: 500; }
@@ -426,17 +424,30 @@ onMounted(load);
 .paths__row:has(details[open]) { align-items: flex-start; }
 
 /* Next bar */
-.next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); }
+.next { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--bg-surface); border: 1px solid var(--border-subtle); }
 .next__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .next__save { margin-bottom: 0 !important; }
 
 /* Would the answer change (break-even, D40) */
-.breakeven { padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--indigo-tint); }
-.breakeven__sentence { margin: 0 0 var(--space-2); line-height: 1.5; max-width: 90ch; }
-.breakeven__note { margin: 0; font-size: 0.8125rem; color: var(--text-secondary); }
-.breakeven__link { margin-left: var(--space-2); padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--text-primary); text-decoration: underline; cursor: pointer; }
-.breakeven__link:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; border-radius: 2px; }
+
 .heatmap-guide { margin: 0 0 var(--space-3); padding-left: 1.1rem; font-size: 0.9375rem; line-height: 1.5; }
 .heatmap-guide li + li { margin-top: var(--space-1); }
+
+/* The page arrives section by section: each block rises in, a beat after the one above. */
+.results-page > * { animation: results-rise 0.55s var(--ease-out) backwards; }
+.results-page > *:nth-child(2) { animation-delay: 0.06s; }
+.results-page > *:nth-child(3) { animation-delay: 0.12s; }
+.results-page > *:nth-child(4) { animation-delay: 0.18s; }
+.results-page > *:nth-child(5) { animation-delay: 0.24s; }
+.results-page > *:nth-child(n + 6) { animation-delay: 0.3s; }
+@keyframes results-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* The one next step: the arrow nudges forward on hover. */
+.next__primary .btn-disc__disc svg { transition: transform 0.2s var(--ease-out); }
+.next__primary:hover .btn-disc__disc svg { transform: translateX(3px); }
+@media (prefers-reduced-motion: reduce) {
+  .results-page > * { animation: none; }
+  .next__primary .btn-disc__disc svg { transition: none; }
+}
 </style>
 

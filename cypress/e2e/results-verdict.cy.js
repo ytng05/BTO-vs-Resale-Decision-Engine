@@ -94,18 +94,18 @@ describe('results verdict', () => {
     cy.location('pathname').should('eq', '/dashboard');
   });
 
-  it('shows both paths for the year under the pointer on the chart, and with the arrow keys', () => {
+  it('explains why the leader is ahead, checks the cash, and draws where the answer flips', () => {
     completePlan();
-    cy.get('[data-cy=results-section-chart] summary').click();
-    cy.get('[data-cy=results-trend-readout]').should('be.visible');
-    cy.get('[data-cy=results-trend-bto]').invoke('text').should('match', /S\$/);
-    cy.get('[data-cy=results-trend-year]').invoke('text').then((last) => {
-      cy.get('[data-cy=results-trend-stage]').focus().type('{leftarrow}');
-      cy.get('[data-cy=results-trend-year]').invoke('text').should('not.eq', last);
-      cy.get('[data-cy=results-trend-stage]').type('{end}');
-      cy.get('[data-cy=results-trend-year]').invoke('text').should('eq', last);
+    // The chart that measured without the cash paid in is gone from Results (it could contradict the verdict).
+    cy.get('[data-cy=results-section-chart]').should('not.exist');
+    cy.get('[data-cy=dashboard-cash-card]').invoke('text').should('match', /don't cover|cover the cash|Add your cash savings/);
+    // Why: only when a path is called ahead (not too close to call).
+    // The mock has BTO clearly ahead, so Why must show.
+    cy.get('[data-cy=results-why]').should('be.visible').find('li').should('have.length.at.least', 1);
+    // The flip line, when the answer flips inside -2% to 8%: says who is ahead below and above, and marks "You".
+    cy.get('body').then(($b) => {
+      if ($b.find('[data-cy=results-flip-line]').length) cy.get('[data-cy=results-flip-line]').should('contain', 'ahead below').and('contain', 'You ');
     });
-    cy.get('[data-cy=results-trend-lead]').invoke('text').should('match', /ahead|Level/);
   });
 
   it('draws both net positions as bars with their figures, and says the difference in words', () => {

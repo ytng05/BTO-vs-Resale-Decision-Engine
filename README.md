@@ -13,8 +13,10 @@ official source. Policy rules are versioned and dated, and every result names th
 
 ## Scope
 - HDB BTO (Standard / Plus / Prime) versus HDB resale. Executive Condominiums are out of scope.
-- Built: (1) break-even comparison of the two paths, with the heatmap and the financial dashboard, (2) optimal timing search,
-  plus saved scenarios, side-by-side comparison of two saved scenarios, and the Sources page.
+- Built: a break-even comparison of the two paths with the heatmap and the financial dashboard; the timing optimiser
+  (best year to apply); a four-step plan and a check-your-answers page; plain-English results with each grant's reason
+  and official source; saved scenarios that update in place, with a side-by-side comparison of two of them; optional
+  accounts (planning works without one); and the Sources page with its glossary.
 - Future work, behind feature flags that are off: a ranked strategy recommendation over the full space (dropped after the
   prof's feedback; `FEATURE_STRATEGY_SEARCH`) and a historical backtest, or "risk-based verdict" (`FEATURE_BACKTEST`).
 
@@ -48,7 +50,7 @@ docs/                  API contract, open decisions, conventions, edge cases, so
 Requires Node 20+ (developed on 22).
 
 ```bash
-git clone <repo-url> && cd bto-resale-breakeven
+git clone https://github.com/ytng05/BTO-vs-Resale-Decision-Engine.git bto-resale-breakeven && cd bto-resale-breakeven
 npm install
 cp .env.example .env        # optional: add MONGODB_URI, API keys
 npm run dev                 # API on :3000, Vue dev server on :5173, live data (VITE_USE_MOCK=true npm run dev for mock data)
@@ -97,6 +99,7 @@ npm run test:e2e                                  # terminal 2  (or npm run cy:o
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, topic chips, search, safe https source links, assumptions and datasets |
 | `responsive.cy.js` | every page at 375 / 768 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
 | `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |
+| `plan-navigation.cy.js` | moving between plan steps: Change opens the right About you screen and returns to the results, the screen is checked first, the stepper links to the steps reached so far, and it cannot jump forward from a screen with a problem |
 
 
 Demo user journeys (five households, one per presenter) live in `cypress/journeys/` and run against a **live**
@@ -117,7 +120,7 @@ Use the demo account on the live site, or register your own (any email; no verif
 It already has one saved scenario under **My scenarios**. Demo data only; it holds nothing personal.
 
 ## Deployment
-**Live app: https://<your-url>.onrender.com** (first page: `/`, the home page)
+**Live app: https://bto-vs-resale-decision-engine.onrender.com/** (first page: `/`, the home page)
 
 Hosted on Render (free web service) with MongoDB Atlas. One Express server serves both the API (`/api/*`)
 and the built Vue app, so there is one URL.

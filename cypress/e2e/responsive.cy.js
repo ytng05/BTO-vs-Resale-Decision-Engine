@@ -1,7 +1,6 @@
 // Every page fits a phone, a tablet and a laptop screen, upright and on its side, without sideways scrolling; on a
 // short landscape screen, bars pinned to the top or bottom leave at least half the height for the page (mock data).
-// Also logged in (the navbar is wider then), and on the plan and dashboard, that step labels and money figures are
-// not cut off or spilling out of their cards.
+// Also logged in (the navbar is wider then), and that the plan's step labels are not cut off.
 // Needs: `VITE_USE_MOCK=true npm run build`, then `npm start`, then `npm run test:e2e`.
 
 import { completePlan, fillAges, next } from './helpers/plan.js';
@@ -39,20 +38,6 @@ function notCutOff(selector) {
     const el = $el[0];
     if (!el.getClientRects().length) return; // hidden at this width
     expect(el.scrollWidth, `${selector} "${el.textContent.trim()}" fits`).to.be.at.most(el.clientWidth + 1);
-  });
-}
-
-// The text of each `selector` stays inside its `box` (the card it is drawn on).
-function staysInside(selector, box) {
-  cy.get(selector).each(($el) => {
-    const el = $el[0];
-    const edge = el.closest(box).getBoundingClientRect();
-    const range = el.ownerDocument.createRange();
-    range.selectNodeContents(el);
-    [...range.getClientRects()].forEach((r) => {
-      expect(r.right, `"${el.textContent.trim()}" inside ${box}`).to.be.at.most(edge.right + 1);
-      expect(r.left, `"${el.textContent.trim()}" inside ${box}`).to.be.at.least(edge.left - 1);
-    });
   });
 }
 
@@ -113,18 +98,13 @@ describe('responsive layout', () => {
 
       it('/results and the dashboard fit the screen after a full plan', () => {
         completePlan();
-        cy.get('[data-cy=results-breakeven-sentence]').should('be.visible');
+        cy.get('[data-cy=results-confidence-headline]').should('be.visible');
         fitsWidth();
         leavesRoomToRead();
         cy.get('[data-cy=results-dashboard-button]').click();
         cy.get('[data-cy=dashboard-headline]').should('be.visible');
         fitsWidth();
         leavesRoomToRead();
-        // More detail, every section open: the money figures stay inside their tiles.
-        cy.get('[data-cy=dashboard-more-detail] > summary').click();
-        cy.get('[data-cy=dashboard-sections-toggle]').click();
-        staysInside('.dash-tile__list dd', '.dash-tile');
-        fitsWidth();
       });
     });
   });

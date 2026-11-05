@@ -32,6 +32,7 @@ const flatPostal = ref('');
 const touched = ref(false);
 const loading = ref(false);
 const error = ref('');
+const mapProblem = ref(''); // the map itself (Leaflet or the tiles) failed, as opposed to a postal code lookup
 const parents = ref(null); // { lat, lng, address }
 const flat = ref(null); // { lat, lng, address }
 const towns = ref({ bto: null, resale: null }); // { lat, lng, label }
@@ -42,6 +43,8 @@ const mapEl = ref(null);
 const L = shallowRef(null);
 const map = shallowRef(null);
 const layer = shallowRef(null);
+let resizeWatcher = null;
+let settleTimer = null; // cleared on unmount: invalidateSize on a removed map throws
 
 const parentsInvalid = computed(() => touched.value && !isValidPostal(parentsPostal.value));
 const flatInvalid = computed(() => touched.value && flatPostal.value.trim() !== '' && !isValidPostal(flatPostal.value));
@@ -56,7 +59,7 @@ function color(name, fallback) {
 }
 
 function draw() {
-  if (!map.value || !L.value) return;
+  if (!map.value || !L.value || !layer.value) return;
   const Lf = L.value;
   layer.value.clearLayers();
   const points = [];
@@ -76,6 +79,8 @@ function draw() {
     points.push(...circleCorners(parents.value));
   }
   if (isPoint(flat.value)) pin(flat.value, color('--bs-success', '#2b8a3e'), `Resale flat${flat.value.address ? `: ${flat.value.address}` : ''}`);
+  // The map may have been sized while hidden or animating: measure it again before fitting to the points.
+  map.value.invalidateSize();
   if (points.length) map.value.fitBounds(points, { padding: [24, 24], maxZoom: 15 });
 }
 
@@ -129,19 +134,50 @@ async function show() {
 }
 
 onMounted(async () => {
-  // Leaflet touches window, so it is loaded only in the browser, after the card is on the page.
-  const mod = await import('leaflet');
-  L.value = mod.default ?? mod;
-  map.value = L.value.map(mapEl.value, {
-    dragging: !window.matchMedia('(pointer: coarse)').matches, // a one-finger swipe scrolls the page on phones; pinch still zooms
-    center: SG_CENTRE, zoom: 11, minZoom: 11, maxZoom: 18, maxBounds: SG_BOUNDS, scrollWheelZoom: false,
-  });
-  L.value.tileLayer(ONEMAP_TILES, { detectRetina: true, minZoom: 11, maxZoom: 18, attribution: ONEMAP_ATTRIBUTION }).addTo(map.value);
-  layer.value = L.value.layerGroup().addTo(map.value);
-  loadTowns();
+  try {
+    // Leaflet touches window, so it is loaded only in the browser, after the card is on the page.
+    const mod = await import('leaflet');
+    L.value = mod.default ?? mod;
+    map.value = L.value.map(mapEl.value, {
+      dragging: !window.matchMedia('(pointer: coarse)').matches, // a one-finger swipe scrolls the page on phones; pinch still zooms
+      center: SG_CENTRE, zoom: 11, minZoom: 11, maxZoom: 18, maxBounds: SG_BOUNDS, scrollWheelZoom: false,
+    });
+    const tiles = L.value.tileLayer(ONEMAP_TILES, { detectRetina: true, minZoom: 11, maxZoom: 18, attribution: ONEMAP_ATTRIBUTION }).addTo(map.value);
+    // Say so on the page if the basemap can't be fetched, instead of leaving an empty box. Judged per batch of tiles
+    // (Leaflet's "loading" ... "load"): the warning shows only when none of the batch loaded, so one failed tile among
+    // working ones doesn't leave it stuck over a working map (review, #125).
+    let ok = 0;
+    let bad = 0;
+    tiles.on('loading', () => { ok = 0; bad = 0; });
+    tiles.on('tileload', () => { ok += 1; mapProblem.value = ''; });
+    tiles.on('tileerror', () => { bad += 1; });
+    tiles.on('load', () => {
+      mapProblem.value = ok === 0 && bad > 0
+        ? 'The map background could not be loaded from OneMap. Check your connection, or try again in a moment.'
+        : '';
+    });
+    layer.value = L.value.layerGroup().addTo(map.value);
+
+    // This card sits in a pop-up that fades in and is hidden and shown again: Leaflet only knows its size from the
+    // moment it starts, so tell it whenever the box changes size (and once more after the pop-up's animation).
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeWatcher = new ResizeObserver(() => map.value?.invalidateSize());
+      resizeWatcher.observe(mapEl.value);
+    }
+    settleTimer = setTimeout(() => map.value?.invalidateSize(), 350);
+
+    loadTowns();
+  } catch (e) {
+    console.error('PHG map failed to start', e);
+    mapProblem.value = 'The map could not be started. Reload the page and try again.';
+  }
 });
 
-onBeforeUnmount(() => map.value?.remove());
+onBeforeUnmount(() => {
+  clearTimeout(settleTimer);
+  resizeWatcher?.disconnect();
+  map.value?.remove();
+});
 </script>
 
 <template>
@@ -181,6 +217,7 @@ onBeforeUnmount(() => map.value?.remove());
       </form>
 
       <div v-if="error" class="alert alert-warning small" role="alert" data-cy="phg-map-error">{{ error }}</div>
+      <div v-if="mapProblem" class="alert alert-warning small" role="alert" data-cy="phg-map-problem">{{ mapProblem }}</div>
 
       <p v-if="km !== null" class="mb-1" role="status" data-cy="phg-distance">
         {{ approximate ? `${townLabel(resaleTown)} town centre` : 'Resale flat' }}:
@@ -207,6 +244,7 @@ onBeforeUnmount(() => map.value?.remove());
   height: 320px;
   border-radius: 0.5rem;
   overflow: hidden;
+  background: var(--bg-page, #eef0f6); /* shows where the map box is even before its tiles arrive */
   z-index: 0; /* keep Leaflet's panes under the sticky navbar */
 }
 @media (max-width: 575.98px) {
