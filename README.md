@@ -77,6 +77,19 @@ cp .env.example .env     # then fill in the values; the comments in the file exp
 | `DATAGOV_API_KEY` | Resale data still loads, at data.gov.sg's lower rate limit without a key. |
 | `JWT_SECRET` | Fine locally (a development value is used, with a warning). Required when `NODE_ENV=production`. |
 
+**To turn on the Dashboard map (OneMap).** The map needs a free OneMap account, because the server logs in to OneMap to look up locations.
+1. Register for a free account on OneMap (onemap.gov.sg, under its API pages) and confirm your email.
+2. Open the `.env` file you created in step 3. It sits in the project's top folder, next to `package.json`.
+3. Fill in the two lines with the email and password you registered with. No quotes, no spaces around `=`:
+   ```
+   ONEMAP_EMAIL=you@example.com
+   ONEMAP_PASSWORD=your-onemap-password
+   ```
+4. Stop the server (Ctrl+C) and start it again. The `.env` file is only read when the server starts.
+5. Open the Dashboard. The map now shows the places near the flat instead of saying it is unavailable.
+
+`.env` is ignored by Git, so your password stays on your computer. Never paste it into a commit, an issue or a pull request.
+
 To see login, saved scenarios and the map without configuring anything, use the live app.
 
 **4. Run it as one app on one port** (this is how it is submitted and graded):
