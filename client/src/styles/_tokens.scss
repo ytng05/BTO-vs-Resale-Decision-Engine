@@ -12,7 +12,9 @@
 // =============================================================================
 
 // ---- Calm palette (design system, 29 Oct 2026; replaces the Universe palette) ----
-$color-mist:       #F3F3F5; // pale fills: tracks, controls, quiet panels
+// Lavender, not grey (5 Nov 2026): every pale fill in the app (tracks, steppers, tags, quiet panels) now sits in the
+// same pink-and-indigo family as the rest of the palette. Was #F3F3F5, a flat grey that read as dull.
+$color-mist:       #F6F4FB; // pale fills: tracks, controls, quiet panels (lavender)
 $color-white:      #FFFFFF; // the page (4 Nov 2026) and cards
 $color-periwinkle: #E9ECF6; // feature cards, hover
 $color-blush:      #FBD5E5; // soft pink fills
@@ -29,11 +31,11 @@ $color-ink:        #1D1D24;
 $color-slate:      #5F6373;
 
 $text-primary:      $color-ink;   // 16.9:1 on white
-$text-secondary:    $color-slate; // 6.0:1 on white, 5.6:1 on mist
+$text-secondary:    $color-slate; // 6.0:1 on white, 5.5:1 on the lavender mist
 $text-tertiary:     #9A9DB0;      // 2.7:1 — placeholders and decoration only
 $border:            #DFE2EA;
 $border-subtle:     #ECEDF2;
-$surface-disabled:  #F0F1F5;
+$surface-disabled:  #F0EEF6; // disabled fields and loading skeletons only; hover states use $accent-tint (pink)
 
 // White page (4 Nov 2026). Every page sits on white, as Home and the Dashboard already did.
 // $bg-page keeps its old value on purpose: components use var(--bg-page) as a pale fill (slider

@@ -10,7 +10,7 @@ function openDashboard() {
 }
 
 describe('dashboard overview', () => {
-  it('shows both net positions, whether savings cover the cash, and a tile per comparison', () => {
+  it('shows both net positions, how each purchase is paid, and a tile per comparison', () => {
     openDashboard();
     ['bto', 'resale'].forEach((p) => {
       cy.get(`[data-cy=dashboard-summary-${p}-net]`).invoke('text').should('match', /S\$[\d,]+/);
@@ -20,8 +20,8 @@ describe('dashboard overview', () => {
     cy.get('[data-cy=dashboard-headline]').invoke('text').then((h) => {
         if (/better off/.test(h)) cy.get('[data-cy^=dashboard-badge-]').invoke('text').should('match', /Ahead in \d{4}|Comes out ahead/);
     });
-    cy.get('[data-cy=dashboard-cash-card]').invoke('text')
-      .should('match', /don't cover|cover the cash|Add your cash savings/);
+    // Whether savings cover the cash is on Results (results-verdict.cy.js); here, the cash each purchase needs.
+    cy.get('[data-cy=dashboard-paid-sentence]').invoke('text').should('match', /cash/i);
     cy.get('[data-cy=dashboard-side-by-side]').scrollIntoView().should('be.visible');
     // Each tile shows both paths' figures.
     cy.get('[data-cy^=dashboard-sbs-]').each(($tile) => {

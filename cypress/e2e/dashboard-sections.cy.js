@@ -1,6 +1,6 @@
-// Dashboard layout: the answer as a compact card tinted in the leading path's colour, the savings strip,
-// "At a glance" tiles, "Why … comes out ahead?" (closed until asked), how each purchase is paid, how each net position
-// adds up, the heatmap (a square tries its rates in the What-if panel), and "Explore the detail" pop-ups.
+// Dashboard layout: the answer as a compact card tinted in the leading path's colour, the scenario chips,
+// "At a glance" tiles, how each purchase is paid, how each net position adds up, and "Explore the detail" pop-ups.
+// (Why one path is ahead, the cash check and the heatmap are on Results: results-verdict.cy.js, results.cy.js.)
 // Mock data; same setup as dashboard.cy.js (`VITE_USE_MOCK=true npm run build`, `npm start`, `npm run test:e2e`).
 import { completePlan } from './helpers/plan.js';
 
@@ -12,9 +12,12 @@ function openDashboard() {
 }
 
 describe('dashboard sections', () => {
-  it('leads with the answer, the cash strip, the tiles, how each purchase is paid and the What-if panel; no pop-up open', () => {
+  it('leads with the answer, the tiles, how each purchase is paid and the What-if panel; no pop-up open', () => {
     openDashboard();
-    ['dashboard-verdict', 'dashboard-cash-card', 'dashboard-side-by-side', 'dashboard-paid', 'dashboard-section-cashflow', 'dashboard-whatif'].forEach((hook) => {
+    // Why one path is ahead and whether savings cover the cash are on Results now, not repeated here.
+    cy.get('[data-cy=dashboard-why-toggle]').should('not.exist');
+    cy.get('[data-cy=dashboard-cash-card]').should('not.exist');
+    ['dashboard-verdict', 'dashboard-side-by-side', 'dashboard-paid', 'dashboard-section-cashflow', 'dashboard-whatif'].forEach((hook) => {
       // Scroll first: the What-if panel is sticky, which Cypress treats like position: fixed and calls "not visible"
       // while it starts below the fold of the 1280x720 test window.
       cy.get(`[data-cy=${hook}]`).scrollIntoView().should('be.visible');
@@ -56,15 +59,6 @@ describe('dashboard sections', () => {
     openDashboard();
     cy.get('[data-cy^=dashboard-sbs-]').should('have.length', 4);
     cy.get('[data-cy=dashboard-sbs-grants] .is-bto, [data-cy=dashboard-sbs-grants] .is-resale').should('not.exist');
-  });
-
-  it('keeps why the leading path is ahead closed until asked, then opens it from the gap breakdown', () => {
-    openDashboard();
-    cy.get('[data-cy=dashboard-why]').should('not.exist');
-    cy.get('[data-cy=dashboard-why-toggle]').should('have.attr', 'aria-expanded', 'false').click({ scrollBehavior: 'center' });
-    cy.get('[data-cy=dashboard-why-toggle]').should('have.attr', 'aria-expanded', 'true');
-    cy.get('[data-cy=dashboard-why]').should('be.visible').and('contain', 'Total gap');
-    cy.get('[data-cy=dashboard-why] [data-cy^=dashboard-driver-]').should('have.length.within', 1, 4);
   });
 
   it('shows how each purchase is paid, down to the cash needed', () => {
@@ -120,15 +114,6 @@ describe('dashboard sections', () => {
       const tone = /^BTO leaves/.test(h) ? 'bto' : /^Resale leaves/.test(h) ? 'resale' : 'none';
       cy.get('[data-cy=dashboard-verdict]').should('have.class', `dash-verdict-bar--${tone}`);
     });
-  });
-
-  it('tries a heatmap square in the What-if panel: both growth sliders move to it', () => {
-    openDashboard();
-    cy.get('[data-cy=dashboard-section-heatmap]').scrollIntoView().should('be.visible');
-    cy.get('[data-cy=dashboard-since-inputs]').should('contain', 'Try a what-if');
-    cy.get('[data-cy=dashboard-section-heatmap] [data-cy=heatmap-button-r0-c0]').click({ scrollBehavior: 'center' });
-    cy.get('[data-cy=dashboard-updating]', { timeout: 10000 }).should('not.exist');
-    cy.get('[data-cy=dashboard-since-inputs]').should('contain', 'Since your inputs');
   });
 
   it('undoes a quick scenario when its chip is clicked again, and says what it is trying', () => {

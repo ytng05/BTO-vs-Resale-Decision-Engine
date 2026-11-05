@@ -1,10 +1,10 @@
 <script setup>
-// Feature 2: the financial dashboard, where you test the answer the Results page gives. Both paths, measured in the
-// same year (contract v2, D1). Top to bottom: the answer as a compact card tinted in the leading path's colour
-// (DashboardVerdictBar), whether today's savings cover the cash, quick scenario chips, the notes no card already
-// says, "At a glance", then "How you'd pay for it", how each net position adds up, where each path comes out ahead
-// (the heatmap: click a square to try its rates), and "Explore the detail" (pop-ups), with the What-if panel
-// beside them, sticky on large screens.
+// Feature 2: the financial dashboard: where you change the assumptions and watch the answer move. Results gives the
+// answer for the plan as it stands (verdict, why, whether savings cover the cash, how sure it is); this page is for
+// testing it (page roles, D35, sharpened 5 Nov 2026 so the two pages don't repeat each other). Both paths are measured
+// in the same year (contract v2, D1). Top to bottom: the live answer card (DashboardVerdictBar), quick scenario chips,
+// the notes no card already says, "At a glance" (live tiles), "How you'd pay for it", how each net position adds up,
+// and "Explore the detail" (pop-ups), with the What-if panel beside them, sticky on large screens.
 // What-if sliders re-run the comparison with changed assumptions. They are local only: the saved plan
 // in the store never changes, and "Reset" goes back to it.
 // Store and sliders hold dollars and fractions; client.js turns them into the contract's cents (D14).
@@ -22,8 +22,6 @@ import GrantsTable from '../components/dashboard/GrantsTable.vue';
 import CashFlowChart from '../components/dashboard/CashFlowChart.vue';
 import CostBreakdownTable from '../components/dashboard/CostBreakdownTable.vue';
 import DashboardVerdictBar from '../components/dashboard/DashboardVerdictBar.vue';
-import HeatmapGrid from '../components/HeatmapGrid.vue';
-import DashboardCashCard from '../components/dashboard/DashboardCashCard.vue';
 import DashboardGlance from '../components/dashboard/DashboardGlance.vue';
 import DashboardPaid from '../components/dashboard/DashboardPaid.vue';
 import DashboardNotes from '../components/dashboard/DashboardNotes.vue';
@@ -175,23 +173,6 @@ const call = computed(() => verdict(A.value, B.value, horizon.value));
 // The same sentence as the top of the Results page (verdict() in utils/resultsVerdict.js), so the two pages never
 // word the answer differently: "BTO leaves you about S$104,000 better off by 2039", "Too close to call: …".
 const headline = computed(() => (gapCents.value === null ? 'Your financial dashboard' : call.value.headline));
-
-// The heatmap: every combination of flat price and income growth the server tested (D33). "You" marks the rates
-// being tried now; clicking a square moves both growth sliders to it, and the whole page updates.
-const heatmapUser = computed(() => ({ priceGrowth: whatIf.annualPriceGrowth, incomeGrowth: whatIf.annualIncomeGrowth }));
-const heatmapLine = computed(() => {
-  const cells = (result.value?.grid ?? []).flat();
-  if (!cells.length) return '';
-  const a = cells.filter((c) => c.winner === 'A').length;
-  const b = cells.filter((c) => c.winner === 'B').length;
-  if (a === cells.length) return `BTO comes out ahead in all ${cells.length} futures tested.`;
-  if (b === cells.length) return `Resale comes out ahead in all ${cells.length} futures tested.`;
-  return `BTO comes out ahead in ${a} of ${cells.length} futures tested, resale in ${b}.`;
-});
-function tryCell(cell) {
-  if (!cell) return;
-  setWhatIf({ ...whatIf, annualPriceGrowth: cell.annualPriceGrowth, annualIncomeGrowth: cell.annualIncomeGrowth });
-}
 
 // Where the answer flips on the flat price growth slider, at the income growth being tried now.
 const flip = computed(() => priceFlip(result.value, whatIf.annualIncomeGrowth));
@@ -403,7 +384,6 @@ const detailLine = computed(() => ({
       </div>
 
       <!-- 2. Can today's savings pay the cash up front? -->
-      <DashboardCashCard v-if="A && B" :outcome-a="A" :outcome-b="B" :cash-savings="store.profile.cashSavings" @jump-whatif="jumpToWhatIf" />
 
       <!-- Quick scenarios, as filter chips: click to try, click again to undo. "More options" jumps to the What-if panel. -->
       <div class="dash-chips" role="group" aria-label="Quick scenarios" data-cy="whatif-presets">
@@ -442,7 +422,7 @@ const detailLine = computed(() => ({
       />
 
       <!-- 3. At a glance -->
-      <DashboardGlance v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon="horizon" :call="call" :gap="result.gapBreakdown ?? null" />
+      <DashboardGlance v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon="horizon" :call="call" />
 
       <!-- 4. How you'd pay, and the detail, with the What-if panel beside them -->
       <div class="dash-main" :aria-busy="updating ? 'true' : 'false'">
@@ -467,21 +447,6 @@ const detailLine = computed(() => ({
             <CashFlowChart v-if="A && B" :outcome-a="A" :outcome-b="B" :horizon-year="horizon" />
           </section>
 
-          <!-- Where each path comes out ahead: the heatmap, linked to the What-if panel. -->
-          <section v-if="result.grid?.length" class="dash-panel" aria-labelledby="heatmap-heading" data-cy="dashboard-section-heatmap">
-            <div>
-              <h2 id="heatmap-heading" class="section-head__title">Where each path comes out ahead</h2>
-              <p class="section-head__sub">{{ heatmapLine }} Click a square to try its rates in the What-if.</p>
-            </div>
-            <HeatmapGrid
-              :grid="result.grid"
-              :user-point="heatmapUser"
-              :horizon-year="horizon"
-              label-a="BTO"
-              label-b="Resale"
-              @pick="tryCell"
-            />
-          </section>
 
           <section class="dash-explore" aria-labelledby="explore-heading" data-cy="dashboard-more-detail">
             <h2 id="explore-heading" class="section-head__title">Explore the detail</h2>
