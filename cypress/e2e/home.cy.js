@@ -120,3 +120,33 @@ describe('home', () => {
     });
   });
 });
+
+describe('home banner', () => {
+  it('says just "Welcome" to a visitor without an account, with nothing else in the banner', () => {
+    cy.visit('/');
+    cy.get('[data-cy=home-welcome-greeting]').should('have.text', 'Welcome');
+    cy.get('[data-cy=home-welcome]').find('a, button').should('not.exist');
+  });
+
+  it('says "Welcome back, <first name>" to someone logged in', () => {
+    cy.visit('/', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('hdb-app:auth', JSON.stringify({ token: 'test-token', user: { name: 'Kaashvi Arora', email: 'kaashvi@example.com' } }));
+      },
+    });
+    cy.get('[data-cy=home-welcome-greeting]').should('have.text', 'Welcome back, Kaashvi');
+  });
+
+  it('says "Welcome, <first name>" straight after creating an account', () => {
+    cy.visit('/');
+    cy.get('[data-cy=home-start-button]').click();
+    cy.get('[data-cy=login-choice-register]').click();
+    cy.get('[data-cy=login-name-input]').type('Mei');
+    cy.get('[data-cy=login-email-input]').type(`e2e-${Date.now()}@example.com`);
+    cy.get('[data-cy=login-password-input]').type('Password123!');
+    cy.get('[data-cy=login-submit-button]').click();
+    cy.location('pathname').should('eq', '/plan');
+    cy.get('[data-cy=nav-brand-home]').click();
+    cy.get('[data-cy=home-welcome-greeting]').should('contain', 'Welcome, Mei');
+  });
+});
