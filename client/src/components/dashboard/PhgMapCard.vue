@@ -98,8 +98,12 @@ async function loadTowns() {
   };
   const [bto, resale] = await Promise.all([one(props.btoTown), one(props.resaleTown)]);
   towns.value = { bto, resale };
+  // Measured to the town centre (no flat postal code): measure again, the town may have been picked or changed.
+  if (isPoint(parents.value) && !isPoint(flat.value)) km.value = haversineKm(parents.value, resale);
   draw();
 }
+// The plan's pop-up (ParentsMapButton.vue) stays open across answers, so it asks for the towns again each time it opens.
+defineExpose({ loadTowns });
 
 async function show() {
   touched.value = true;
@@ -117,6 +121,9 @@ async function show() {
       km.value = d.km;
       approximate.value = false;
     } else {
+      // Look the towns up again first: on the plan the town can change while the pop-up stays open, and a lookup
+      // that failed (OneMap busy) gets another try. The server caches town points, so this rarely reaches OneMap.
+      await loadTowns();
       parents.value = await geocodePostal(parentsCode);
       flat.value = null;
       km.value = haversineKm(parents.value, towns.value.resale); // null if the town couldn't be placed
@@ -223,6 +230,13 @@ onBeforeUnmount(() => {
         {{ approximate ? `${townLabel(resaleTown)} town centre` : 'Resale flat' }}:
         <strong class="text-numeric">{{ formatKm(km) }}</strong> from your parents' home
         <template v-if="approximate"> (approximate)</template>
+      </p>
+      <p v-if="parents && km === null && !error" class="small text-secondary mb-3" data-cy="phg-distance-missing">
+        <template v-if="resaleTown">
+          {{ townLabel(resaleTown) }} couldn't be placed on the map just now. Press Show to try again, or enter the resale
+          flat's postal code for its exact distance.
+        </template>
+        <template v-else>Pick the resale town, or enter the resale flat's postal code, to see how far it is from your parents.</template>
       </p>
       <p v-if="check" class="small mb-3" :class="`text-${check.tone === 'warning' ? 'danger' : 'secondary'}`" data-cy="phg-check-note">
         {{ check.text }}
