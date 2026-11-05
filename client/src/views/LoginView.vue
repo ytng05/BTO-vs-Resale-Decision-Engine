@@ -57,15 +57,16 @@ const isRegister = computed(function () {
   return step.value === 'register';
 });
 
-// Where to go afterwards: the ?redirect= in the address (Home sends /plan), else the plan.
+// Where to go afterwards: the ?redirect= in the address (Home sends /plan, Results sends /results), else the
+// fallback: Home after logging in, the plan after "Plan without an account".
 // Only a path on this site is accepted (one "/" at the start), never "//other-site.com", so a link to this page
 // can't send people to another website after they log in.
-function getRedirect() {
+function getRedirect(fallback) {
   const target = route.query.redirect;
   if (typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') && !target.startsWith('/\\')) {
     return target;
   }
-  return '/plan';
+  return fallback;
 }
 
 // The words that change between "log in" and "create an account".
@@ -100,7 +101,7 @@ const passwordAutocomplete = computed(function () {
 // Already logged in: nothing to do here, go straight on.
 onMounted(function () {
   if (auth.isLoggedIn) {
-    router.replace(getRedirect());
+    router.replace(getRedirect('/'));
   }
 });
 
@@ -166,7 +167,7 @@ function describedBy(field) {
 function choose(next) {
   // No account: straight on to wherever they were going, nothing to fill in.
   if (next === 'guest') {
-    router.push(getRedirect());
+    router.push(getRedirect('/plan'));
     return;
   }
   step.value = next;
@@ -192,7 +193,7 @@ async function submit() {
   }
 
   if (ok) {
-    router.push(getRedirect());
+    router.push(getRedirect('/'));
   }
 }
 </script>
