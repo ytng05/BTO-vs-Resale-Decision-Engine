@@ -3,10 +3,8 @@
 // horizonYear (contract v2 yearlyCashFlow, docs/API_CONTRACT.md). Distinct from the financial
 // dashboard's CashFlowChart.vue, which breaks down ONE year (the horizon) into its components;
 // this one is a time series across years, so you can see the shape of the climb, not just the end point.
-// netCents per year = marketValueEndCents − loanBalanceEndCents − cpfObligationEndCents (0 before keys,
-// since nothing is owned or owed on paper yet). This is a running proxy for net position, not the
-// contract's own netPositionCents, which only exists at the horizon and also nets out cash spent and
-// clawback — see PathOutcomeCard for that authoritative figure.
+// Each year is measured as the engine measures net position (D1): flat value − loan − CPF savings to put back −
+// clawback − cash spent so far (utils/netPositionTrend.js). So the last year is the verdict's figure to the cent.
 // Hover, touch or arrow keys: a vertical line and a dot on each path follow the pointer, and a readout above the
 // chart shows both paths for that year and who is ahead. The readout starts on the last year, so the chart is
 // never blank, and returns there when the mouse leaves. Nothing animates on its own; the line moves only as
@@ -17,6 +15,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import Chart from 'chart.js/auto';
 import { formatMoney } from '../utils/format.js';
+import { trendRows } from '../utils/netPositionTrend.js';
+import { verdict } from '../utils/resultsVerdict.js';
 
 const props = defineProps({
   outcomeA: { type: Object, required: true },
@@ -33,39 +33,27 @@ const usingKeyboard = ref(false);
 function themeColour(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(`--bs-${name}`).trim();
 }
-// Resale is the pink accent from the design tokens, as on the path cards, the heatmap and the Dashboard charts.
-function resaleColour() {
-  return getComputedStyle(document.documentElement).getPropertyValue('--accent-fill-1').trim();
+// Path colours from the design tokens (_tokens.scss: --path-bto, --path-resale-bar), as on the readout's dots, the
+// path cards, the heatmap and the Dashboard's charts.
+function pathColour(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-const dollars = (cents) => (typeof cents === 'number' ? cents / 100 : null);
-const netOf = (row) => {
-  if (!row) return null;
-  const { marketValueEndCents, loanBalanceEndCents, cpfObligationEndCents } = row;
-  if ([marketValueEndCents, loanBalanceEndCents, cpfObligationEndCents].some((v) => typeof v !== 'number')) return null;
-  return dollars(marketValueEndCents - loanBalanceEndCents - cpfObligationEndCents);
-};
-
 // Rows keyed by year so the two paths line up even if one series is shorter (different key-collection years).
-const rows = computed(() => {
-  const byYear = new Map();
-  for (const row of props.outcomeA?.yearlyCashFlow ?? []) byYear.set(row.year, { year: row.year, bto: netOf(row) });
-  for (const row of props.outcomeB?.yearlyCashFlow ?? []) {
-    byYear.set(row.year, { ...(byYear.get(row.year) ?? { year: row.year, bto: null }), resale: netOf(row) });
-  }
-  return [...byYear.values()].sort((a, b) => a.year - b.year);
-});
+const rows = computed(() => trendRows(props.outcomeA, props.outcomeB));
 
 const lastIndex = computed(() => rows.value.length - 1);
 const active = computed(() => rows.value[activeIndex.value ?? lastIndex.value] ?? null);
 const isLast = computed(() => (activeIndex.value ?? lastIndex.value) === lastIndex.value);
-// Who is ahead in the year shown, in words (colour is never the only signal).
+// Who is ahead in the year shown, in words (colour is never the only signal). The verdict's own rules (level under
+// S$500, too close to call within 2%, D42), so the last year reads the same as the headline.
 const leadText = computed(() => {
   const r = active.value;
   if (!r || typeof r.bto !== 'number' || typeof r.resale !== 'number') return '';
-  const gap = Math.abs(r.bto - r.resale);
-  if (Math.round(gap) === 0) return 'Level';
-  return `${r.bto > r.resale ? 'BTO' : 'Resale'} is ${formatMoney(gap)} ahead`;
+  const v = verdict({ netPositionCents: Math.round(r.bto * 100) }, { netPositionCents: Math.round(r.resale * 100) });
+  if (v.winner === 'level') return 'About level';
+  const lead = `${v.winner === 'bto' ? 'BTO' : 'Resale'} is ${formatMoney(v.gapCents / 100)} ahead`;
+  return v.close ? `${lead}, too close to call` : lead;
 });
 
 function setIndex(i) {
@@ -138,8 +126,8 @@ function data() {
       {
         label: 'BTO',
         data: rows.value.map((r) => r.bto),
-        borderColor: themeColour('primary'),
-        backgroundColor: themeColour('primary'),
+        borderColor: pathColour('--path-bto'),
+        backgroundColor: pathColour('--path-bto'),
         spanGaps: true,
         tension: 0.15,
         pointRadius: 0,
@@ -148,8 +136,8 @@ function data() {
       {
         label: 'Resale',
         data: rows.value.map((r) => r.resale),
-        borderColor: resaleColour(),
-        backgroundColor: resaleColour(),
+        borderColor: pathColour('--path-resale-bar'),
+        backgroundColor: pathColour('--path-resale-bar'),
         spanGaps: true,
         tension: 0.15,
         pointRadius: 0,

@@ -18,17 +18,19 @@ The live app is on a free plan: if it has been idle, the first visit can take ab
 
 ## Scope
 - HDB BTO (Standard / Plus / Prime) versus HDB resale. Executive Condominiums are out of scope.
-- Built: a break-even comparison of the two paths with the heatmap and the financial dashboard; the timing optimiser
-  (best year to apply); a four-step plan and a check-your-answers page; plain-English results with each grant's reason
-  and official source; saved scenarios that update in place, with a side-by-side comparison of two of them; optional
-  accounts (planning works without one); and the Sources page with its glossary.
+- Built: a break-even comparison of the two paths with the heatmap and the financial dashboard (headline, quick
+  scenarios, an at-a-glance comparison and pop-up details); the timing optimiser (best year to apply); a four-step plan
+  that survives a refresh, and a check-your-answers page; plain-English results with each grant's reason and official
+  source, a "Why" list, a "How sure is this answer?" pop-up and a net position over time chart; saved scenarios that
+  update in place, with a side-by-side comparison of two of them; optional accounts (planning works without one); and
+  the Sources page with its glossary.
 - Future work, behind feature flags that are off: a ranked strategy recommendation over the full space (dropped after the
   prof's feedback; `FEATURE_STRATEGY_SEARCH`) and a historical backtest, or "risk-based verdict" (`FEATURE_BACKTEST`).
 
 ## Tech stack
 Vue 3 (Composition API), Pinia, Vue Router, Bootstrap 5 (SCSS), Chart.js | Node.js, Express, MongoDB/Mongoose, JWT + bcryptjs | Vitest, Cypress.
 External data: data.gov.sg (resale transactions, Resale Price Index, price range of flats offered) and OneMap (geocoding and
-distance for the dashboard's PHG map). Whether the household lives with or near its parents is declared by the user; the map
+distance for the PHG map, on the Dashboard and in the plan's Resale flat step). Whether the household lives with or near its parents is declared by the user; the map
 lets them check that answer but never changes it (D15).
 
 ## Repository layout
@@ -73,11 +75,24 @@ cp .env.example .env     # then fill in the values; the comments in the file exp
 | Without this value | What happens |
 |---|---|
 | `MONGODB_URI` | Log in, register and saved scenarios return "database not connected". Plan, Results, Dashboard and Sources still work. Any MongoDB works: a free Atlas cluster or a local `mongod`. |
-| `ONEMAP_EMAIL`, `ONEMAP_PASSWORD` | The Dashboard's map says it is unavailable. Everything else still works. |
+| `ONEMAP_EMAIL`, `ONEMAP_PASSWORD` | The parents map (on the Dashboard and in the plan's Resale flat step) says it is unavailable. Everything else still works. |
 | `DATAGOV_API_KEY` | Resale data still loads, at data.gov.sg's lower rate limit without a key. |
 | `JWT_SECRET` | Fine locally (a development value is used, with a warning). Required when `NODE_ENV=production`. |
 
-To see login, saved scenarios and the map without configuring anything, use the live app.
+**To turn on the parents map (OneMap).** The map needs a free OneMap account, because the server logs in to OneMap to look up locations.
+1. Register for a free account on OneMap (onemap.gov.sg, under its API pages) and confirm your email.
+2. Open the `.env` file you created in step 3. It sits in the project's top folder, next to `package.json`.
+3. Fill in the two lines with the email and password you registered with. No quotes, no spaces around `=`:
+   ```
+   ONEMAP_EMAIL=you@example.com
+   ONEMAP_PASSWORD=your-onemap-password
+   ```
+4. Stop the server (Ctrl+C) and start it again. The `.env` file is only read when the server starts.
+5. Open the map: on the Dashboard, enter the parents' and the flat's postal codes; in the plan's Resale flat step, use "Check on a map" beside Your parents, which measures to the resale town you picked. It shows both homes, the distance and the 4 km circle for the Proximity Housing Grant. It is a guide only: whether you live near your parents is something you declare, not something the map decides.
+
+`.env` is ignored by Git, so your password stays on your computer. Never paste it into a commit, an issue or a pull request.
+
+To see login and saved scenarios without configuring anything, use the live app.
 
 **4. Run it as one app on one port** (this is how it is submitted and graded):
 ```bash
@@ -120,26 +135,29 @@ Test cases, by spec file in `cypress/e2e/`:
 | Spec | Covers |
 |---|---|
 | `smoke.cy.js` | home page, hero scene, step validation, full journey, register → save → reload (needs a database) |
-| `home.cy.js` | the two ways in, See an example, the four steps, costs people forget, FAQ, reduced motion, phone width |
-| `login.cy.js` | Start planning → login page: the three choices, the create-account and log-in forms, Back, planning without an account, and going on to the plan |
+| `home.cy.js` | the two ways in, See an example, the four steps, costs people forget, FAQ, reduced motion, phone width, and the greeting banner ("Welcome" without an account, "Welcome, name" right after signing up, "Welcome back, name" when logged in) |
+| `login.cy.js` | Start planning → login page: the three choices, the create-account and log-in forms, Back, the navbar Log in link, and where each way ends: with a `?redirect=` (for example the plan) logging in or creating an account goes there, with none it goes to Home, planning without an account goes to the plan, someone already logged in goes straight on, and a `?redirect=` to another website is ignored |
 | `scenarios-filter.cy.js` | My scenarios filter bar: search, town / flat type / path-ahead dropdowns, price range, count, Clear filters, no matches (stubbed list) |
 | `buyers.cy.js` | the About you step: one question per screen, two buyers, PR + PR blocked, per-buyer validation, money and age input, answers kept when going back |
 | `error-summary.cy.js` | the error summary on Your BTO and Resale flat: every problem listed, each linking to its field |
 | `preview.cy.js` | the check-your-answers page between the plan and Results; Change and Edit go back with answers kept |
 | `results.cy.js` | results content, heatmap (labelled in words, not colour alone), the note when a saved plan's rates are outside the grid (needs a database), BTO launch and price, phone width, Back keeps inputs |
-| `results-verdict.cy.js` | who comes out ahead in plain words, the side-by-side table, net position bars, the hover chart, "too close to call" |
+| `results-verdict.cy.js` | who comes out ahead in plain words, a path named as ahead only when the headline does, no side-by-side table (it lives on the Dashboard), three plain lines per path with the full breakdown, why the leader is ahead and the cash check, net position bars, the net position over time chart (both paths for the year under the pointer or the arrow keys, its last year equal to each path card), back to top, and "too close to call" |
 | `results-grants.cy.js` | each grant once with one status and every check's reason and official source; the best application year |
-| `results-print.cy.js` | what to do next (official links) and print or save as PDF |
+| `income-ceiling.cy.js` | a household above HDB's new-flat ceiling: no verdict on the preview, and the warning first on Results and on the Dashboard; none below the ceiling |
+| `results-print.cy.js` | what to do next (official links) and print or save as PDF, which opens the chart and the heatmap first |
 | `feedback-clarity.cy.js` | fixes from user testing: prices shown as figures, how to read the heatmap, the BTO price on the plan |
 | `glossary.cy.js` | plain-English terms open by tap or keyboard, stay on screen at 375px, and link to the glossary on Sources |
-| `dashboard.cy.js` | financial dashboard: headline, grant reasons, warnings, the flats side by side, what-if sliders and the flip price |
-| `dashboard-overview.cy.js` | the cash rings, the four tiles and the jump to the grants table |
-| `dashboard-sections.cy.js` | dashboard sections open and close, one at a time or all at once |
+| `dashboard.cy.js` | financial dashboard: who ends ahead and the ruleset version, a reason for every grant check, warnings in plain sentences, how each net position adds up and the costs, the two flats side by side (size, price, price per m²), the comparison year, the BTO and resale price sliders, and the flip price (D40) |
+| `dashboard-overview.cy.js` | both net positions, how each purchase is paid, a tile per comparison, and the grants table opening in a pop-up from its Explore card |
+| `dashboard-sections.cy.js` | the Dashboard layout and pop-ups: it leads with the answer and the tiles, a detail pop-up closes with the button, Escape or a click outside, each tile says which path it favours (never on grants), what changed since your inputs, quick scenarios and quick picks, year steppers, and the grant checks and costs added to the printed page |
 | `scenarios.cy.js` | save, list, open and delete a scenario (needs a database) |
-| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width; picking two saved scenarios on My scenarios (needs a database) |
+| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width; logged out or with an expired login it shows the log-in prompt without calling the API; picking two saved scenarios on My scenarios (needs a database) |
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, topic chips, search, safe https source links, assumptions and datasets |
-| `responsive.cy.js` | every page (including the check-your-answers page) at 375 / 768 / 1200 (Bootstrap XL) / 1280 / 1440 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
+| `responsive.cy.js` | every page (including the check-your-answers page) at 375 / 390 / 768 / 1180 / 1200 (Bootstrap XL) / 1280 / 1440 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, pinned bars leave at least half the height, a logged-in navbar fits, and stepper labels, dashboard tile figures and flat names are not cut off |
 | `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |
+| `plan-refresh.cy.js` | refreshing Results, the Dashboard or a plan step keeps the plan (sessionStorage only), an older stored copy is dropped, and logout and Start planning after a save clear it (the last two need a database) |
+| `parents-map.cy.js` | the Resale flat step's "Check on a map" beside Your parents: opens the Near parents map in a pop-up, Esc and the close button return to the button, the answer is unchanged, a typed postal code is kept, the distance is to the resale town picked (also after changing it), fits 320px to laptop |
 | `plan-navigation.cy.js` | moving between plan steps: Change opens the right About you screen and returns to the results, the screen is checked first, the stepper links to the steps reached so far, and it cannot jump forward from a screen with a problem |
 
 
@@ -156,7 +174,7 @@ Use the demo account on the live site, or register your own (any email; no verif
 - Email: `demo@btoresale.test`
 - Password: `DemoBTO2026!`
 
-It already has one saved scenario under **My scenarios**. Demo data only; it holds nothing personal.
+It already has two saved scenarios under **My scenarios**. Demo data only; it holds nothing personal.
 
 ## Deployment
 **Live app: https://bto-vs-resale-decision-engine.onrender.com/** (first page: `/`, the home page)
@@ -193,8 +211,13 @@ wait, and prints a `[warm] ... data as of ...` line per town (the visible daily 
 
 
 ## Known limitations
-- **Refreshing loses an unsaved plan.** The plan is kept in memory until it is saved, so refreshing Results or the Dashboard
-  shows "No plan to show yet". Log in and save a scenario to keep it; My scenarios opens it again.
+- **A plan in progress lasts as long as the tab.** It is kept in the browser's `sessionStorage`, so refreshing keeps it,
+  and logging out or starting a new plan clears it (it holds incomes and CPF balances). Closing the tab usually clears it
+  too, but a browser that restores the session, or reopens a closed tab, can bring it back. Log in and save a scenario to
+  keep it longer; My scenarios opens it again. If the browser blocks storage, a refresh loses it.
+- **An expired login keeps the plan in that tab.** When a save finds the login has expired, the app signs out but keeps the
+  plan, so it can still be saved after logging in again. On a shared computer, whoever logs in next in that tab would see it:
+  use Log out, which clears it.
 - **Short leases and grants.** HDB pro-rates the Enhanced CPF Housing Grant, the Family Grant and the Proximity Housing Grant
   when the remaining lease does not cover the youngest buyer to age 95. The app does not apply that formula yet: it keeps the
   full amount, and Sources notes that the real grants may be lower.

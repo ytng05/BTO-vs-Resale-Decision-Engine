@@ -96,6 +96,11 @@ describe('results page', () => {
     cy.document().then((doc) => {
       expect(doc.documentElement.scrollWidth).to.be.at.most(doc.documentElement.clientWidth);
     });
+    // Every column of the heatmap fits too, with no scrolling inside its box.
+    cy.get('[data-cy=heatmap] table').then(($table) => {
+      const box = $table[0].parentElement;
+      expect(box.scrollWidth).to.be.at.most(box.clientWidth);
+    });
   });
 
   it('keeps the inputs when going back to change them', () => {

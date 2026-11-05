@@ -189,8 +189,10 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
         <div class="vbar__row-head">
           <span class="vbar__name">
             <span class="vbar__key" :class="`vbar__key--${r.key}`" aria-hidden="true"></span>
-            <span class="vbar__label">{{ r.label }}</span>
-            <span class="vbar__place">{{ r.place }}</span>
+            <span class="vbar__text">
+              <span class="vbar__label">{{ r.label }}</span>
+              <span class="vbar__place" :data-cy="`dashboard-summary-${r.key}-place`">{{ r.place }}</span>
+            </span>
           </span>
           <strong class="vbar__value text-numeric" :data-cy="`dashboard-summary-${r.key}-net`"><span class="visually-hidden">{{ r.final }}</span><span aria-hidden="true">{{ r.value }}</span></strong>
         </div>
@@ -268,11 +270,14 @@ onBeforeUnmount(() => clearTimeout(flipTimer));
 .vbar__paths-title { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); }
 .vbar__row { display: flex; flex-direction: column; gap: 6px; }
 .vbar__row-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); min-width: 0; }
-.vbar__name { display: flex; align-items: baseline; gap: var(--space-2); min-width: 0; font-size: 0.875rem; }
+/* The dot, then BTO or Resale and the flat. The flat wraps inside .vbar__text, so a second line starts under the label. */
+.vbar__name { display: flex; align-items: flex-start; gap: var(--space-2); min-width: 0; font-size: 0.875rem; }
+.vbar__text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--space-2); min-width: 0; }
 .vbar__label { font-weight: 600; }
-/* The flat, shortened with … when space is tight; the full names are in the visually hidden subtitle. */
-.vbar__place { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text-secondary); }
-.vbar__key { flex: none; align-self: center; width: 8px; height: 8px; border-radius: 50%; }
+/* The flat. When it doesn't fit beside BTO or Resale it moves to its own line below, and wraps there if it must.
+   (It used to be cut short with …, so phones at 320–412px showed only the town: "Tampines ·…".) */
+.vbar__place { min-width: 0; overflow-wrap: break-word; color: var(--text-secondary); }
+.vbar__key { flex: none; margin-top: calc((1lh - 8px) / 2); width: 8px; height: 8px; border-radius: 50%; } /* centred on the first line */
 .vbar__key--bto, .vbar__fill--bto { background: var(--path-bto); }
 .vbar__key--resale, .vbar__fill--resale { background: var(--path-resale-bar); }
 .vbar__value { flex: none; font-family: var(--font-heading); font-size: 1.125rem; letter-spacing: -0.01em; transition: opacity 0.2s ease; }

@@ -49,7 +49,7 @@ const rows = computed(() =>
     const hasValue = typeof path.netPosition === 'number';
     return {
       key,
-      title: `${PATH_NAMES[key]}: ${path.label ?? '—'}`,
+      title: path.label ?? PATH_NAMES[key],
       value: valueText(path, hasValue),
       hasValue,
       // A capped loan, or a cash shortfall in a later year, still has a real figure (evaluate()

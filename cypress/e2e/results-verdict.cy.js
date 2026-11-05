@@ -94,10 +94,28 @@ describe('results verdict', () => {
     cy.location('pathname').should('eq', '/dashboard');
   });
 
+  it('shows both paths for the year under the pointer on the chart, and with the arrow keys', () => {
+    completePlan();
+    cy.get('[data-cy=results-section-chart] summary').click();
+    cy.get('[data-cy=results-trend-readout]').should('be.visible');
+    // The last year is measured as the verdict is (D1), so it shows each path card's own net position.
+    cy.get('[data-cy=results-patha-net-position]').invoke('text').then((a) => {
+      cy.get('[data-cy=results-trend-bto]').invoke('text').should('eq', a.trim());
+    });
+    cy.get('[data-cy=results-pathb-net-position]').invoke('text').then((b) => {
+      cy.get('[data-cy=results-trend-resale]').invoke('text').should('eq', b.trim());
+    });
+    cy.get('[data-cy=results-trend-year]').invoke('text').then((last) => {
+      cy.get('[data-cy=results-trend-stage]').focus().type('{leftarrow}');
+      cy.get('[data-cy=results-trend-year]').invoke('text').should('not.eq', last);
+      cy.get('[data-cy=results-trend-stage]').type('{end}');
+      cy.get('[data-cy=results-trend-year]').invoke('text').should('eq', last);
+    });
+    cy.get('[data-cy=results-trend-lead]').invoke('text').should('match', /ahead|About level/);
+  });
+
   it('explains why the leader is ahead, checks the cash, and draws where the answer flips', () => {
     completePlan();
-    // The chart that measured without the cash paid in is gone from Results (it could contradict the verdict).
-    cy.get('[data-cy=results-section-chart]').should('not.exist');
     cy.get('[data-cy=dashboard-cash-card]').invoke('text').should('match', /don't cover|cover the cash|Add your cash savings/);
     // Why: only when a path is called ahead (not too close to call).
     // The mock has BTO clearly ahead, so Why must show.

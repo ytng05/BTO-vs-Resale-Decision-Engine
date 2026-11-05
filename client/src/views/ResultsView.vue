@@ -5,10 +5,12 @@ import { compareReusing } from '../api/client.js';
 import { useScenarioStore } from '../stores/scenario.js';
 import ResultsPhgCard from '../components/ResultsPhgCard.vue';
 import HeatmapGrid from '../components/HeatmapGrid.vue';
+import CashFlowOverTimeChart from '../components/CashFlowOverTimeChart.vue';
 import PathOutcomeCard from '../components/PathOutcomeCard.vue';
 import ResultsWhy from '../components/ResultsWhy.vue';
 import ResultsConfidence from '../components/ResultsConfidence.vue';
 import DashboardCashCard from '../components/dashboard/DashboardCashCard.vue';
+import DashboardNotes from '../components/dashboard/DashboardNotes.vue';
 import SaveScenarioPanel from '../components/SaveScenarioPanel.vue';
 import TimingOptimiserPanel from '../components/TimingOptimiserPanel.vue';
 import ResultsNextSteps from '../components/ResultsNextSteps.vue';
@@ -16,6 +18,7 @@ import ResultsVerdict from '../components/ResultsVerdict.vue';
 import BackToTop from '../components/BackToTop.vue';
 import DashboardSection from '../components/dashboard/DashboardSection.vue';
 import { CLASSIFICATIONS, FLAT_TYPES, LEASE_BANDS, TOWNS } from '../constants/planOptions.js';
+import { groupWarnings } from '../utils/dashboardSummary.js';
 import { formatMoney } from '../utils/format.js';
 import { keyRows, verdict as buildVerdict } from '../utils/resultsVerdict.js';
 import { isPlanComplete } from '../validation/planValidation.js';
@@ -50,7 +53,7 @@ const horizonYear = computed(() => result.value?.horizonYear ?? store.assumption
 // Print or save as PDF: the browser's own dialog; styles/_print.scss lays the page out for paper. The chart and
 // heatmap sections only draw once opened, so open them first and give the chart a moment to draw.
 async function printPage() {
-  sections.value = { ...sections.value, heatmap: true, steps: true };
+  sections.value = { ...sections.value, chart: true, heatmap: true, steps: true };
   await nextTick();
   await new Promise((resolve) => { setTimeout(resolve, 400); });
   window.print();
@@ -70,11 +73,11 @@ const userPoint = computed(() => ({
 }));
 
 // Progressive disclosure (redesign, 4 Nov 2026): the answer, why, whether savings cover the cash, the break-even line
-// (D35, D40, D43) and the two path cards are open; the full heatmap, when to apply and the official steps open on
-// request (DashboardSection), each with a one-line takeaway. The "net position over time" chart moved off this page
-// (5 Nov 2026): it measured without the cash paid in, so it could say "Resale ahead" under a "BTO ahead" verdict; the
-// Dashboard's "How each net position adds up" shows the same figure as the verdict.
-const sections = ref({ heatmap: false, timing: false, steps: false });
+// (D35, D40, D43) and the two path cards are open; the net position over time chart, the full heatmap, when to apply
+// and the official steps open on request (DashboardSection), each with a one-line takeaway. The chart was taken off
+// on 5 Nov 2026 because it measured differently from the verdict (it took off the grant refund and not the cash paid
+// in); it now measures each year as the engine does (utils/netPositionTrend.js), so its last year is the verdict.
+const sections = ref({ chart: false, heatmap: false, timing: false, steps: false });
 
 // "Would the answer change?": a strip on the page, the detail in a pop-up (ResultsConfidence); it prints either way.
 const confidenceMore = ref(false);
@@ -117,6 +120,7 @@ const heatmapTakeaway = computed(() => {
 
 // Who ends ahead, in a plain sentence, and the few numbers side by side (utils/resultsVerdict.js, unit-tested).
 const verdict = computed(() => buildVerdict(result.value?.outcomeA, result.value?.outcomeB, horizonYear.value));
+const blockingWarnings = computed(() => groupWarnings(result.value?.outcomeA, result.value?.outcomeB, result.value?.warningMessages ?? {}).blocking);
 const keyComparison = computed(() => keyRows(result.value?.outcomeA, result.value?.outcomeB, horizonYear.value));
 
 
@@ -240,6 +244,14 @@ onMounted(load);
         BTO vs Resale · printed {{ printedOn }} · {{ planLine }}
       </p>
       <div class="results-page">
+        <!-- A BTO the household couldn't buy that year overturns the answer below, so it comes first (D36). The Dashboard's banner. -->
+        <DashboardNotes
+          v-if="blockingWarnings.length"
+          :blocking="blockingWarnings"
+          :application-year="store.choiceA.applicationYear"
+          @jump-whatif="router.push('/dashboard')"
+        />
+
         <!-- 1. Who ends ahead, by how much, and both net positions (D1, D42). -->
         <ResultsVerdict
           v-if="verdict.winner"
@@ -283,12 +295,10 @@ onMounted(load);
               <strong>BTO <span class="text-numeric" data-cy="results-price-bto">{{ formatMoney(result.resolvedA.purchasePriceCents / 100) }}</span></strong>
               · {{ btoShort }}
             </span>
-            <span v-if="btoShort && resaleShort" class="basis__sep" aria-hidden="true">|</span>
             <span v-if="resaleShort">
               <strong>Resale <span class="text-numeric" data-cy="results-price-resale">{{ formatMoney(result.resolvedB.purchasePriceCents / 100) }}</span></strong>
               · {{ resaleShort }}
             </span>
-            <span class="basis__sep" aria-hidden="true">|</span>
             <span class="badge-version" data-cy="results-ruleset-version">Ruleset {{ result.rulesetVersion }}</span>
             <span v-if="result.mock" class="basis__mock" data-cy="results-mock-notice">Showing mock data</span>
           </div>
@@ -342,10 +352,28 @@ onMounted(load);
           </div>
         </section>
 
-        <!-- 7. More detail, folded: the full heatmap, when to apply, the official steps. -->
+        <!-- 7. More detail, folded: the chart over time, the full heatmap, when to apply, the official steps. -->
         <section aria-labelledby="more-title" class="results-more">
           <h2 id="more-title" class="results-more__title">More detail</h2>
           <div class="results-sections">
+            <DashboardSection
+              v-if="result.outcomeA && result.outcomeB"
+              v-model:open="sections.chart"
+              title="Net position over time"
+              takeaway="How each path's net position builds up year by year. Hover or tap the chart to compare."
+              lazy
+              cy="results-section-chart"
+            >
+              <p class="text-secondary">
+                Each year is worked out the same way as the net position above, without selling: the flat's value, minus
+                the loan, the CPF to put back, any subsidy clawback (Plus and Prime flats) and the cash paid in so far. So the line can dip below S$0 while you pay
+                rent or a deposit before the keys, and {{ horizonYear }} here is the same figure as the answer above. For
+                what that figure is made of, see the
+                <RouterLink to="/dashboard" data-cy="results-cashflow-dashboard-link">financial dashboard</RouterLink>.
+              </p>
+              <CashFlowOverTimeChart :outcome-a="result.outcomeA" :outcome-b="result.outcomeB" :horizon-year="horizonYear" />
+            </DashboardSection>
+
             <DashboardSection
               v-model:open="sections.heatmap"
               title="Where each path ends ahead"

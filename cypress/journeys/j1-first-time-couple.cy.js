@@ -6,7 +6,7 @@ describe('Journey 1: first-time couple, "BTO or resale?"', () => {
     fillPlan(J1);
 
     // The verdict: one sentence, then the gap.
-    cy.get('[data-cy=results-breakeven-sentence]').should('contain', 'Path A (BTO)');
+    cy.get('[data-cy=results-breakeven-sentence]').should('contain', 'BTO').and('not.contain', 'Path A');
     cy.get('[data-cy=results-verdict-headline]').should('contain', 'BTO leaves you');
     beat();
 

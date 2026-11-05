@@ -25,6 +25,7 @@ describe('results teaser', () => {
     const y = new Date().getFullYear();
     cy.get('[data-cy=preview-verdict-title]').should('have.text', 'Resale fits you better');
     cy.get('[data-cy=preview-verdict-sub]').should('have.text', 'Ahead on 1 of your 2 priorities');
+    cy.get('[data-cy=preview-verdict-summary]').should('contain', 'so BTO can still end ahead');
     cy.get('[data-cy=preview-card-moveby-detail]').should('contain', `Keys by your ${y + 3}`);
     cy.get('[data-cy=preview-card-moveby-mark]').should('have.class', 'verdict__mark--resale');
     cy.get('[data-cy=preview-card-cash-detail]').should('have.text', 'About the same');
@@ -52,9 +53,10 @@ describe('results teaser', () => {
     cy.get('[data-cy=plan-step-4-panel]').should('exist');
   });
 
-  it('says the paths come out about the same when every pick ties', () => {
+  it('says the paths come out about the same on the picks when every pick ties', () => {
     planWith(['monthly']); // mock loans are the same on both paths
-    cy.get('[data-cy=preview-verdict-title]').should('have.text', 'BTO and resale come out about the same');
+    cy.get('[data-cy=preview-verdict-title]').should('have.text', 'BTO and resale come out about the same on your priority');
+    cy.get('[data-cy=preview-verdict-summary]').should('contain', 'one path can still end ahead');
     cy.get('[data-cy=preview-verdict-sub]').should('not.exist');
     cy.get('[data-cy=preview-card-monthly]').should('contain', 'A smaller loan').and('contain', 'About the same');
   });

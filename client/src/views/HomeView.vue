@@ -2,16 +2,15 @@
 // Home, after the Calm home board (CalmHome.dc.html): the question and the two ways in (start, or see an example),
 // a small static city illustration, how it works in four steps, what the results tell you, the costs people forget, a short FAQ
 // and a closing call to action. The navbar and the disclaimer footer come from App.vue, as on every page.
-// 5 Nov 2026: a "welcome back" strip for someone who is logged in or has a plan in progress (their last saved
-// scenario, or a way back into the plan), a strip naming where the data and rules come from, and the page's colours
+// 5 Nov 2026: a greeting banner ("Welcome" without an account, "Welcome, <name>" right after signing up,
+// "Welcome back, <name>" when logged in), a strip naming where the data and rules come from, and the page's colours
 // kept to the app's pink and indigo family (no grey, green or amber), with pink hovers.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useScenarioStore } from '../stores/scenario.js';
 import { EXAMPLE_PLAN } from '../constants/examplePlan.js';
-import { getRuleset, listScenarios } from '../api/client.js';
+import { getRuleset } from '../api/client.js';
 import { useAuthStore } from '../stores/auth.js';
-import { formatDate } from '../utils/format.js';
 
 const store = useScenarioStore();
 const router = useRouter();
@@ -25,48 +24,38 @@ const hasOwnPlan = computed(() => {
     || p.cashSavings != null
     || Boolean(store.choiceA.town || store.choiceB.town);
 });
-const confirming = ref(null);
+const confirming = ref(false);
 
-// "Welcome back": shown to someone logged in, or with a plan in progress this session. Logged in, it names their
-// most recently saved scenario (newest first by date); anything that can't be loaded is simply left out.
+// First name of the logged-in user, for the greeting.
 const firstName = computed(() => {
   const n = auth.user?.name?.trim();
   return n ? n.split(/\s+/)[0] : '';
 });
-const lastScenario = ref(null);
-onMounted(async () => {
-  if (!auth.isLoggedIn) return;
-  try {
-    const res = await listScenarios();
-    const list = Array.isArray(res) ? res : (res?.scenarios ?? []);
-    const when = (x) => new Date(x?.updatedAt ?? x?.createdAt ?? 0).getTime() || 0;
-    lastScenario.value = [...list].sort((x, y) => when(y) - when(x))[0] ?? null;
-  } catch {
-    lastScenario.value = null;
-  }
+// The banner's greeting, and nothing else: "Welcome back, <name>" for someone logged in, "Welcome, <name>" right
+// after creating an account (auth.justRegistered), "Welcome" for a visitor without an account. A plan in the tab
+// doesn't count: it can be the example, so only the account says who this is.
+const greeting = computed(() => {
+  if (!auth.isLoggedIn) return 'Welcome';
+  const hello = auth.justRegistered ? 'Welcome' : 'Welcome back';
+  return firstName.value ? `${hello}, ${firstName.value}` : hello;
 });
-const lastSavedOn = computed(() => {
-  const d = lastScenario.value?.updatedAt ?? lastScenario.value?.createdAt;
-  return d ? formatDate(d) : '';
-});
-const showWelcome = computed(() => auth.isLoggedIn || hasOwnPlan.value); // 'hero' | 'get': which "See an example" asked, so the question shows beside it
 
 // Fill the plan with a ready-made couple and open their Results; "Change inputs" there makes it their own.
 // If the user has started a plan, ask before replacing it (the confirm button passes force).
-async function seeExample(from, force = false) {
+async function seeExample(force = false) {
   if (hasOwnPlan.value && !force) {
-    confirming.value = from;
+    confirming.value = true;
     await nextTick();
     document.querySelector('[data-cy=home-example-confirm-yes]')?.focus();
     return;
   }
-  confirming.value = null;
+  confirming.value = false;
   store.loadSaved(EXAMPLE_PLAN);
   router.push('/results');
 }
 
-// Ruleset freshness, shown under Good to know: green when checked against its sources, amber when not.
-// Left out if the ruleset can't be loaded, rather than shown wrong.
+// Ruleset date and whether it has been checked, shown in the "where the numbers come from" strip. Says "checked" only
+// when it is (the disclaimer banner warns when it isn't); the date is left out if the ruleset can't be loaded.
 const ruleset = ref(null);
 const rulesetDate = computed(() => {
   const d = ruleset.value?.version ? new Date(`${ruleset.value.version}T00:00:00`) : null;
@@ -74,7 +63,12 @@ const rulesetDate = computed(() => {
     ? d.toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' })
     : null;
 });
-const rulesetVerified = computed(() => ruleset.value?.status === 'VERIFIED');
+const rulesetLine = computed(() => {
+  if (!rulesetDate.value) return 'with their sources';
+  return ruleset.value?.status === 'VERIFIED'
+    ? `dated ${rulesetDate.value}, checked against official sources`
+    : `dated ${rulesetDate.value} and sourced`;
+});
 onMounted(async () => {
   try {
     ruleset.value = await getRuleset();
@@ -191,21 +185,9 @@ const FAQS = [
 
 <template>
   <div class="home">
-    <!-- Welcome back: logged in, or a plan in progress -->
-    <section v-if="showWelcome" class="home-welcome" aria-label="Welcome back" data-cy="home-welcome">
-      <span class="home-welcome__avatar" aria-hidden="true">{{ (firstName || 'Y').charAt(0).toUpperCase() }}</span>
-      <div class="home-welcome__text">
-        <p class="home-welcome__hi">Welcome back<template v-if="firstName">, {{ firstName }}</template></p>
-        <p class="home-welcome__line">
-          <template v-if="lastScenario">Your last saved scenario is <strong>{{ lastScenario.name || 'unnamed' }}</strong><template v-if="lastSavedOn">, saved {{ lastSavedOn }}</template>.</template>
-          <template v-else-if="hasOwnPlan">Your plan is where you left it.</template>
-          <template v-else>Start a plan, or open one you saved.</template>
-        </p>
-      </div>
-      <div class="home-welcome__actions">
-        <router-link v-if="hasOwnPlan" to="/plan" class="btn btn-primary home-welcome__btn" data-cy="home-welcome-continue">Continue your plan</router-link>
-        <router-link v-if="auth.isLoggedIn" to="/scenarios" class="btn btn-outline-secondary home-welcome__btn" data-cy="home-welcome-scenarios">My scenarios</router-link>
-      </div>
+    <!-- Welcome: the greeting only. -->
+    <section class="home-welcome" :aria-label="greeting" data-cy="home-welcome">
+      <p class="home-welcome__hi mb-0" data-cy="home-welcome-greeting">{{ greeting }}</p>
     </section>
 
     <!-- Hero -->
@@ -226,19 +208,15 @@ const FAQS = [
               </span>
               Start planning
             </router-link>
-            <button type="button" class="btn home-btn home-btn--ghost" data-cy="home-example-button" @click="seeExample('hero')">See an example</button>
+            <button type="button" class="btn home-btn home-btn--ghost" data-cy="home-example-button" @click="seeExample()">See an example</button>
           </div>
-          <div v-if="confirming === 'hero'" class="home-confirm" role="group" aria-labelledby="home-confirm-hero" data-cy="home-example-confirm">
+          <div v-if="confirming" class="home-confirm" role="group" aria-labelledby="home-confirm-hero" data-cy="home-example-confirm">
             <p id="home-confirm-hero" class="mb-2">The example replaces what you've entered in your plan so far.</p>
             <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample('hero', true)">Show the example</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
+              <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample(true)">Show the example</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = false">Keep my plan</button>
             </div>
           </div>
-          <span class="home-chip">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
-            4 short steps
-          </span>
         </div>
       </div>
         <svg viewBox="0 0 440 330" class="home-hero__art" data-cy="hero-scene" role="img" aria-label="Illustration: a new BTO block and a resale block, with trees">
@@ -281,7 +259,7 @@ const FAQS = [
       </li>
       <li>
         <span class="home-trust__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h6M9 17h6" /></svg></span>
-        <span><strong>HDB and CPF rules</strong>, <router-link to="/sources" class="home-trust__link">dated<template v-if="rulesetDate"> {{ rulesetDate }}</template> and sourced</router-link></span>
+        <span><strong>HDB and CPF rules</strong>, <router-link to="/sources" class="home-trust__link" data-cy="home-ruleset-line">{{ rulesetLine }}</router-link></span>
       </li>
     </ul>
 
@@ -336,14 +314,6 @@ const FAQS = [
             </svg>
             <p class="home-get__note">Example figures. Illustrative projection, not financial advice.</p>
           </div>
-          <button type="button" class="btn btn-link p-0 home-get__link" data-cy="home-example-link" @click="seeExample('get')">See an example result</button>
-          <div v-if="confirming === 'get'" class="home-confirm" role="group" aria-labelledby="home-confirm-get" data-cy="home-example-confirm">
-            <p id="home-confirm-get" class="mb-2">The example replaces what you've entered in your plan so far.</p>
-            <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-primary btn-sm" data-cy="home-example-confirm-yes" @click="seeExample('get', true)">Show the example</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm" data-cy="home-example-confirm-no" @click="confirming = null">Keep my plan</button>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -397,16 +367,6 @@ const FAQS = [
           Want the detail? The <router-link to="/sources" data-cy="home-sources-link">Sources page</router-link> lists the
           rules we use, with their HDB and CPF references.
         </p>
-        <span
-          v-if="rulesetDate"
-          class="home-ruleset"
-          :class="rulesetVerified ? 'home-ruleset--ok' : 'home-ruleset--warn'"
-          data-cy="home-ruleset-status"
-        >
-          <span class="home-ruleset__dot" aria-hidden="true"></span>
-          <template v-if="rulesetVerified">Ruleset {{ rulesetDate }} · checked against its sources</template>
-          <template v-else>Ruleset {{ rulesetDate }} · not yet verified against its sources</template>
-        </span>
       </div>
       <div class="home-card home-faq home-reveal">
         <details v-for="(f, i) in FAQS" :key="f.q" :open="i === 0" :data-cy="`home-faq-${i + 1}`">
@@ -587,7 +547,6 @@ const FAQS = [
 .home-feat:hover .home-feat__icon { background: var(--accent-fill-2); }
 .home-feat:hover .home-feat__title { color: var(--color-berry); }
 .home-get-panel { display: flex; flex-direction: column; gap: var(--space-3); }
-.home-get__link { align-self: flex-start; font-weight: 500; }
 .home-get__chart { background: var(--accent-fill-3); border-radius: var(--radius-md); padding: var(--space-5) var(--space-5) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
 .home-get__legend { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; font-size: 14px; font-weight: 500; }
 .home-get__key { display: inline-flex; align-items: center; gap: var(--space-2); }
@@ -661,10 +620,6 @@ const FAQS = [
 /* ---- FAQ ---- */
 .home-faq-wrap { display: flex; flex-wrap: wrap; gap: var(--space-6); align-items: flex-start; }
 .home-faq-wrap__intro { flex: 1 1 300px; }
-.home-ruleset { align-self: flex-start; display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: 14px; font-weight: 500; }
-.home-ruleset__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-.home-ruleset--ok { background: var(--success-fill); color: var(--success); }
-.home-ruleset--warn { background: var(--warning-fill); color: var(--warning); }
 .home-faq { flex: 2 1 520px; min-width: 0; padding: var(--space-2) var(--space-5); }
 .home-faq details { border-bottom: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-1); }
 .home-faq details:last-child { border-bottom: 0; }
@@ -685,15 +640,7 @@ const FAQS = [
 
 /* ---- welcome back ---- */
 .home-welcome { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); padding: var(--space-4) var(--space-5); border: 1px solid var(--accent-fill-2); border-radius: var(--radius-lg); background: linear-gradient(100deg, var(--accent-tint), var(--indigo-tint)); animation: home-welcome-in 0.5s var(--ease-out) both; }
-.home-welcome__avatar { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--bg-surface); color: var(--color-berry); font-family: var(--font-heading); font-size: 1.375rem; font-weight: 700; box-shadow: 0 4px 14px rgba(240, 138, 182, 0.25); }
-.home-welcome__text { flex: 1 1 280px; min-width: 0; }
 .home-welcome__hi { margin: 0; font-family: var(--font-heading); font-size: clamp(1.25rem, 2vw, 1.5rem); font-weight: 600; letter-spacing: -0.02em; }
-.home-welcome__line { margin: 2px 0 0; color: var(--text-secondary); }
-.home-welcome__line strong { color: var(--text-primary); }
-.home-welcome__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.home-welcome__btn { min-height: 44px; display: inline-flex; align-items: center; }
-.home-welcome .btn-outline-secondary { background: var(--bg-surface); }
-.home-welcome .btn-outline-secondary:hover { background: var(--accent-tint); border-color: var(--accent-fill-1); color: var(--color-berry); }
 @keyframes home-welcome-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 
 /* ---- where the numbers come from ---- */

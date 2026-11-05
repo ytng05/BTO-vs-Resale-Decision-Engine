@@ -439,8 +439,8 @@ const assumptions = computed(() => [
   { title: 'Income averaging', description: 'Monthly income is treated as the 12-month average at assessment.' },
   { title: 'Grant lease pro-rating', description: "HDB pro-rates the Enhanced CPF Housing Grant, the Family Grant and the Proximity Housing Grant when the remaining lease doesn't cover the youngest buyer to age 95. The app keeps the full amount for now, so actual grants may be lower." },
   { title: 'HDB loan LTV lease pro-rating', description: 'HDB does not publish a formula. We assume LTV falls 2% for each year the lease is short of 95, using the 2019 MOM/CPF examples for CPF usage limits (two data points).' },
-  { title: 'PHG near distance', description: 'Whether your home is near your parents or child is declared by you. The Dashboard map shows the distance as a guide only and never decides eligibility (D15).' },
-  { title: 'BTO value from nearby towns', description: 'A new BTO flat is valued from near-new resale sales (90+ years left) in its town. When the town has fewer than 5 in the last 12 months, sales from a fixed, hand-picked list of nearby towns are pooled in (e.g. Bishan uses Toa Payoh and Ang Mo Kio; Tengah uses Bukit Batok, Jurong West and Choa Chu Kang). Decision D41.' },
+  { title: 'PHG near distance', description: 'Whether your home is near your parents or child is declared by you. The Dashboard map shows the distance as a guide only and never decides eligibility.' },
+  { title: 'BTO value from nearby towns', description: 'A new BTO flat is valued from near-new resale sales (90+ years left) in its town. When the town has fewer than 5 in the last 12 months, sales from a fixed, hand-picked list of nearby towns are pooled in (e.g. Bishan uses Toa Payoh and Ang Mo Kio; Tengah uses Bukit Batok, Jurong West and Choa Chu Kang).' },
   { title: 'Rules held constant', description: `Current rules (ruleset ${response.value?.version ?? 'not yet verified'}) are held constant in projections.` },
   { title: 'Legal & agent fees', description: 'Estimates; these are not verified policy values.' },
 ]);
@@ -593,7 +593,7 @@ onMounted(async () => {
         v-model="query"
         type="search"
         class="form-control form-control-lg rounded-pill sources-search"
-        placeholder="Search rules, e.g. EHG, LTV, stamp duty"
+        placeholder="Search rules, e.g. EHG, LTV"
         aria-label="Search rules"
         autocomplete="off"
         data-cy="sources-search-input"
@@ -639,7 +639,7 @@ onMounted(async () => {
           Template / not fully verified
         </span>
         <span v-else class="sources-verified-badge" data-cy="sources-verified-badge"><span aria-hidden="true">✓</span> Verified</span>
-        {{ metadataValue(response.verifiedOn) }} by {{ metadataValue(response.verifiedBy) }}
+        {{ metadataValue(response.verifiedOn) }}
       </p>
 
       <p class="visually-hidden" role="status" aria-live="polite" data-cy="sources-search-status">{{ searchStatus }}</p>

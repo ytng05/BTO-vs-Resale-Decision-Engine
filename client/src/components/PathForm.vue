@@ -13,6 +13,7 @@
 import Term from './Term.vue';
 import NumberField from './NumberField.vue';
 import WhyWeAsk from './WhyWeAsk.vue';
+import ParentsMapButton from './ParentsMapButton.vue';
 import { computed, onMounted, ref, watch } from 'vue';
 import { useScenarioStore } from '../stores/scenario.js';
 import { getBtoProjects, getResalePrice } from '../api/client.js';
@@ -417,8 +418,17 @@ const LIVING = [
       </div>
 
       <!-- Living with or near parents (only if picked in step 1) -->
-      <fieldset v-if="askParents" class="pf__field" :data-cy="`${prefix}-living`">
-        <legend class="pf__label">Your parents</legend>
+      <!-- The legend also holds the "Check on a map" button (on the right), so the group is named by the words alone. -->
+      <fieldset v-if="askParents" class="pf__field" :aria-labelledby="`${prefix}-living-label`" :data-cy="`${prefix}-living`">
+        <legend class="pf__label pf__legend-row">
+          <span :id="`${prefix}-living-label`">Your parents</span>
+          <ParentsMapButton
+            :prefix="prefix"
+            :bto-town="store.choiceA.town"
+            :resale-town="choice.town"
+            :living-arrangement="choice.livingArrangement"
+          />
+        </legend>
         <div class="choice-row choice-row--wrap">
           <label v-for="l in LIVING" :key="l.value" class="choice" :data-cy="`${prefix}-living-${slug(l.value)}`">
             <input
@@ -445,6 +455,8 @@ const LIVING = [
 .pf__field { margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .pf__field > legend { float: none; width: auto; padding: 0; margin: 0 0 8px; }
 .pf__label { margin: 0; font-size: 17px; font-weight: 600; } /* = About you's field labels (big-field__group) */
+/* "Your parents" on the left, the map button on the right; the button goes under the words if they don't fit. */
+.pf__field > legend.pf__legend-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
 /* Fields match About you's boxes: 64px, 16px corners; focus is an ink border with the soft ring. */
 .pf__select { height: 64px; border-radius: 16px; border: 1.5px solid var(--border); font-size: 17px; font-weight: 500; padding-inline: 18px 44px; }
 /* The transparent outline shows in Windows high-contrast mode, which drops box-shadow. */

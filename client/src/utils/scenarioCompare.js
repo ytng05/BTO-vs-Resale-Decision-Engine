@@ -118,7 +118,7 @@ export function compareHeadline(scenarioA, scenarioB) {
 
   const [winLetter, win, loseLetter] = diff > 0 ? ['A', bestA, 'B'] : ['B', bestB, 'A']
   return {
-    text: `Scenario ${winLetter} (${win.name}: ${win.label}) ends ${formatMoney(Math.abs(diff))} ahead of Scenario ${loseLetter}.`,
+    text: `Scenario ${winLetter} (${win.label ?? win.name}) ends ${formatMoney(Math.abs(diff))} ahead of Scenario ${loseLetter}.`,
     winner: winLetter,
   }
 }
