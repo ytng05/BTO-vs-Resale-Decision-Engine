@@ -136,7 +136,7 @@ Test cases, by spec file in `cypress/e2e/`:
 |---|---|
 | `smoke.cy.js` | home page, hero scene, step validation, full journey, register → save → reload (needs a database) |
 | `home.cy.js` | the two ways in, See an example, the four steps, costs people forget, FAQ, reduced motion, phone width, and the greeting banner ("Welcome" without an account, "Welcome, name" right after signing up, "Welcome back, name" when logged in) |
-| `login.cy.js` | Start planning → login page: the three choices, the create-account and log-in forms, Back, planning without an account, and going on to the plan |
+| `login.cy.js` | Start planning → login page: the three choices, the create-account and log-in forms, Back, the navbar Log in link, and where each way ends: with a `?redirect=` (for example the plan) logging in or creating an account goes there, with none it goes to Home, planning without an account goes to the plan, someone already logged in goes straight on, and a `?redirect=` to another website is ignored |
 | `scenarios-filter.cy.js` | My scenarios filter bar: search, town / flat type / path-ahead dropdowns, price range, count, Clear filters, no matches (stubbed list) |
 | `buyers.cy.js` | the About you step: one question per screen, two buyers, PR + PR blocked, per-buyer validation, money and age input, answers kept when going back |
 | `error-summary.cy.js` | the error summary on Your BTO and Resale flat: every problem listed, each linking to its field |
@@ -174,7 +174,7 @@ Use the demo account on the live site, or register your own (any email; no verif
 - Email: `demo@btoresale.test`
 - Password: `DemoBTO2026!`
 
-It already has one saved scenario under **My scenarios**. Demo data only; it holds nothing personal.
+It already has two saved scenarios under **My scenarios**. Demo data only; it holds nothing personal.
 
 ## Deployment
 **Live app: https://bto-vs-resale-decision-engine.onrender.com/** (first page: `/`, the home page)
