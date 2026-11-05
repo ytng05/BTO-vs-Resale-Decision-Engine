@@ -49,5 +49,5 @@ export function phgCheck(declared, km, approximate = false) {
   }
   return inside
     ? { tone: 'info', text: `${where} is ${dist} from your parents, within ${PHG_RADIUS_KM} km. If you will live near them, you may qualify for the PHG: update your answer in the plan.` }
-    : { tone: 'info', text: `${where} is ${dist} from your parents, more than ${PHG_RADIUS_KM} km.${roughNote}` };
+    : { tone: 'info', text: `${where} is ${dist} from your parents, more than ${PHG_RADIUS_KM} km.`};
 }
