@@ -137,7 +137,8 @@ describe('home banner', () => {
     cy.get('[data-cy=login-email-input]').type(`mei${Date.now()}@example.com`);
     cy.get('[data-cy=login-password-input]').type('Password123!');
     cy.get('[data-cy=login-submit-button]').click();
-    cy.get('[data-cy=nav-brand-home]').click();
+    cy.location('pathname').should('eq', '/plan');
+    cy.get('[data-cy=nav-brand-home]').click(); 
     cy.get('[data-cy=home-welcome-greeting]').should('have.text', 'Welcome, Mei');
   });
 });
