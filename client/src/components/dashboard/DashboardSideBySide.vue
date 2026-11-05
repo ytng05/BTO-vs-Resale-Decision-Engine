@@ -78,8 +78,14 @@ const topDrivers = computed(() => drivers.value.slice(0, 3));
 </template>
 
 <style scoped>
-.dash-sbs { border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); overflow: hidden; }
-.dash-sbs__row { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.35fr); align-items: stretch; border-top: 1px solid var(--border-subtle); }
+/* One set of columns for the whole table, shared by every row (subgrid): the BTO and resale columns are as wide as
+   their widest figure, so a figure never runs past its tinted cell, and the columns line up from row to row. */
+.dash-sbs {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) max-content max-content minmax(0, 1.35fr);
+  border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); overflow: hidden;
+}
+.dash-sbs__row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: stretch; border-top: 1px solid var(--border-subtle); }
 .dash-sbs__row--head { border-top: 0; background: var(--bg-page); }
 .dash-sbs__row > * { padding: var(--space-4) var(--space-4); display: flex; align-items: center; }
 .dash-sbs__label { flex-direction: column; align-items: flex-start !important; justify-content: center; gap: 2px; }
@@ -87,7 +93,15 @@ const topDrivers = computed(() => drivers.value.slice(0, 3));
 .dash-sbs__cell { font-size: 1.0625rem; }
 .dash-sbs__cell.is-bto { background: var(--dash-bto-pale); color: var(--dash-bto); font-weight: 700; }
 .dash-sbs__cell.is-resale { background: var(--dash-resale-pale); color: var(--dash-resale); font-weight: 700; }
-.dash-sbs__ahead-head { color: var(--text-secondary); font-weight: 600; }
+.dash-sbs__ahead-head { color: var(--text-secondary); font-weight: 600; justify-content: center; text-align: center; }
+/* Which is ahead: the chip centred in its own column and never wider than it. This cell has less side padding and
+   the chip is a little smaller, so "BTO ahead by S$531,000" fits; a very long figure wraps inside the chip instead
+   of running past the cell. The other columns are unchanged. */
+.dash-sbs__ahead { justify-content: center; text-align: center; padding-inline: var(--space-2); }
+.dash-sbs__ahead .dash-chip {
+  max-width: 100%; padding: 0.25rem 0.5rem; font-size: 0.8125rem;
+  border-radius: var(--radius-sm); overflow-wrap: anywhere;
+}
 .dash-chip { display: inline-block; padding: 0.25rem 0.75rem; border-radius: var(--radius-pill); font-size: 0.875rem; font-weight: 600; }
 .dash-chip--bto { background: var(--dash-bto-tint); color: var(--dash-bto); }
 .dash-chip--resale { background: var(--dash-resale-tint); color: var(--dash-resale); }
@@ -101,7 +115,7 @@ const topDrivers = computed(() => drivers.value.slice(0, 3));
 .dash-why__line--total { font-weight: 700; }
 @media (max-width: 767.98px) {
   /* Phones: the label on its own line, then BTO | resale, then which is ahead. */
-  .dash-sbs__row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .dash-sbs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .dash-sbs__label, .dash-sbs__ahead { grid-column: 1 / -1; }
   .dash-sbs__row--head > :first-child, .dash-sbs__ahead-head { display: none !important; }
   .dash-sbs__label { padding-bottom: 0 !important; }
