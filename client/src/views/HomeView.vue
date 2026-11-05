@@ -2,16 +2,15 @@
 // Home, after the Calm home board (CalmHome.dc.html): the question and the two ways in (start, or see an example),
 // a small static city illustration, how it works in four steps, what the results tell you, the costs people forget, a short FAQ
 // and a closing call to action. The navbar and the disclaimer footer come from App.vue, as on every page.
-// 5 Nov 2026: a "welcome back" strip for someone who is logged in or has a plan in progress (their last saved
-// scenario, or a way back into the plan), a strip naming where the data and rules come from, and the page's colours
+// 5 Nov 2026: a greeting banner ("Welcome" without an account, "Welcome, <name>" right after signing up,
+// "Welcome back, <name>" when logged in), a strip naming where the data and rules come from, and the page's colours
 // kept to the app's pink and indigo family (no grey, green or amber), with pink hovers.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useScenarioStore } from '../stores/scenario.js';
 import { EXAMPLE_PLAN } from '../constants/examplePlan.js';
-import { getRuleset, listScenarios } from '../api/client.js';
+import { getRuleset } from '../api/client.js';
 import { useAuthStore } from '../stores/auth.js';
-import { formatDate } from '../utils/format.js';
 
 const store = useScenarioStore();
 const router = useRouter();
@@ -27,29 +26,19 @@ const hasOwnPlan = computed(() => {
 });
 const confirming = ref(false);
 
-// "Welcome back": shown to someone logged in, or with a plan in progress this session. Logged in, it names their
-// most recently saved scenario (newest first by date); anything that can't be loaded is simply left out.
+// First name of the logged-in user, for the greeting.
 const firstName = computed(() => {
   const n = auth.user?.name?.trim();
   return n ? n.split(/\s+/)[0] : '';
 });
-const lastScenario = ref(null);
-onMounted(async () => {
-  if (!auth.isLoggedIn) return;
-  try {
-    const res = await listScenarios();
-    const list = Array.isArray(res) ? res : (res?.scenarios ?? []);
-    const when = (x) => new Date(x?.updatedAt ?? x?.createdAt ?? 0).getTime() || 0;
-    lastScenario.value = [...list].sort((x, y) => when(y) - when(x))[0] ?? null;
-  } catch {
-    lastScenario.value = null;
-  }
+// The banner's greeting, and nothing else: "Welcome back, <name>" for someone logged in, "Welcome, <name>" right
+// after creating an account (auth.justRegistered), "Welcome" for a visitor without an account. A plan in the tab
+// doesn't count: it can be the example, so only the account says who this is.
+const greeting = computed(() => {
+  if (!auth.isLoggedIn) return 'Welcome';
+  const hello = auth.justRegistered ? 'Welcome' : 'Welcome back';
+  return firstName.value ? `${hello}, ${firstName.value}` : hello;
 });
-const lastSavedOn = computed(() => {
-  const d = lastScenario.value?.updatedAt ?? lastScenario.value?.createdAt;
-  return d ? formatDate(d) : '';
-});
-const showWelcome = computed(() => auth.isLoggedIn || hasOwnPlan.value);
 
 // Fill the plan with a ready-made couple and open their Results; "Change inputs" there makes it their own.
 // If the user has started a plan, ask before replacing it (the confirm button passes force).
@@ -196,21 +185,9 @@ const FAQS = [
 
 <template>
   <div class="home">
-    <!-- Welcome back: logged in, or a plan in progress -->
-    <section v-if="showWelcome" class="home-welcome" aria-label="Welcome back" data-cy="home-welcome">
-      <span class="home-welcome__avatar" aria-hidden="true">{{ (firstName || 'Y').charAt(0).toUpperCase() }}</span>
-      <div class="home-welcome__text">
-        <p class="home-welcome__hi">Welcome back<template v-if="firstName">, {{ firstName }}</template></p>
-        <p class="home-welcome__line">
-          <template v-if="lastScenario">Your last saved scenario is <strong>{{ lastScenario.name || 'unnamed' }}</strong><template v-if="lastSavedOn">, saved {{ lastSavedOn }}</template>.</template>
-          <template v-else-if="hasOwnPlan">Your plan is where you left it.</template>
-          <template v-else>Start a plan to see your numbers here.</template>
-        </p>
-      </div>
-      <!-- No "My scenarios" button here: the navbar's "My scenarios · N" sits right above it -->
-      <div v-if="hasOwnPlan" class="home-welcome__actions">
-        <router-link to="/plan" class="btn btn-primary home-welcome__btn" data-cy="home-welcome-continue">Continue your plan</router-link>
-      </div>
+    <!-- Welcome: the greeting only. -->
+    <section class="home-welcome" :aria-label="greeting" data-cy="home-welcome">
+      <p class="home-welcome__hi mb-0" data-cy="home-welcome-greeting">{{ greeting }}</p>
     </section>
 
     <!-- Hero -->
@@ -663,13 +640,7 @@ const FAQS = [
 
 /* ---- welcome back ---- */
 .home-welcome { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); padding: var(--space-4) var(--space-5); border: 1px solid var(--accent-fill-2); border-radius: var(--radius-lg); background: linear-gradient(100deg, var(--accent-tint), var(--indigo-tint)); animation: home-welcome-in 0.5s var(--ease-out) both; }
-.home-welcome__avatar { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--bg-surface); color: var(--color-berry); font-family: var(--font-heading); font-size: 1.375rem; font-weight: 700; box-shadow: 0 4px 14px rgba(240, 138, 182, 0.25); }
-.home-welcome__text { flex: 1 1 280px; min-width: 0; }
 .home-welcome__hi { margin: 0; font-family: var(--font-heading); font-size: clamp(1.25rem, 2vw, 1.5rem); font-weight: 600; letter-spacing: -0.02em; }
-.home-welcome__line { margin: 2px 0 0; color: var(--text-secondary); }
-.home-welcome__line strong { color: var(--text-primary); }
-.home-welcome__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.home-welcome__btn { min-height: 44px; display: inline-flex; align-items: center; }
 @keyframes home-welcome-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 
 /* ---- where the numbers come from ---- */
