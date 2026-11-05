@@ -158,6 +158,12 @@
 // Colours are the path tokens (_tokens.scss): BTO indigo, resale pink, $border as the "level"
 // midpoint, the same as every other chart. Colour is never the only signal (labels + legend + text).
 
+// Room for a hovered square's glow, so the scroll box doesn't clip it on the outer squares.
+.heatmap__scroll {
+  padding: $space-5;
+  margin: -$space-5;
+}
+
 .heatmap__table {
   width: 100%;
   border-collapse: separate;
@@ -187,11 +193,21 @@
   padding: 0;
   border-radius: $radius-sm;
   background-color: $border;
+  transition: box-shadow $duration-micro $ease-out, transform $duration-micro $ease-out;
 }
 
-.heatmap__cell--a { background-color: $path-bto; }
-.heatmap__cell--b { background-color: $path-resale-bar; }
-.heatmap__cell--tie { background-color: $border; }
+// Each colour also sets its glow, so a hovered square (and its legend swatch) glows in its own legend colour.
+.heatmap__cell--a { background-color: $path-bto; --heatmap-glow: #{rgba($path-bto, 0.8)}; }
+.heatmap__cell--b { background-color: $path-resale-bar; --heatmap-glow: #{rgba($path-resale-bar, 0.95)}; }
+.heatmap__cell--tie { background-color: $border; --heatmap-glow: #{$border-strong}; }
+
+.heatmap__cell:hover,
+.heatmap__cell:has(.heatmap__hit:focus-visible) {
+  position: relative;
+  z-index: 1;
+  transform: scale(1.08);
+  box-shadow: 0 0 0 2px $bg-surface-raised, 0 0 $space-4 $space-1 var(--heatmap-glow);
+}
 
 // The whole square is the tap target: 48px tall everywhere; width shrinks on phones so all
 // six columns fit at 375px without scrolling, and grows to 48px from the sm breakpoint.
@@ -242,6 +258,19 @@
 
 .heatmap__legend {
   color: $text-secondary;
+}
+
+.heatmap__legend-item .heatmap__swatch {
+  transition: box-shadow $duration-micro $ease-out;
+}
+
+// The legend entry for the hovered square's colour lights up with the same glow.
+.heatmap__legend-item--active {
+  color: $text-primary;
+
+  .heatmap__swatch {
+    box-shadow: 0 0 0 2px $bg-surface-raised, 0 0 $space-2 $space-1 var(--heatmap-glow);
+  }
 }
 
 // Loading skeleton sizes for the results page (shapes match the real content).

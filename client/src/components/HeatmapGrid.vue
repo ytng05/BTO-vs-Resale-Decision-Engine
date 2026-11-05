@@ -3,6 +3,7 @@
 // Rendered as an HTML table (not canvas) so screen readers get real row/column headers and Cypress
 // can assert on every cell via data-cy (docs/UI.md §3, §14).
 // Colour is never the only signal: every cell has an aria-label and title in words, and a legend.
+// Hovering a square makes it glow in its legend colour, previews it in the detail line and lights up its legend entry.
 // Picking a square also emits `pick` with that cell, so the Dashboard can try its rates in the What-if panel;
 // the Results page ignores it.
 import { computed, ref, watch } from 'vue';
@@ -48,18 +49,25 @@ function pick(r, c) {
 }
 const selected = computed(() => picked.value ?? (you.value ? { row: you.value.row, col: you.value.col } : null));
 const isSelected = (r, c) => selected.value && selected.value.row === r && selected.value.col === c;
+
+// Hover only previews; the detail line falls back to the picked (or your own) square when the pointer leaves.
+const hovered = ref(null);
+watch(() => props.grid, () => { hovered.value = null; });
+const hoveredWinner = computed(() => (hovered.value ? props.grid[hovered.value.row]?.[hovered.value.col]?.winner ?? null : null));
+
 const selectedText = computed(() => {
-  if (!selected.value) return 'Select a square to see which path ends ahead and by how much.';
-  const cell = props.grid[selected.value.row]?.[selected.value.col];
+  const shown = hovered.value ?? selected.value;
+  if (!shown) return 'Select a square to see which path ends ahead and by how much.';
+  const cell = props.grid[shown.row]?.[shown.col];
   if (!cell) return '';
-  const prefix = isYou(selected.value.row, selected.value.col) ? 'Your assumptions. ' : '';
+  const prefix = isYou(shown.row, shown.col) ? 'Your assumptions. ' : '';
   return prefix + cellLabel(cell);
 });
 </script>
 
 <template>
   <figure class="heatmap mb-0" data-cy="heatmap">
-    <div class="table-responsive">
+    <div class="table-responsive heatmap__scroll">
       <table class="heatmap__table">
         <caption class="visually-hidden">
           Which path ends with the higher net position<template v-if="horizonYear">
@@ -97,6 +105,8 @@ const selectedText = computed(() => {
               :class="[`heatmap__cell--${cell.winner.toLowerCase()}`, { 'heatmap__cell--you': isYou(r, c) }]"
               :data-cy="`heatmap-cell-r${r}-c${c}`"
               :title="cellLabel(cell)"
+              @mouseenter="hovered = { row: r, col: c }"
+              @mouseleave="hovered = null"
             >
               <button
                 type="button"
@@ -119,13 +129,25 @@ const selectedText = computed(() => {
 
     <figcaption class="mt-3">
       <ul class="heatmap__legend small list-unstyled d-flex flex-wrap gap-3 mb-0" data-cy="heatmap-legend">
-        <li class="d-flex align-items-center gap-2">
+        <li
+          class="heatmap__legend-item d-flex align-items-center gap-2"
+          :class="{ 'heatmap__legend-item--active': hoveredWinner === 'A' }"
+          data-cy="heatmap-legend-a"
+        >
           <span class="heatmap__swatch heatmap__cell--a" aria-hidden="true"></span>{{ labelA }} ahead
         </li>
-        <li class="d-flex align-items-center gap-2">
+        <li
+          class="heatmap__legend-item d-flex align-items-center gap-2"
+          :class="{ 'heatmap__legend-item--active': hoveredWinner === 'B' }"
+          data-cy="heatmap-legend-b"
+        >
           <span class="heatmap__swatch heatmap__cell--b" aria-hidden="true"></span>{{ labelB }} ahead
         </li>
-        <li class="d-flex align-items-center gap-2">
+        <li
+          class="heatmap__legend-item d-flex align-items-center gap-2"
+          :class="{ 'heatmap__legend-item--active': hoveredWinner === 'TIE' }"
+          data-cy="heatmap-legend-tie"
+        >
           <span class="heatmap__swatch heatmap__cell--tie" aria-hidden="true"></span>Level
         </li>
         <li v-if="you" class="d-flex align-items-center gap-2">
