@@ -136,7 +136,7 @@ Test cases, by spec file in `cypress/e2e/`:
 | `dashboard-overview.cy.js` | both net positions, how each purchase is paid, a tile per comparison, and the grants table opening in a pop-up from its Explore card |
 | `dashboard-sections.cy.js` | the Dashboard layout and pop-ups: it leads with the answer and the tiles, a detail pop-up closes with the button, Escape or a click outside, each tile says which path it favours (never on grants), what changed since your inputs, quick scenarios and quick picks, year steppers, and the grant checks and costs added to the printed page |
 | `scenarios.cy.js` | save, list, open and delete a scenario (needs a database) |
-| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width; picking two saved scenarios on My scenarios (needs a database) |
+| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width; logged out or with an expired login it shows the log-in prompt without calling the API; picking two saved scenarios on My scenarios (needs a database) |
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, topic chips, search, safe https source links, assumptions and datasets |
 | `responsive.cy.js` | every page at 375 / 768 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
 | `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |
