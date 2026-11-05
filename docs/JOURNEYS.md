@@ -8,7 +8,7 @@ backup for the live demo and evidence for the report.
 | # | Household | Their question | Ends with | Presenter |
 |---|---|---|---|---|
 | 1 | First-time couple | "BTO or resale?" | BTO well ahead; a what-if barely moves it | Cadence |
-| 2 | Couple who want to live near their parents | "Is resale worth it for the grants?" | Resale ahead, until they skip the rent | Haritha |
+| 2 | Couple who want to live near their parents | "Is resale worth it for the grants?" | BTO ahead even with resale's grants and rent; resale only at a high rent | Haritha |
 | 3 | Couple who must move in by 2032 | "When should we apply?" | Apply now; 2031 misses the deadline | Cadence or Haritha |
 | 4 | Returning user | "Which of my two options is better?" | Side-by-side comparison of two saved scenarios | Yu Qing or Kaashvi |
 | 5 | SC + PR couple with little cash | "Can we afford this at all?" | Both paths over the loan limit, said plainly | Yee Teng |
@@ -46,20 +46,22 @@ S$90,000 and S$80,000; cash S$60,000; flat prices +3% a year, income +2% a year.
 ## 2. Living near parents: "Is resale worth it for the grants?"
 
 **Plan:** two Singapore Citizens, ages 31 and 32; S$3,300 and S$3,000 a month; CPF OA S$75,000 and S$65,000; cash
-S$80,000; prices +3%, income +2%; **rent while waiting S$2,800 a month**.
-**Path A:** BTO, 2027, Jurong East, 4-room, Standard, Teban Heights (a 4-year wait). **Path B:** resale, 2027,
-Jurong East, 4-room, 80 to 89 years, **live near my parents**.
+S$80,000; prices +3%, income +2%; rent while waiting S$0 in the plan (they live with their parents until the keys).
+**Path A:** BTO, 2027, Jurong East, 4-room, Standard, Teban Heights (a 4-year wait; pinned in the persona).
+**Path B:** resale, 2027, Jurong East, 4-room, 80 to 89 years, **live near my parents**.
+Figures for this journey are from the live engine on 2026-11-05 (ruleset 2026-08-24).
 
 | Step | What the audience sees |
 |---|---|
-| Results | Resale is ahead under every combination tested; by 2041 resale ends about S$97,000 ahead. |
-| "Why the gap" | Rent while waiting costs the BTO path about S$134,400 over four years. |
-| Dashboard grants | Resale gets S$140,000 (Enhanced CPF Housing Grant S$40,000, Family S$80,000, Proximity S$20,000) against BTO's S$40,000; each check has its reason and an official link. |
+| Results | BTO leaves them about S$207,000 better off by 2041, but resale gets them the keys 4 years sooner. BTO ends higher under every growth combination tested. |
+| Dashboard grants | Resale gets S$140,000 (Enhanced CPF Housing Grant S$40,000, Family S$80,000, Proximity S$20,000) against BTO's S$40,000, where the Family Grant and the PHG are for resale flats only; each check has its reason and an official link. The grants are already inside both net positions. |
 | PHG map | The parents' home and the 4 km circle. |
-| What-if | Rent while waiting to S$0 (living with parents until keys): BTO ends about S$37,000 ahead instead. |
+| What-if: rent S$2,800 | If they rent during the 4-year wait instead, that is S$134,400 of rent (48 × S$2,800), and BTO is still about S$73,000 ahead. The grants alone don't make resale worth it. |
+| What-if: rent S$5,000 | Only at a much higher rent does resale come out ahead, by about S$33,000. |
 | Sources | Every rule with its official source and the ruleset date. |
 
-Figures to re-check against the live site after pinning Teban Heights (Nov 2026).
+The answer to their question: resale's extra S$100,000 in grants is already counted in its net position, and it
+isn't enough to overtake BTO; renting during the wait narrows the gap, and only a high rent turns it.
 
 ## 3. Move-in deadline: "When should we apply?"
 

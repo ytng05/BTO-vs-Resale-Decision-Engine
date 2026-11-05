@@ -17,8 +17,8 @@ export const J1 = {
   pathA: bto('SENGKANG'), pathB: resale('SENGKANG', '80-89'),
 };
 
-// 2. Near parents: with no rent while waiting BTO ends ahead; renting at S$2,800 while a long BTO wait runs
-// (a Dashboard what-if) turns it to resale (grants incl. PHG, no rent).
+// 2. Near parents: with no rent while waiting BTO ends ahead. Even renting at S$2,800 during Teban Heights' 4-year
+// wait, BTO stays ahead; resale only wins at a much higher rent (S$5,000, a Dashboard what-if).
 export const J2 = {
   wishes: ['parents'],
   buyers: [sc(31, 3300, 75000), sc(32, 3000, 65000)], cash: 80000,
