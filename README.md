@@ -127,16 +127,16 @@ Test cases, by spec file in `cypress/e2e/`:
 | `error-summary.cy.js` | the error summary on Your BTO and Resale flat: every problem listed, each linking to its field |
 | `preview.cy.js` | the check-your-answers page between the plan and Results; Change and Edit go back with answers kept |
 | `results.cy.js` | results content, heatmap (labelled in words, not colour alone), the note when a saved plan's rates are outside the grid (needs a database), BTO launch and price, phone width, Back keeps inputs |
-| `results-verdict.cy.js` | who comes out ahead in plain words, the side-by-side table, net position bars, the hover chart, "too close to call" |
+| `results-verdict.cy.js` | who comes out ahead in plain words, a path named as ahead only when the headline does, no side-by-side table (it lives on the Dashboard), three plain lines per path with the full breakdown, why the leader is ahead and the cash check, net position bars, back to top, and "too close to call" |
 | `results-grants.cy.js` | each grant once with one status and every check's reason and official source; the best application year |
 | `results-print.cy.js` | what to do next (official links) and print or save as PDF |
 | `feedback-clarity.cy.js` | fixes from user testing: prices shown as figures, how to read the heatmap, the BTO price on the plan |
 | `glossary.cy.js` | plain-English terms open by tap or keyboard, stay on screen at 375px, and link to the glossary on Sources |
-| `dashboard.cy.js` | financial dashboard: headline, grant reasons, warnings, the flats side by side, what-if sliders and the flip price |
-| `dashboard-overview.cy.js` | the cash rings, the four tiles and the jump to the grants table |
-| `dashboard-sections.cy.js` | dashboard sections open and close, one at a time or all at once |
+| `dashboard.cy.js` | financial dashboard: who ends ahead and the ruleset version, a reason for every grant check, warnings in plain sentences, how each net position adds up and the costs, the two flats side by side (size, price, price per m²), the comparison year, the BTO and resale price sliders, and the flip price (D40) |
+| `dashboard-overview.cy.js` | both net positions, how each purchase is paid, a tile per comparison, and the grants table opening in a pop-up from its Explore card |
+| `dashboard-sections.cy.js` | the Dashboard layout and pop-ups: it leads with the answer and the tiles, a detail pop-up closes with the button, Escape or a click outside, each tile says which path it favours (never on grants), what changed since your inputs, quick scenarios and quick picks, year steppers, and the grant checks and costs added to the printed page |
 | `scenarios.cy.js` | save, list, open and delete a scenario (needs a database) |
-| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width; picking two saved scenarios on My scenarios (needs a database) |
+| `scenario-compare.cy.js` | side-by-side compare page (mock scenarios), including phone width; logged out or with an expired login it shows the log-in prompt without calling the API; picking two saved scenarios on My scenarios (needs a database) |
 | `sources.cy.js` | ruleset version and badge, expand/collapse all, topic chips, search, safe https source links, assumptions and datasets |
 | `responsive.cy.js` | every page at 375 / 768 / 1280 px upright and phone (667×375) and tablet (1024×768) on their side: no sideways scrolling, and pinned bars leave at least half the height |
 | `a11y-basics.cy.js` | skip link, a page title per page, focus moves to the new page, new pages start at the top, 404 page |

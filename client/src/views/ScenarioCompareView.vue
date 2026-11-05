@@ -9,9 +9,11 @@ import { useRoute, useRouter } from 'vue-router';
 import ScenarioCompareCard from '../components/ScenarioCompareCard.vue';
 import { loadComparePair, openScenarioInResults } from '../api/scenarioCompare.js';
 import { compareHeadline, horizonsDiffer, rulesetsDiffer } from '../utils/scenarioCompare.js';
+import { useAuthStore } from '../stores/auth.js';
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 
 const status = ref('idle'); // idle | loading | ready | error | notFound | invalid | loggedOut
 const errorMessage = ref('');
@@ -35,6 +37,12 @@ const showRulesetNote = computed(
 const compared = computed(() => headline.value?.winner != null);
 
 async function load() {
+  // Logged out: the same prompt as My scenarios, without asking the API first (it would only answer 401).
+  if (!auth.isLoggedIn) {
+    scenarios.value = [];
+    status.value = 'loggedOut';
+    return;
+  }
   if (!idA.value || !idB.value || idA.value === idB.value) {
     status.value = 'invalid';
     return;
@@ -47,6 +55,8 @@ async function load() {
   } catch (err) {
     scenarios.value = [];
     if (err?.response?.status === 401) {
+      // Login expired (tokens last 7 days): sign out here too, so the navbar agrees, and offer to log in again.
+      auth.logout();
       status.value = 'loggedOut';
     } else if (err?.code === 'NOT_FOUND' || err?.response?.status === 404) {
       status.value = 'notFound';
@@ -72,7 +82,8 @@ async function openResults(scenario) {
   }
 }
 
-watch([idA, idB], load, { immediate: true });
+// Logging out in the navbar while on this page shows the prompt too.
+watch([idA, idB, () => auth.isLoggedIn], load, { immediate: true });
 </script>
 
 <template>
