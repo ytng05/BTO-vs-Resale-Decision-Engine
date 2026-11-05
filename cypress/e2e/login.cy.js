@@ -65,11 +65,13 @@ describe('login page', () => {
     cy.get('[data-cy^=login-choice-]').should('not.exist');
   });
 
-    it('logging in or creating an account with no ?redirect= goes to Home, not the plan', () => {
+  // A new email each run: against a real database (a build without VITE_USE_MOCK) the same email fails the second
+  // time as "already registered". A mock build registers in the browser and needs no database.
+  it('logging in or creating an account with no ?redirect= goes to Home, not the plan', () => {
     cy.visit('/login'); // no ?redirect=, as from the navbar Log in link
     cy.get('[data-cy=login-choice-register]').click();
     cy.get('[data-cy=login-name-input]').type('Test Buyer');
-    cy.get('[data-cy=login-email-input]').type('home@example.com');
+    cy.get('[data-cy=login-email-input]').type(`e2e-${Date.now()}@example.com`);
     cy.get('[data-cy=login-password-input]').type('a-long-password');
     cy.get('[data-cy=login-submit-button]').click();
     cy.location('pathname').should('eq', '/');
