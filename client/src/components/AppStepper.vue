@@ -36,7 +36,7 @@ const stepNumber = computed(() => props.current + 1);
       <button v-if="canGo(i)" type="button" class="seg-track__label seg-track__link" :data-cy="`stepper-go-${i + 1}`" @click="emit('go', i)">
         {{ label }}<span class="visually-hidden">{{ i < current ? ', done' : '' }}: go to this step</span>
       </button>
-      <span v-else class="seg-track__label">{{ label }}<span v-if="i < current" class="visually-hidden">, done</span></span>
+      <span v-else class="seg-track__label" :data-cy="`stepper-label-${i + 1}`">{{ label }}<span v-if="i < current" class="visually-hidden">, done</span></span>
     </li>
   </ol>
   <p class="seg-track__mobile" role="status" aria-live="polite" data-cy="stepper-mobile-label">
