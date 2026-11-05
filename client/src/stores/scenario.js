@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
 import { blankApplicant } from '../constants/planOptions.js';
+import { ABOUT_PARTS } from '../validation/planValidation.js';
+import { clearPlan, pickPlan, readPlan, writePlan } from './planStorage.js';
 
 // Holds the whole scenario so users can move backwards in the stepper without losing input.
 // Field names follow server/src/engine/evaluate.contract.js's CompareRequest (RequestChoice /
@@ -95,6 +97,57 @@ const blank = () => ({
   },
 });
 
+const inputsKeyOf = (p) => JSON.stringify([p.profile, p.choiceA, p.choiceB, p.assumptions]);
+
+// Nothing entered yet: the plan as blank() makes it, applicant ids aside. Such a plan is not kept in storage.
+const withoutIds = (p) => JSON.stringify({ ...pickPlan(p), profile: { ...p.profile, applicants: p.profile.applicants.map(({ id, ...a }) => a) } });
+const BLANK = withoutIds(blank());
+const isBlankPlan = (state) => withoutIds(state) === BLANK;
+
+// The plan kept in sessionStorage (planStorage.js), laid over the blank plan as loadSaved() does, so a missing or
+// odd field gets its default instead of breaking a page. {} when nothing usable was stored.
+function storedPlan() {
+  const stored = readPlan();
+  if (!stored) return {};
+  const fresh = blank();
+  const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+  const index = (v, max) => (Number.isInteger(v) && v >= 0 && v <= max ? v : 0);
+  const text = (v) => (typeof v === 'string' ? v : null);
+  const profile = obj(stored.profile);
+  const applicants = Array.isArray(profile.applicants) && profile.applicants.length ? profile.applicants.slice(0, 2) : null;
+  const plan = {
+    step: index(stored.step, STEPS.length - 1),
+    aboutPart: index(stored.aboutPart, ABOUT_PARTS.length - 1),
+    furthest: index(stored.furthest, STEPS.length - 2),
+    reviewed: stored.reviewed === true,
+    wishes: Array.isArray(stored.wishes) ? stored.wishes.filter((k) => WISHES.some((w) => w.key === k)) : [],
+    savedId: text(stored.savedId),
+    savedName: text(stored.savedName),
+    savedKey: null,
+    profile: {
+      ...fresh.profile,
+      ...profile,
+      // New ids: the counter in planOptions.js starts again after a refresh, so the stored ids could clash.
+      applicants: applicants
+        ? applicants.map((a) => {
+          const b = blankApplicant();
+          return { ...b, ...obj(a), id: b.id };
+        })
+        : fresh.profile.applicants,
+      constraints: { ...fresh.profile.constraints, ...obj(profile.constraints) },
+    },
+    choiceA: { ...fresh.choiceA, ...obj(stored.choiceA) },
+    choiceB: { ...fresh.choiceB, ...obj(stored.choiceB) },
+    assumptions: { ...fresh.assumptions, ...obj(stored.assumptions) },
+  };
+  // Still "saved, nothing changed" if it was before the refresh (the key is taken again with the new ids); changed
+  // since, it stays changed.
+  if (plan.savedId !== null && typeof stored.savedKey === 'string') {
+    plan.savedKey = stored.savedKey === inputsKeyOf(stored) ? inputsKeyOf(plan) : stored.savedKey;
+  }
+  return plan;
+}
+
 export const useScenarioStore = defineStore('scenario', {
   // savedProfiles: the About you answers of the newest saved scenarios, loaded once for the autofill (SituationForm).
   // Kept outside blank(), so a fresh plan does not load them again; null means not loaded yet.
@@ -102,12 +155,13 @@ export const useScenarioStore = defineStore('scenario', {
     // savedProfilesOwner: the id of the account the saved answers were loaded for (auth.user.id). They are only
     // ever offered to that account.
     // savedListVersion: goes up whenever a scenario is saved or deleted, so the navbar's count reloads.
-    return { ...blank(), savedProfiles: null, savedProfilesOwner: null, savedListVersion: 0 };
+    // A plan kept from before a refresh (this tab only) is picked up again; see storedPlan().
+    return { ...blank(), ...storedPlan(), savedProfiles: null, savedProfilesOwner: null, savedListVersion: 0 };
   },
   getters: {
     // The inputs as one string, so the inputs now can be compared with the inputs at the last save.
     inputsKey(state) {
-      return JSON.stringify([state.profile, state.choiceA, state.choiceB, state.assumptions]);
+      return inputsKeyOf(state);
     },
   },
   actions: {
@@ -126,8 +180,15 @@ export const useScenarioStore = defineStore('scenario', {
     removeApplicant(id) {
       this.profile.applicants = this.profile.applicants.filter((a) => a.id !== id);
     },
+    // A fresh plan (logout, or Start planning once the plan is saved): the stored copy goes too.
     reset() {
       Object.assign(this, blank());
+      clearPlan();
+    },
+    // From now on, every change to the plan is copied to sessionStorage, so a refresh keeps it (main.js). A blank
+    // plan is removed instead. Only the plan's own fields are stored (planStorage.js).
+    keepInSession() {
+      this.$subscribe((_mutation, state) => (isBlankPlan(state) ? clearPlan() : writePlan(state)), { detached: true, flush: 'sync' });
     },
     // Body for POST /api/scenarios: the inputs in this store's own shape (dollars), so loading one
     // refills the forms directly (docs/API_CONTRACT.md "Saved scenarios"). `step` is UI state, not saved.
