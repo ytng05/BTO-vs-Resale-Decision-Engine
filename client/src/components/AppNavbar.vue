@@ -224,9 +224,10 @@ function logout() {
   .pill-nav--account .pill-nav__brand { display: none; }
 }
 /* Logged in on a small tablet, the five links and "My scenarios · 3" pushed the avatar up to 55px off the screen
-   (768–831px): show just the bookmark, as on phones; the label stays for screen readers. */
+   (768–831px): show just the bookmark, as on phones; the label stays for screen readers. Bootstrap's .visually-hidden
+   rule, copied: the class itself would hide the label at every width. */
 @media (min-width: 768px) and (max-width: 899.98px) {
-  .pill-nav__account .pill-nav__end-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .pill-nav__account .pill-nav__end-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   .pill-nav__account .pill-nav__end { padding: 0; width: 44px; justify-content: center; }
 }
 

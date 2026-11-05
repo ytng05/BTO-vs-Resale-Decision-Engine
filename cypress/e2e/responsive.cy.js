@@ -93,7 +93,7 @@ describe('responsive layout', () => {
         fillAges();
         next();
         next(); // About you's incomes screen: its card sits beside a picture, so the labels have the least room
-        notCutOff('[data-cy=stepper] .seg-track__label');
+        notCutOff('[data-cy^=stepper-go-], [data-cy^=stepper-label-]'); // a step's name is a link (go) or plain text (label)
       });
 
       it('/results and the dashboard fit the screen after a full plan', () => {
@@ -121,7 +121,7 @@ describe('responsive layout', () => {
     [[820, 1180], [375, 667]].forEach(([width, height]) => {
       cy.viewport(width, height);
       cy.window().should((win) => {
-        const box = win.document.querySelector('.dash-modal__box').getBoundingClientRect();
+        const box = win.document.querySelector('[data-cy=dashboard-section-rpi]').getBoundingClientRect();
         expect(box.right, `pop-up right edge at ${width}px`).to.be.at.most(win.innerWidth);
         expect(box.left, `pop-up left edge at ${width}px`).to.be.at.least(0);
       });
